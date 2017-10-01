@@ -29,7 +29,7 @@ This's an [OpenAPI (Swagger)](https://www.openapis.org/) module for [Nest framew
 ## Installation
 
 ```bash
-$ npm i --save @nestjs/swagger lodash reflect-metadata
+$ npm i --save @nestjs/swagger lodash
 ```
 
 ## Quick Start
