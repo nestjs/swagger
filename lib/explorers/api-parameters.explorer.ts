@@ -82,7 +82,7 @@ const transformToArrayModelProperty = (metadata, key, type) => ({
     name: key,
     type: 'array',
     items: {
-        type,
+        ...type
     },
 });
 
@@ -92,15 +92,18 @@ export const exploreModelDefinition = (type, definitions) => {
     const propertiesWithType = modelProperties.map((key) => {
         const metadata = Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) || {};
         const defaultTypes = [String, Boolean, Number, Object, Array];
-
         if (isFunction(metadata.type) && !defaultTypes.find((defaultType) => defaultType === metadata.type)) {
             const nestedModelName = exploreModelDefinition(metadata.type, definitions);
-            return { name: key, $ref: getDefinitionPath(nestedModelName) };
+            const $ref = getDefinitionPath(nestedModelName);
+            if (metadata.isArray) {
+                return transformToArrayModelProperty(metadata, key, { $ref });
+            }
+            return { name: key, $ref };
         }
         const metatype: string = metadata.type && isFunction(metadata.type) ? metadata.type.name : metadata.type;
         const swaggerType = mapTypesToSwaggerTypes(metatype);
         if (metadata.isArray) {
-            return transformToArrayModelProperty(metadata, key, swaggerType);
+            return transformToArrayModelProperty(metadata, key, { type: swaggerType });
         }
         return {
             ...metadata,
