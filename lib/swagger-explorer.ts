@@ -106,7 +106,7 @@ export class SwaggerExplorer {
         if (isUndefined(path)) {
             return '';
         }
-        const pathWithParams = path.replace(/([:].*?[^\/]*)/, (str) => {
+        const pathWithParams = path.replace(/([:].*?[^\/]*)/g, (str) => {
             return `{${str.slice(1, str.length)}}`;
         });
         return pathWithParams === '/' ? '' : validatePath(pathWithParams);
