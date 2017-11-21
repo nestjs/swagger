@@ -1,16 +1,19 @@
 {
   "name": "@nestjs/swagger",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Nest - modern, fast, powerful node.js web framework (@swagger)",
   "author": "Kamil Mysliwiec",
   "license": "MIT",
   "scripts": {
-    "compile": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "swagger-ui-express": "^2.0.11"
   },
   "peerDependencies": {
     "@nestjs/common": "^4.*",
     "@nestjs/core": "^4.*",
-    "reflect-metadata": "0.1.10",
-    "lodash": "^4.17.4"
+    "reflect-metadata": "0.1.10"
   }
 }

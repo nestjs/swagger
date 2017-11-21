@@ -1,3 +1,4 @@
+import * as swaggerUi from 'swagger-ui-express';
 import { INestApplication } from '@nestjs/common';
 import { SwaggerBaseConfig, SwaggerDocument } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
@@ -11,5 +12,14 @@ export class SwaggerModule {
             ...config,
             ...document,
         };
+    }
+
+    public static setup(
+        path: string,
+        app: INestApplication,
+        document: SwaggerDocument,
+    ) {
+        const { express } = app as any;
+        express.use(path, swaggerUi.serve, swaggerUi.setup(document));
     }
 }
