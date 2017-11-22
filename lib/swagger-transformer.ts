@@ -1,8 +1,13 @@
+import * as _ from 'lodash';
 import { groupBy, keyBy, mapValues, omit } from 'lodash';
 
 export class SwaggerTransformer {
     public normalizePaths(denormalizedDoc) {
-        const groupedByPath = groupBy(denormalizedDoc, ({ root }) => root.path);
+        const groupedByPath = _(denormalizedDoc)
+          .filter(r => r.root)
+          .groupBy(({ root }) => root.path)
+          .value();
+
         const paths = mapValues(groupedByPath, (routes) => {
             const keyByMethod = keyBy(routes, ({ root }) => root.method);
             return mapValues(keyByMethod, (route: any) => {
