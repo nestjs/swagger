@@ -11,6 +11,7 @@ export class SwaggerModule {
         return {
             ...config,
             ...document,
+            swagger: "2.0"
         };
     }
 
