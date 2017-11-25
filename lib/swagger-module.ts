@@ -19,7 +19,6 @@ export class SwaggerModule {
         app: INestApplication,
         document: SwaggerDocument,
     ) {
-        const { express } = app as any;
-        express.use(path, swaggerUi.serve, swaggerUi.setup(document));
+        app.use(path, swaggerUi.serve, swaggerUi.setup(document));
     }
 }
