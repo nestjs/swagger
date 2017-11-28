@@ -1,4 +1,5 @@
 export interface SwaggerBaseConfig {
+    swagger?: string,
     info?: {
         description?: string;
         version?: string;
