@@ -49,7 +49,7 @@ export class SwaggerExplorer {
         const denormalizedPaths = this.metadataScanner.scanFromPrototype(instance, prototype, (name) => {
             const targetCallback = prototype[name];
             const methodMetadata = mapValues(explorersSchema, (explorers: any[]) => explorers.reduce((metadata, fn) => {
-                const exploredMetadata = fn.call(self, instance, prototype, targetCallback, path);
+                const exploredMetadata = fn.bind(self, instance, prototype, targetCallback, path);
                 if (!exploredMetadata) {
                   return metadata;
                 }
