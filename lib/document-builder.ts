@@ -1,8 +1,9 @@
-import { documentBase } from './fixtures/document.base';
 import {
   SwaggerBaseConfig,
   SwaggerScheme,
 } from './interfaces/swagger-base-config.interface';
+
+import { documentBase } from './fixtures/document.base';
 
 export class DocumentBuilder {
   private readonly document: SwaggerBaseConfig = documentBase;
@@ -43,7 +44,7 @@ export class DocumentBuilder {
   }
 
   public setBasePath(basePath: string): this {
-    this.document.basePath = basePath;
+    this.document.basePath = /^\/.*/.test(basePath) ? basePath : '/' + basePath;
     return this;
   }
 
