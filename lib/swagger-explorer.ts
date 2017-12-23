@@ -92,15 +92,15 @@ export class SwaggerExplorer {
             return undefined;
         }
         const requestMethod = Reflect.getMetadata(METHOD_METADATA, method) as RequestMethod;
+        const fullPath = globalPath + this.validateRoutePath(routePath);
         return {
             method: RequestMethod[requestMethod].toLowerCase(),
-            path: globalPath + this.validateRoutePath(routePath),
+            path: fullPath === '' ? '/' : fullPath,
         };
     }
 
     private reflectControllerPath(metatype): string {
-        const path = Reflect.getMetadata(PATH_METADATA, metatype);
-        return this.validateRoutePath(path);
+        return Reflect.getMetadata(PATH_METADATA, metatype);
     }
 
     private validateRoutePath(path: string): string {
