@@ -44,7 +44,7 @@ export class DocumentBuilder {
   }
 
   public setBasePath(basePath: string): this {
-    this.document.basePath = /^\/.*/.test(basePath) ? basePath : '/' + basePath;
+    this.document.basePath = basePath.startsWith('/') ? basePath : '/' + basePath;
     return this;
   }
 
