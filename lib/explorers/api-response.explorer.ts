@@ -1,6 +1,7 @@
-import { DECORATORS } from '../constants';
-import { mapValues } from 'lodash';
 import { exploreModelDefinition, mapTypesToSwaggerTypes } from './api-parameters.explorer';
+import { mapValues, omit } from 'lodash';
+
+import { DECORATORS } from '../constants';
 import { isFunction } from '@nestjs/common/utils/shared.utils';
 
 export const exploreGlobalApiResponseMetadata = (definitions, metatype) => {
@@ -20,6 +21,7 @@ export const exploreApiResponseMetadata = (definitions, instance, prototype, met
 
 const mapResponsesToSwaggerResponses = (responses, definitions) => mapValues(responses, (response) => {
     const { type, isArray } = response;
+    response = omit(response, ['isArray']);
     // tslint:disable-next-line:curly
     if (!type) return response;
     const defaultTypes = [String, Boolean, Number, Object, Array];

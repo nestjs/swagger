@@ -7,7 +7,7 @@ export const documentBase = {
     version: '1.0.0',
     title: '',
   },
-  basePath: '',
+  basePath: '/',
   tags: [],
   schemes: ['http'] as SwaggerScheme[],
 };

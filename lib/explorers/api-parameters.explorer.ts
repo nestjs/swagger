@@ -111,14 +111,21 @@ export const exploreModelDefinition = (type, definitions) => {
             type: swaggerType,
         };
     });
+    const typeDefinition = {
+        type: 'object',
+        properties: mapValues(
+            keyBy(propertiesWithType, 'name'),
+            (property) => omit(property, ['name', 'isArray', 'required']),
+        )
+    };
+    const typeDefinitionRequiredFields = propertiesWithType
+        .filter((property) => property.required != false)
+        .map((property) => property.name);
+    if (typeDefinitionRequiredFields.length > 0) {
+        typeDefinition['required'] = typeDefinitionRequiredFields;
+    }
     definitions.push({
-        [type.name]: {
-            type: 'object',
-            properties: mapValues(
-                keyBy(propertiesWithType, 'name'),
-                (property) => omit(property, ['name', 'isArray']),
-            ),
-        },
+        [type.name]: typeDefinition
     });
     return type.name;
 };
