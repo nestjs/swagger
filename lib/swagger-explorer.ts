@@ -108,6 +108,7 @@ export class SwaggerExplorer {
             return '';
         }
         const pathWithParams = path.replace(/([:].*?[^\/]*)/g, (str) => {
+            str = str.replace(/\(.*\)$/, '');   // remove any regex in the param
             return `{${str.slice(1, str.length)}}`;
         });
         return pathWithParams === '/' ? '' : validatePath(pathWithParams);
