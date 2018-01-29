@@ -7,6 +7,7 @@ export const ApiModelProperty = (metadata: {
     required?: boolean;
     type?: any;
     isArray?: boolean;
+    enum?: string[];
     default?: any;
 } = {}): PropertyDecorator => {
     return createPropertyDecorator(DECORATORS.API_MODEL_PROPERTIES, metadata);
@@ -16,6 +17,7 @@ export const ApiModelPropertyOptional = (metadata: {
     description?: string;
     type?: any;
     isArray?: boolean;
+    enum?: string[]
     default?: any;
 } = {}): PropertyDecorator => ApiModelProperty({
     ...metadata,
