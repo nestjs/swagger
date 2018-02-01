@@ -12,6 +12,7 @@ export const ApiImplicitQuery = (metadata: {
     description?: string;
     required?: boolean;
     type?: 'String' | 'Number' | 'Boolean' | any;
+    enum?: string[]
 }): MethodDecorator => {
     const param = {
         name: isNil(metadata.name) ? initialMetadata.name : metadata.name,
