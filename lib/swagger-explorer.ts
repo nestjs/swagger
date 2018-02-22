@@ -1,11 +1,8 @@
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
-import {
-  exploreApiBearerMetadata,
-  exploreGlobalApiBearerMetadata,
-} from './explorers/api-bearer.explorer';
 import { exploreApiConsumesMetadata, exploreGlobalApiConsumesMetadata } from './explorers/api-consumes.explorer';
 import { exploreApiProducesMetadata, exploreGlobalApiProducesMetadata } from './explorers/api-produces.explorer';
 import { exploreApiResponseMetadata, exploreGlobalApiResponseMetadata } from './explorers/api-response.explorer';
+import { exploreApiSecurityMetadata, exploreGlobalApiSecurityMetadata } from './explorers/api-security.explorer';
 import { exploreApiUseTagsMetadata, exploreGlobalApiUseTagsMetadata } from './explorers/api-use-tags.explorer';
 import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
 import { isUndefined, validatePath } from '@nestjs/common/utils/shared.utils';
@@ -31,7 +28,7 @@ export class SwaggerExplorer {
             ],
             produces: [exploreApiProducesMetadata],
             consumes: [exploreApiConsumesMetadata],
-            security: [exploreApiBearerMetadata],
+            security: [exploreApiSecurityMetadata],
             tags: [exploreApiUseTagsMetadata],
             responses: [exploreApiResponseMetadata.bind(null, this.modelsDefinitions)],
         };
@@ -73,7 +70,7 @@ export class SwaggerExplorer {
             exploreGlobalApiProducesMetadata,
             exploreGlobalApiUseTagsMetadata,
             exploreGlobalApiConsumesMetadata,
-            exploreGlobalApiBearerMetadata,
+            exploreGlobalApiSecurityMetadata,
             exploreGlobalApiResponseMetadata.bind(null, this.modelsDefinitions),
         ];
         const globalMetadata = (
