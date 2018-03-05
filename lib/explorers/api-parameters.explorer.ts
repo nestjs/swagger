@@ -177,12 +177,23 @@ const mapModelsToDefinitons = (parameters, definitions) => {
         }
         const modelName = exploreModelDefinition(param.type, definitions);
         const name = param.name ? param.name : modelName;
+        const schema = {
+            $ref: getDefinitionPath(modelName),
+        };
+        if (param.isArray === true) {
+            return {
+                ...param,
+                name,
+                schema: {
+                    type: "array",
+                    items: schema
+                }
+            }
+        }
         return {
             ...param,
             name,
-            schema: {
-              $ref: getDefinitionPath(modelName),
-            },
+            schema
         };
     });
 };

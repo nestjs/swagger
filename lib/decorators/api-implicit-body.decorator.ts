@@ -12,6 +12,7 @@ export const ApiImplicitBody = (metadata: {
     description?: string;
     required?: boolean;
     type?: any;
+    isArray?: boolean;
 }): MethodDecorator => {
     const param = {
         name: isNil(metadata.name) ? initialMetadata.name : metadata.name,
@@ -19,6 +20,7 @@ export const ApiImplicitBody = (metadata: {
         description: metadata.description,
         required: metadata.required,
         type: metadata.type,
+        isArray: metadata.isArray
     };
     return createParamDecorator(param, initialMetadata);
 };
