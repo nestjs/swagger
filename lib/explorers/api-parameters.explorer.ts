@@ -180,7 +180,7 @@ const mapModelsToDefinitons = (parameters, definitions) => {
         const schema = {
             $ref: getDefinitionPath(modelName),
         };
-        if (param.isArray === true) {
+        if (param.isArray) {
             return {
                 ...param,
                 name,
