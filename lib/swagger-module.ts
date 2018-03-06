@@ -1,3 +1,4 @@
+import { SwaggerOps } from './interfaces/swaggerops.interface';
 import { AuthOptions } from './interfaces/authentication.interface';
 import * as swaggerUi from 'swagger-ui-express';
 import { INestApplication } from '@nestjs/common';
@@ -20,21 +21,8 @@ export class SwaggerModule {
         path: string,
         app: INestApplication,
         document: SwaggerDocument,
-        authOptions: AuthOptions,
-        customCss : string = ``,
-        customfavIcon: string = ``,
-        swaggerUrl: string = `/swagger.json`,
-        customsiteTitle: string = `Swagger UI`
-
+        ops: SwaggerOps
     ) {
-        app.use(path, swaggerUi.serve, swaggerUi.setup(
-            document, 
-            false, 
-            authOptions,
-            customCss,
-            customfavIcon,
-            swaggerUrl,
-            customsiteTitle
-        ));
+        app.use(path, swaggerUi.serve, swaggerUi.setup(document, ops));
     }
 }
