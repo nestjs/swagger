@@ -1,5 +1,4 @@
 import { SwaggerOps } from './interfaces/swaggerops.interface';
-import { AuthOptions } from './interfaces/authentication.interface';
 import * as swaggerUi from 'swagger-ui-express';
 import { INestApplication } from '@nestjs/common';
 import { SwaggerBaseConfig, SwaggerDocument } from './interfaces';
