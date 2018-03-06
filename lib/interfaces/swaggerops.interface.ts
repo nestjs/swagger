@@ -1,6 +1,6 @@
 
 export interface SwaggerOps {
-    explorer: boolean,
+    explorer: boolean;
     swaggerOptions: {
         validatorUrl: string;
     },
