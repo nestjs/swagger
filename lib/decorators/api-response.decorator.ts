@@ -1,11 +1,11 @@
 import { DECORATORS } from '../constants';
-import { createMethodDecorator } from './helpers';
 import { omit } from 'lodash';
 
 const initialMetadata = {
   status: 0,
   type: String,
   isArray: false,
+  examples: '',
 };
 
 export const ApiResponse = (metadata: {
@@ -13,6 +13,7 @@ export const ApiResponse = (metadata: {
   description?: string;
   type?: any;
   isArray?: boolean;
+  examples?: any;
 }) => {
   metadata.description = metadata.description ? metadata.description : '';
   const groupedMetadata = { [metadata.status]: omit(metadata, 'status') };
