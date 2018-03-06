@@ -21,7 +21,7 @@ export class SwaggerModule {
         path: string,
         app: INestApplication,
         document: SwaggerDocument,
-        ops: SwaggerOps
+        ops: SwaggerOps = null
     ) {
         app.use(path, swaggerUi.serve, swaggerUi.setup(document, ops));
     }
