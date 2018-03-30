@@ -73,7 +73,7 @@ export class DocumentBuilder {
     return this;
   }
 
-  public addOauth2(
+  public addOAuth2(
     flow: ('implicit' | 'password' | 'application' | 'accessCode') = 'password',
     authorizationUrl?: string,
     tokenUrl?: string,
