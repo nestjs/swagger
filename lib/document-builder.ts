@@ -63,13 +63,24 @@ export class DocumentBuilder {
     return this;
   }
 
-
   public addBearerAuth(
     name: string = 'Authorization',
     location: ('header' | 'body' | 'query') = 'header',
   ): this {
-    this.document.securityDefinitions = {
-      bearer: { type: 'apiKey', name, in: location },
+    this.document.securityDefinitions.bearer = {
+      type: 'apiKey', name, in: location,
+    };
+    return this;
+  }
+
+  public addOAuth2(
+    flow: ('implicit' | 'password' | 'application' | 'accessCode') = 'password',
+    authorizationUrl?: string,
+    tokenUrl?: string,
+    scopes?: object,
+  ): this {
+    this.document.securityDefinitions.oauth2 = {
+      type: 'oauth2', flow, authorizationUrl, tokenUrl, scopes,
     };
     return this;
   }
