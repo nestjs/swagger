@@ -141,6 +141,7 @@ const mapParamType = (key: string): string => {
         case RouteParamtypes.BODY: return 'body';
         case RouteParamtypes.PARAM: return 'path';
         case RouteParamtypes.QUERY: return 'query';
+        case RouteParamtypes.HEADERS: return 'header';
         default: return DEFAULT_PARAM_TOKEN;
     }
 };
