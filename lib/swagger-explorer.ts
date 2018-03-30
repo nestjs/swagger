@@ -59,10 +59,11 @@ export class SwaggerExplorer {
                 }
                 return isArray(metadata) ? [...metadata, ...exploredMetadata] : exploredMetadata;
             }, {}));
+            const mergedMethodMetadata = this.mergeMetadata(globalMetadata, omitBy(methodMetadata, isEmpty));
             return {
                 responses: {},
                 ...globalMetadata,
-                ...omitBy(methodMetadata, isEmpty),
+                ...mergedMethodMetadata,
             };
         });
         return denormalizedPaths;
@@ -112,5 +113,18 @@ export class SwaggerExplorer {
             return `{${str.slice(1, str.length)}}`;
         });
         return pathWithParams === '/' ? '' : validatePath(pathWithParams);
+    }
+
+    private mergeMetadata(globalMetadata, methodMetadata) {
+        return mapValues(methodMetadata, (value, key) => {
+            if (!globalMetadata[key]) {
+                return value;
+            }
+            const globalValue = globalMetadata[key];
+            if (!isArray(globalValue)) {
+                return { ...globalValue, ...value };
+            }
+            return [ ...globalValue, ...value ];
+        });
     }
 }

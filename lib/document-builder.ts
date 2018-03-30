@@ -67,9 +67,10 @@ export class DocumentBuilder {
   public addBearerAuth(
     name: string = 'Authorization',
     location: ('header' | 'body' | 'query') = 'header',
+    type: string = 'apiKey',
   ): this {
     this.document.securityDefinitions = {
-      bearer: { type: 'apiKey', name, in: location },
+      bearer: { type, name, in: location },
     };
     return this;
   }

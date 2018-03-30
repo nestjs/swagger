@@ -54,3 +54,17 @@ export const createParamDecorator = (metadata, initial) => {
         return descriptor;
     };
 };
+
+export const createMultipleParamDecorator = (multiMetadata: any[], initial) => {
+    return (target, key, descriptor: PropertyDescriptor) => {
+        const parameters = Reflect.getMetadata(DECORATORS.API_PARAMETERS, descriptor.value) || [];
+        Reflect.defineMetadata(DECORATORS.API_PARAMETERS, [
+            ...parameters,
+            ...multiMetadata.map(metadata => ({
+                ...initial,
+                ...pickBy(metadata, negate(isUndefined)),
+            })),
+        ], descriptor.value);
+        return descriptor;
+    };
+}

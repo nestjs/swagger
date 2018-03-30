@@ -57,6 +57,9 @@ const isBodyParameter = (param) => param.in === 'body';
 
 const transformModelToProperties = (reflectedParameters) => {
     return flatMap(reflectedParameters, (param: any) => {
+        if (!param) {
+            return null;
+        }
         const { prototype } = param.type;
         // tslint:disable-next-line:curly
         if (param.name) return param;
@@ -98,7 +101,7 @@ export const exploreModelDefinition = (type, definitions) => {
             if (metadata.isArray) {
                 return transformToArrayModelProperty(metadata, key, { $ref });
             }
-            return { name: key, $ref };
+            return { ...metadata, name: key, $ref };
         }
         const metatype: string = metadata.type && isFunction(metadata.type) ? metadata.type.name : metadata.type;
         const swaggerType = mapTypesToSwaggerTypes(metatype);
