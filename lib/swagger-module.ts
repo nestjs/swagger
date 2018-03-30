@@ -1,6 +1,6 @@
 import * as swaggerUi from 'swagger-ui-express';
 import { INestApplication } from '@nestjs/common';
-import { SwaggerBaseConfig, SwaggerDocument } from './interfaces';
+import { SwaggerBaseConfig, SwaggerDocument, SwaggerCustomOptions } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
 
 export class SwaggerModule {
@@ -19,7 +19,8 @@ export class SwaggerModule {
         path: string,
         app: INestApplication,
         document: SwaggerDocument,
+        options?: SwaggerCustomOptions
     ) {
-        app.use(path, swaggerUi.serve, swaggerUi.setup(document));
+        app.use(path, swaggerUi.serve, swaggerUi.setup(document, options));
     }
 }

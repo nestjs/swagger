@@ -8,6 +8,23 @@ export const ApiModelProperty = (metadata: {
     type?: any;
     isArray?: boolean;
     default?: any;
+    enum?: string[] | number[] | (string|number)[];
+    format?: string;
+    multipleOf?: number;
+    maximum?: number;
+    exclusiveMaximum?: number;
+    minimum?: number;
+    exclusiveMinimum?: number;
+    maxLength?: number;
+    minLength?: number;
+    pattern?: string;
+    maxItems?: number;
+    minItems?: number;
+    uniqueItems?: boolean;
+    maxProperties?: number;
+    minProperties?: number;
+    readOnly?: boolean;
+    xml?: any;
     example?: any;
 } = {}): PropertyDecorator => {
     return createPropertyDecorator(DECORATORS.API_MODEL_PROPERTIES, metadata);
@@ -18,6 +35,23 @@ export const ApiModelPropertyOptional = (metadata: {
     type?: any;
     isArray?: boolean;
     default?: any;
+    enum?: string[] | number[] | (string|number)[];
+    format?: string;
+    multipleOf?: number;
+    maximum?: number;
+    exclusiveMaximum?: number;
+    minimum?: number;
+    exclusiveMinimum?: number;
+    maxLength?: number;
+    minLength?: number;
+    pattern?: string;
+    maxItems?: number;
+    minItems?: number;
+    uniqueItems?: boolean;
+    maxProperties?: number;
+    minProperties?: number;
+    readOnly?: boolean;
+    xml?: any;
     example?: any;
 } = {}): PropertyDecorator => ApiModelProperty({
     ...metadata,

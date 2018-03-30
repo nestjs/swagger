@@ -25,10 +25,17 @@ export interface SwaggerBaseConfig {
     };
     schemes?: SwaggerScheme[];
     securityDefinitions?: {
-      bearer: {
+      bearer?: {
         type: string,
         name: string,
         in: 'body' | 'query' | 'header',
+      },
+      oauth2?: {
+          type: 'oauth2',
+          flow: 'implicit' | 'password' | 'application' | 'accessCode',
+          authorizationUrl?: string,
+          tokenUrl?: string,
+          scopes?: object,
       },
     };
 }
