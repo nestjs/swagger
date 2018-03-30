@@ -108,7 +108,7 @@ export const exploreModelDefinition = (type, definitions) => {
         return {
             ...metadata,
             name: key,
-            type: swaggerType,
+            type: metadata.enum ? getEnumType(metadata.enum) : swaggerType,
         };
     });
     const typeDefinition = {
@@ -128,6 +128,11 @@ export const exploreModelDefinition = (type, definitions) => {
         [type.name]: typeDefinition
     });
     return type.name;
+};
+
+const getEnumType = (values: string[] | number[] | (string|number)[]): 'string' | 'number' => {
+    const hasString = values.filter(isString).length > 0;
+    return hasString ? 'string' : 'number';
 };
 
 const mapParamType = (key: string): string => {
