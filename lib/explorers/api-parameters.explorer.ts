@@ -2,7 +2,7 @@ import { DECORATORS } from '../constants';
 import { PARAMTYPES_METADATA, ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum';
 import { mapValues, mapKeys, pickBy, omitBy, isEmpty, unionWith,
-    isNil, map, flatMap, uniqBy, negate, keyBy, groupBy, omit, assign, find, isString } from 'lodash';
+    isNil, map, flatMap, uniqBy, negate, keyBy, groupBy, omit, assign, find, isString, reduce } from 'lodash';
 import { isFunction, isUndefined } from '@nestjs/common/utils/shared.utils';
 
 export const exploreApiParametersMetadata = (definitions, instance, prototype, method) => {
@@ -38,10 +38,54 @@ const exploreApiReflectedParametersMetadata = (instance, prototype, method) => {
         name: param.data,
         required: true,
     }));
+    const mappedParameters = mapValues(parametersWithType, (val, key) => ({ ...val, in: mapParamType(key as any) }));
     const parameters = omitBy(
-        mapValues(parametersWithType, (val, key) => ({ ...val, in: mapParamType(key as any) })),
-        (val) => val.in === DEFAULT_PARAM_TOKEN || val.name && val.in === 'body',
+        mappedParameters,
+        (val) => val.in === DEFAULT_PARAM_TOKEN || val.name && val.in === 'body'
     );
+
+    // We don't support cases where there is are @Body() and @Body('name') parameters
+    // at the same time
+
+    const inBodyParameters = pickBy(
+        mappedParameters,
+        (val) => val.in === 'body' && val.name
+    );
+
+    const bodyProperties = reduce(
+        inBodyParameters,
+        (result, parameter) => {
+            const type = parameter.type;
+            return {
+                ...result,
+                [parameter.name]: {
+                    type: type && isFunction(type) ? mapTypesToSwaggerTypes(type.name) : mapTypesToSwaggerTypes(type)
+                }
+            };
+        },
+        { }
+    );
+    const lowIndex = reduce(
+        inBodyParameters,
+        (low, parameter, key) => {
+            const [type, index] =  key.split(':');
+            return low < index ? low : index;
+        },
+        Number.MAX_SAFE_INTEGER
+    );
+
+    if (!isEmpty(bodyProperties)) {
+        parameters[`${RouteParamtypes.BODY}:${lowIndex}`] =  {
+            type: Object,
+            name: undefined,
+            in: 'body',
+            schema: {
+                type: 'object',
+                properties: bodyProperties
+            }
+        }
+    }
+
     return !isEmpty(parameters) ? parameters : undefined;
 };
 
@@ -178,12 +222,11 @@ const mapModelsToDefinitons = (parameters, definitions) => {
         }
         const modelName = exploreModelDefinition(param.type, definitions);
         const name = param.name ? param.name : modelName;
+        const schema = param.schema ? param.schema : { $ref: getDefinitionPath(modelName) };
         return {
             ...param,
             name,
-            schema: {
-              $ref: getDefinitionPath(modelName),
-            },
+            schema,
         };
     });
 };
