@@ -8,7 +8,7 @@ export const exploreGlobalApiProducesMetadata = metatype => {
   return produces
     ? { produces }
     : {
-        produces: [defaultProduces],
+        produces: [defaultProduces]
       };
 };
 

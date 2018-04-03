@@ -2,13 +2,13 @@ import { DECORATORS } from '../constants';
 import {
   createMethodDecorator,
   createParamDecorator,
-  createMultipleParamDecorator,
+  createMultipleParamDecorator
 } from './helpers';
 import { omit, pickBy, negate, isUndefined, isNil } from 'lodash';
 
 const initialMetadata = {
   name: '',
-  required: true,
+  required: true
 };
 
 export const ApiImplicitHeader = (metadata: {
@@ -21,7 +21,7 @@ export const ApiImplicitHeader = (metadata: {
     in: 'header',
     description: metadata.description,
     required: metadata.required,
-    type: String,
+    type: String
   };
   return createParamDecorator(param, initialMetadata);
 };
@@ -31,14 +31,14 @@ export const ApiImplicitHeaders = (
     name: string;
     description?: string;
     required?: boolean;
-  }>,
+  }>
 ): MethodDecorator => {
   const multiMetadata = headers.map(metadata => ({
     name: isNil(metadata.name) ? initialMetadata.name : metadata.name,
     in: 'header',
     description: metadata.description,
     required: metadata.required,
-    type: String,
+    type: String
   }));
   return createMultipleParamDecorator(multiMetadata, initialMetadata);
 };

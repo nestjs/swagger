@@ -4,5 +4,5 @@ export declare const ApiImplicitQuery: (
     description?: string;
     required?: boolean;
     type?: any;
-  },
+  }
 ) => MethodDecorator;

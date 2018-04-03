@@ -4,7 +4,7 @@ import { omit, pickBy, negate, isUndefined, isNil } from 'lodash';
 
 const initialMetadata = {
   name: '',
-  required: true,
+  required: true
 };
 
 export const ApiImplicitQuery = (metadata: {
@@ -20,12 +20,12 @@ export const ApiImplicitQuery = (metadata: {
     description: metadata.description,
     required: metadata.required,
     type: metadata.type,
-    items: undefined,
+    items: undefined
   };
   if (metadata.isArray) {
     param.type = Array;
     param.items = {
-      type: param.type,
+      type: param.type
     };
   }
   return createParamDecorator(param, initialMetadata);

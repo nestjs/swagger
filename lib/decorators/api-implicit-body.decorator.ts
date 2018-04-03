@@ -4,7 +4,7 @@ import { omit, pickBy, negate, isUndefined, isNil } from 'lodash';
 
 const initialMetadata = {
   name: '',
-  required: true,
+  required: true
 };
 
 export const ApiImplicitBody = (metadata: {
@@ -20,7 +20,7 @@ export const ApiImplicitBody = (metadata: {
     description: metadata.description,
     required: metadata.required,
     type: metadata.type,
-    isArray: metadata.isArray,
+    isArray: metadata.isArray
   };
   return createParamDecorator(param, initialMetadata);
 };

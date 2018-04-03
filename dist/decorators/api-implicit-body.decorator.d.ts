@@ -5,5 +5,5 @@ export declare const ApiImplicitBody: (
     required?: boolean;
     type?: any;
     isArray?: boolean;
-  },
+  }
 ) => MethodDecorator;

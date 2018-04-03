@@ -1,10 +1,10 @@
 export declare const exploreGlobalApiConsumesMetadata: (
-  metatype: any,
+  metatype: any
 ) => {
   consumes: any;
 };
 export declare const exploreApiConsumesMetadata: (
   instance: any,
   prototype: any,
-  method: any,
+  method: any
 ) => any;

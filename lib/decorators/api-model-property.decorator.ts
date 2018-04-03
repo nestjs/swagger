@@ -27,7 +27,7 @@ export const ApiModelProperty = (
     readOnly?: boolean;
     xml?: any;
     example?: any;
-  } = {},
+  } = {}
 ): PropertyDecorator => {
   return createPropertyDecorator(DECORATORS.API_MODEL_PROPERTIES, metadata);
 };
@@ -56,9 +56,9 @@ export const ApiModelPropertyOptional = (
     readOnly?: boolean;
     xml?: any;
     example?: any;
-  } = {},
+  } = {}
 ): PropertyDecorator =>
   ApiModelProperty({
     ...metadata,
-    required: false,
+    required: false
   });

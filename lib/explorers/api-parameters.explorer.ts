@@ -1,7 +1,7 @@
 import { DECORATORS } from '../constants';
 import {
   PARAMTYPES_METADATA,
-  ROUTE_ARGS_METADATA,
+  ROUTE_ARGS_METADATA
 } from '@nestjs/common/constants';
 import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum';
 import {
@@ -21,7 +21,7 @@ import {
   omit,
   assign,
   find,
-  isString,
+  isString
 } from 'lodash';
 import { isFunction, isUndefined } from '@nestjs/common/utils/shared.utils';
 
@@ -29,16 +29,16 @@ export const exploreApiParametersMetadata = (
   definitions,
   instance,
   prototype,
-  method,
+  method
 ) => {
   const implicitParameters: any[] = Reflect.getMetadata(
     DECORATORS.API_PARAMETERS,
-    method,
+    method
   );
   const reflectedParameters = exploreApiReflectedParametersMetadata(
     instance,
     prototype,
-    method,
+    method
   );
   const noAnyImplicit = isNil(implicitParameters);
   if (noAnyImplicit && isNil(reflectedParameters)) {
@@ -46,12 +46,12 @@ export const exploreApiParametersMetadata = (
   }
 
   const allReflectedParameters = transformModelToProperties(
-    reflectedParameters || [],
+    reflectedParameters || []
   );
   const mergedParameters = noAnyImplicit
     ? allReflectedParameters
     : map(allReflectedParameters, item =>
-        assign(item, find(implicitParameters, ['name', item.name])),
+        assign(item, find(implicitParameters, ['name', item.name]))
       );
 
   const unionParameters = noAnyImplicit
@@ -62,7 +62,7 @@ export const exploreApiParametersMetadata = (
 
   const paramsWithDefinitions = mapModelsToDefinitons(
     unionParameters,
-    definitions,
+    definitions
   );
   const parameters = mapParametersTypes(paramsWithDefinitions);
   return parameters ? { parameters } : undefined;
@@ -76,14 +76,14 @@ const exploreApiReflectedParametersMetadata = (instance, prototype, method) => {
   const parametersWithType = mapValues(parametersMetadata, param => ({
     type: types[param.index],
     name: param.data,
-    required: true,
+    required: true
   }));
   const parameters = omitBy(
     mapValues(parametersWithType, (val, key) => ({
       ...val,
-      in: mapParamType(key as any),
+      in: mapParamType(key as any)
     })),
-    val => val.in === DEFAULT_PARAM_TOKEN || (val.name && val.in === 'body'),
+    val => val.in === DEFAULT_PARAM_TOKEN || (val.name && val.in === 'body')
   );
   return !isEmpty(parameters) ? parameters : undefined;
 };
@@ -121,7 +121,7 @@ const transformModelToProperties = reflectedParameters => {
       return {
         ...param,
         ...reflectedParam,
-        name: key,
+        name: key
       };
     });
   });
@@ -132,8 +132,8 @@ const transformToArrayModelProperty = (metadata, key, type) => ({
   name: key,
   type: 'array',
   items: {
-    ...type,
-  },
+    ...type
+  }
 });
 
 export const exploreModelDefinition = (type, definitions) => {
@@ -150,7 +150,7 @@ export const exploreModelDefinition = (type, definitions) => {
     ) {
       const nestedModelName = exploreModelDefinition(
         metadata.type,
-        definitions,
+        definitions
       );
       const $ref = getDefinitionPath(nestedModelName);
       if (metadata.isArray) {
@@ -165,20 +165,20 @@ export const exploreModelDefinition = (type, definitions) => {
     const swaggerType = mapTypesToSwaggerTypes(metatype);
     if (metadata.isArray) {
       return transformToArrayModelProperty(metadata, key, {
-        type: swaggerType,
+        type: swaggerType
       });
     }
     return {
       ...metadata,
       name: key,
-      type: metadata.enum ? getEnumType(metadata.enum) : swaggerType,
+      type: metadata.enum ? getEnumType(metadata.enum) : swaggerType
     };
   });
   const typeDefinition = {
     type: 'object',
     properties: mapValues(keyBy(propertiesWithType, 'name'), property =>
-      omit(property, ['name', 'isArray', 'required']),
-    ),
+      omit(property, ['name', 'isArray', 'required'])
+    )
   };
   const typeDefinitionRequiredFields = propertiesWithType
     .filter(property => property.required != false)
@@ -187,13 +187,13 @@ export const exploreModelDefinition = (type, definitions) => {
     typeDefinition['required'] = typeDefinitionRequiredFields;
   }
   definitions.push({
-    [type.name]: typeDefinition,
+    [type.name]: typeDefinition
   });
   return type.name;
 };
 
 const getEnumType = (
-  values: string[] | number[] | (string | number)[],
+  values: string[] | number[] | (string | number)[]
 ): 'string' | 'number' => {
   const hasString = (values as any[]).filter(isString).length > 0;
   return hasString ? 'string' : 'number';
@@ -227,17 +227,17 @@ const mapParametersTypes = parameters =>
         type:
           type && isFunction(type)
             ? mapTypesToSwaggerTypes(type.name)
-            : mapTypesToSwaggerTypes(type),
+            : mapTypesToSwaggerTypes(type)
       },
-      negate(isUndefined),
+      negate(isUndefined)
     );
     if ((paramWithStringifiedType as any).isArray) {
       return {
         ...paramWithStringifiedType,
         type: 'array',
         items: {
-          type: mapTypesToSwaggerTypes(param.type),
-        },
+          type: mapTypesToSwaggerTypes(param.type)
+        }
       };
     }
     return paramWithStringifiedType;
@@ -260,7 +260,7 @@ const mapModelsToDefinitons = (parameters, definitions) => {
     const modelName = exploreModelDefinition(param.type, definitions);
     const name = param.name ? param.name : modelName;
     const schema = {
-      $ref: getDefinitionPath(modelName),
+      $ref: getDefinitionPath(modelName)
     };
     if (param.isArray) {
       return {
@@ -268,14 +268,14 @@ const mapModelsToDefinitons = (parameters, definitions) => {
         name,
         schema: {
           type: 'array',
-          items: schema,
-        },
+          items: schema
+        }
       };
     }
     return {
       ...param,
       name,
-      schema,
+      schema
     };
   });
 };

@@ -3,5 +3,5 @@ export declare const ApiOperation: (
     title: string;
     description?: string;
     operationId?: string;
-  },
+  }
 ) => MethodDecorator;

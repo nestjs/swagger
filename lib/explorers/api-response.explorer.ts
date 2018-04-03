@@ -1,6 +1,6 @@
 import {
   exploreModelDefinition,
-  mapTypesToSwaggerTypes,
+  mapTypesToSwaggerTypes
 } from './api-parameters.explorer';
 import { mapValues, omit } from 'lodash';
 
@@ -11,7 +11,7 @@ export const exploreGlobalApiResponseMetadata = (definitions, metatype) => {
   const responses = Reflect.getMetadata(DECORATORS.API_RESPONSE, metatype);
   return responses
     ? {
-        responses: mapResponsesToSwaggerResponses(responses, definitions),
+        responses: mapResponsesToSwaggerResponses(responses, definitions)
       }
     : undefined;
 };
@@ -20,7 +20,7 @@ export const exploreApiResponseMetadata = (
   definitions,
   instance,
   prototype,
-  method,
+  method
 ) => {
   const responses = Reflect.getMetadata(DECORATORS.API_RESPONSE, method);
   if (!responses) {
@@ -48,8 +48,8 @@ const mapResponsesToSwaggerResponses = (responses, definitions) =>
       return {
         ...response,
         schema: {
-          type: swaggerType,
-        },
+          type: swaggerType
+        }
       };
     }
     const name = exploreModelDefinition(type, definitions);
@@ -64,14 +64,14 @@ export const toArrayResponseWithDefinition = (response, name) => ({
   schema: {
     type: 'array',
     items: {
-      $ref: `#/definitions/${name}`,
-    },
-  },
+      $ref: `#/definitions/${name}`
+    }
+  }
 });
 
 export const toResponseWithDefinition = (response, name) => ({
   ...response,
   schema: {
-    $ref: `#/definitions/${name}`,
-  },
+    $ref: `#/definitions/${name}`
+  }
 });

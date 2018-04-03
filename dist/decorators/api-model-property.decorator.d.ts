@@ -23,7 +23,7 @@ export declare const ApiModelProperty: (
     readOnly?: boolean;
     xml?: any;
     example?: any;
-  },
+  }
 ) => PropertyDecorator;
 export declare const ApiModelPropertyOptional: (
   metadata?: {
@@ -49,5 +49,5 @@ export declare const ApiModelPropertyOptional: (
     readOnly?: boolean;
     xml?: any;
     example?: any;
-  },
+  }
 ) => PropertyDecorator;

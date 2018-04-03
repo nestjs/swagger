@@ -7,7 +7,7 @@ export const exploreGlobalApiConsumesMetadata = metatype => {
   return consumes
     ? { consumes }
     : {
-        consumes: [defaultConsumes],
+        consumes: [defaultConsumes]
       };
 };
 

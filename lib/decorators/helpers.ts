@@ -17,7 +17,7 @@ export const createClassDecorator = (metakey, metadata): ClassDecorator => {
 
 export const createPropertyDecorator = (
   metakey,
-  metadata,
+  metadata
 ): PropertyDecorator => {
   return (target: object, propertyKey: string | symbol) => {
     const properties =
@@ -25,16 +25,16 @@ export const createPropertyDecorator = (
     Reflect.defineMetadata(
       DECORATORS.API_MODEL_PROPERTIES_ARRAY,
       [...properties, `:${propertyKey}`],
-      target,
+      target
     );
     Reflect.defineMetadata(
       metakey,
       {
         type: Reflect.getMetadata('design:type', target, propertyKey),
-        ...metadata,
+        ...metadata
       },
       target,
-      propertyKey,
+      propertyKey
     );
   };
 };
@@ -60,10 +60,10 @@ export const createParamDecorator = (metadata, initial) => {
         ...parameters,
         {
           ...initial,
-          ...pickBy(metadata, negate(isUndefined)),
-        },
+          ...pickBy(metadata, negate(isUndefined))
+        }
       ],
-      descriptor.value,
+      descriptor.value
     );
     return descriptor;
   };
@@ -79,10 +79,10 @@ export const createMultipleParamDecorator = (multiMetadata: any[], initial) => {
         ...parameters,
         ...multiMetadata.map(metadata => ({
           ...initial,
-          ...pickBy(metadata, negate(isUndefined)),
-        })),
+          ...pickBy(metadata, negate(isUndefined))
+        }))
       ],
-      descriptor.value,
+      descriptor.value
     );
     return descriptor;
   };

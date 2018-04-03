@@ -3,7 +3,7 @@ import { createMethodDecorator } from './helpers';
 import { pickBy, isNil, negate, isUndefined } from 'lodash';
 
 const initialMetadata = {
-  summary: '',
+  summary: ''
 };
 
 export const ApiOperation = (metadata: {
@@ -20,9 +20,9 @@ export const ApiOperation = (metadata: {
           ? initialMetadata.summary
           : metadata.title,
         description: metadata.description,
-        operationId: metadata.operationId,
+        operationId: metadata.operationId
       },
-      negate(isUndefined),
-    ),
+      negate(isUndefined)
+    )
   );
 };

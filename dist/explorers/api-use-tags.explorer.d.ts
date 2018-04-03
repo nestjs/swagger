@@ -1,5 +1,5 @@
 export declare const exploreGlobalApiUseTagsMetadata: (
-  metatype: any,
+  metatype: any
 ) => {
   tags: any;
 };

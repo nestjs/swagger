@@ -4,5 +4,5 @@ export declare const ApiImplicitParam: (
     description?: string;
     required?: boolean;
     type?: any;
-  },
+  }
 ) => MethodDecorator;
