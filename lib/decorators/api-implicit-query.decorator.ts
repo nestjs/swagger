@@ -12,6 +12,7 @@ export const ApiImplicitQuery = (metadata: {
   description?: string;
   required?: boolean;
   type?: 'String' | 'Number' | 'Boolean' | any;
+  isArray?: boolean;
 }): MethodDecorator => {
   const param = {
     name: isNil(metadata.name) ? initialMetadata.name : metadata.name,
@@ -19,6 +20,13 @@ export const ApiImplicitQuery = (metadata: {
     description: metadata.description,
     required: metadata.required,
     type: metadata.type,
+    items: undefined,
   };
+  if (metadata.isArray) {
+    param.type = Array;
+    param.items = {
+      type: param.type,
+    };
+  }
   return createParamDecorator(param, initialMetadata);
 };
