@@ -13,6 +13,7 @@ export const ApiImplicitQuery = (metadata: {
   required?: boolean;
   type?: 'String' | 'Number' | 'Boolean' | any;
   isArray?: boolean;
+  collectionFormat?: 'csv' | 'ssv' | 'tsv' | 'pipes' | 'multi';
 }): MethodDecorator => {
   const param = {
     name: isNil(metadata.name) ? initialMetadata.name : metadata.name,
@@ -20,13 +21,17 @@ export const ApiImplicitQuery = (metadata: {
     description: metadata.description,
     required: metadata.required,
     type: metadata.type,
-    items: undefined
+    items: undefined,
+    collectionFormat: undefined
   };
   if (metadata.isArray) {
     param.type = Array;
     param.items = {
       type: metadata.type
     };
+    param.collectionFormat = isNil(metadata.collectionFormat)
+      ? 'csv'
+      : metadata.collectionFormat;
   }
   return createParamDecorator(param, initialMetadata);
 };
