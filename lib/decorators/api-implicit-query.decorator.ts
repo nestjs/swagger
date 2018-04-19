@@ -25,7 +25,7 @@ export const ApiImplicitQuery = (metadata: {
   if (metadata.isArray) {
     param.type = Array;
     param.items = {
-      type: param.type
+      type: metadata.type
     };
   }
   return createParamDecorator(param, initialMetadata);
