@@ -8,6 +8,7 @@ export const ApiModelProperty = (
     required?: boolean;
     type?: any;
     isArray?: boolean;
+    collectionFormat?: string;
     default?: any;
     enum?: string[] | number[] | (string | number)[];
     format?: string;
@@ -37,6 +38,7 @@ export const ApiModelPropertyOptional = (
     description?: string;
     type?: any;
     isArray?: boolean;
+    collectionFormat?: string;
     default?: any;
     enum?: string[] | number[] | (string | number)[];
     format?: string;
