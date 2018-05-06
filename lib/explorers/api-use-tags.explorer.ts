@@ -6,6 +6,6 @@ export const exploreGlobalApiUseTagsMetadata = metatype => {
   return tags ? { tags } : undefined;
 };
 
-export const exploreApiUseTagsMetadata = metatype => {
-  return Reflect.getMetadata(DECORATORS.API_USE_TAGS, metatype);
+export const exploreApiUseTagsMetadata = (instance, prototype, method) => {
+  return Reflect.getMetadata(DECORATORS.API_USE_TAGS, method);
 };
