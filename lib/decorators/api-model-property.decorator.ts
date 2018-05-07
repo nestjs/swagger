@@ -1,6 +1,7 @@
 import { DECORATORS } from '../constants';
 import { createMethodDecorator, createPropertyDecorator } from './helpers';
 import { pickBy, isNil, negate, isUndefined } from 'lodash';
+import { SwaggerEnumType } from '../types/swagger-enum.type';
 
 export const ApiModelProperty = (
   metadata: {
@@ -8,8 +9,9 @@ export const ApiModelProperty = (
     required?: boolean;
     type?: any;
     isArray?: boolean;
+    collectionFormat?: string;
     default?: any;
-    enum?: string[] | number[] | (string | number)[];
+    enum?: SwaggerEnumType;
     format?: string;
     multipleOf?: number;
     maximum?: number;
@@ -37,8 +39,9 @@ export const ApiModelPropertyOptional = (
     description?: string;
     type?: any;
     isArray?: boolean;
+    collectionFormat?: string;
     default?: any;
-    enum?: string[] | number[] | (string | number)[];
+    enum?: SwaggerEnumType;
     format?: string;
     multipleOf?: number;
     maximum?: number;

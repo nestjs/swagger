@@ -24,6 +24,7 @@ import {
   isString
 } from 'lodash';
 import { isFunction, isUndefined } from '@nestjs/common/utils/shared.utils';
+import { SwaggerEnumType } from '../types/swagger-enum.type';
 
 export const exploreApiParametersMetadata = (
   definitions,
@@ -127,14 +128,26 @@ const transformModelToProperties = reflectedParameters => {
   });
 };
 
-const transformToArrayModelProperty = (metadata, key, type) => ({
-  ...metadata,
-  name: key,
-  type: 'array',
-  items: {
-    ...type
+const transformToArrayModelProperty = (metadata, key, type) => {
+  const model = {
+    ...metadata,
+    name: key,
+    type: 'array',
+    items: {
+      ...type
+    }
+  };
+
+  if (metadata.enum !== undefined) {
+    delete model.enum;
+    model.items = {
+      ...model.items,
+      enum: metadata.enum
+    };
   }
-});
+
+  return model;
+};
 
 export const exploreModelDefinition = (type, definitions) => {
   const { prototype } = type;
@@ -144,6 +157,11 @@ export const exploreModelDefinition = (type, definitions) => {
       Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
       {};
     const defaultTypes = [String, Boolean, Number, Object, Array];
+
+    if (metadata.enum !== undefined) {
+      metadata.enum = getEnumValues(metadata.enum);
+    }
+
     if (
       isFunction(metadata.type) &&
       !defaultTypes.find(defaultType => defaultType === metadata.type)
@@ -156,23 +174,24 @@ export const exploreModelDefinition = (type, definitions) => {
       if (metadata.isArray) {
         return transformToArrayModelProperty(metadata, key, { $ref });
       }
-      return { ...metadata, name: key, $ref };
+      return { name: key, $ref };
     }
     const metatype: string =
       metadata.type && isFunction(metadata.type)
         ? metadata.type.name
         : metadata.type;
     const swaggerType = mapTypesToSwaggerTypes(metatype);
+    const itemType = metadata.enum ? getEnumType(metadata.enum) : swaggerType;
+
     if (metadata.isArray) {
-      return transformToArrayModelProperty(metadata, key, {
-        type: swaggerType
-      });
+      return transformToArrayModelProperty(metadata, key, { type: itemType });
+    } else {
+      return {
+        ...metadata,
+        name: key,
+        type: itemType
+      };
     }
-    return {
-      ...metadata,
-      name: key,
-      type: metadata.enum ? getEnumType(metadata.enum) : swaggerType
-    };
   });
   const typeDefinition = {
     type: 'object',
@@ -192,10 +211,32 @@ export const exploreModelDefinition = (type, definitions) => {
   return type.name;
 };
 
-const getEnumType = (
-  values: string[] | number[] | (string | number)[]
-): 'string' | 'number' => {
-  const hasString = (values as any[]).filter(isString).length > 0;
+const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
+  let values = [];
+
+  if (Array.isArray(e)) {
+    values = e;
+  } else if (typeof e === 'object') {
+    const uniqueValues = {};
+
+    for (const key in e) {
+      const value = e[key];
+      // Filter out cases where enum key also becomes its value (A: B, B: A)
+      if (
+        !uniqueValues.hasOwnProperty(value) &&
+        !uniqueValues.hasOwnProperty(key)
+      ) {
+        values.push(value);
+        uniqueValues[value] = value;
+      }
+    }
+  }
+
+  return values;
+};
+
+const getEnumType = (values: (string | number)[]): 'string' | 'number' => {
+  const hasString = values.filter(isString).length > 0;
   return hasString ? 'string' : 'number';
 };
 
