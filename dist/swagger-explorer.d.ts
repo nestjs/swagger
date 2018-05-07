@@ -9,7 +9,7 @@ export declare class SwaggerExplorer {
     metatype,
     prototype,
     instance,
-    explorersSchema,
+    explorersSchema
   );
   private exploreGlobalMetadata(metatype);
   private exploreRoutePathAndMethod(instance, prototype, method, globalPath);

@@ -15,13 +15,13 @@ export declare class DocumentBuilder {
   addBearerAuth(
     name?: string,
     location?: 'header' | 'body' | 'query',
-    type?: string,
+    type?: string
   ): this;
   addOAuth2(
     flow?: 'implicit' | 'password' | 'application' | 'accessCode',
     authorizationUrl?: string,
     tokenUrl?: string,
-    scopes?: object,
+    scopes?: object
   ): this;
   build(): SwaggerBaseConfig;
 }

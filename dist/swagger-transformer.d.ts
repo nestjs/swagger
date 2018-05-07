@@ -1,6 +1,6 @@
 export declare class SwaggerTransformer {
   normalizePaths(
-    denormalizedDoc: any,
+    denormalizedDoc: any
   ): {
     paths: any;
   };
