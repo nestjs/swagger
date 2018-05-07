@@ -1,11 +1,13 @@
+import { SwaggerEnumType } from '../types/swagger-enum.type';
 export declare const ApiModelProperty: (
   metadata?: {
     description?: string;
     required?: boolean;
     type?: any;
     isArray?: boolean;
+    collectionFormat?: string;
     default?: any;
-    enum?: string[] | number[] | (string | number)[];
+    enum?: SwaggerEnumType;
     format?: string;
     multipleOf?: number;
     maximum?: number;
@@ -30,8 +32,9 @@ export declare const ApiModelPropertyOptional: (
     description?: string;
     type?: any;
     isArray?: boolean;
+    collectionFormat?: string;
     default?: any;
-    enum?: string[] | number[] | (string | number)[];
+    enum?: SwaggerEnumType;
     format?: string;
     multipleOf?: number;
     maximum?: number;

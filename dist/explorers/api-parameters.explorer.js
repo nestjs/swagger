@@ -65,7 +65,14 @@ const transformModelToProperties = reflectedParameters => {
         });
     });
 };
-const transformToArrayModelProperty = (metadata, key, type) => (Object.assign({}, metadata, { name: key, type: 'array', items: Object.assign({}, type) }));
+const transformToArrayModelProperty = (metadata, key, type) => {
+    const model = Object.assign({}, metadata, { name: key, type: 'array', items: Object.assign({}, type) });
+    if (metadata.enum !== undefined) {
+        delete model.enum;
+        model.items = Object.assign({}, model.items, { enum: metadata.enum });
+    }
+    return model;
+};
 exports.exploreModelDefinition = (type, definitions) => {
     const { prototype } = type;
     const modelProperties = exploreModelProperties(prototype);
@@ -73,6 +80,9 @@ exports.exploreModelDefinition = (type, definitions) => {
         const metadata = Reflect.getMetadata(constants_1.DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
             {};
         const defaultTypes = [String, Boolean, Number, Object, Array];
+        if (metadata.enum !== undefined) {
+            metadata.enum = getEnumValues(metadata.enum);
+        }
         if (shared_utils_1.isFunction(metadata.type) &&
             !defaultTypes.find(defaultType => defaultType === metadata.type)) {
             const nestedModelName = exports.exploreModelDefinition(metadata.type, definitions);
@@ -80,18 +90,19 @@ exports.exploreModelDefinition = (type, definitions) => {
             if (metadata.isArray) {
                 return transformToArrayModelProperty(metadata, key, { $ref });
             }
-            return Object.assign({}, metadata, { name: key, $ref });
+            return { name: key, $ref };
         }
         const metatype = metadata.type && shared_utils_1.isFunction(metadata.type)
             ? metadata.type.name
             : metadata.type;
         const swaggerType = exports.mapTypesToSwaggerTypes(metatype);
+        const itemType = metadata.enum ? getEnumType(metadata.enum) : swaggerType;
         if (metadata.isArray) {
-            return transformToArrayModelProperty(metadata, key, {
-                type: swaggerType
-            });
+            return transformToArrayModelProperty(metadata, key, { type: itemType });
         }
-        return Object.assign({}, metadata, { name: key, type: metadata.enum ? getEnumType(metadata.enum) : swaggerType });
+        else {
+            return Object.assign({}, metadata, { name: key, type: itemType });
+        }
     });
     const typeDefinition = {
         type: 'object',
@@ -107,6 +118,24 @@ exports.exploreModelDefinition = (type, definitions) => {
         [type.name]: typeDefinition
     });
     return type.name;
+};
+const getEnumValues = (e) => {
+    let values = [];
+    if (Array.isArray(e)) {
+        values = e;
+    }
+    else if (typeof e === 'object') {
+        const uniqueValues = {};
+        for (const key in e) {
+            const value = e[key];
+            if (!uniqueValues.hasOwnProperty(value) &&
+                !uniqueValues.hasOwnProperty(key)) {
+                values.push(value);
+                uniqueValues[value] = value;
+            }
+        }
+    }
+    return values;
 };
 const getEnumType = (values) => {
     const hasString = values.filter(lodash_1.isString).length > 0;

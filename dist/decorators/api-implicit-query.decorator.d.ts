@@ -5,5 +5,6 @@ export declare const ApiImplicitQuery: (
     required?: boolean;
     type?: any;
     isArray?: boolean;
+    collectionFormat?: 'csv' | 'ssv' | 'tsv' | 'pipes' | 'multi';
   }
 ) => MethodDecorator;

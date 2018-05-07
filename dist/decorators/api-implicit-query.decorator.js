@@ -13,13 +13,17 @@ exports.ApiImplicitQuery = (metadata) => {
         description: metadata.description,
         required: metadata.required,
         type: metadata.type,
-        items: undefined
+        items: undefined,
+        collectionFormat: undefined
     };
     if (metadata.isArray) {
         param.type = Array;
         param.items = {
-            type: param.type
+            type: metadata.type
         };
+        param.collectionFormat = lodash_1.isNil(metadata.collectionFormat)
+            ? 'csv'
+            : metadata.collectionFormat;
     }
     return helpers_1.createParamDecorator(param, initialMetadata);
 };

@@ -17,21 +17,19 @@ class SwaggerExplorer {
         this.metadataScanner = new metadata_scanner_1.MetadataScanner();
         this.modelsDefinitions = [];
     }
-    exploreController({ instance, metatype, }) {
+    exploreController({ instance, metatype }) {
         const prototype = Object.getPrototypeOf(instance);
         const explorersSchema = {
             root: [
                 this.exploreRoutePathAndMethod,
                 api_operation_explorer_1.exploreApiOperationMetadata,
-                api_parameters_explorer_1.exploreApiParametersMetadata.bind(null, this.modelsDefinitions),
+                api_parameters_explorer_1.exploreApiParametersMetadata.bind(null, this.modelsDefinitions)
             ],
             produces: [api_produces_explorer_1.exploreApiProducesMetadata],
             consumes: [api_consumes_explorer_1.exploreApiConsumesMetadata],
             security: [api_security_explorer_1.exploreApiSecurityMetadata],
             tags: [api_use_tags_explorer_1.exploreApiUseTagsMetadata],
-            responses: [
-                api_response_explorer_1.exploreApiResponseMetadata.bind(null, this.modelsDefinitions),
-            ],
+            responses: [api_response_explorer_1.exploreApiResponseMetadata.bind(null, this.modelsDefinitions)]
         };
         return this.generateDenormalizedDocument(metatype, prototype, instance, explorersSchema);
     }
@@ -69,7 +67,7 @@ class SwaggerExplorer {
             api_use_tags_explorer_1.exploreGlobalApiUseTagsMetadata,
             api_consumes_explorer_1.exploreGlobalApiConsumesMetadata,
             api_security_explorer_1.exploreGlobalApiSecurityMetadata,
-            api_response_explorer_1.exploreGlobalApiResponseMetadata.bind(null, this.modelsDefinitions),
+            api_response_explorer_1.exploreGlobalApiResponseMetadata.bind(null, this.modelsDefinitions)
         ];
         const globalMetadata = globalExplorers
             .map(explorer => explorer.call(explorer, metatype))
@@ -86,7 +84,7 @@ class SwaggerExplorer {
         const fullPath = globalPath + this.validateRoutePath(routePath);
         return {
             method: common_1.RequestMethod[requestMethod].toLowerCase(),
-            path: fullPath === '' ? '/' : fullPath,
+            path: fullPath === '' ? '/' : fullPath
         };
     }
     reflectControllerPath(metatype) {
