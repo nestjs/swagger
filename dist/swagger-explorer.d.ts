@@ -16,4 +16,5 @@ export declare class SwaggerExplorer {
   private reflectControllerPath(metatype);
   private validateRoutePath(path);
   private mergeMetadata(globalMetadata, methodMetadata);
+  private assignDefaultMimeType(metadata, key);
 }

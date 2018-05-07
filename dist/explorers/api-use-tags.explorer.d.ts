@@ -3,4 +3,8 @@ export declare const exploreGlobalApiUseTagsMetadata: (
 ) => {
   tags: any;
 };
-export declare const exploreApiUseTagsMetadata: (metatype: any) => any;
+export declare const exploreApiUseTagsMetadata: (
+  instance: any,
+  prototype: any,
+  method: any
+) => any;

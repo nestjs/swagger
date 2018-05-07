@@ -7,4 +7,6 @@ export declare const exploreApiSecurityMetadata: (
   instance: any,
   prototype: any,
   method: any
-) => any[];
+) => {
+  security: any[];
+};

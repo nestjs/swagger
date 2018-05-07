@@ -57,6 +57,8 @@ class SwaggerExplorer {
                     : exploredMetadata;
             }, {}));
             const mergedMethodMetadata = this.mergeMetadata(globalMetadata, lodash_1.omitBy(methodMetadata, lodash_1.isEmpty));
+            this.assignDefaultMimeType(mergedMethodMetadata, 'produces');
+            this.assignDefaultMimeType(mergedMethodMetadata, 'consumes');
             return Object.assign({ responses: {} }, globalMetadata, mergedMethodMetadata);
         });
         return denormalizedPaths;
@@ -111,6 +113,13 @@ class SwaggerExplorer {
             }
             return [...globalValue, ...value];
         });
+    }
+    assignDefaultMimeType(metadata, key) {
+        if (metadata[key]) {
+            return undefined;
+        }
+        const defaultMimeType = 'application/json';
+        metadata[key] = [defaultMimeType];
     }
 }
 exports.SwaggerExplorer = SwaggerExplorer;

@@ -1,23 +1,23 @@
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import {
   exploreApiConsumesMetadata,
-  exploreGlobalApiConsumesMetadata,
+  exploreGlobalApiConsumesMetadata
 } from './explorers/api-consumes.explorer';
 import {
   exploreApiProducesMetadata,
-  exploreGlobalApiProducesMetadata,
+  exploreGlobalApiProducesMetadata
 } from './explorers/api-produces.explorer';
 import {
   exploreApiResponseMetadata,
-  exploreGlobalApiResponseMetadata,
+  exploreGlobalApiResponseMetadata
 } from './explorers/api-response.explorer';
 import {
   exploreApiSecurityMetadata,
-  exploreGlobalApiSecurityMetadata,
+  exploreGlobalApiSecurityMetadata
 } from './explorers/api-security.explorer';
 import {
   exploreApiUseTagsMetadata,
-  exploreGlobalApiUseTagsMetadata,
+  exploreGlobalApiUseTagsMetadata
 } from './explorers/api-use-tags.explorer';
 import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
 import { isUndefined, validatePath } from '@nestjs/common/utils/shared.utils';
@@ -35,28 +35,26 @@ export class SwaggerExplorer {
 
   public exploreController({
     instance,
-    metatype,
+    metatype
   }: InstanceWrapper<Controller>) {
     const prototype = Object.getPrototypeOf(instance);
     const explorersSchema = {
       root: [
         this.exploreRoutePathAndMethod,
         exploreApiOperationMetadata,
-        exploreApiParametersMetadata.bind(null, this.modelsDefinitions),
+        exploreApiParametersMetadata.bind(null, this.modelsDefinitions)
       ],
       produces: [exploreApiProducesMetadata],
       consumes: [exploreApiConsumesMetadata],
       security: [exploreApiSecurityMetadata],
       tags: [exploreApiUseTagsMetadata],
-      responses: [
-        exploreApiResponseMetadata.bind(null, this.modelsDefinitions),
-      ],
+      responses: [exploreApiResponseMetadata.bind(null, this.modelsDefinitions)]
     };
     return this.generateDenormalizedDocument(
       metatype,
       prototype,
       instance,
-      explorersSchema,
+      explorersSchema
     );
   }
 
@@ -68,7 +66,7 @@ export class SwaggerExplorer {
     metatype,
     prototype,
     instance,
-    explorersSchema,
+    explorersSchema
   ) {
     const path = this.validateRoutePath(this.reflectControllerPath(metatype));
 
@@ -86,7 +84,7 @@ export class SwaggerExplorer {
               instance,
               prototype,
               targetCallback,
-              path,
+              path
             );
             if (!exploredMetadata) {
               return metadata;
@@ -97,18 +95,20 @@ export class SwaggerExplorer {
             return isArray(metadata)
               ? [...metadata, ...exploredMetadata]
               : exploredMetadata;
-          }, {}),
+          }, {})
         );
         const mergedMethodMetadata = this.mergeMetadata(
           globalMetadata,
-          omitBy(methodMetadata, isEmpty),
+          omitBy(methodMetadata, isEmpty)
         );
+        this.assignDefaultMimeType(mergedMethodMetadata, 'produces');
+        this.assignDefaultMimeType(mergedMethodMetadata, 'consumes');
         return {
           responses: {},
           ...globalMetadata,
-          ...mergedMethodMetadata,
+          ...mergedMethodMetadata
         };
-      },
+      }
     );
     return denormalizedPaths;
   }
@@ -119,7 +119,7 @@ export class SwaggerExplorer {
       exploreGlobalApiUseTagsMetadata,
       exploreGlobalApiConsumesMetadata,
       exploreGlobalApiSecurityMetadata,
-      exploreGlobalApiResponseMetadata.bind(null, this.modelsDefinitions),
+      exploreGlobalApiResponseMetadata.bind(null, this.modelsDefinitions)
     ];
     const globalMetadata = globalExplorers
       .map(explorer => explorer.call(explorer, metatype))
@@ -127,9 +127,9 @@ export class SwaggerExplorer {
       .reduce(
         (curr, next) => ({
           ...curr,
-          ...next,
+          ...next
         }),
-        {},
+        {}
       );
 
     return globalMetadata;
@@ -142,12 +142,12 @@ export class SwaggerExplorer {
     }
     const requestMethod = Reflect.getMetadata(
       METHOD_METADATA,
-      method,
+      method
     ) as RequestMethod;
     const fullPath = globalPath + this.validateRoutePath(routePath);
     return {
       method: RequestMethod[requestMethod].toLowerCase(),
-      path: fullPath === '' ? '/' : fullPath,
+      path: fullPath === '' ? '/' : fullPath
     };
   }
 
@@ -177,5 +177,13 @@ export class SwaggerExplorer {
       }
       return [...globalValue, ...value];
     });
+  }
+
+  private assignDefaultMimeType(metadata: any, key: string) {
+    if (metadata[key]) {
+      return undefined;
+    }
+    const defaultMimeType = 'application/json';
+    metadata[key] = [defaultMimeType];
   }
 }

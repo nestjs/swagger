@@ -1,6 +1,6 @@
 {
   "name": "@nestjs/swagger",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "description":
     "Nest - modern, fast, powerful node.js web framework (@swagger)",
   "author": "Kamil Mysliwiec",
@@ -9,12 +9,14 @@
     "build": "tsc -p tsconfig.json",
     "format": "prettier lib/**/*.ts --write",
     "precommit": "lint-staged",
+    "prepublish:next": "npm run build",
+    "publish:next": "npm publish --access public --tag next",
     "prepublish:npm": "npm run build",
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
     "lodash": "^4.17.4",
-    "swagger-ui-express": "^2.0.11"
+    "swagger-ui-express": "^3.0.8"
   },
   "devDependencies": {
     "husky": "^0.14.3",

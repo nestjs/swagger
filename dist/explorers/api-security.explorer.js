@@ -15,5 +15,5 @@ exports.exploreApiSecurityMetadata = (instance, prototype, method) => {
     const security = [];
     bearer && security.push({ bearer });
     oauth2 && security.push({ oauth2 });
-    return oauth2 ? security : undefined;
+    return security.length > 0 ? { security } : undefined;
 };

@@ -8,7 +8,10 @@ class SwaggerModule {
         return Object.assign({}, config, document, { swagger: '2.0' });
     }
     static setup(path, app, document, options) {
-        app.use(path, swaggerUi.serve, swaggerUi.setup(document, options));
+        const validatePath = (path) => path.charAt(0) !== '/' ? '/' + path : path;
+        const finalPath = validatePath(path);
+        app.use(finalPath, swaggerUi.serve, swaggerUi.setup(document, options));
+        app.use(finalPath + '-json', (req, res) => res.json(document));
     }
 }
 SwaggerModule.swaggerScanner = new swagger_scanner_1.SwaggerScanner();
