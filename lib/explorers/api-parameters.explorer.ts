@@ -73,7 +73,11 @@ const DEFAULT_PARAM_TOKEN = '_';
 const exploreApiReflectedParametersMetadata = (instance, prototype, method) => {
   const types = Reflect.getMetadata(PARAMTYPES_METADATA, instance, method.name);
   const parametersMetadata =
-    Reflect.getMetadata(ROUTE_ARGS_METADATA, instance, method.name) || {};
+    Reflect.getMetadata(
+      ROUTE_ARGS_METADATA,
+      instance.constructor,
+      method.name
+    ) || {};
   const parametersWithType = mapValues(parametersMetadata, param => ({
     type: types[param.index],
     name: param.data,
