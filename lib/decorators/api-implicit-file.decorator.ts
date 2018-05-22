@@ -7,7 +7,7 @@ const initialMetadata = {
   required: true
 };
 
-export const ApiFileUpload = (metadata: {
+export const ApiImplicitFile = (metadata: {
   name: string;
   description?: string;
   required?: boolean;
