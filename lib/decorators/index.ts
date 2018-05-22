@@ -10,3 +10,4 @@ export * from './api-implicit-query.decorator';
 export * from './api-model-property.decorator';
 export * from './api-use-tags.decorator';
 export * from './api-oauth2.decorator';
+export * from './api-implicit-file.decorator';
