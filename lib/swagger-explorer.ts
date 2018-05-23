@@ -28,6 +28,7 @@ import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { RequestMethod } from '@nestjs/common';
 import { exploreApiOperationMetadata } from './explorers/api-operation.explorer';
 import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer';
+import * as pathToRegexp from 'path-to-regexp';
 
 export class SwaggerExplorer {
   private readonly metadataScanner = new MetadataScanner();
@@ -159,10 +160,14 @@ export class SwaggerExplorer {
     if (isUndefined(path)) {
       return '';
     }
-    const pathWithParams = path.replace(/([:].*?[^\/]*)/g, str => {
-      str = str.replace(/\(.*\)$/, ''); // remove any regex in the param
-      return `{${str.slice(1, str.length)}}`;
-    });
+    let pathWithParams = '';
+    for (const item of pathToRegexp.parse(path)) {
+      if (typeof item === 'string') {
+        pathWithParams += item;
+      } else {
+        pathWithParams += `${item.prefix}{${item.name}}`;
+      }
+    }
     return pathWithParams === '/' ? '' : validatePath(pathWithParams);
   }
 
