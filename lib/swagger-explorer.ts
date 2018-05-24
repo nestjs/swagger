@@ -43,7 +43,6 @@ export class SwaggerExplorer {
       root: [
         this.exploreRoutePathAndMethod,
         exploreApiOperationMetadata,
-        exploreApiDisableEndpointMetadata,
         exploreApiParametersMetadata.bind(null, this.modelsDefinitions)
       ],
       produces: [exploreApiProducesMetadata],
