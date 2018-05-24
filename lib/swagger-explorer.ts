@@ -28,6 +28,7 @@ import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { RequestMethod } from '@nestjs/common';
 import { exploreApiOperationMetadata } from './explorers/api-operation.explorer';
 import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer';
+import { exploreApiDisableEndpointMetadata } from './explorers/api-disable-endpoint.explorer';
 
 export class SwaggerExplorer {
   private readonly metadataScanner = new MetadataScanner();
@@ -42,6 +43,7 @@ export class SwaggerExplorer {
       root: [
         this.exploreRoutePathAndMethod,
         exploreApiOperationMetadata,
+        exploreApiDisableEndpointMetadata,
         exploreApiParametersMetadata.bind(null, this.modelsDefinitions)
       ],
       produces: [exploreApiProducesMetadata],
@@ -77,6 +79,14 @@ export class SwaggerExplorer {
       prototype,
       name => {
         const targetCallback = prototype[name];
+        const disableEndpoint = exploreApiDisableEndpointMetadata(
+          instance,
+          prototype,
+          targetCallback
+        );
+        if (disableEndpoint && disableEndpoint.disable) {
+          return;
+        }
         const methodMetadata = mapValues(explorersSchema, (explorers: any[]) =>
           explorers.reduce((metadata, fn) => {
             const exploredMetadata = fn.call(
