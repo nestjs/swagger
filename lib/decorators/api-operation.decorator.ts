@@ -10,6 +10,7 @@ export const ApiOperation = (metadata: {
   title: string;
   description?: string;
   operationId?: string;
+  deprecated?: boolean;
 }): MethodDecorator => {
   return createMethodDecorator(
     DECORATORS.API_OPERATION,
@@ -20,7 +21,8 @@ export const ApiOperation = (metadata: {
           ? initialMetadata.summary
           : metadata.title,
         description: metadata.description,
-        operationId: metadata.operationId
+        operationId: metadata.operationId,
+        deprecated: metadata.deprecated
       },
       negate(isUndefined)
     )
