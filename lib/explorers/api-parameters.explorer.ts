@@ -1,27 +1,29 @@
+import { DECORATORS } from '../constants';
 import {
   PARAMTYPES_METADATA,
   ROUTE_ARGS_METADATA
 } from '@nestjs/common/constants';
 import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum';
-import { isFunction, isUndefined } from '@nestjs/common/utils/shared.utils';
 import {
+  mapValues,
+  mapKeys,
+  pickBy,
+  omitBy,
+  isEmpty,
+  unionWith,
+  isNil,
+  map,
+  flatMap,
+  uniqBy,
+  negate,
+  keyBy,
+  groupBy,
+  omit,
   assign,
   find,
-  flatMap,
-  identity,
-  isEmpty,
-  isNil,
-  isString,
-  keyBy,
-  map,
-  mapValues,
-  negate,
-  omit,
-  omitBy,
-  pickBy,
-  unionWith
+  isString
 } from 'lodash';
-import { DECORATORS } from '../constants';
+import { isFunction, isUndefined } from '@nestjs/common/utils/shared.utils';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
 
 export const exploreApiParametersMetadata = (
@@ -104,13 +106,13 @@ const isBodyParameter = param => param.in === 'body';
 
 const transformModelToProperties = reflectedParameters => {
   return flatMap(reflectedParameters, (param: any) => {
-    if (!param || param.type === Object) {
-      return undefined;
+    if (!param) {
+      return null;
     }
     const { prototype } = param.type;
-    if (param.name) {
-      return param;
-    }
+    // tslint:disable-next-line:curly
+    if (param.name) return param;
+
     if (isBodyParameter(param)) {
       const name: string =
         param.type && isFunction(param.type) ? param.type.name : param.type;
@@ -127,7 +129,7 @@ const transformModelToProperties = reflectedParameters => {
         name: key
       };
     });
-  }).filter(identity);
+  });
 };
 
 const transformToArrayModelProperty = (metadata, key, type) => {
@@ -147,6 +149,7 @@ const transformToArrayModelProperty = (metadata, key, type) => {
       enum: metadata.enum
     };
   }
+
   return model;
 };
 
@@ -213,26 +216,26 @@ export const exploreModelDefinition = (type, definitions) => {
 };
 
 const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
-  if (Array.isArray(e)) {
-    return e as string[];
-  }
-  if (typeof e !== 'object') {
-    return [];
-  }
-  const values = [];
-  const uniqueValues = {};
+  let values = [];
 
-  for (const key in e) {
-    const value = e[key];
-    // Filter out cases where enum key also becomes its value (A: B, B: A)
-    if (
-      !uniqueValues.hasOwnProperty(value) &&
-      !uniqueValues.hasOwnProperty(key)
-    ) {
-      values.push(value);
-      uniqueValues[value] = value;
+  if (Array.isArray(e)) {
+    values = e;
+  } else if (typeof e === 'object') {
+    const uniqueValues = {};
+
+    for (const key in e) {
+      const value = e[key];
+      // Filter out cases where enum key also becomes its value (A: B, B: A)
+      if (
+        !uniqueValues.hasOwnProperty(value) &&
+        !uniqueValues.hasOwnProperty(key)
+      ) {
+        values.push(value);
+        uniqueValues[value] = value;
+      }
     }
   }
+
   return values;
 };
 
@@ -257,13 +260,10 @@ const mapParamType = (key: string): string => {
   }
 };
 
-const hasSchemaDefinition = param => param.schema;
-const omitParamType = param => omit(param, 'type');
-
 const mapParametersTypes = parameters =>
   parameters.map(param => {
-    if (hasSchemaDefinition(param)) {
-      return omitParamType(param);
+    if (isBodyParameter(param)) {
+      return param;
     }
     const { type } = param;
     const paramWithStringifiedType = pickBy(
