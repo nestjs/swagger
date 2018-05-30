@@ -28,7 +28,6 @@ import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { RequestMethod } from '@nestjs/common';
 import { exploreApiOperationMetadata } from './explorers/api-operation.explorer';
 import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer';
-import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
 
 export class SwaggerExplorer {
   private readonly metadataScanner = new MetadataScanner();
@@ -78,14 +77,6 @@ export class SwaggerExplorer {
       prototype,
       name => {
         const targetCallback = prototype[name];
-        const excludeEndpoint = exploreApiExcludeEndpointMetadata(
-          instance,
-          prototype,
-          targetCallback
-        );
-        if (excludeEndpoint && excludeEndpoint.disable) {
-          return;
-        }
         const methodMetadata = mapValues(explorersSchema, (explorers: any[]) =>
           explorers.reduce((metadata, fn) => {
             const exploredMetadata = fn.call(
