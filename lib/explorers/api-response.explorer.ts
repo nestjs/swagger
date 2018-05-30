@@ -1,11 +1,10 @@
+import { isFunction } from '@nestjs/common/utils/shared.utils';
+import { mapValues, omit } from 'lodash';
+import { DECORATORS } from '../constants';
 import {
   exploreModelDefinition,
   mapTypesToSwaggerTypes
 } from './api-parameters.explorer';
-import { mapValues, omit } from 'lodash';
-
-import { DECORATORS } from '../constants';
-import { isFunction } from '@nestjs/common/utils/shared.utils';
 
 export const exploreGlobalApiResponseMetadata = (definitions, metatype) => {
   const responses = Reflect.getMetadata(DECORATORS.API_RESPONSE, metatype);
@@ -29,35 +28,42 @@ export const exploreApiResponseMetadata = (
   return mapResponsesToSwaggerResponses(responses, definitions);
 };
 
-const mapResponsesToSwaggerResponses = (responses, definitions) =>
-  mapValues(responses, response => {
-    const { type, isArray } = response;
-    response = omit(response, ['isArray']);
-    // tslint:disable-next-line:curly
-    if (!type) return response;
-    const defaultTypes = [String, Boolean, Number, Object, Array];
-    if (
-      !(
-        isFunction(type) &&
-        !defaultTypes.find(defaultType => defaultType === type)
-      )
-    ) {
-      const metatype: string = type && isFunction(type) ? type.name : type;
-      const swaggerType = mapTypesToSwaggerTypes(metatype);
+const omitParamType = param => omit(param, 'type');
 
-      return {
-        ...response,
-        schema: {
-          type: swaggerType
-        }
-      };
-    }
-    const name = exploreModelDefinition(type, definitions);
-    if (isArray) {
-      return toArrayResponseWithDefinition(response, name);
-    }
-    return toResponseWithDefinition(response, name);
-  });
+const mapResponsesToSwaggerResponses = (responses, definitions) =>
+  mapValues(
+    mapValues(responses, response => {
+      const { type, isArray } = response;
+      response = omit(response, ['isArray']);
+
+      if (!type) {
+        return response;
+      }
+      const defaultTypes = [String, Boolean, Number, Object, Array];
+      if (
+        !(
+          isFunction(type) &&
+          !defaultTypes.find(defaultType => defaultType === type)
+        )
+      ) {
+        const metatype: string = type && isFunction(type) ? type.name : type;
+        const swaggerType = mapTypesToSwaggerTypes(metatype);
+
+        return {
+          ...response,
+          schema: {
+            type: swaggerType
+          }
+        };
+      }
+      const name = exploreModelDefinition(type, definitions);
+      if (isArray) {
+        return toArrayResponseWithDefinition(response, name);
+      }
+      return toResponseWithDefinition(response, name);
+    }),
+    omitParamType
+  );
 
 export const toArrayResponseWithDefinition = (response, name) => ({
   ...response,
