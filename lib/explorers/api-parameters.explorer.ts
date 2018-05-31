@@ -19,7 +19,8 @@ import {
   omit,
   omitBy,
   pickBy,
-  unionWith
+  unionWith,
+  flatten
 } from 'lodash';
 import { DECORATORS } from '../constants';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
@@ -59,11 +60,11 @@ export const exploreApiParametersMetadata = (
         return arrVal.name === othVal.name && arrVal.in === othVal.in;
       });
 
-  const paramsWithDefinitions = mapModelsToDefinitons(
-    unionParameters,
-    definitions
+  const paramsWithDefinitions = flatten(
+    mapModelsToDefinitons(unionParameters, definitions)
   );
-  const parameters = mapParametersTypes(paramsWithDefinitions);
+  let parameters = mapParametersTypes(paramsWithDefinitions);
+
   return parameters ? { parameters } : undefined;
 };
 
@@ -212,6 +213,28 @@ export const exploreModelDefinition = (type, definitions) => {
   return type.name;
 };
 
+const formDataModelTransformation = type => {
+  const { prototype } = type;
+  const modelProperties = exploreModelProperties(prototype);
+
+  const data = modelProperties.map(key => {
+    const metadata =
+      Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
+      {};
+    const defaultTypes = [String, Boolean, Number];
+    if (defaultTypes.indexOf(metadata.type.name)) {
+      return {
+        name: key,
+        type: metadata.type.name.toLowerCase(),
+        required: metadata.required,
+        in: 'formData'
+      };
+    }
+  });
+
+  return data;
+};
+
 const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
   if (Array.isArray(e)) {
     return e as string[];
@@ -298,9 +321,16 @@ export const mapTypesToSwaggerTypes = (type: string) => {
 const getDefinitionPath = modelName => `#/definitions/${modelName}`;
 
 const mapModelsToDefinitons = (parameters, definitions) => {
+  const containsFormData = checkContainsFormData(parameters);
+
   return parameters.map(param => {
     if (!isBodyParameter(param)) {
       return param;
+    }
+    if (containsFormData) {
+      const res = formDataModelTransformation(param.type);
+
+      return res;
     }
     const modelName = exploreModelDefinition(param.type, definitions);
     const name = param.name ? param.name : modelName;
@@ -323,4 +353,22 @@ const mapModelsToDefinitons = (parameters, definitions) => {
       schema
     };
   });
+};
+
+const checkContainsFormData = params => {
+  for (const param of params) {
+    if (param.in === 'formData') {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const changeInProperty = params => {
+  for (const param of params) {
+    param.in = 'formData';
+  }
+
+  return params;
 };
