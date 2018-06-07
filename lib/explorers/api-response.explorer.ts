@@ -49,12 +49,24 @@ const mapResponsesToSwaggerResponses = (responses, definitions) =>
         const metatype: string = type && isFunction(type) ? type.name : type;
         const swaggerType = mapTypesToSwaggerTypes(metatype);
 
-        return {
-          ...response,
-          schema: {
-            type: swaggerType
-          }
-        };
+        if (isArray) {
+          return {
+            ...response,
+            schema: {
+              type: 'array',
+              items: {
+                type: swaggerType
+              }
+            }
+          };
+        } else {
+          return {
+            ...response,
+            schema: {
+              type: swaggerType
+            }
+          };
+        }
       }
       const name = exploreModelDefinition(type, definitions);
       if (isArray) {

@@ -1,8 +1,7 @@
 {
   "name": "@nestjs/swagger",
   "version": "2.0.2",
-  "description":
-    "Nest - modern, fast, powerful node.js web framework (@swagger)",
+  "description": "Nest - modern, fast, powerful node.js web framework (@swagger)",
   "author": "Kamil Mysliwiec",
   "license": "MIT",
   "scripts": {
@@ -15,7 +14,10 @@
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
+    "@nestjs/common": "^5.0.1",
+    "@nestjs/core": "^5.0.1",
     "lodash": "^4.17.4",
+    "reflect-metadata": "^0.1.12",
     "swagger-ui-express": "^3.0.8"
   },
   "devDependencies": {
