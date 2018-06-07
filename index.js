@@ -1,4 +1,6 @@
-/* eslint-disable import/no-extraneous-dependencies, import/no-unresolved */
-
-require('ts-node/register');
-require('./src/server');
+"use strict";
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+exports.__esModule = true;
+__export(require("./dist"));

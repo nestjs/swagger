@@ -5,9 +5,10 @@ export const documentBase = {
   info: {
     description: '',
     version: '1.0.0',
-    title: '',
+    title: ''
   },
   basePath: '/',
   tags: [],
   schemes: ['http'] as SwaggerScheme[],
+  securityDefinitions: {}
 };

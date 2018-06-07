@@ -9,4 +9,5 @@ export const DECORATORS = {
     API_MODEL_PROPERTIES: `${DECORATORS_PREFIX}/apiModelProperties`,
     API_MODEL_PROPERTIES_ARRAY: `${DECORATORS_PREFIX}/apiModelPropertiesArray`,
     API_BEARER: `${DECORATORS_PREFIX}/apiBearer`,
+    API_OAUTH2: `${DECORATORS_PREFIX}/apiOauth2`,
 };
