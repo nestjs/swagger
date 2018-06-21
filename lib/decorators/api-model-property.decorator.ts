@@ -12,6 +12,7 @@ export const ApiModelProperty = (
     default?: any;
     enum?: string[] | number[] | (string | number)[];
     format?: string;
+    in?: string;
     multipleOf?: number;
     maximum?: number;
     exclusiveMaximum?: number;
@@ -42,6 +43,7 @@ export const ApiModelPropertyOptional = (
     default?: any;
     enum?: string[] | number[] | (string | number)[];
     format?: string;
+    in?: string;
     multipleOf?: number;
     maximum?: number;
     exclusiveMaximum?: number;
