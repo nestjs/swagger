@@ -1,7 +1,6 @@
 import { DECORATORS } from '../constants';
-import { createMethodDecorator, createPropertyDecorator } from './helpers';
-import { pickBy, isNil, negate, isUndefined } from 'lodash';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
+import { createPropertyDecorator } from './helpers';
 
 export const ApiModelProperty = (
   metadata: {

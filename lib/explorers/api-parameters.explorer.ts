@@ -176,7 +176,7 @@ export const exploreModelDefinition = (type, definitions) => {
       if (metadata.isArray) {
         return transformToArrayModelProperty(metadata, key, { $ref });
       }
-      return { name: key, $ref };
+      return { name: key, $ref, required: metadata.required };
     }
     const metatype: string =
       metadata.type && isFunction(metadata.type)
@@ -213,28 +213,6 @@ export const exploreModelDefinition = (type, definitions) => {
   return type.name;
 };
 
-const formDataModelTransformation = type => {
-  const { prototype } = type;
-  const modelProperties = exploreModelProperties(prototype);
-
-  const data = modelProperties.map(key => {
-    const metadata =
-      Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
-      {};
-    const defaultTypes = [String, Boolean, Number];
-    if (defaultTypes.indexOf(metadata.type.name)) {
-      return {
-        name: key,
-        type: metadata.type.name.toLowerCase(),
-        required: metadata.required,
-        in: 'formData'
-      };
-    }
-  });
-
-  return data;
-};
-
 const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
   if (Array.isArray(e)) {
     return e as string[];
@@ -255,6 +233,17 @@ const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
       values.push(value);
       uniqueValues[value] = value;
     }
+  }
+
+  return data;
+};
+
+const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
+  if (Array.isArray(e)) {
+    return e as string[];
+  }
+  if (typeof e !== 'object') {
+    return [];
   }
   return values;
 };
