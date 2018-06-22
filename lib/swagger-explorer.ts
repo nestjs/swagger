@@ -1,10 +1,15 @@
 import { RequestMethod } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { Controller } from '@nestjs/common/interfaces';
-import { isUndefined, validatePath } from '@nestjs/common/utils/shared.utils';
+import {
+  isString,
+  isUndefined,
+  validatePath
+} from '@nestjs/common/utils/shared.utils';
 import { InstanceWrapper } from '@nestjs/core/injector/container';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
+import * as pathToRegexp from 'path-to-regexp';
 import {
   exploreApiConsumesMetadata,
   exploreGlobalApiConsumesMetadata
@@ -167,10 +172,14 @@ export class SwaggerExplorer {
     if (isUndefined(path)) {
       return '';
     }
-    const pathWithParams = path.replace(/([:].*?[^\/]*)/g, str => {
-      str = str.replace(/\(.*\)$/, ''); // remove any regex in the param
-      return `{${str.slice(1, str.length)}}`;
-    });
+    let pathWithParams = '';
+    for (const item of pathToRegexp.parse(path)) {
+      if (isString(item)) {
+        pathWithParams += item;
+      } else {
+        pathWithParams += `${item.prefix}{${item.name}}`;
+      }
+    }
     return pathWithParams === '/' ? '' : validatePath(pathWithParams);
   }
 
