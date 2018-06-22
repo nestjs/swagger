@@ -9,6 +9,7 @@ import {
   exploreApiConsumesMetadata,
   exploreGlobalApiConsumesMetadata
 } from './explorers/api-consumes.explorer';
+import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
 import { exploreApiOperationMetadata } from './explorers/api-operation.explorer';
 import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer';
 import {
@@ -76,6 +77,14 @@ export class SwaggerExplorer {
       prototype,
       name => {
         const targetCallback = prototype[name];
+        const excludeEndpoint = exploreApiExcludeEndpointMetadata(
+          instance,
+          prototype,
+          targetCallback
+        );
+        if (excludeEndpoint && excludeEndpoint.disable) {
+          return;
+        }
         const methodMetadata = mapValues(explorersSchema, (explorers: any[]) =>
           explorers.reduce((metadata, fn) => {
             const exploredMetadata = fn.call(
