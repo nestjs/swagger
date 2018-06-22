@@ -59,14 +59,13 @@ const mapResponsesToSwaggerResponses = (responses, definitions) =>
               }
             }
           };
-        } else {
-          return {
-            ...response,
-            schema: {
-              type: swaggerType
-            }
-          };
         }
+        return {
+          ...response,
+          schema: {
+            type: swaggerType
+          }
+        };
       }
       const name = exploreModelDefinition(type, definitions);
       if (isArray) {

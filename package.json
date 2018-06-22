@@ -14,10 +14,7 @@
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "@nestjs/common": "^5.0.1",
-    "@nestjs/core": "^5.0.1",
     "lodash": "^4.17.4",
-    "reflect-metadata": "^0.1.12",
     "swagger-ui-express": "^3.0.8"
   },
   "devDependencies": {
