@@ -1,4 +1,4 @@
-import { omit, pickBy, negate, isUndefined, isNil } from 'lodash';
+import { isUndefined, negate, pickBy } from 'lodash';
 import { DECORATORS } from '../constants';
 
 export const createMethodDecorator = (metakey, metadata): MethodDecorator => {
@@ -19,7 +19,7 @@ export const createPropertyDecorator = (
   metakey,
   metadata
 ): PropertyDecorator => {
-  return (target: object, propertyKey: string | symbol) => {
+  return (target: object, propertyKey: string) => {
     const properties =
       Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES_ARRAY, target) || [];
     Reflect.defineMetadata(
