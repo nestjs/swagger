@@ -1,7 +1,11 @@
 import { RequestMethod } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { Controller } from '@nestjs/common/interfaces';
-import { isUndefined, validatePath } from '@nestjs/common/utils/shared.utils';
+import {
+  isString,
+  isUndefined,
+  validatePath
+} from '@nestjs/common/utils/shared.utils';
 import { InstanceWrapper } from '@nestjs/core/injector/container';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
@@ -170,7 +174,7 @@ export class SwaggerExplorer {
     }
     let pathWithParams = '';
     for (const item of pathToRegexp.parse(path)) {
-      if (typeof item === 'string') {
+      if (isString(item)) {
         pathWithParams += item;
       } else {
         pathWithParams += `${item.prefix}{${item.name}}`;
