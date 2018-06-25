@@ -1,31 +1,42 @@
 {
   "name": "@nestjs/swagger",
-  "version": "1.2.3",
-  "description":
-    "Nest - modern, fast, powerful node.js web framework (@swagger)",
+  "version": "2.2.0",
+  "description": "Nest - modern, fast, powerful node.js web framework (@swagger)",
   "author": "Kamil Mysliwiec",
   "license": "MIT",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "format": "prettier lib/**/*.ts --write",
     "precommit": "lint-staged",
-    "format": "prettier */**/*.ts --write"
+    "prepublish:next": "npm run build",
+    "publish:next": "npm publish --access public --tag next",
+    "prepublish:npm": "npm run build",
+    "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "@nestjs/common": "^4.4.2",
-    "@nestjs/core": "^4.4.2",
     "lodash": "^4.17.4",
-    "reflect-metadata": "0.1.10",
-    "rxjs": "^5.5.5",
-    "swagger-ui-express": "^2.0.11",
-    "typescript": "^2.6.2"
+    "path-to-regexp": "^2.2.1",
+    "swagger-ui-express": "^3.0.8"
   },
   "devDependencies": {
+    "@nestjs/common": "^5.0.0",
+    "@nestjs/core": "^5.0.0",
+    "@types/node": "^10.3.5",
+    "fastify-swagger": "^0.12.0",
     "husky": "^0.14.3",
     "lint-staged": "^7.0.0",
-    "prettier": "^1.11.1"
+    "prettier": "^1.11.1",
+    "reflect-metadata": "^0.1.12",
+    "typescript": "^2.6.2"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^5.0.0",
+    "@nestjs/core": "^5.0.0"
   },
   "lint-staged": {
-    "*.{js,ts,json,css,md}": ["prettier --write", "git add"]
-  },
-  "main": "dist/index.js"
+    "*.ts": [
+      "prettier --write",
+      "git add -f"
+    ]
+  }
 }
