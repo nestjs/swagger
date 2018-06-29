@@ -12,6 +12,7 @@ export const ApiModelProperty = (
     collectionFormat?: string;
     default?: any;
     enum?: SwaggerEnumType;
+    enumName?: string;
     format?: string;
     multipleOf?: number;
     maximum?: number;
@@ -42,6 +43,7 @@ export const ApiModelPropertyOptional = (
     collectionFormat?: string;
     default?: any;
     enum?: SwaggerEnumType;
+    enumName?: string;
     format?: string;
     multipleOf?: number;
     maximum?: number;

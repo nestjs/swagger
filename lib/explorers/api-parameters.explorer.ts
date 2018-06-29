@@ -19,7 +19,8 @@ import {
   omit,
   omitBy,
   pickBy,
-  unionWith
+  unionWith,
+  keys
 } from 'lodash';
 import { DECORATORS } from '../constants';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
@@ -150,6 +151,15 @@ const transformToArrayModelProperty = (metadata, key, type) => {
   return model;
 };
 
+export const exploreEnumDefinition = (metadata, definitions) => {
+  definitions.push({
+    [metadata.enumName]: {
+      type: getEnumType(metadata.enum),
+      enum: metadata.enum
+    }
+  });
+};
+
 export const exploreModelDefinition = (type, definitions) => {
   const { prototype } = type;
   const modelProperties = exploreModelProperties(prototype);
@@ -161,6 +171,9 @@ export const exploreModelDefinition = (type, definitions) => {
 
     if (metadata.enum !== undefined) {
       metadata.enum = getEnumValues(metadata.enum);
+      if (metadata.enumName && !definitions[metadata.enumName]) {
+        exploreEnumDefinition(metadata, definitions);
+      }
     }
 
     if (
@@ -194,11 +207,23 @@ export const exploreModelDefinition = (type, definitions) => {
       };
     }
   });
+
+  const properties = mapValues(keyBy(propertiesWithType, 'name'), property =>
+    omit(property, ['name', 'isArray', 'required'])
+  );
+
+  keys(properties).forEach(key => {
+    if (properties[key].enum) {
+      properties[key] = {
+        $ref: getDefinitionPath(properties[key].enumName)
+      };
+      delete properties[key].enumName;
+    }
+  });
+
   const typeDefinition = {
     type: 'object',
-    properties: mapValues(keyBy(propertiesWithType, 'name'), property =>
-      omit(property, ['name', 'isArray', 'required'])
-    )
+    properties
   };
   const typeDefinitionRequiredFields = propertiesWithType
     .filter(property => property.required != false)
