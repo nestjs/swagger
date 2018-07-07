@@ -18,7 +18,7 @@ export class SwaggerScanner {
         const path = metatype
           ? Reflect.getMetadata(MODULE_PATH, metatype)
           : undefined;
-        this.scanModuleRoutes(routes, path);
+        return this.scanModuleRoutes(routes, path);
       }
     );
     return {
