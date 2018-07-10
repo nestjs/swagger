@@ -1,8 +1,22 @@
+import { RequestMethod } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
+import { Controller } from '@nestjs/common/interfaces';
+import {
+  isString,
+  isUndefined,
+  validatePath
+} from '@nestjs/common/utils/shared.utils';
+import { InstanceWrapper } from '@nestjs/core/injector/container';
+import { MetadataScanner } from '@nestjs/core/metadata-scanner';
+import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
+import * as pathToRegexp from 'path-to-regexp';
 import {
   exploreApiConsumesMetadata,
   exploreGlobalApiConsumesMetadata
 } from './explorers/api-consumes.explorer';
+import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
+import { exploreApiOperationMetadata } from './explorers/api-operation.explorer';
+import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer';
 import {
   exploreApiProducesMetadata,
   exploreGlobalApiProducesMetadata
@@ -19,15 +33,6 @@ import {
   exploreApiUseTagsMetadata,
   exploreGlobalApiUseTagsMetadata
 } from './explorers/api-use-tags.explorer';
-import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
-import { isUndefined, validatePath } from '@nestjs/common/utils/shared.utils';
-
-import { Controller } from '@nestjs/common/interfaces';
-import { InstanceWrapper } from '@nestjs/core/injector/container';
-import { MetadataScanner } from '@nestjs/core/metadata-scanner';
-import { RequestMethod } from '@nestjs/common';
-import { exploreApiOperationMetadata } from './explorers/api-operation.explorer';
-import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer';
 
 export class SwaggerExplorer {
   private readonly metadataScanner = new MetadataScanner();
@@ -77,6 +82,14 @@ export class SwaggerExplorer {
       prototype,
       name => {
         const targetCallback = prototype[name];
+        const excludeEndpoint = exploreApiExcludeEndpointMetadata(
+          instance,
+          prototype,
+          targetCallback
+        );
+        if (excludeEndpoint && excludeEndpoint.disable) {
+          return;
+        }
         const methodMetadata = mapValues(explorersSchema, (explorers: any[]) =>
           explorers.reduce((metadata, fn) => {
             const exploredMetadata = fn.call(
@@ -159,10 +172,14 @@ export class SwaggerExplorer {
     if (isUndefined(path)) {
       return '';
     }
-    const pathWithParams = path.replace(/([:].*?[^\/]*)/g, str => {
-      str = str.replace(/\(.*\)$/, ''); // remove any regex in the param
-      return `{${str.slice(1, str.length)}}`;
-    });
+    let pathWithParams = '';
+    for (const item of pathToRegexp.parse(path)) {
+      if (isString(item)) {
+        pathWithParams += item;
+      } else {
+        pathWithParams += `${item.prefix}{${item.name}}`;
+      }
+    }
     return pathWithParams === '/' ? '' : validatePath(pathWithParams);
   }
 

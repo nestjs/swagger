@@ -175,7 +175,7 @@ export const exploreModelDefinition = (type, definitions) => {
       if (metadata.isArray) {
         return transformToArrayModelProperty(metadata, key, { $ref });
       }
-      return { name: key, $ref };
+      return { name: key, $ref, required: metadata.required };
     }
     const metatype: string =
       metadata.type && isFunction(metadata.type)
