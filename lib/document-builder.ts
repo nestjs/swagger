@@ -68,8 +68,11 @@ export class DocumentBuilder {
     location: ('header' | 'body' | 'query') = 'header',
     type: string = 'apiKey',
   ): this {
-    this.document.securityDefinitions.bearer = {
-      type, name, in: location,
+    this.document.securityDefinitions = {
+      ...(this.document.securityDefinitions || {}),
+      bearer: {
+        type, name, in: location,
+      }
     };
     return this;
   }
@@ -80,8 +83,11 @@ export class DocumentBuilder {
     tokenUrl?: string,
     scopes?: object,
   ): this {
-    this.document.securityDefinitions.oauth2 = {
-      type: 'oauth2', flow, authorizationUrl, tokenUrl, scopes,
+    this.document.securityDefinitions = {
+      ...(this.document.securityDefinitions || {}),
+      oauth2: {
+        type: 'oauth2', flow, authorizationUrl, tokenUrl, scopes,
+      }
     };
     return this;
   }

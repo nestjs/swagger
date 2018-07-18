@@ -9,6 +9,5 @@ export const documentBase = {
   },
   basePath: '/',
   tags: [],
-  schemes: ['http'] as SwaggerScheme[],
-  securityDefinitions: {}
+  schemes: ['http'] as SwaggerScheme[]
 };
