@@ -19,8 +19,7 @@ import {
   omit,
   omitBy,
   pickBy,
-  unionWith,
-  flatten
+  unionWith
 } from 'lodash';
 import { DECORATORS } from '../constants';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
@@ -233,17 +232,6 @@ const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
       values.push(value);
       uniqueValues[value] = value;
     }
-  }
-
-  return data;
-};
-
-const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
-  if (Array.isArray(e)) {
-    return e as string[];
-  }
-  if (typeof e !== 'object') {
-    return [];
   }
   return values;
 };
