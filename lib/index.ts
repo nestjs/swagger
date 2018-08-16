@@ -1,3 +1,4 @@
 export * from './decorators';
-export * from './swagger-module';
 export * from './document-builder';
+export * from './interfaces';
+export * from './swagger-module';
