@@ -38,10 +38,10 @@ export class SwaggerExplorer {
   private readonly metadataScanner = new MetadataScanner();
   private readonly modelsDefinitions = [];
 
-  public exploreController({
-    instance,
-    metatype
-  }: InstanceWrapper<Controller>) {
+  public exploreController(
+    { instance, metatype }: InstanceWrapper<Controller>,
+    modulePath: string
+  ) {
     const prototype = Object.getPrototypeOf(instance);
     const explorersSchema = {
       root: [
@@ -59,7 +59,8 @@ export class SwaggerExplorer {
       metatype,
       prototype,
       instance,
-      explorersSchema
+      explorersSchema,
+      modulePath
     );
   }
 
@@ -71,10 +72,13 @@ export class SwaggerExplorer {
     metatype,
     prototype,
     instance,
-    explorersSchema
+    explorersSchema,
+    modulePath
   ) {
-    const path = this.validateRoutePath(this.reflectControllerPath(metatype));
-
+    let path = this.validateRoutePath(this.reflectControllerPath(metatype));
+    if (modulePath) {
+      path = modulePath + path;
+    }
     const self = this;
     const globalMetadata = this.exploreGlobalMetadata(metatype);
     const denormalizedPaths = this.metadataScanner.scanFromPrototype(
@@ -137,13 +141,7 @@ export class SwaggerExplorer {
     const globalMetadata = globalExplorers
       .map(explorer => explorer.call(explorer, metatype))
       .filter(val => !isUndefined(val))
-      .reduce(
-        (curr, next) => ({
-          ...curr,
-          ...next
-        }),
-        {}
-      );
+      .reduce((curr, next) => ({ ...curr, ...next }), {});
 
     return globalMetadata;
   }
