@@ -175,7 +175,20 @@ export const exploreModelDefinition = (type, definitions) => {
       if (metadata.isArray) {
         return transformToArrayModelProperty(metadata, key, { $ref });
       }
-      return { name: key, $ref, required: metadata.required };
+      const strippedMetadata = { ...metadata };
+      delete strippedMetadata.type;
+      delete strippedMetadata.isArray;
+      delete strippedMetadata.collectionFormat;
+      delete strippedMetadata.required;
+      if (Object.keys(strippedMetadata).length === 0) {
+        return { name: key, required: metadata.required, $ref };
+      }
+      return {
+        name: key,
+        required: metadata.required,
+        title: nestedModelName,
+        allOf: [{ $ref }, strippedMetadata]
+      };
     }
     const metatype: string =
       metadata.type && isFunction(metadata.type)
