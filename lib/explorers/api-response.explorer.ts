@@ -1,3 +1,4 @@
+import { HTTP_CODE_METADATA } from '@nestjs/common/constants';
 import { isFunction } from '@nestjs/common/utils/shared.utils';
 import { mapValues, omit } from 'lodash';
 import { DECORATORS } from '../constants';
@@ -22,10 +23,14 @@ export const exploreApiResponseMetadata = (
   method
 ) => {
   const responses = Reflect.getMetadata(DECORATORS.API_RESPONSE, method);
-  if (!responses) {
-    return undefined;
+  if (responses) {
+    return mapResponsesToSwaggerResponses(responses, definitions);
   }
-  return mapResponsesToSwaggerResponses(responses, definitions);
+  const status = Reflect.getMetadata(HTTP_CODE_METADATA, method);
+  if (status) {
+    return { [status]: { description: '' } };
+  }
+  return undefined;
 };
 
 const omitParamType = param => omit(param, 'type');
@@ -43,7 +48,7 @@ const mapResponsesToSwaggerResponses = (responses, definitions) =>
       if (
         !(
           isFunction(type) &&
-          !defaultTypes.find(defaultType => defaultType === type)
+          !defaultTypes.some(defaultType => defaultType === type)
         )
       ) {
         const metatype: string = type && isFunction(type) ? type.name : type;
