@@ -10,6 +10,7 @@ const initialMetadata = {
 export const ApiResponse = (metadata: {
   status: number;
   description?: string;
+  headers?: any;
   type?: any;
   isArray?: boolean;
 }) => {
