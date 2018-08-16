@@ -3,14 +3,15 @@ import { createParamDecorator } from './helpers';
 
 const initialMetadata = {
   name: '',
-  required: true
+  required: true,
+  type: String
 };
 
 export const ApiImplicitBody = (metadata: {
   name: string;
+  type: any;
   description?: string;
   required?: boolean;
-  type?: any;
   isArray?: boolean;
 }): MethodDecorator => {
   const param = {
