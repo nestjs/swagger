@@ -1,6 +1,6 @@
 import {
   SwaggerBaseConfig,
-  SwaggerScheme,
+  SwaggerScheme
 } from './interfaces/swagger-base-config.interface';
 
 import { documentBase } from './fixtures/document.base';
@@ -44,7 +44,9 @@ export class DocumentBuilder {
   }
 
   public setBasePath(basePath: string): this {
-    this.document.basePath = basePath.startsWith('/') ? basePath : '/' + basePath;
+    this.document.basePath = basePath.startsWith('/')
+      ? basePath
+      : '/' + basePath;
     return this;
   }
 
@@ -65,23 +67,35 @@ export class DocumentBuilder {
 
   public addBearerAuth(
     name: string = 'Authorization',
-    location: ('header' | 'body' | 'query') = 'header',
-    type: string = 'apiKey',
+    location: 'header' | 'body' | 'query' = 'header',
+    type: string = 'apiKey'
   ): this {
-    this.document.securityDefinitions.bearer = {
-      type, name, in: location,
+    this.document.securityDefinitions = {
+      ...(this.document.securityDefinitions || {}),
+      bearer: {
+        type,
+        name,
+        in: location
+      }
     };
     return this;
   }
 
   public addOAuth2(
-    flow: ('implicit' | 'password' | 'application' | 'accessCode') = 'password',
+    flow: 'implicit' | 'password' | 'application' | 'accessCode' = 'password',
     authorizationUrl?: string,
     tokenUrl?: string,
-    scopes?: object,
+    scopes?: object
   ): this {
-    this.document.securityDefinitions.oauth2 = {
-      type: 'oauth2', flow, authorizationUrl, tokenUrl, scopes,
+    this.document.securityDefinitions = {
+      ...(this.document.securityDefinitions || {}),
+      oauth2: {
+        type: 'oauth2',
+        flow,
+        authorizationUrl,
+        tokenUrl,
+        scopes
+      }
     };
     return this;
   }
