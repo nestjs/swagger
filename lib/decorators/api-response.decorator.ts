@@ -75,6 +75,12 @@ export const ApiBadRequestResponse = (metadata: responseMetadata) =>
     status: HttpStatus.BAD_REQUEST
   });
 
+export const ApiNotFoundResponse = (metadata: responseMetadata) =>
+  ApiResponse({
+    ...metadata,
+    status: HttpStatus.NOT_FOUND
+  });
+
 export const ApiInternalServerErrorResponse = (metadata: responseMetadata) =>
   ApiResponse({
     ...metadata,
