@@ -1,4 +1,4 @@
-import { isUndefined, negate, pickBy } from 'lodash';
+import { isArray, isUndefined, negate, pickBy } from 'lodash';
 import { DECORATORS } from '../constants';
 
 export const createMethodDecorator = (metakey, metadata): MethodDecorator => {
@@ -86,4 +86,19 @@ export const createMultipleParamDecorator = (multiMetadata: any[], initial) => {
     );
     return descriptor;
   };
+};
+
+export const getTypeIsArrayTuple = (
+  input: Function | [Function],
+  isArrayFlag: boolean
+): [Function, boolean] => {
+  if (!input) {
+    return [Object, false];
+  }
+  if (isArrayFlag) {
+    return [input as Function, isArrayFlag];
+  }
+  const isInputArray = isArray(input);
+  const type = isInputArray ? input[0] : input;
+  return [type, isInputArray];
 };

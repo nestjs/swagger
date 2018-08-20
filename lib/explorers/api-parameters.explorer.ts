@@ -280,7 +280,7 @@ const mapParametersTypes = parameters =>
       return omitParamType(param);
     }
     const { type } = param;
-    const paramWithStringifiedType = pickBy(
+    const paramWithStringType: any = pickBy(
       {
         ...param,
         type:
@@ -290,16 +290,16 @@ const mapParametersTypes = parameters =>
       },
       negate(isUndefined)
     );
-    if ((paramWithStringifiedType as any).isArray) {
+    if (paramWithStringType.isArray) {
       return {
-        ...paramWithStringifiedType,
+        ...paramWithStringType,
         type: 'array',
         items: {
-          type: mapTypesToSwaggerTypes(param.type)
+          type: mapTypesToSwaggerTypes(paramWithStringType.type)
         }
       };
     }
-    return paramWithStringifiedType;
+    return paramWithStringType;
   });
 
 export const mapTypesToSwaggerTypes = (type: string) => {
@@ -314,6 +314,13 @@ const getDefinitionPath = modelName => `#/definitions/${modelName}`;
 const mapModelsToDefinitons = (parameters, definitions) => {
   return parameters.map(param => {
     if (!isBodyParameter(param)) {
+      return param;
+    }
+    const defaultTypes = [String, Boolean, Number, Object];
+    if (
+      isFunction(param.type) &&
+      defaultTypes.some(defaultType => defaultType === param.type)
+    ) {
       return param;
     }
     const modelName = exploreModelDefinition(param.type, definitions);

@@ -1,5 +1,5 @@
 import { isNil } from 'lodash';
-import { createParamDecorator } from './helpers';
+import { createParamDecorator, getTypeIsArrayTuple } from './helpers';
 
 const initialMetadata = {
   name: '',
@@ -14,13 +14,14 @@ export const ApiImplicitBody = (metadata: {
   required?: boolean;
   isArray?: boolean;
 }): MethodDecorator => {
+  const [type, isArray] = getTypeIsArrayTuple(metadata.type, metadata.isArray);
   const param = {
     name: isNil(metadata.name) ? initialMetadata.name : metadata.name,
     in: 'body',
     description: metadata.description,
     required: metadata.required,
-    type: metadata.type,
-    isArray: metadata.isArray
+    type,
+    isArray
   };
   return createParamDecorator(param, initialMetadata);
 };

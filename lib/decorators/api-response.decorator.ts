@@ -1,6 +1,7 @@
+import { HttpStatus } from '@nestjs/common/enums/http-status.enum';
 import { omit } from 'lodash';
 import { DECORATORS } from '../constants';
-import { HttpStatus } from '@nestjs/common/enums/http-status.enum';
+import { getTypeIsArrayTuple } from './helpers';
 
 const initialMetadata = {
   status: 0,
@@ -21,7 +22,12 @@ export const ApiResponse = (metadata: {
   type?: any;
   isArray?: boolean;
 }) => {
+  const [type, isArray] = getTypeIsArrayTuple(metadata.type, metadata.isArray);
+
+  metadata.type = type;
+  metadata.isArray = isArray;
   metadata.description = metadata.description ? metadata.description : '';
+
   const groupedMetadata = { [metadata.status]: omit(metadata, 'status') };
   return (target, key?, descriptor?: PropertyDescriptor) => {
     if (descriptor) {
