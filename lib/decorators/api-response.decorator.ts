@@ -3,25 +3,18 @@ import { omit } from 'lodash';
 import { DECORATORS } from '../constants';
 import { getTypeIsArrayTuple } from './helpers';
 
-const initialMetadata = {
-  status: 0,
-  type: String,
-  isArray: false
-};
-
-export interface responseMetadata {
+export interface ResponseMetadata {
   description?: string;
   type?: any;
   isArray?: boolean;
 }
 
-export const ApiResponse = (metadata: {
-  status: number;
-  description?: string;
-  headers?: any;
-  type?: any;
-  isArray?: boolean;
-}) => {
+export const ApiResponse = (
+  metadata: {
+    status: number;
+    headers?: any;
+  } & ResponseMetadata
+) => {
   const [type, isArray] = getTypeIsArrayTuple(metadata.type, metadata.isArray);
 
   metadata.type = type;
@@ -57,109 +50,109 @@ export const ApiResponse = (metadata: {
   };
 };
 
-export const ApiOkResponse = (metadata: responseMetadata) =>
+export const ApiOkResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.OK
   });
 
-export const ApiCreatedResponse = (metadata: responseMetadata) =>
+export const ApiCreatedResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.CREATED
   });
 
-export const ApiBadRequestResponse = (metadata: responseMetadata) =>
+export const ApiBadRequestResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.BAD_REQUEST
   });
 
-export const ApiNotFoundResponse = (metadata: responseMetadata) =>
+export const ApiNotFoundResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.NOT_FOUND
   });
 
-export const ApiInternalServerErrorResponse = (metadata: responseMetadata) =>
+export const ApiInternalServerErrorResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.INTERNAL_SERVER_ERROR
   });
 
-export const ApiBadGatewayResponse = (metadata: responseMetadata) =>
+export const ApiBadGatewayResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.BAD_GATEWAY
   });
 
-export const ApiConflictResponse = (metadata: responseMetadata) =>
+export const ApiConflictResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.CONFLICT
   });
 
-export const ApiForbiddenResponse = (metadata: responseMetadata) =>
+export const ApiForbiddenResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.FORBIDDEN
   });
 
-export const ApiGatewayTimeoutResponse = (metadata: responseMetadata) =>
+export const ApiGatewayTimeoutResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.GATEWAY_TIMEOUT
   });
 
-export const ApiGoneResponse = (metadata: responseMetadata) =>
+export const ApiGoneResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.GONE
   });
 
-export const ApiMethodNotAllowedResponse = (metadata: responseMetadata) =>
+export const ApiMethodNotAllowedResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.METHOD_NOT_ALLOWED
   });
 
-export const ApiNotAcceptableResponse = (metadata: responseMetadata) =>
+export const ApiNotAcceptableResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.NOT_ACCEPTABLE
   });
 
-export const ApiNotImplementedResponse = (metadata: responseMetadata) =>
+export const ApiNotImplementedResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.NOT_IMPLEMENTED
   });
 
-export const ApiPayloadTooLargeResponse = (metadata: responseMetadata) =>
+export const ApiPayloadTooLargeResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.PAYLOAD_TOO_LARGE
   });
 
-export const ApiRequestTimeoutResponse = (metadata: responseMetadata) =>
+export const ApiRequestTimeoutResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.REQUEST_TIMEOUT
   });
 
-export const ApiServiceUnavailableResponse = (metadata: responseMetadata) =>
+export const ApiServiceUnavailableResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.SERVICE_UNAVAILABLE
   });
 
-export const ApiUnprocessableEntityResponse = (metadata: responseMetadata) =>
+export const ApiUnprocessableEntityResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.UNPROCESSABLE_ENTITY
   });
 
-export const ApiUnsupportedMediaTypeResponse = (metadata: responseMetadata) =>
+export const ApiUnsupportedMediaTypeResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.UNSUPPORTED_MEDIA_TYPE
