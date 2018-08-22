@@ -200,6 +200,11 @@ export const exploreModelDefinition = (type, definitions) => {
 
     if (metadata.isArray) {
       return transformToArrayModelProperty(metadata, key, { type: itemType });
+    } else if (swaggerType === 'array') {
+      const defaultOnArray = 'string';
+      return transformToArrayModelProperty(metadata, key, {
+        type: defaultOnArray
+      });
     } else {
       return {
         ...metadata,
