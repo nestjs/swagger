@@ -1,4 +1,4 @@
-import { omit, pickBy, negate, isUndefined, isNil } from 'lodash';
+import { isArray, isUndefined, negate, pickBy } from 'lodash';
 import { DECORATORS } from '../constants';
 
 export const createMethodDecorator = (metakey, metadata): MethodDecorator => {
@@ -19,7 +19,7 @@ export const createPropertyDecorator = (
   metakey,
   metadata
 ): PropertyDecorator => {
-  return (target: object, propertyKey: string | symbol) => {
+  return (target: object, propertyKey: string) => {
     const properties =
       Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES_ARRAY, target) || [];
     Reflect.defineMetadata(
@@ -86,4 +86,19 @@ export const createMultipleParamDecorator = (multiMetadata: any[], initial) => {
     );
     return descriptor;
   };
+};
+
+export const getTypeIsArrayTuple = (
+  input: Function | [Function],
+  isArrayFlag: boolean
+): [Function, boolean] => {
+  if (!input) {
+    return [Object, false];
+  }
+  if (isArrayFlag) {
+    return [input as Function, isArrayFlag];
+  }
+  const isInputArray = isArray(input);
+  const type = isInputArray ? input[0] : input;
+  return [type, isInputArray];
 };

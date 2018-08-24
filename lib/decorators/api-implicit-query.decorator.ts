@@ -1,4 +1,5 @@
 import { DECORATORS } from '../constants';
+import { SwaggerEnumType } from '../types/swagger-enum.type';
 import { createMethodDecorator, createParamDecorator } from './helpers';
 import { omit, pickBy, negate, isUndefined, isNil } from 'lodash';
 
@@ -13,6 +14,7 @@ export const ApiImplicitQuery = (metadata: {
   required?: boolean;
   type?: 'String' | 'Number' | 'Boolean' | any;
   isArray?: boolean;
+  enum?: SwaggerEnumType;
   collectionFormat?: 'csv' | 'ssv' | 'tsv' | 'pipes' | 'multi';
 }): MethodDecorator => {
   const param = {
@@ -21,17 +23,33 @@ export const ApiImplicitQuery = (metadata: {
     description: metadata.description,
     required: metadata.required,
     type: metadata.type,
+    enum: undefined,
     items: undefined,
     collectionFormat: undefined
   };
+
+  if (metadata.enum) {
+    param.type = String;
+    param.enum = metadata.enum;
+  }
+
   if (metadata.isArray) {
     param.type = Array;
-    param.items = {
-      type: metadata.type
-    };
-    param.collectionFormat = isNil(metadata.collectionFormat)
-      ? 'csv'
-      : metadata.collectionFormat;
+    if (metadata.enum) {
+      param.items = {
+        type: 'String',
+        enum: metadata.enum
+      };
+      param.collectionFormat = 'multi';
+      param.enum = undefined;
+    } else {
+      param.items = {
+        type: metadata.type
+      };
+      param.collectionFormat = isNil(metadata.collectionFormat)
+        ? 'csv'
+        : metadata.collectionFormat;
+    }
   }
   return createParamDecorator(param, initialMetadata);
 };

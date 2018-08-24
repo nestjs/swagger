@@ -19,8 +19,7 @@ import {
   omit,
   omitBy,
   pickBy,
-  unionWith,
-  flatten
+  unionWith
 } from 'lodash';
 import { DECORATORS } from '../constants';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
@@ -176,7 +175,21 @@ export const exploreModelDefinition = (type, definitions) => {
       if (metadata.isArray) {
         return transformToArrayModelProperty(metadata, key, { $ref });
       }
-      return { name: key, $ref };
+      const strippedMetadata = omit(metadata, [
+        'type',
+        'isArray',
+        'collectionFormat',
+        'required'
+      ]);
+      if (Object.keys(strippedMetadata).length === 0) {
+        return { name: key, required: metadata.required, $ref };
+      }
+      return {
+        name: key,
+        required: metadata.required,
+        title: nestedModelName,
+        allOf: [{ $ref }, strippedMetadata]
+      };
     }
     const metatype: string =
       metadata.type && isFunction(metadata.type)
@@ -187,6 +200,11 @@ export const exploreModelDefinition = (type, definitions) => {
 
     if (metadata.isArray) {
       return transformToArrayModelProperty(metadata, key, { type: itemType });
+    } else if (swaggerType === 'array') {
+      const defaultOnArray = 'string';
+      return transformToArrayModelProperty(metadata, key, {
+        type: defaultOnArray
+      });
     } else {
       return {
         ...metadata,
@@ -216,7 +234,6 @@ export const exploreModelDefinition = (type, definitions) => {
 const formDataModelTransformation = type => {
   const { prototype } = type;
   const modelProperties = exploreModelProperties(prototype);
-
   const data = modelProperties.map(key => {
     const metadata =
       Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
@@ -231,7 +248,6 @@ const formDataModelTransformation = type => {
       };
     }
   });
-
   return data;
 };
 
@@ -256,7 +272,8 @@ const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
       uniqueValues[value] = value;
     }
   }
-  return values;
+
+  return data;
 };
 
 const getEnumType = (values: (string | number)[]): 'string' | 'number' => {
@@ -289,7 +306,7 @@ const mapParametersTypes = parameters =>
       return omitParamType(param);
     }
     const { type } = param;
-    const paramWithStringifiedType = pickBy(
+    const paramWithStringType: any = pickBy(
       {
         ...param,
         type:
@@ -299,16 +316,16 @@ const mapParametersTypes = parameters =>
       },
       negate(isUndefined)
     );
-    if ((paramWithStringifiedType as any).isArray) {
+    if (paramWithStringType.isArray) {
       return {
-        ...paramWithStringifiedType,
+        ...paramWithStringType,
         type: 'array',
         items: {
-          type: mapTypesToSwaggerTypes(param.type)
+          type: mapTypesToSwaggerTypes(paramWithStringType.type)
         }
       };
     }
-    return paramWithStringifiedType;
+    return paramWithStringType;
   });
 
 export const mapTypesToSwaggerTypes = (type: string) => {
@@ -329,8 +346,14 @@ const mapModelsToDefinitons = (parameters, definitions) => {
     }
     if (containsFormData) {
       const res = formDataModelTransformation(param.type);
-
       return res;
+    }
+    const defaultTypes = [String, Boolean, Number, Object];
+    if (
+      isFunction(param.type) &&
+      defaultTypes.some(defaultType => defaultType === param.type)
+    ) {
+      return param;
     }
     const modelName = exploreModelDefinition(param.type, definitions);
     const name = param.name ? param.name : modelName;

@@ -1,8 +1,22 @@
+import { RequestMethod } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
+import { Controller } from '@nestjs/common/interfaces';
+import {
+  isString,
+  isUndefined,
+  validatePath
+} from '@nestjs/common/utils/shared.utils';
+import { InstanceWrapper } from '@nestjs/core/injector/container';
+import { MetadataScanner } from '@nestjs/core/metadata-scanner';
+import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
+import * as pathToRegexp from 'path-to-regexp';
 import {
   exploreApiConsumesMetadata,
   exploreGlobalApiConsumesMetadata
 } from './explorers/api-consumes.explorer';
+import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
+import { exploreApiOperationMetadata } from './explorers/api-operation.explorer';
+import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer';
 import {
   exploreApiProducesMetadata,
   exploreGlobalApiProducesMetadata
@@ -19,24 +33,15 @@ import {
   exploreApiUseTagsMetadata,
   exploreGlobalApiUseTagsMetadata
 } from './explorers/api-use-tags.explorer';
-import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
-import { isUndefined, validatePath } from '@nestjs/common/utils/shared.utils';
-
-import { Controller } from '@nestjs/common/interfaces';
-import { InstanceWrapper } from '@nestjs/core/injector/container';
-import { MetadataScanner } from '@nestjs/core/metadata-scanner';
-import { RequestMethod } from '@nestjs/common';
-import { exploreApiOperationMetadata } from './explorers/api-operation.explorer';
-import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer';
 
 export class SwaggerExplorer {
   private readonly metadataScanner = new MetadataScanner();
   private readonly modelsDefinitions = [];
 
-  public exploreController({
-    instance,
-    metatype
-  }: InstanceWrapper<Controller>) {
+  public exploreController(
+    { instance, metatype }: InstanceWrapper<Controller>,
+    modulePath: string
+  ) {
     const prototype = Object.getPrototypeOf(instance);
     const explorersSchema = {
       root: [
@@ -54,7 +59,8 @@ export class SwaggerExplorer {
       metatype,
       prototype,
       instance,
-      explorersSchema
+      explorersSchema,
+      modulePath
     );
   }
 
@@ -66,10 +72,13 @@ export class SwaggerExplorer {
     metatype,
     prototype,
     instance,
-    explorersSchema
+    explorersSchema,
+    modulePath
   ) {
-    const path = this.validateRoutePath(this.reflectControllerPath(metatype));
-
+    let path = this.validateRoutePath(this.reflectControllerPath(metatype));
+    if (modulePath) {
+      path = modulePath + path;
+    }
     const self = this;
     const globalMetadata = this.exploreGlobalMetadata(metatype);
     const denormalizedPaths = this.metadataScanner.scanFromPrototype(
@@ -124,13 +133,7 @@ export class SwaggerExplorer {
     const globalMetadata = globalExplorers
       .map(explorer => explorer.call(explorer, metatype))
       .filter(val => !isUndefined(val))
-      .reduce(
-        (curr, next) => ({
-          ...curr,
-          ...next
-        }),
-        {}
-      );
+      .reduce((curr, next) => ({ ...curr, ...next }), {});
 
     return globalMetadata;
   }
@@ -159,10 +162,14 @@ export class SwaggerExplorer {
     if (isUndefined(path)) {
       return '';
     }
-    const pathWithParams = path.replace(/([:].*?[^\/]*)/g, str => {
-      str = str.replace(/\(.*\)$/, ''); // remove any regex in the param
-      return `{${str.slice(1, str.length)}}`;
-    });
+    let pathWithParams = '';
+    for (const item of pathToRegexp.parse(path)) {
+      if (isString(item)) {
+        pathWithParams += item;
+      } else {
+        pathWithParams += `${item.prefix}{${item.name}}`;
+      }
+    }
     return pathWithParams === '/' ? '' : validatePath(pathWithParams);
   }
 

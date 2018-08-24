@@ -26,7 +26,7 @@
 
 ## Description
 
-This is an [OpenAPI (Swagger)](https://www.openapis.org/) module for [Nest](https://github.com/nestjs/nest).
+The [OpenAPI (Swagger)](https://www.openapis.org/) module for [Nest](https://github.com/nestjs/nest).
 
 ## Installation
 
