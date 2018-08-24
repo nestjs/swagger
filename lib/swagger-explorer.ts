@@ -86,6 +86,14 @@ export class SwaggerExplorer {
       prototype,
       name => {
         const targetCallback = prototype[name];
+        const excludeEndpoint = exploreApiExcludeEndpointMetadata(
+          instance,
+          prototype,
+          targetCallback
+        );
+        if (excludeEndpoint && excludeEndpoint.disable) {
+          return;
+        }
         const methodMetadata = mapValues(explorersSchema, (explorers: any[]) =>
           explorers.reduce((metadata, fn) => {
             const exploredMetadata = fn.call(
