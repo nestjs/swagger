@@ -36,9 +36,9 @@ export class SwaggerScanner {
   }
 
   public scanModuleRoutes(routes, modulePath): SwaggerDocument {
-    const denormalizedArray = [...routes.values()].map(ctrl => {
-      return this.explorer.exploreController(ctrl, modulePath);
-    });
+    const denormalizedArray = [...routes.values()].map(ctrl =>
+      this.explorer.exploreController(ctrl, modulePath)
+    );
     return flatten(denormalizedArray) as any;
   }
 }
