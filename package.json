@@ -1,6 +1,6 @@
 {
   "name": "@nestjs/swagger",
-  "version": "2.3.0",
+  "version": "2.4.6",
   "description":
     "Nest - modern, fast, powerful node.js web framework (@swagger)",
   "author": "Kamil Mysliwiec",
@@ -23,7 +23,7 @@
     "@nestjs/common": "^5.0.0",
     "@nestjs/core": "^5.0.0",
     "@types/node": "^10.3.5",
-    "fastify-swagger": "^0.12.0",
+    "fastify-swagger": "^0.15.0",
     "husky": "^0.14.3",
     "lint-staged": "^7.0.0",
     "prettier": "^1.11.1",

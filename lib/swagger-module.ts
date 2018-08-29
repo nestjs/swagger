@@ -50,7 +50,11 @@ export class SwaggerModule {
     httpServer.register(loadPackage('fastify-swagger', 'SwaggerModule'), {
       swagger: document,
       exposeRoute: true,
-      routePrefix: path
+      routePrefix: path,
+      mode: 'static',
+      specification: {
+        document
+      }
     });
   }
 }
