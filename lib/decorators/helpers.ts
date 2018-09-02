@@ -31,7 +31,7 @@ export const createPropertyDecorator = (
       metakey,
       {
         type: Reflect.getMetadata('design:type', target, propertyKey),
-        ...metadata
+        ...pickBy(metadata, negate(isUndefined))
       },
       target,
       propertyKey
@@ -89,11 +89,11 @@ export const createMultipleParamDecorator = (multiMetadata: any[], initial) => {
 };
 
 export const getTypeIsArrayTuple = (
-  input: Function | [Function],
+  input: Function | [Function] | undefined,
   isArrayFlag: boolean
-): [Function, boolean] => {
+): [Function | undefined, boolean] => {
   if (!input) {
-    return [Object, false];
+    return [input as undefined, isArrayFlag];
   }
   if (isArrayFlag) {
     return [input as Function, isArrayFlag];

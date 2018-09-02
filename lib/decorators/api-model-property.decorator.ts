@@ -1,6 +1,6 @@
 import { DECORATORS } from '../constants';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
-import { createPropertyDecorator } from './helpers';
+import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers';
 
 export const ApiModelProperty = (
   metadata: {
@@ -31,7 +31,12 @@ export const ApiModelProperty = (
     example?: any;
   } = {}
 ): PropertyDecorator => {
-  return createPropertyDecorator(DECORATORS.API_MODEL_PROPERTIES, metadata);
+  const [type, isArray] = getTypeIsArrayTuple(metadata.type, metadata.isArray);
+  return createPropertyDecorator(DECORATORS.API_MODEL_PROPERTIES, {
+    ...metadata,
+    type,
+    isArray
+  });
 };
 
 export const ApiModelPropertyOptional = (
