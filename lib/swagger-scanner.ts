@@ -1,4 +1,4 @@
-import { extend, flatten, reduce } from 'lodash';
+import { extend, flatten, reduce, filter, map } from 'lodash';
 import { SwaggerDocument } from './interfaces';
 import { SwaggerExplorer } from './swagger-explorer';
 import { SwaggerTransformer } from './swagger-transformer';
@@ -8,11 +8,19 @@ export class SwaggerScanner {
   private readonly explorer = new SwaggerExplorer();
   private readonly transfomer = new SwaggerTransformer();
 
-  public scanApplication(app): SwaggerDocument {
+  public scanApplication(app, includedModules): SwaggerDocument {
     const { container } = app;
     const modules = container.getModules();
-
-    const denormalizedPaths = [...modules.values()].map(
+    const denormalizedPaths = map(
+      filter(
+        [...modules.values()],
+        ({ metatype }) =>
+          !(
+            includedModules.length > 0 &&
+            metatype &&
+            !includedModules.includes(metatype)
+          )
+      ),
       ({ routes, metatype }) => {
         // get the module path (if any), to prefix it for all the module controllers.
         const path = metatype

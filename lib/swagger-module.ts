@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { loadPackage } from '@nestjs/common/utils/load-package.util';
+import { Module } from '@nestjs/core/injector/module';
 import { FastifyAdapter } from '@nestjs/core';
 import * as swaggerUi from 'swagger-ui-express';
 import {
@@ -14,9 +15,10 @@ export class SwaggerModule {
 
   public static createDocument(
     app: INestApplication,
-    config: SwaggerBaseConfig
+    config: SwaggerBaseConfig,
+    includedModules: Module[] = []
   ): SwaggerDocument {
-    const document = this.swaggerScanner.scanApplication(app);
+    const document = this.swaggerScanner.scanApplication(app, includedModules);
     return {
       ...config,
       ...document,
@@ -38,7 +40,10 @@ export class SwaggerModule {
       return this.setupFastify(path, httpServer, document);
     }
     const finalPath = validatePath(path);
-    app.use(finalPath, swaggerUi.serve, swaggerUi.setup(document, options));
+
+    const swaggerHtml = swaggerUi.generateHTML(document, options);
+    app.use(finalPath, swaggerUi.serveFiles(document, options));
+    app.use(finalPath, (req, res) => res.send(swaggerHtml));
     app.use(finalPath + '-json', (req, res) => res.json(document));
   }
 
