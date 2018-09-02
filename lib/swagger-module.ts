@@ -1,12 +1,12 @@
 import { INestApplication } from '@nestjs/common';
 import { loadPackage } from '@nestjs/common/utils/load-package.util';
-import { Module } from '@nestjs/core/injector/module';
 import { FastifyAdapter } from '@nestjs/core';
 import * as swaggerUi from 'swagger-ui-express';
 import {
   SwaggerBaseConfig,
   SwaggerCustomOptions,
-  SwaggerDocument
+  SwaggerDocument,
+  SwaggerDocumentOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
 
@@ -16,9 +16,12 @@ export class SwaggerModule {
   public static createDocument(
     app: INestApplication,
     config: SwaggerBaseConfig,
-    includedModules: Module[] = []
+    options: SwaggerDocumentOptions = {}
   ): SwaggerDocument {
-    const document = this.swaggerScanner.scanApplication(app, includedModules);
+    const document = this.swaggerScanner.scanApplication(
+      app,
+      options.include || []
+    );
     return {
       ...config,
       ...document,
