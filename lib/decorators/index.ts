@@ -11,3 +11,4 @@ export * from './api-model-property.decorator';
 export * from './api-use-tags.decorator';
 export * from './api-oauth2.decorator';
 export * from './api-exclude-endpoint.decorator';
+export * from './api-implicit-file.decorator';
