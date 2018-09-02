@@ -64,6 +64,7 @@ export const exploreApiParametersMetadata = (
     definitions
   );
   const parameters = mapParametersTypes(paramsWithDefinitions);
+
   return parameters ? { parameters } : undefined;
 };
 
@@ -231,6 +232,29 @@ export const exploreModelDefinition = (type, definitions) => {
   return type.name;
 };
 
+const formDataModelTransformation = type => {
+  const { prototype } = type;
+  if (!prototype) {
+    return {};
+  }
+  const modelProperties = exploreModelProperties(prototype);
+  const data = modelProperties.map(key => {
+    const metadata =
+      Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
+      {};
+    const defaultTypes = [String, Boolean, Number];
+    if (defaultTypes.indexOf(metadata.type.name)) {
+      return {
+        name: key,
+        type: metadata.type.name.toLowerCase(),
+        required: metadata.required,
+        in: 'formData'
+      };
+    }
+  });
+  return data;
+};
+
 const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
   if (Array.isArray(e)) {
     return e as string[];
@@ -315,11 +339,18 @@ export const mapTypesToSwaggerTypes = (type: string) => {
 };
 
 const getDefinitionPath = modelName => `#/definitions/${modelName}`;
+const checkContainsFormData = params =>
+  params.some(param => param.in === 'formData');
 
 const mapModelsToDefinitons = (parameters, definitions) => {
+  const containsFormData = checkContainsFormData(parameters);
+
   return parameters.map(param => {
     if (!isBodyParameter(param)) {
       return param;
+    }
+    if (containsFormData) {
+      return formDataModelTransformation(param.type);
     }
     const defaultTypes = [String, Boolean, Number];
     if (
