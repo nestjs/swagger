@@ -162,11 +162,11 @@ export const exploreModelDefinition = (type, definitions) => {
     if (metadata.enum !== undefined) {
       metadata.enum = getEnumValues(metadata.enum);
     }
-
-    if (
+    const isNotDefaultType =
       isFunction(metadata.type) &&
-      !defaultTypes.find(defaultType => defaultType === metadata.type)
-    ) {
+      !defaultTypes.find(defaultType => defaultType === metadata.type);
+
+    if (isNotDefaultType) {
       const nestedModelName = exploreModelDefinition(
         metadata.type,
         definitions
@@ -321,7 +321,7 @@ const mapModelsToDefinitons = (parameters, definitions) => {
     if (!isBodyParameter(param)) {
       return param;
     }
-    const defaultTypes = [String, Boolean, Number, Object];
+    const defaultTypes = [String, Boolean, Number];
     if (
       isFunction(param.type) &&
       defaultTypes.some(defaultType => defaultType === param.type)
