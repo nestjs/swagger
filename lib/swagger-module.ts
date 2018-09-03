@@ -5,7 +5,8 @@ import * as swaggerUi from 'swagger-ui-express';
 import {
   SwaggerBaseConfig,
   SwaggerCustomOptions,
-  SwaggerDocument
+  SwaggerDocument,
+  SwaggerDocumentOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
 
@@ -14,9 +15,13 @@ export class SwaggerModule {
 
   public static createDocument(
     app: INestApplication,
-    config: SwaggerBaseConfig
+    config: SwaggerBaseConfig,
+    options: SwaggerDocumentOptions = {}
   ): SwaggerDocument {
-    const document = this.swaggerScanner.scanApplication(app);
+    const document = this.swaggerScanner.scanApplication(
+      app,
+      options.include || []
+    );
     return {
       ...config,
       ...document,
@@ -38,7 +43,10 @@ export class SwaggerModule {
       return this.setupFastify(path, httpServer, document);
     }
     const finalPath = validatePath(path);
-    app.use(finalPath, swaggerUi.serve, swaggerUi.setup(document, options));
+
+    const swaggerHtml = swaggerUi.generateHTML(document, options);
+    app.use(finalPath, swaggerUi.serveFiles(document, options));
+    app.use(finalPath, (req, res) => res.send(swaggerHtml));
     app.use(finalPath + '-json', (req, res) => res.json(document));
   }
 

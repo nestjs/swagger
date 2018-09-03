@@ -71,3 +71,13 @@ export const ApiModelPropertyOptional = (
     ...metadata,
     required: false
   });
+
+export const ApiResponseModelProperty = (
+  metadata: {
+    type?: any;
+    example?: any;
+  } = {}
+): PropertyDecorator =>
+  ApiModelProperty({
+    ...metadata
+  });

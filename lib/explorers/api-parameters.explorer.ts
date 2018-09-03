@@ -64,6 +64,7 @@ export const exploreApiParametersMetadata = (
     definitions
   );
   const parameters = mapParametersTypes(paramsWithDefinitions);
+
   return parameters ? { parameters } : undefined;
 };
 
@@ -162,11 +163,11 @@ export const exploreModelDefinition = (type, definitions) => {
     if (metadata.enum !== undefined) {
       metadata.enum = getEnumValues(metadata.enum);
     }
-
-    if (
+    const isNotDefaultType =
       isFunction(metadata.type) &&
-      !defaultTypes.find(defaultType => defaultType === metadata.type)
-    ) {
+      !defaultTypes.find(defaultType => defaultType === metadata.type);
+
+    if (isNotDefaultType) {
       const nestedModelName = exploreModelDefinition(
         metadata.type,
         definitions
@@ -229,6 +230,29 @@ export const exploreModelDefinition = (type, definitions) => {
     [type.name]: typeDefinition
   });
   return type.name;
+};
+
+const formDataModelTransformation = type => {
+  const { prototype } = type;
+  if (!prototype) {
+    return {};
+  }
+  const modelProperties = exploreModelProperties(prototype);
+  const data = modelProperties.map(key => {
+    const metadata =
+      Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
+      {};
+    const defaultTypes = [String, Boolean, Number];
+    if (defaultTypes.indexOf(metadata.type.name)) {
+      return {
+        name: key,
+        type: metadata.type.name.toLowerCase(),
+        required: metadata.required,
+        in: 'formData'
+      };
+    }
+  });
+  return data;
 };
 
 const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
@@ -315,13 +339,20 @@ export const mapTypesToSwaggerTypes = (type: string) => {
 };
 
 const getDefinitionPath = modelName => `#/definitions/${modelName}`;
+const checkContainsFormData = params =>
+  params.some(param => param.in === 'formData');
 
 const mapModelsToDefinitons = (parameters, definitions) => {
+  const containsFormData = checkContainsFormData(parameters);
+
   return parameters.map(param => {
     if (!isBodyParameter(param)) {
       return param;
     }
-    const defaultTypes = [String, Boolean, Number, Object];
+    if (containsFormData) {
+      return formDataModelTransformation(param.type);
+    }
+    const defaultTypes = [String, Boolean, Number];
     if (
       isFunction(param.type) &&
       defaultTypes.some(defaultType => defaultType === param.type)
