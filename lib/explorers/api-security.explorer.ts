@@ -21,54 +21,45 @@ export const exploreApiSecurityMetadata = (instance, prototype, method) => {
   const oauth2 = Reflect.getMetadata(DECORATORS.API_OAUTH2, method);
 
   const security = [];
-  bearer &&
-    security.push(
-      ...exploreBearerSecurityOptions(
-        bearer.security.securityDefinitions,
-        bearer.security.rule
-      )
-    );
+  bearer && security.push(...exploreBearerSecurityOptions(bearer.security));
   oauth2 && security.push({ oauth2 });
 
   return security.length > 0 ? security : undefined;
 };
 
 const exploreBearerSecurityOptions = (
-  securityDefinitions: string[] | SwaggerBearerAuthOption,
-  rule: SwaggerSecurityDefinitionRules
+  definitionOption: SwaggerBearerAuthOption,
+  securityResult?: any
 ) => {
-  const securityResult = [];
+  securityResult = securityResult || [];
 
-  if (!rule) {
-    rule = SwaggerSecurityDefinitionRules.AND;
+  if (!definitionOption.rule) {
+    definitionOption.rule = SwaggerSecurityDefinitionRules.AND;
   }
 
-  if (isArray(securityDefinitions) && every(securityDefinitions, isString)) {
-    const definitions: string[] = securityDefinitions as string[];
-    switch (rule) {
-      case SwaggerSecurityDefinitionRules.OR:
-        definitions.forEach(definition => {
-          securityResult.push({ [definition]: [] });
-        });
-        break;
-      case SwaggerSecurityDefinitionRules.AND:
-        securityResult.push(
-          definitions.reduce((securityObj, definition) => {
-            securityObj[definition] = [];
-            return securityObj;
-          }, {})
-        );
-        break;
-      default:
-        break;
-    }
-  } else {
-    const definitions: SwaggerBearerAuthOption = {
-      ...(securityDefinitions as SwaggerBearerAuthOption)
-    };
+  const definitions: string[] = definitionOption.securityDefinitions;
+  switch (definitionOption.rule) {
+    case SwaggerSecurityDefinitionRules.OR:
+      definitions.forEach(definition => {
+        securityResult.push({ [definition]: [] });
+      });
+      break;
+    case SwaggerSecurityDefinitionRules.AND:
+      securityResult.push(
+        definitions.reduce((securityObj, definition) => {
+          securityObj[definition] = [];
+          return securityObj;
+        }, {})
+      );
+      break;
+    default:
+      break;
+  }
+
+  if (definitionOption.nestedDefinitions) {
     exploreBearerSecurityOptions(
-      definitions.securityDefinitions,
-      definitions.rule
+      definitionOption.nestedDefinitions,
+      securityResult
     );
   }
 

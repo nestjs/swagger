@@ -4,6 +4,7 @@ export enum SwaggerSecurityDefinitionRules {
 }
 
 export interface SwaggerBearerAuthOption {
-  securityDefinitions: string[] | SwaggerBearerAuthOption;
+  securityDefinitions: string[];
   rule?: SwaggerSecurityDefinitionRules;
+  nestedDefinitions?: SwaggerBearerAuthOption;
 }
