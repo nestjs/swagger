@@ -1,8 +1,7 @@
 {
   "name": "@nestjs/swagger",
   "version": "2.5.1",
-  "description":
-    "Nest - modern, fast, powerful node.js web framework (@swagger)",
+  "description": "Nest - modern, fast, powerful node.js web framework (@swagger)",
   "author": "Kamil Mysliwiec",
   "license": "MIT",
   "scripts": {
@@ -39,6 +38,9 @@
     "@nestjs/core": "^5.0.0"
   },
   "lint-staged": {
-    "*.ts": ["prettier --write", "git add -f"]
+    "*.ts": [
+      "prettier --write",
+      "git add -f"
+    ]
   }
 }

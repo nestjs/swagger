@@ -70,13 +70,15 @@ export class DocumentBuilder {
     location: 'header' | 'body' | 'query' = 'header',
     type: string = 'apiKey'
   ): this {
+    const bearer = {};
+    bearer[name] = {
+      type,
+      name,
+      in: location
+    };
     this.document.securityDefinitions = {
       ...(this.document.securityDefinitions || {}),
-      bearer: {
-        type,
-        name,
-        in: location
-      }
+      ...bearer
     };
     return this;
   }
