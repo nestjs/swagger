@@ -1,9 +1,8 @@
+import { documentBase } from './fixtures/document.base';
 import {
   SwaggerBaseConfig,
   SwaggerScheme
 } from './interfaces/swagger-base-config.interface';
-
-import { documentBase } from './fixtures/document.base';
 
 export class DocumentBuilder {
   private readonly document: SwaggerBaseConfig = documentBase;
@@ -66,13 +65,14 @@ export class DocumentBuilder {
   }
 
   public addBearerAuth(
+    securityDefinition: string,
     name: string = 'Authorization',
     location: 'header' | 'body' | 'query' = 'header',
     type: string = 'apiKey'
   ): this {
     this.document.securityDefinitions = {
       ...(this.document.securityDefinitions || {}),
-      bearer: {
+      [securityDefinition]: {
         type,
         name,
         in: location

@@ -39,6 +39,9 @@
     "@nestjs/core": "^5.0.0"
   },
   "lint-staged": {
-    "*.ts": ["prettier --write", "git add -f"]
+    "*.ts": [
+      "prettier --write",
+      "git add -f"
+    ]
   }
 }
