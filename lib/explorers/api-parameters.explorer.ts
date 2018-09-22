@@ -339,17 +339,14 @@ export const mapTypesToSwaggerTypes = (type: string) => {
 };
 
 const getDefinitionPath = modelName => `#/definitions/${modelName}`;
-const checkContainsFormData = params =>
-  params.some(param => param.in === 'formData');
 
 const mapModelsToDefinitons = (parameters, definitions) => {
-  const containsFormData = checkContainsFormData(parameters);
-
   return parameters.map(param => {
     if (!isBodyParameter(param)) {
       return param;
     }
-    if (containsFormData) {
+    const isFormData = param.in === 'formData';
+    if (isFormData) {
       return formDataModelTransformation(param.type);
     }
     const defaultTypes = [String, Boolean, Number];
