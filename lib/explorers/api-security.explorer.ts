@@ -9,7 +9,7 @@ export const exploreGlobalApiSecurityMetadata = metatype => {
   const oauth2 = Reflect.getMetadata(DECORATORS.API_OAUTH2, metatype);
 
   const security = [];
-  bearer && security.push({ bearer });
+  bearer && security.push(...exploreBearerSecurityOptions(bearer.security));
   oauth2 && security.push({ oauth2 });
 
   return security.length > 0 ? { security } : undefined;
