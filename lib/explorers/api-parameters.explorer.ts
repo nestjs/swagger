@@ -322,7 +322,7 @@ const mapParametersTypes = parameters =>
     );
 
     paramWithStringType =
-      paramWithStringType.type === 'number' && isIntFormat(format)
+      paramWithStringType.type === 'number' && format && isIntFormat(format)
         ? { ...paramWithStringType, type: 'integer' }
         : { ...paramWithStringType };
 
