@@ -256,7 +256,7 @@ const formDataModelTransformation = type => {
   return data;
 };
 
-export const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
+const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
   if (Array.isArray(e)) {
     return e as string[];
   }
