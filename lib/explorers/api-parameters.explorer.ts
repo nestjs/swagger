@@ -256,7 +256,7 @@ const formDataModelTransformation = type => {
   return data;
 };
 
-const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
+export const getEnumValues = (e: SwaggerEnumType): string[] | number[] => {
   if (Array.isArray(e)) {
     return e as string[];
   }
@@ -328,6 +328,7 @@ const mapParametersTypes = parameters =>
 
     if (paramWithStringType.isArray) {
       return {
+        ...omit(paramWithStringType, 'isArray'),
         type: 'array',
         items: {
           type: mapTypesToSwaggerTypes(paramWithStringType.type)
