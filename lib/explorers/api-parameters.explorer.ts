@@ -47,6 +47,7 @@ export const exploreApiParametersMetadata = (
   const allReflectedParameters = transformModelToProperties(
     reflectedParameters || []
   );
+
   const mergedParameters = noAnyImplicit
     ? allReflectedParameters
     : map(allReflectedParameters, item =>
@@ -308,8 +309,8 @@ const mapParametersTypes = parameters =>
     if (hasSchemaDefinition(param)) {
       return omitParamType(param);
     }
-    const { type } = param;
-    const paramWithStringType: any = pickBy(
+    const { type, format } = param;
+    let paramWithStringType: any = pickBy(
       {
         ...param,
         type:
@@ -319,16 +320,21 @@ const mapParametersTypes = parameters =>
       },
       negate(isUndefined)
     );
+
+    paramWithStringType =
+      paramWithStringType.type === 'number' && isIntFormat(format)
+        ? { ...paramWithStringType, type: 'integer' }
+        : { ...paramWithStringType };
+
     if (paramWithStringType.isArray) {
       return {
-        ...paramWithStringType,
         type: 'array',
         items: {
           type: mapTypesToSwaggerTypes(paramWithStringType.type)
         }
       };
     }
-    return paramWithStringType;
+    return omit(paramWithStringType, 'isArray');
   });
 
 export const mapTypesToSwaggerTypes = (type: string) => {
@@ -336,6 +342,10 @@ export const mapTypesToSwaggerTypes = (type: string) => {
     return '';
   }
   return type.charAt(0).toLowerCase() + type.slice(1);
+};
+
+const isIntFormat = (format: string) => {
+  return format === 'int32' || format === 'int64';
 };
 
 const getDefinitionPath = modelName => `#/definitions/${modelName}`;
