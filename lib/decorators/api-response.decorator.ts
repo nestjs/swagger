@@ -146,6 +146,12 @@ export const ApiServiceUnavailableResponse = (metadata: ResponseMetadata) =>
     status: HttpStatus.SERVICE_UNAVAILABLE
   });
 
+export const ApiUnauthorizedResponse = (metadata: ResponseMetadata) =>
+  ApiResponse({
+    ...metadata,
+    status: HttpStatus.UNAUTHORIZED
+  });
+
 export const ApiUnprocessableEntityResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
