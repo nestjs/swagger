@@ -62,10 +62,40 @@ export const ApiCreatedResponse = (metadata: ResponseMetadata) =>
     status: HttpStatus.CREATED
   });
 
+export const ApiAcceptedResponse = (metadata: ResponseMetadata) =>
+  ApiResponse({
+    ...metadata,
+    status: HttpStatus.ACCEPTED
+  });
+
+export const ApiNoContentResponse = (metadata: ResponseMetadata) =>
+  ApiResponse({
+    ...metadata,
+    status: HttpStatus.NO_CONTENT
+  });
+
+export const ApiMovedPermanentlyResponse = (metadata: ResponseMetadata) =>
+  ApiResponse({
+    ...metadata,
+    status: HttpStatus.MOVED_PERMANENTLY
+  });
+
 export const ApiBadRequestResponse = (metadata: ResponseMetadata) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.BAD_REQUEST
+  });
+
+export const ApiUnauthorizedResponse = (metadata: ResponseMetadata) =>
+  ApiResponse({
+    ...metadata,
+    status: HttpStatus.UNAUTHORIZED
+  });
+
+export const ApiTooManyRequestsResponse = (metadata: ResponseMetadata) =>
+  ApiResponse({
+    ...metadata,
+    status: HttpStatus.TOO_MANY_REQUESTS
   });
 
 export const ApiNotFoundResponse = (metadata: ResponseMetadata) =>
