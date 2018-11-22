@@ -158,7 +158,8 @@ export class SwaggerExplorer {
     const fullPath = globalPath + this.validateRoutePath(routePath);
     return {
       method: RequestMethod[requestMethod].toLowerCase(),
-      path: fullPath === '' ? '/' : fullPath
+      path: fullPath === '' ? '/' : fullPath,
+      operationId: method.name
     };
   }
 
