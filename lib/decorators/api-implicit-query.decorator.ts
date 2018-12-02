@@ -1,7 +1,8 @@
-import { DECORATORS } from '../constants';
+import { isNil } from 'lodash';
+import { createParamDecorator } from './helpers';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
-import { createMethodDecorator, createParamDecorator } from './helpers';
-import { omit, pickBy, negate, isUndefined, isNil } from 'lodash';
+import { SwaggerTypeDataFormat } from '../types/swagger-type-data-format';
+import { SwaggerTypeDataType } from '../types/swagger-type-data-type';
 
 const initialMetadata = {
   name: '',
@@ -12,7 +13,8 @@ export const ApiImplicitQuery = (metadata: {
   name: string;
   description?: string;
   required?: boolean;
-  type?: 'String' | 'Number' | 'Boolean' | any;
+  type?: SwaggerTypeDataType;
+  format?: SwaggerTypeDataFormat;
   isArray?: boolean;
   enum?: SwaggerEnumType;
   collectionFormat?: 'csv' | 'ssv' | 'tsv' | 'pipes' | 'multi';
@@ -23,6 +25,7 @@ export const ApiImplicitQuery = (metadata: {
     description: metadata.description,
     required: metadata.required,
     type: metadata.type,
+    format: metadata.format,
     enum: undefined,
     items: undefined,
     collectionFormat: undefined
