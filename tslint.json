@@ -20,9 +20,7 @@
     "linebreak-style": [false],
     "max-classes-per-file": [false],
     "member-ordering": [false],
-    "no-var-requires": false,
-    "one-line": [false],
-    "array-type": [false]
+    "one-line": [false]
   },
   "rulesDirectory": []
 }
