@@ -151,7 +151,7 @@ const transformToArrayModelProperty = (metadata, key, type) => {
   return model;
 };
 
-export const exploreModelDefinition = (type, definitions) => {
+export const exploreModelDefinition = (type, definitions, existingNestedModelNames = []) => {
   const { prototype } = type;
   const modelProperties = exploreModelProperties(prototype);
   const propertiesWithType = modelProperties.map(key => {
@@ -168,11 +168,16 @@ export const exploreModelDefinition = (type, definitions) => {
       !defaultTypes.find(defaultType => defaultType === metadata.type);
 
     if (isNotDefaultType) {
-      const nestedModelName = exploreModelDefinition(
-        metadata.type,
-        definitions
-      );
-      const $ref = getDefinitionPath(nestedModelName);
+      if (!existingNestedModelNames.includes(metadata.type.name)) {
+        existingNestedModelNames.push(metadata.type.name);
+
+        exploreModelDefinition(
+          metadata.type,
+          definitions,
+          existingNestedModelNames,
+        );
+      }
+      const $ref = getDefinitionPath(metadata.type.name);
       if (metadata.isArray) {
         return transformToArrayModelProperty(metadata, key, { $ref });
       }
