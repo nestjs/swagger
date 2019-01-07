@@ -1,8 +1,7 @@
 {
   "name": "@nestjs/swagger",
   "version": "2.5.1",
-  "description":
-    "Nest - modern, fast, powerful node.js web framework (@swagger)",
+  "description": "Nest - modern, fast, powerful node.js web framework (@swagger)",
   "author": "Kamil Mysliwiec",
   "license": "MIT",
   "scripts": {
@@ -17,7 +16,7 @@
   "dependencies": {
     "lodash": "^4.17.4",
     "path-to-regexp": "^2.2.1",
-    "swagger-ui-express": "^3.0.8"
+    "swagger-ui-express": "^4.0.0"
   },
   "devDependencies": {
     "@nestjs/common": "^5.0.0",
@@ -39,6 +38,9 @@
     "@nestjs/core": "^5.0.0"
   },
   "lint-staged": {
-    "*.ts": ["prettier --write", "git add -f"]
+    "*.ts": [
+      "prettier --write",
+      "git add -f"
+    ]
   }
 }
