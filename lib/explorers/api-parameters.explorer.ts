@@ -290,7 +290,7 @@ const mapParamType = (key: string, consumes: string[]): string => {
   const keyPair = key.split(':');
   switch (Number(keyPair[0])) {
     case RouteParamtypes.BODY:
-      if (!isEmpty(consumes) && consumes[0] === 'multipart/form-data')
+      if (!isEmpty(consumes) && ['multipart/form-data', 'application/x-www-form-urlencoded'].indexOf(consumes[0]) > -1)
         return 'formData';
       return 'body';
     case RouteParamtypes.PARAM:
