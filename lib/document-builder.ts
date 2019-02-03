@@ -65,6 +65,31 @@ export class DocumentBuilder {
     return this;
   }
 
+  public addBasicAuth(): this {
+    this.document.securityDefinitions = {
+      ...(this.document.securityDefinitions || {}),
+      basic: {
+        type: 'basic'
+      }
+    };
+    return this;
+  }
+
+  public addApiKeyAuth(
+    name: string = 'Authorization',
+    location: 'header' | 'query' = 'header'
+  ): this {
+    this.document.securityDefinitions = {
+      ...(this.document.securityDefinitions || {}),
+      apikey: {
+        type: 'apiKey',
+        name,
+        in: location
+      }
+    };
+    return this;
+  }
+
   public addBearerAuth(
     name: string = 'Authorization',
     location: 'header' | 'body' | 'query' = 'header',

@@ -25,6 +25,14 @@ export interface SwaggerBaseConfig {
   };
   schemes?: SwaggerScheme[];
   securityDefinitions?: {
+    basic?: {
+      type: 'basic';
+    };
+    apikey?: {
+      type: 'apiKey';
+      name: string;
+      in: 'query' | 'header';
+    };
     bearer?: {
       type: string;
       name: string;
