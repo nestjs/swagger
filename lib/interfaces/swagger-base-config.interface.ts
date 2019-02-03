@@ -25,10 +25,10 @@ export interface SwaggerBaseConfig {
   };
   schemes?: SwaggerScheme[];
   securityDefinitions?: {
-    basic?: {
+    basicAuth?: {
       type: 'basic';
     };
-    apikey?: {
+    apiKeyAuth?: {
       type: 'apiKey';
       name: string;
       in: 'query' | 'header';

@@ -68,7 +68,7 @@ export class DocumentBuilder {
   public addBasicAuth(): this {
     this.document.securityDefinitions = {
       ...(this.document.securityDefinitions || {}),
-      basic: {
+      basicAuth: {
         type: 'basic'
       }
     };
@@ -81,7 +81,7 @@ export class DocumentBuilder {
   ): this {
     this.document.securityDefinitions = {
       ...(this.document.securityDefinitions || {}),
-      apikey: {
+      apiKeyAuth: {
         type: 'apiKey',
         name,
         in: location
