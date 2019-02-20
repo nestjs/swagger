@@ -9,6 +9,7 @@ import {
   find,
   flatMap,
   identity,
+  includes,
   isEmpty,
   isNil,
   isString,
@@ -151,13 +152,18 @@ const transformToArrayModelProperty = (metadata, key, type) => {
   return model;
 };
 
-export const exploreModelDefinition = (type, definitions, existingNestedModelNames = []) => {
+export const exploreModelDefinition = (
+  type,
+  definitions,
+  existingNestedModelNames = []
+) => {
   const { prototype } = type;
   const modelProperties = exploreModelProperties(prototype);
   const propertiesWithType = modelProperties.map(key => {
     const metadata =
       Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
       {};
+
     const defaultTypes = [String, Boolean, Number, Object, Array];
 
     if (metadata.enum !== undefined) {
@@ -167,14 +173,21 @@ export const exploreModelDefinition = (type, definitions, existingNestedModelNam
       isFunction(metadata.type) &&
       !defaultTypes.find(defaultType => defaultType === metadata.type);
 
+    // Support for circular references by using a callback to resolve the dependent Model
+    if (isFunction(metadata.type) && metadata.type.name == 'type') {
+      metadata.type = metadata.type();
+    }
+
     if (isNotDefaultType) {
-      if (!existingNestedModelNames.includes(metadata.type.name)) {
+      let nestedModelName = metadata.type.name;
+
+      if (!includes(existingNestedModelNames, metadata.type.name)) {
         existingNestedModelNames.push(metadata.type.name);
 
-        exploreModelDefinition(
+        nestedModelName = exploreModelDefinition(
           metadata.type,
           definitions,
-          existingNestedModelNames,
+          existingNestedModelNames
         );
       }
       const $ref = getDefinitionPath(metadata.type.name);
