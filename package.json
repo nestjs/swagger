@@ -21,7 +21,7 @@
   "devDependencies": {
     "@nestjs/common": "6.0.1",
     "@nestjs/core": "6.0.1",
-    "@types/node": "10.5.2",
+    "@types/node": "10.14.1",
     "fastify-swagger": "0.15.0",
     "husky": "0.14.3",
     "lint-staged": "7.3.0",
