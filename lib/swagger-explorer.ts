@@ -6,7 +6,7 @@ import {
   isUndefined,
   validatePath
 } from '@nestjs/common/utils/shared.utils';
-import { InstanceWrapper } from '@nestjs/core/injector/container';
+import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';

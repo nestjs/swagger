@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { loadPackage } from '@nestjs/common/utils/load-package.util';
-import { FastifyAdapter } from '@nestjs/core';
 import * as swaggerUi from 'swagger-ui-express';
 import {
   SwaggerBaseConfig,
@@ -38,9 +37,13 @@ export class SwaggerModule {
     const validatePath = (path): string =>
       path.charAt(0) !== '/' ? '/' + path : path;
 
-    const httpServer = app.getHttpServer();
-    if (httpServer instanceof FastifyAdapter) {
-      return this.setupFastify(path, httpServer, document);
+    const httpAdapter = app.getHttpAdapter();
+    if (
+      httpAdapter &&
+      httpAdapter.constructor &&
+      httpAdapter.constructor.name === 'FastifyAdapter'
+    ) {
+      return this.setupFastify(path, httpAdapter, document);
     }
     const finalPath = validatePath(path);
 
@@ -52,7 +55,7 @@ export class SwaggerModule {
 
   private static setupFastify(
     path: string,
-    httpServer: FastifyAdapter,
+    httpServer: any,
     document: SwaggerDocument
   ) {
     httpServer.register(loadPackage('fastify-swagger', 'SwaggerModule'), {
