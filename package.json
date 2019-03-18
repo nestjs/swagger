@@ -22,7 +22,7 @@
     "@nestjs/common": "6.0.1",
     "@nestjs/core": "6.0.1",
     "@types/node": "10.5.2",
-    "fastify-swagger": "0.15.0",
+    "fastify-swagger": "0.16.2",
     "husky": "0.14.3",
     "lint-staged": "7.3.0",
     "prettier": "1.13.5",
