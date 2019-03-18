@@ -14,20 +14,20 @@
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "lodash": "4.17.10",
-    "path-to-regexp": "2.2.1",
-    "swagger-ui-express": "3.0.10"
+    "lodash": "4.17.11",
+    "path-to-regexp": "3.0.0",
+    "swagger-ui-express": "4.0.2"
   },
   "devDependencies": {
     "@nestjs/common": "6.0.1",
     "@nestjs/core": "6.0.1",
-    "@types/node": "10.5.2",
-    "fastify-swagger": "0.15.0",
+    "@types/node": "11.11.3",
+    "fastify-swagger": "2.3.2",
     "husky": "0.14.3",
     "lint-staged": "7.3.0",
-    "prettier": "1.13.5",
-    "reflect-metadata": "0.1.12",
-    "typescript": "2.9.2"
+    "prettier": "1.16.4",
+    "reflect-metadata": "0.1.13",
+    "typescript": "3.3.3333"
   },
   "peerDependencies": {
     "@nestjs/common": "^6.0.0",
