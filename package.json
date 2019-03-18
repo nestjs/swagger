@@ -20,8 +20,8 @@
     "swagger-ui-express": "^3.0.8"
   },
   "devDependencies": {
-    "@nestjs/common": "^5.0.0",
-    "@nestjs/core": "^5.0.0",
+    "@nestjs/common": "6.0.1",
+    "@nestjs/core": "6.0.1",
     "@types/node": "^10.3.5",
     "fastify-swagger": "^0.15.0",
     "husky": "^0.14.3",
@@ -31,12 +31,12 @@
     "typescript": "^2.6.2"
   },
   "peerDependencies": {
-    "@nestjs/common": "^5.0.0",
-    "@nestjs/core": "^5.0.0"
+    "@nestjs/common": "^5.0.0 || ^6.0.0",
+    "@nestjs/core": "^5.0.0 || ^6.0.0"
   },
   "optionalDependencies": {
-    "@nestjs/common": "^5.0.0",
-    "@nestjs/core": "^5.0.0"
+    "@nestjs/common": "^6.0.0",
+    "@nestjs/core": "^6.0.0"
   },
   "lint-staged": {
     "*.ts": ["prettier --write", "git add -f"]
