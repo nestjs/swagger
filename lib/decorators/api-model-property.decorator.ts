@@ -25,6 +25,7 @@ export const ApiModelProperty = (
     minItems?: number;
     uniqueItems?: boolean;
     maxProperties?: number;
+    overrideType?: any;
     minProperties?: number;
     readOnly?: boolean;
     xml?: any;
@@ -58,6 +59,7 @@ export const ApiModelPropertyOptional = (
     minLength?: number;
     pattern?: string;
     maxItems?: number;
+    overrideType?: any;
     minItems?: number;
     uniqueItems?: boolean;
     maxProperties?: number;
