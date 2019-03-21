@@ -15,14 +15,12 @@
   },
   "dependencies": {
     "lodash": "4.17.11",
-    "path-to-regexp": "3.0.0",
-    "swagger-ui-express": "4.0.2"
+    "path-to-regexp": "3.0.0"
   },
   "devDependencies": {
     "@nestjs/common": "6.0.1",
     "@nestjs/core": "6.0.1",
     "@types/node": "11.11.3",
-    "fastify-swagger": "2.3.2",
     "husky": "0.14.3",
     "lint-staged": "8.1.5",
     "prettier": "1.16.4",

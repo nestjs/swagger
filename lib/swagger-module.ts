@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { loadPackage } from '@nestjs/common/utils/load-package.util';
-import * as swaggerUi from 'swagger-ui-express';
 import {
   SwaggerBaseConfig,
   SwaggerCustomOptions,
@@ -34,9 +33,6 @@ export class SwaggerModule {
     document: SwaggerDocument,
     options?: SwaggerCustomOptions
   ) {
-    const validatePath = (path): string =>
-      path.charAt(0) !== '/' ? '/' + path : path;
-
     const httpAdapter = app.getHttpAdapter();
     if (
       httpAdapter &&
@@ -45,8 +41,22 @@ export class SwaggerModule {
     ) {
       return this.setupFastify(path, httpAdapter, document);
     }
+
+    return this.setupExpress(path, app, document, options);
+  }
+
+  private static setupExpress(
+    path: string,
+    app: INestApplication,
+    document: SwaggerDocument,
+    options?: SwaggerCustomOptions
+  ) {
+    const validatePath = (path): string =>
+      path.charAt(0) !== '/' ? '/' + path : path;
+
     const finalPath = validatePath(path);
 
+    const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule');
     const swaggerHtml = swaggerUi.generateHTML(document, options);
     app.use(finalPath, swaggerUi.serveFiles(document, options));
     app.use(finalPath, (req, res) => res.send(swaggerHtml));
