@@ -25,7 +25,7 @@
     "lint-staged": "8.1.5",
     "prettier": "1.16.4",
     "reflect-metadata": "0.1.13",
-    "typescript": "3.3.3333"
+    "typescript": "3.4.3"
   },
   "peerDependencies": {
     "@nestjs/common": "^6.0.0",
