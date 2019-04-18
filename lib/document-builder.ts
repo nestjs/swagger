@@ -1,6 +1,7 @@
 import {
   SwaggerBaseConfig,
-  SwaggerScheme
+  SwaggerScheme,
+  SecurityDefinitions
 } from './interfaces/swagger-base-config.interface';
 
 import { documentBase } from './fixtures/document.base';
@@ -65,6 +66,14 @@ export class DocumentBuilder {
     return this;
   }
 
+  public addSecurity(name: string, security: SecurityDefinitions) {
+    this.document.securityDefinitions = {
+      ...(this.document.securityDefinitions || {}),
+      [name]: security
+    };
+    return this;
+  }
+
   public addBearerAuth(
     name: string = 'Authorization',
     location: 'header' | 'body' | 'query' = 'header',
@@ -76,7 +85,7 @@ export class DocumentBuilder {
         type,
         name,
         in: location
-      }
+      } as SecurityDefinitions
     };
     return this;
   }
@@ -95,7 +104,7 @@ export class DocumentBuilder {
         authorizationUrl,
         tokenUrl,
         scopes
-      }
+      } as SecurityDefinitions
     };
     return this;
   }
