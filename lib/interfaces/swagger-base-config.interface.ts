@@ -1,3 +1,54 @@
+export type SecurityType = 'basic' | 'apiKey' | 'oauth2';
+
+export interface BasicSecurity {
+  type: 'basic';
+  description?: string;
+}
+
+export interface ApiKeySecurity {
+  type: 'apiKey';
+  description?: string;
+  name: string;
+  in: 'query' | 'header';
+}
+
+export interface OAuth2ImplicitSecurity {
+  type: 'oauth2';
+  description?: string;
+  flow: 'implicit';
+  authorizationUrl: string;
+  scopes?: { [scope: string]: string };
+}
+
+export interface OAuth2accessCodeSecurity {
+  type: 'oauth2';
+  description?: string;
+  flow: 'accessCode';
+  authorizationUrl: string;
+  tokenUrl: string;
+  scopes?: { [scope: string]: string };
+}
+
+export interface OAuth2ApplicationSecurity {
+  type: 'oauth2';
+  description?: string;
+  flow: 'password' | 'application';
+  tokenUrl: string;
+  scopes?: { [scope: string]: string };
+}
+
+export type SecurityDefinitions =
+  | BasicSecurity
+  | ApiKeySecurity
+  | OAuth2accessCodeSecurity
+  | OAuth2ImplicitSecurity
+  | OAuth2ApplicationSecurity;
+
+export interface Tag {
+  name: string;
+  description?: string;
+}
+
 export interface SwaggerBaseConfig {
   swagger?: string;
   info?: {
@@ -13,10 +64,7 @@ export interface SwaggerBaseConfig {
       url: string;
     };
   };
-  tags?: {
-    name: string;
-    description: string;
-  }[];
+  tags?: Tag[];
   host?: string;
   basePath?: string;
   externalDocs?: {
@@ -25,18 +73,7 @@ export interface SwaggerBaseConfig {
   };
   schemes?: SwaggerScheme[];
   securityDefinitions?: {
-    bearer?: {
-      type: string;
-      name: string;
-      in: 'body' | 'query' | 'header';
-    };
-    oauth2?: {
-      type: 'oauth2';
-      flow: 'implicit' | 'password' | 'application' | 'accessCode';
-      authorizationUrl?: string;
-      tokenUrl?: string;
-      scopes?: object;
-    };
+    [name: string]: SecurityDefinitions;
   };
 }
 

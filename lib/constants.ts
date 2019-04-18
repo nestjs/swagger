@@ -1,3 +1,9 @@
+import {
+  OAuth2ImplicitSecurity,
+  ApiKeySecurity,
+  BasicSecurity
+} from './interfaces';
+
 export const DECORATORS_PREFIX = 'swagger';
 export const DECORATORS = {
   API_OPERATION: `${DECORATORS_PREFIX}/apiOperation`,
@@ -8,7 +14,26 @@ export const DECORATORS = {
   API_PARAMETERS: `${DECORATORS_PREFIX}/apiParameters`,
   API_MODEL_PROPERTIES: `${DECORATORS_PREFIX}/apiModelProperties`,
   API_MODEL_PROPERTIES_ARRAY: `${DECORATORS_PREFIX}/apiModelPropertiesArray`,
-  API_BEARER: `${DECORATORS_PREFIX}/apiBearer`,
   API_EXCLUDE_ENDPOINT: `${DECORATORS_PREFIX}/apiExcludeEndpoint`,
-  API_OAUTH2: `${DECORATORS_PREFIX}/apiOauth2`
+  API_SECURITY: `${DECORATORS_PREFIX}/apiSecurity`
+};
+
+export const DEFAULT_BASIC_SECURITY: BasicSecurity = {
+  type: 'basic',
+  description: 'Auto generate SecurityDefinitions'
+};
+
+export const DEFAULT_APIKEY_SECURITY: ApiKeySecurity = {
+  type: 'apiKey',
+  description: 'Auto generate SecurityDefinitions',
+  name: 'access_token',
+  in: 'query'
+};
+
+export const DEFAULT_OAUTH2_SECURITY: OAuth2ImplicitSecurity = {
+  type: 'oauth2',
+  description: 'Auto generate SecurityDefinitions',
+  flow: 'implicit',
+  authorizationUrl: 'http://localhost:9000/oauth2',
+  scopes: {}
 };

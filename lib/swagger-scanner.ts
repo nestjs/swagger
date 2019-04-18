@@ -1,12 +1,49 @@
 import { MODULE_PATH } from '@nestjs/common/constants';
-import { extend, flatten, isEmpty, map, reduce } from 'lodash';
+import {
+  extend,
+  flatten,
+  isEmpty,
+  map,
+  reduce,
+  uniq,
+  get,
+  mapValues,
+  keyBy
+} from 'lodash';
 import { SwaggerDocument } from './interfaces';
 import { SwaggerExplorer } from './swagger-explorer';
 import { SwaggerTransformer } from './swagger-transformer';
+import {
+  DEFAULT_BASIC_SECURITY,
+  DEFAULT_APIKEY_SECURITY,
+  DEFAULT_OAUTH2_SECURITY
+} from './constants';
 
 export class SwaggerScanner {
+  private static securityDefinitions = {};
+
   private readonly explorer = new SwaggerExplorer();
   private readonly transfomer = new SwaggerTransformer();
+
+  public static addSecurity(
+    name: string,
+    type: 'basic' | 'apiKey' | 'oauth2',
+    scopes?: string[]
+  ) {
+    const oldScopes = get(
+      SwaggerScanner.securityDefinitions,
+      [name, 'scopes'],
+      []
+    );
+
+    SwaggerScanner.securityDefinitions[name] = {
+      ...(type === 'basic' ? DEFAULT_BASIC_SECURITY : {}),
+      ...(type === 'apiKey' ? DEFAULT_APIKEY_SECURITY : {}),
+      ...(type === 'oauth2' ? DEFAULT_OAUTH2_SECURITY : {}),
+      type: type,
+      scopes: type === 'oauth2' ? uniq([...oldScopes, ...scopes]) : undefined
+    };
+  }
 
   public scanApplication(app, includedModules?: Function[]): SwaggerDocument {
     const { container } = app;
@@ -21,8 +58,20 @@ export class SwaggerScanner {
     });
     return {
       ...this.transfomer.normalizePaths(flatten(denormalizedPaths)),
+      securityDefinitions: this.buildSecurityDefinitions(),
       definitions: reduce(this.explorer.getModelsDefinitons(), extend)
     };
+  }
+
+  private buildSecurityDefinitions() {
+    return mapValues(SwaggerScanner.securityDefinitions, security => {
+      if (security.scopes) {
+        security.scopes = mapValues(keyBy(security.scopes), v =>
+          String(v).toUpperCase()
+        );
+      }
+      return security;
+    });
   }
 
   public scanModuleRoutes(routes, modulePath): SwaggerDocument {

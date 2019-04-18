@@ -1,23 +1,28 @@
 import { DECORATORS } from '../constants';
+import { SwaggerScanner } from '../swagger-scanner';
 
 export const exploreGlobalApiSecurityMetadata = metatype => {
-  const bearer = Reflect.getMetadata(DECORATORS.API_BEARER, metatype);
-  const oauth2 = Reflect.getMetadata(DECORATORS.API_OAUTH2, metatype);
+  const metadata = Reflect.getMetadata(DECORATORS.API_SECURITY, metatype);
+  if (!metadata) return;
 
-  const security = [];
-  bearer && security.push({ bearer });
-  oauth2 && security.push({ oauth2 });
+  const security = metadata.map(meta => {
+    const scopes = meta.scopes || [];
 
-  return security.length > 0 ? { security } : undefined;
+    SwaggerScanner.addSecurity(meta.name, meta.type, scopes);
+    return { [meta.name]: scopes };
+  });
+  return { security };
 };
 
 export const exploreApiSecurityMetadata = (instance, prototype, method) => {
-  const bearer = Reflect.getMetadata(DECORATORS.API_BEARER, method);
-  const oauth2 = Reflect.getMetadata(DECORATORS.API_OAUTH2, method);
+  const metadata = Reflect.getMetadata(DECORATORS.API_SECURITY, method);
+  if (!metadata) return;
 
-  const security = [];
-  bearer && security.push({ bearer });
-  oauth2 && security.push({ oauth2 });
+  const security = metadata.map((obj, meta) => {
+    const scopes = meta.scopes || [];
 
-  return security.length > 0 ? security : undefined;
+    SwaggerScanner.addSecurity(meta.name, meta.type, scopes);
+    return { [meta.name]: scopes };
+  });
+  return { security };
 };
