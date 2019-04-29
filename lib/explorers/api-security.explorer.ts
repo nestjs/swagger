@@ -18,7 +18,7 @@ export const exploreApiSecurityMetadata = (instance, prototype, method) => {
   const metadata = Reflect.getMetadata(DECORATORS.API_SECURITY, method);
   if (!metadata) return;
 
-  const security = metadata.map((obj, meta) => {
+  const security = metadata.map(meta => {
     const scopes = meta.scopes || [];
 
     SwaggerScanner.addSecurity(meta.name, meta.type, scopes);

@@ -22,6 +22,7 @@ export const ApiSecurity = (metadata: SecurityMetadata) => {
   if (!metadata.name) {
     metadata.name = metadata.type;
   }
+
   return (target, key?, descriptor?: PropertyDescriptor) => {
     if (descriptor) {
       const securities =

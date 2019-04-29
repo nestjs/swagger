@@ -20,7 +20,7 @@ export interface OAuth2ImplicitSecurity {
   scopes?: { [scope: string]: string };
 }
 
-export interface OAuth2accessCodeSecurity {
+export interface OAuth2AccessCodeSecurity {
   type: 'oauth2';
   description?: string;
   flow: 'accessCode';
@@ -40,7 +40,7 @@ export interface OAuth2ApplicationSecurity {
 export type SecurityDefinitions =
   | BasicSecurity
   | ApiKeySecurity
-  | OAuth2accessCodeSecurity
+  | OAuth2AccessCodeSecurity
   | OAuth2ImplicitSecurity
   | OAuth2ApplicationSecurity;
 

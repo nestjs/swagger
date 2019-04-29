@@ -6,6 +6,7 @@ import {
   SwaggerDocument,
   SwaggerDocumentOptions
 } from './interfaces';
+import { merge } from 'lodash';
 import { SwaggerScanner } from './swagger-scanner';
 
 export class SwaggerModule {
@@ -21,8 +22,7 @@ export class SwaggerModule {
       options.include || []
     );
     return {
-      ...config,
-      ...document,
+      ...merge(document, config),
       swagger: '2.0'
     };
   }

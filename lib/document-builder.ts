@@ -66,7 +66,7 @@ export class DocumentBuilder {
     return this;
   }
 
-  public addSecurity(name: string, security: SecurityDefinitions) {
+  public addSecurity(name: string, security: SecurityDefinitions): this {
     this.document.securityDefinitions = {
       ...(this.document.securityDefinitions || {}),
       [name]: security
