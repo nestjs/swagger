@@ -102,3 +102,20 @@ export const getTypeIsArrayTuple = (
   const type = isInputArray ? input[0] : input;
   return [type, isInputArray];
 };
+
+/*
+  This functions adds spaces to response status code to ensure that
+  responses with the same status code are not overlaying each other.
+
+  Note: swagger takes a string for a response code and not a number
+*/
+export const getValidResponseName = (
+  name: string | number,
+  responses: { [key: string]: any }
+): string => {
+  let validName = name.toString();
+  while (responses[validName]) {
+    validName += ' ';
+  }
+  return validName;
+};

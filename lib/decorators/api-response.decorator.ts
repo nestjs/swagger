@@ -1,7 +1,7 @@
 import { HttpStatus } from '@nestjs/common/enums/http-status.enum';
 import { omit } from 'lodash';
 import { DECORATORS } from '../constants';
-import { getTypeIsArrayTuple } from './helpers';
+import { getTypeIsArrayTuple, getValidResponseName } from './helpers';
 
 export interface ResponseMetadata {
   description?: string;
@@ -21,16 +21,18 @@ export const ApiResponse = (
   metadata.isArray = isArray;
   metadata.description = metadata.description ? metadata.description : '';
 
-  const groupedMetadata = { [metadata.status]: omit(metadata, 'status') };
+  const apiResponseMetadata = omit(metadata, 'status');
+
   return (target, key?, descriptor?: PropertyDescriptor) => {
     if (descriptor) {
       const responses =
         Reflect.getMetadata(DECORATORS.API_RESPONSE, descriptor.value) || {};
+      const statusName = getValidResponseName(metadata.status, responses);
       Reflect.defineMetadata(
         DECORATORS.API_RESPONSE,
         {
           ...responses,
-          ...groupedMetadata
+          ...(statusName && { [statusName]: apiResponseMetadata })
         },
         descriptor.value
       );
@@ -38,11 +40,12 @@ export const ApiResponse = (
     }
     const responses =
       Reflect.getMetadata(DECORATORS.API_RESPONSE, target) || {};
+    const statusName = getValidResponseName(metadata.status, responses);
     Reflect.defineMetadata(
       DECORATORS.API_RESPONSE,
       {
         ...responses,
-        ...groupedMetadata
+        ...(statusName && { [statusName]: apiResponseMetadata })
       },
       target
     );
