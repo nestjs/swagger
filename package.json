@@ -23,7 +23,7 @@
     "@types/node": "11.13.4",
     "husky": "0.14.3",
     "lint-staged": "8.1.5",
-    "prettier": "1.17.0",
+    "prettier": "1.17.1",
     "reflect-metadata": "0.1.13",
     "typescript": "3.4.3"
   },
