@@ -56,7 +56,7 @@ export class SwaggerModule {
 
     const finalPath = validatePath(path);
 
-    const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule');
+    const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () => require('swagger-ui-express'));
     const swaggerHtml = swaggerUi.generateHTML(document, options);
     app.use(finalPath, swaggerUi.serveFiles(document, options));
     app.use(finalPath, (req, res) => res.send(swaggerHtml));
@@ -68,7 +68,7 @@ export class SwaggerModule {
     httpServer: any,
     document: SwaggerDocument
   ) {
-    httpServer.register(loadPackage('fastify-swagger', 'SwaggerModule'), {
+    httpServer.register(loadPackage('fastify-swagger', 'SwaggerModule', () => require('fastify-swagger')), {
       swagger: document,
       exposeRoute: true,
       routePrefix: path,
