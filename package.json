@@ -18,8 +18,8 @@
     "path-to-regexp": "3.0.0"
   },
   "devDependencies": {
-    "@nestjs/common": "6.1.1",
-    "@nestjs/core": "6.1.1",
+    "@nestjs/common": "6.2.0",
+    "@nestjs/core": "6.2.0",
     "@types/node": "11.13.4",
     "husky": "0.14.3",
     "lint-staged": "8.1.5",
