@@ -77,7 +77,9 @@ export class SwaggerExplorer {
   ) {
     let path = this.validateRoutePath(this.reflectControllerPath(metatype));
     if (modulePath) {
-      path = this.validateRoutePath(modulePath + path); // re-validate the route after adding the module path.
+      // re-validate the route after adding the module path,
+      // since maybe module path itself has url parameters segments.
+      path = this.validateRoutePath(modulePath + path);
     }
     const self = this;
     const globalMetadata = this.exploreGlobalMetadata(metatype);
