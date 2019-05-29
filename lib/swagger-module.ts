@@ -18,7 +18,8 @@ export class SwaggerModule {
   ): SwaggerDocument {
     const document = this.swaggerScanner.scanApplication(
       app,
-      options.include || []
+      options.include || [],
+      options.deepScanRoutes
     );
     return {
       ...config,
