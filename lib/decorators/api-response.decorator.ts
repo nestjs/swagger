@@ -10,10 +10,13 @@ export interface ResponseMetadata {
   headers?: any;
 }
 
+export interface ApiResponseMetadata extends ResponseMetadata {
+  status: number;
+}
+
+
 export const ApiResponse = (
-  metadata: {
-    status: number;
-  } & ResponseMetadata
+  metadata: ApiResponseMetadata
 ) => {
   const [type, isArray] = getTypeIsArrayTuple(metadata.type, metadata.isArray);
 
@@ -74,7 +77,9 @@ export const ApiNoContentResponse = (metadata: ResponseMetadata) =>
     status: HttpStatus.NO_CONTENT
   });
 
-export const ApiMovedPermanentlyResponse = (metadata: ResponseMetadata) =>
+export const ApiMovedPermanentlyResponse = (
+  metadata: ResponseMetadata
+) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.MOVED_PERMANENTLY
@@ -104,7 +109,9 @@ export const ApiNotFoundResponse = (metadata: ResponseMetadata) =>
     status: HttpStatus.NOT_FOUND
   });
 
-export const ApiInternalServerErrorResponse = (metadata: ResponseMetadata) =>
+export const ApiInternalServerErrorResponse = (
+  metadata: ResponseMetadata
+) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.INTERNAL_SERVER_ERROR
@@ -140,7 +147,9 @@ export const ApiGoneResponse = (metadata: ResponseMetadata) =>
     status: HttpStatus.GONE
   });
 
-export const ApiMethodNotAllowedResponse = (metadata: ResponseMetadata) =>
+export const ApiMethodNotAllowedResponse = (
+  metadata: ResponseMetadata
+) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.METHOD_NOT_ALLOWED
@@ -170,19 +179,25 @@ export const ApiRequestTimeoutResponse = (metadata: ResponseMetadata) =>
     status: HttpStatus.REQUEST_TIMEOUT
   });
 
-export const ApiServiceUnavailableResponse = (metadata: ResponseMetadata) =>
+export const ApiServiceUnavailableResponse = (
+  metadata: ResponseMetadata
+) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.SERVICE_UNAVAILABLE
   });
 
-export const ApiUnprocessableEntityResponse = (metadata: ResponseMetadata) =>
+export const ApiUnprocessableEntityResponse = (
+  metadata: ResponseMetadata
+) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.UNPROCESSABLE_ENTITY
   });
 
-export const ApiUnsupportedMediaTypeResponse = (metadata: ResponseMetadata) =>
+export const ApiUnsupportedMediaTypeResponse = (
+  metadata: ResponseMetadata
+) =>
   ApiResponse({
     ...metadata,
     status: HttpStatus.UNSUPPORTED_MEDIA_TYPE

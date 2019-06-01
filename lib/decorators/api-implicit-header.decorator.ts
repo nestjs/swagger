@@ -1,16 +1,15 @@
 import { isNil } from 'lodash';
 import { createMultipleParamDecorator, createParamDecorator } from './helpers';
+import { ApiBaseMetadata } from '../types/api-base-metadata';
 
 const initialMetadata = {
   name: '',
   required: true
 };
 
-export const ApiImplicitHeader = (metadata: {
-  name: string;
-  description?: string;
-  required?: boolean;
-}): MethodDecorator => {
+export const ApiImplicitHeader = (
+  metadata: ApiBaseMetadata
+): MethodDecorator => {
   const param = {
     name: isNil(metadata.name) ? initialMetadata.name : metadata.name,
     in: 'header',
@@ -22,11 +21,7 @@ export const ApiImplicitHeader = (metadata: {
 };
 
 export const ApiImplicitHeaders = (
-  headers: Array<{
-    name: string;
-    description?: string;
-    required?: boolean;
-  }>
+  headers: ApiBaseMetadata[]
 ): MethodDecorator => {
   const multiMetadata = headers.map(metadata => ({
     name: isNil(metadata.name) ? initialMetadata.name : metadata.name,

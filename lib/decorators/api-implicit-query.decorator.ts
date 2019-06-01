@@ -1,4 +1,5 @@
 import { isNil } from 'lodash';
+import { ApiBaseMetadata } from '../types/api-base-metadata';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
 import { createParamDecorator } from './helpers';
 
@@ -13,15 +14,14 @@ const getCollectionFormatOrDefault = (
 ) =>
   isNil(metadata.collectionFormat) ? defaultValue : metadata.collectionFormat;
 
-export const ApiImplicitQuery = (metadata: {
-  name: string;
-  description?: string;
-  required?: boolean;
+export interface ApiImplicitQueryMetadata extends ApiBaseMetadata {
   type?: 'String' | 'Number' | 'Boolean' | any;
   isArray?: boolean;
   enum?: SwaggerEnumType;
   collectionFormat?: 'csv' | 'ssv' | 'tsv' | 'pipes' | 'multi';
-}): MethodDecorator => {
+}
+
+export const ApiImplicitQuery = (metadata: ApiImplicitQueryMetadata): MethodDecorator => {
   const param = {
     name: isNil(metadata.name) ? initialMetadata.name : metadata.name,
     in: 'query',

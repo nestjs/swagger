@@ -1,19 +1,20 @@
 import { isNil } from 'lodash';
-import { createParamDecorator } from './helpers';
+import { ApiBaseMetadata } from '../types/api-base-metadata';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
+import { createParamDecorator } from './helpers';
 
 const initialMetadata = {
   name: '',
   required: true
 };
 
-export const ApiImplicitParam = (metadata: {
-  name: string;
-  description?: string;
-  required?: boolean;
+export interface ApiImplicitParamMetadata extends ApiBaseMetadata {
   enum?: SwaggerEnumType;
   type?: 'String' | 'Number' | 'Boolean' | any;
-}): MethodDecorator => {
+}
+
+
+export const ApiImplicitParam = (metadata: ApiImplicitParamMetadata): MethodDecorator => {
   const param = {
     name: isNil(metadata.name) ? initialMetadata.name : metadata.name,
     in: 'path',

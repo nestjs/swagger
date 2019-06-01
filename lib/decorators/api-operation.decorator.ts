@@ -6,12 +6,16 @@ const initialMetadata = {
   summary: ''
 };
 
-export const ApiOperation = (metadata: {
+export interface ApiOperationMetadata {
   title: string;
   description?: string;
   operationId?: string;
   deprecated?: boolean;
-}): MethodDecorator => {
+}
+
+export const ApiOperation = (
+  metadata: ApiOperationMetadata
+): MethodDecorator => {
   return createMethodDecorator(
     DECORATORS.API_OPERATION,
     pickBy(
