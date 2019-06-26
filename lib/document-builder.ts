@@ -28,8 +28,8 @@ export class DocumentBuilder {
     return this;
   }
 
-  public setContactEmail(email: string): this {
-    this.document.info.contact = { email };
+  public setContact(name: string, url: string, email: string): this {
+    this.document.info.contact = { name, url, email };
     return this;
   }
 

@@ -6,6 +6,8 @@ export interface SwaggerBaseConfig {
     title?: string;
     termsOfService?: string;
     contact?: {
+      name: string;
+      url: string;
       email: string;
     };
     license?: {
