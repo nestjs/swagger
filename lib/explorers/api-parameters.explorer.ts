@@ -210,6 +210,13 @@ export const exploreModelDefinition = (
         allOf: [{ $ref }, strippedMetadata]
       };
     }
+
+    const isRawSwagger = metadata.type.type && metadata.type.items;
+    if (isRawSwagger) {
+      const { type, items } = metadata.type;
+      return Object.assign({}, metadata, { name: key, type, items });
+    }
+
     const metatype: string =
       metadata.type && isFunction(metadata.type)
         ? metadata.type.name
@@ -327,6 +334,7 @@ const mapParametersTypes = parameters =>
       return omitParamType(param);
     }
     const { type } = param;
+    console.log(type);
     const paramWithStringType: any = pickBy(
       {
         ...param,
