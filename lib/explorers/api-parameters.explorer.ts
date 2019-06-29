@@ -334,7 +334,6 @@ const mapParametersTypes = parameters =>
       return omitParamType(param);
     }
     const { type } = param;
-    console.log(type);
     const paramWithStringType: any = pickBy(
       {
         ...param,
