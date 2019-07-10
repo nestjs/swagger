@@ -15,7 +15,7 @@
     "publish:npm": "npm publish --access public"
   },
   "dependencies": {
-    "lodash": "4.17.11",
+    "lodash": "4.17.14",
     "path-to-regexp": "3.0.0"
   },
   "devDependencies": {
