@@ -24,6 +24,7 @@ import {
 } from 'lodash';
 import { DECORATORS } from '../constants';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
+import { exploreApiConsumesMetadata } from './api-consumes.explorer';
 
 export const exploreApiParametersMetadata = (
   definitions,
@@ -51,14 +52,14 @@ export const exploreApiParametersMetadata = (
   const mergedParameters = noAnyImplicit
     ? allReflectedParameters
     : map(allReflectedParameters, item =>
-        assign(item, find(implicitParameters, ['name', item.name]))
-      );
+      assign(item, find(implicitParameters, ['name', item.name]))
+    );
 
   const unionParameters = noAnyImplicit
     ? mergedParameters
     : unionWith(mergedParameters, implicitParameters, (arrVal, othVal) => {
-        return arrVal.name === othVal.name && arrVal.in === othVal.in;
-      });
+      return arrVal.name === othVal.name && arrVal.in === othVal.in;
+    });
 
   const paramsWithDefinitions = mapModelsToDefinitons(
     unionParameters,
@@ -83,10 +84,11 @@ const exploreApiReflectedParametersMetadata = (instance, prototype, method) => {
     name: param.data,
     required: true
   }));
+  const consumes = exploreApiConsumesMetadata(instance, prototype, method);
   const parameters = omitBy(
     mapValues(parametersWithType, (val, key) => ({
       ...val,
-      in: mapParamType(key as any)
+      in: mapParamType(key as any, consumes as any)
     })),
     val => val.in === DEFAULT_PARAM_TOKEN || (val.name && val.in === 'body')
   );
@@ -302,10 +304,12 @@ const getEnumType = (values: (string | number)[]): 'string' | 'number' => {
   return hasString ? 'string' : 'number';
 };
 
-const mapParamType = (key: string): string => {
+const mapParamType = (key: string, consumes: string[]): string => {
   const keyPair = key.split(':');
   switch (Number(keyPair[0])) {
     case RouteParamtypes.BODY:
+      if (!isEmpty(consumes) && ['multipart/form-data', 'application/x-www-form-urlencoded'].indexOf(consumes[0]) > -1)
+        return 'formData';
       return 'body';
     case RouteParamtypes.PARAM:
       return 'path';
