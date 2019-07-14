@@ -51,6 +51,7 @@ export class SwaggerModule {
     document: SwaggerDocument,
     options?: SwaggerCustomOptions
   ) {
+    const httpAdapter = app.getHttpAdapter();
     const validatePath = (inputPath: string): string =>
       inputPath.charAt(0) !== '/' ? '/' + inputPath : inputPath;
 
@@ -61,8 +62,8 @@ export class SwaggerModule {
     );
     const swaggerHtml = swaggerUi.generateHTML(document, options);
     app.use(finalPath, swaggerUi.serveFiles(document, options));
-    app.use(finalPath, (req, res) => res.send(swaggerHtml));
-    app.use(finalPath + '-json', (req, res) => res.json(document));
+    httpAdapter.get(finalPath, (req, res) => res.send(swaggerHtml));
+    httpAdapter.get(finalPath + '-json', (req, res) => res.json(document));
   }
 
   private static setupFastify(
