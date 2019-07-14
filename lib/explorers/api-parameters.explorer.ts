@@ -8,6 +8,7 @@ import {
   assign,
   find,
   flatMap,
+  head,
   identity,
   includes,
   isEmpty,
@@ -52,14 +53,14 @@ export const exploreApiParametersMetadata = (
   const mergedParameters = noAnyImplicit
     ? allReflectedParameters
     : map(allReflectedParameters, item =>
-      assign(item, find(implicitParameters, ['name', item.name]))
-    );
+        assign(item, find(implicitParameters, ['name', item.name]))
+      );
 
   const unionParameters = noAnyImplicit
     ? mergedParameters
     : unionWith(mergedParameters, implicitParameters, (arrVal, othVal) => {
-      return arrVal.name === othVal.name && arrVal.in === othVal.in;
-    });
+        return arrVal.name === othVal.name && arrVal.in === othVal.in;
+      });
 
   const paramsWithDefinitions = mapModelsToDefinitons(
     unionParameters,
@@ -307,10 +308,14 @@ const getEnumType = (values: (string | number)[]): 'string' | 'number' => {
 const mapParamType = (key: string, consumes: string[]): string => {
   const keyPair = key.split(':');
   switch (Number(keyPair[0])) {
-    case RouteParamtypes.BODY:
-      if (!isEmpty(consumes) && ['multipart/form-data', 'application/x-www-form-urlencoded'].indexOf(consumes[0]) > -1)
-        return 'formData';
+    case RouteParamtypes.BODY: {
+      const isFormData =
+        ['multipart/form-data', 'application/x-www-form-urlencoded'].indexOf(
+          head(consumes)
+        ) > -1;
+      if (!isEmpty(consumes) && isFormData) return 'formData';
       return 'body';
+    }
     case RouteParamtypes.PARAM:
       return 'path';
     case RouteParamtypes.QUERY:
