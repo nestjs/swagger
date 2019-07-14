@@ -8,6 +8,7 @@ import {
   assign,
   find,
   flatMap,
+  head,
   identity,
   includes,
   isEmpty,
@@ -24,6 +25,7 @@ import {
 } from 'lodash';
 import { DECORATORS } from '../constants';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
+import { exploreApiConsumesMetadata } from './api-consumes.explorer';
 
 export const exploreApiParametersMetadata = (
   definitions,
@@ -83,10 +85,11 @@ const exploreApiReflectedParametersMetadata = (instance, prototype, method) => {
     name: param.data,
     required: true
   }));
+  const consumes = exploreApiConsumesMetadata(instance, prototype, method);
   const parameters = omitBy(
     mapValues(parametersWithType, (val, key) => ({
       ...val,
-      in: mapParamType(key as any)
+      in: mapParamType(key as any, consumes as any)
     })),
     val => val.in === DEFAULT_PARAM_TOKEN || (val.name && val.in === 'body')
   );
@@ -302,11 +305,17 @@ const getEnumType = (values: (string | number)[]): 'string' | 'number' => {
   return hasString ? 'string' : 'number';
 };
 
-const mapParamType = (key: string): string => {
+const mapParamType = (key: string, consumes: string[]): string => {
   const keyPair = key.split(':');
   switch (Number(keyPair[0])) {
-    case RouteParamtypes.BODY:
+    case RouteParamtypes.BODY: {
+      const isFormData =
+        ['multipart/form-data', 'application/x-www-form-urlencoded'].indexOf(
+          head(consumes)
+        ) > -1;
+      if (!isEmpty(consumes) && isFormData) return 'formData';
       return 'body';
+    }
     case RouteParamtypes.PARAM:
       return 'path';
     case RouteParamtypes.QUERY:
