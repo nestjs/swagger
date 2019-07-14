@@ -7,12 +7,12 @@ export interface ResponseMetadata {
   description?: string;
   type?: any;
   isArray?: boolean;
+  headers?: any;
 }
 
 export const ApiResponse = (
   metadata: {
     status: number;
-    headers?: any;
   } & ResponseMetadata
 ) => {
   const [type, isArray] = getTypeIsArrayTuple(metadata.type, metadata.isArray);
