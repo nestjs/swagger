@@ -15,9 +15,9 @@ export const ApiModelProperty = (
     in?: string;
     multipleOf?: number;
     maximum?: number;
-    exclusiveMaximum?: number;
+    exclusiveMaximum?: boolean;
     minimum?: number;
-    exclusiveMinimum?: number;
+    exclusiveMinimum?: boolean;
     maxLength?: number;
     minLength?: number;
     pattern?: string;
