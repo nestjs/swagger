@@ -12,7 +12,8 @@
     "prepublish:next": "npm run build",
     "publish:next": "npm publish --access public --tag next",
     "prepublish:npm": "npm run build",
-    "publish:npm": "npm publish --access public"
+    "publish:npm": "npm publish --access public",
+    "test": "jest --config jest.json"
   },
   "dependencies": {
     "lodash": "4.17.14",
@@ -21,11 +22,14 @@
   "devDependencies": {
     "@nestjs/common": "6.5.2",
     "@nestjs/core": "6.5.2",
+    "@types/jest": "^24.0.15",
     "@types/node": "11.13.17",
     "husky": "3.0.0",
+    "jest": "^24.8.0",
     "lint-staged": "9.2.0",
     "prettier": "1.18.2",
     "reflect-metadata": "0.1.13",
+    "ts-jest": "^24.0.2",
     "typescript": "3.5.3"
   },
   "peerDependencies": {
