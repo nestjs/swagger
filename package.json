@@ -33,7 +33,8 @@
   },
   "peerDependencies": {
     "@nestjs/common": "^6.0.0",
-    "@nestjs/core": "^6.0.0"
+    "@nestjs/core": "^6.0.0",
+    "reflect-metadata": "^0.1.12"
   },
   "lint-staged": {
     "*.ts": [
