@@ -27,6 +27,7 @@ export const ApiModelProperty = (
     maxProperties?: number;
     minProperties?: number;
     readOnly?: boolean;
+    nullable?: boolean;
     xml?: any;
     example?: any;
   } = {}
@@ -63,6 +64,7 @@ export const ApiModelPropertyOptional = (
     maxProperties?: number;
     minProperties?: number;
     readOnly?: boolean;
+    nullable?: boolean;
     xml?: any;
     example?: any;
   } = {}
