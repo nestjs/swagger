@@ -60,13 +60,11 @@ export const exploreApiParametersMetadata = (
     : unionWith(mergedParameters, implicitParameters, (arrVal, othVal) => {
         return arrVal.name === othVal.name && arrVal.in === othVal.in;
       });
-  // console.log(unionParameters);
   const paramsWithDefinitions = mapModelsToDefinitons(
     unionParameters,
     definitions
   );
   const parameters = mapParametersTypes(paramsWithDefinitions);
-  // console.log(parameters);
   return parameters ? { parameters } : undefined;
 };
 
