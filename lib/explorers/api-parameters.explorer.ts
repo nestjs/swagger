@@ -55,19 +55,18 @@ export const exploreApiParametersMetadata = (
     : map(allReflectedParameters, item =>
         assign(item, find(implicitParameters, ['name', item.name]))
       );
-
   const unionParameters = noAnyImplicit
     ? mergedParameters
     : unionWith(mergedParameters, implicitParameters, (arrVal, othVal) => {
         return arrVal.name === othVal.name && arrVal.in === othVal.in;
       });
-
+  // console.log(unionParameters);
   const paramsWithDefinitions = mapModelsToDefinitons(
     unionParameters,
     definitions
   );
   const parameters = mapParametersTypes(paramsWithDefinitions);
-
+  // console.log(parameters);
   return parameters ? { parameters } : undefined;
 };
 
@@ -117,6 +116,11 @@ const transformModelToProperties = reflectedParameters => {
       return param;
     }
     if (isBodyParameter(param)) {
+      const name: string =
+        param.type && isFunction(param.type) ? param.type.name : param.type;
+      return { ...param, name };
+    }
+    if (isFunction(param.type) && param.in === 'query') {
       const name: string =
         param.type && isFunction(param.type) ? param.type.name : param.type;
       return { ...param, name };
@@ -369,8 +373,10 @@ const getDefinitionPath = modelName => `#/definitions/${modelName}`;
 
 const mapModelsToDefinitons = (parameters, definitions) => {
   return parameters.map(param => {
-    if (!isBodyParameter(param)) {
-      return param;
+    if (param.in !== 'query' && !isFunction(param.type)) {
+      if (!isBodyParameter(param)) {
+        return param;
+      }
     }
     const isFormData = param.in === 'formData';
     if (isFormData) {
