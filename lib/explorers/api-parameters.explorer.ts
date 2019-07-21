@@ -371,7 +371,7 @@ const getDefinitionPath = modelName => `#/definitions/${modelName}`;
 
 const mapModelsToDefinitons = (parameters, definitions) => {
   return parameters.map(param => {
-    if (param.in !== 'query' && !isFunction(param.type)) {
+    if (!isFunction(param.type)) {
       if (!isBodyParameter(param)) {
         return param;
       }
