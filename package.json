@@ -15,7 +15,7 @@
     "test": "jest --config jest.json"
   },
   "dependencies": {
-    "lodash": "4.17.14",
+    "lodash": "4.17.15",
     "path-to-regexp": "3.0.0"
   },
   "devDependencies": {
