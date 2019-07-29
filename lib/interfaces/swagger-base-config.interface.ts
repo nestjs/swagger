@@ -37,6 +37,9 @@ export interface SwaggerBaseConfig {
       tokenUrl?: string;
       scopes?: object;
     };
+    basic?: {
+      type: 'basic';
+    };
   };
 }
 

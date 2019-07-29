@@ -100,6 +100,16 @@ export class DocumentBuilder {
     return this;
   }
 
+  public addBasicAuth(): this {
+    this.document.securityDefinitions = {
+      ...(this.document.securityDefinitions || {}),
+      basic: {
+        type: 'basic'
+      }
+    };
+    return this;
+  }
+
   public build(): SwaggerBaseConfig {
     return this.document;
   }
