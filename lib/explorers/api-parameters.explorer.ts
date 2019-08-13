@@ -21,6 +21,7 @@ import {
   omit,
   omitBy,
   pickBy,
+  some,
   unionWith
 } from 'lodash';
 import { DECORATORS } from '../constants';
@@ -37,7 +38,7 @@ export const exploreApiParametersMetadata = (
     DECORATORS.API_PARAMETERS,
     method
   );
-  const reflectedParameters = exploreApiReflectedParametersMetadata(
+  let reflectedParameters = exploreApiReflectedParametersMetadata(
     instance,
     prototype,
     method
@@ -45,6 +46,13 @@ export const exploreApiParametersMetadata = (
   const noAnyImplicit = isNil(implicitParameters);
   if (noAnyImplicit && isNil(reflectedParameters)) {
     return undefined;
+  }
+
+  // Drop @Body reflected parameter when @ApiImplicitBody is described (#185)
+  const hasBodyRp = some(reflectedParameters, p => p.in === 'body');
+  const hasBodyIp = some(implicitParameters, p => p.in === 'body');
+  if (hasBodyRp && hasBodyIp) {
+    reflectedParameters = omitBy(reflectedParameters, p => p.in === 'body');
   }
 
   const allReflectedParameters = transformModelToProperties(
