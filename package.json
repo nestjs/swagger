@@ -12,13 +12,17 @@
     "publish:next": "npm publish --access public --tag next",
     "prepublish:npm": "npm run build",
     "publish:npm": "npm publish --access public",
+    "postpublish": "git tag v${npm_package_version} && git push --tags",
     "test": "jest --config jest.json"
   },
   "dependencies": {
+    "express": "^4.17.1",
     "lodash": "4.17.15",
-    "path-to-regexp": "3.0.0"
+    "path-to-regexp": "3.0.0",
+    "swagger-ui-express": "^4.0.7"
   },
   "devDependencies": {
+    "@isman/nest-swagger": "*",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
     "@types/jest": "24.0.17",
