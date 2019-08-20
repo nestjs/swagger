@@ -1,7 +1,16 @@
 import { MODULE_PATH } from '@nestjs/common/constants';
 import { Module } from '@nestjs/core/injector/module';
 import { NestContainer } from '@nestjs/core/injector/container';
-import { extend, flatten, isEmpty, reduce, mapValues, keyBy, get, uniq } from 'lodash';
+import {
+  extend,
+  flatten,
+  isEmpty,
+  reduce,
+  mapValues,
+  keyBy,
+  get,
+  uniq
+} from 'lodash';
 import { SwaggerDocument } from './interfaces';
 import { SwaggerExplorer } from './swagger-explorer';
 import { SwaggerTransformer } from './swagger-transformer';
@@ -32,7 +41,7 @@ export class SwaggerScanner {
       ...(type === 'basic' ? DEFAULT_BASIC_SECURITY : {}),
       ...(type === 'apiKey' ? DEFAULT_APIKEY_SECURITY : {}),
       ...(type === 'oauth2' ? DEFAULT_OAUTH2_SECURITY : {}),
-      type: type,
+      type,
       scopes: type === 'oauth2' ? uniq([...oldScopes, ...scopes]) : undefined
     };
   }

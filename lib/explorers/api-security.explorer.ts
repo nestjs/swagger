@@ -3,7 +3,9 @@ import { SwaggerScanner } from '../swagger-scanner';
 
 export const exploreGlobalApiSecurityMetadata = metatype => {
   const metadata = Reflect.getMetadata(DECORATORS.API_SECURITY, metatype);
-  if (!metadata) return;
+  if (!metadata) {
+    return;
+  }
 
   const security = metadata.map(meta => {
     const scopes = meta.scopes || [];
@@ -16,7 +18,9 @@ export const exploreGlobalApiSecurityMetadata = metatype => {
 
 export const exploreApiSecurityMetadata = (instance, prototype, method) => {
   const metadata = Reflect.getMetadata(DECORATORS.API_SECURITY, method);
-  if (!metadata) return;
+  if (!metadata) {
+    return;
+  }
 
   const security = metadata.map(meta => {
     const scopes = meta.scopes || [];

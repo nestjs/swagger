@@ -24,8 +24,9 @@ export const ApiSecurity = (metadata: SecurityMetadata) => {
   }
 
   return (target, key?, descriptor?: PropertyDescriptor) => {
+    let securities;
     if (descriptor) {
-      const securities =
+      securities =
         Reflect.getMetadata(DECORATORS.API_SECURITY, descriptor.value) || [];
       Reflect.defineMetadata(
         DECORATORS.API_SECURITY,
@@ -34,8 +35,7 @@ export const ApiSecurity = (metadata: SecurityMetadata) => {
       );
       return descriptor;
     }
-    const securities =
-      Reflect.getMetadata(DECORATORS.API_SECURITY, target) || [];
+    securities = Reflect.getMetadata(DECORATORS.API_SECURITY, target) || [];
     Reflect.defineMetadata(
       DECORATORS.API_SECURITY,
       [...securities, metadata],

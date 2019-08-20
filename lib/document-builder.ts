@@ -56,7 +56,7 @@ export class DocumentBuilder {
     return this;
   }
 
-  public setSchemes(...schemes: ('http' | 'https')[]): this {
+  public setSchemes(...schemes: ['http' | 'https']): this {
     this.document.schemes = schemes as SwaggerScheme[];
     return this;
   }
