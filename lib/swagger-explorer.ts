@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common/utils/shared.utils';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
-import { isArray, isEmpty, mapValues, omitBy, mergeWith } from 'lodash';
+import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';
 import {
   exploreApiConsumesMetadata,
@@ -184,10 +184,15 @@ export class SwaggerExplorer {
   }
 
   private mergeMetadata(globalMetadata, methodMetadata) {
-    return mergeWith(globalMetadata, methodMetadata, (objValue, srcValue) => {
-      if (isArray(objValue)) {
-        return objValue.concat(srcValue);
+    return mapValues(methodMetadata, (value, key) => {
+      if (!globalMetadata[key]) {
+        return value;
       }
+      const globalValue = globalMetadata[key];
+      if (!isArray(globalValue)) {
+        return { ...globalValue, ...value };
+      }
+      return [...globalValue, ...value];
     });
   }
 
