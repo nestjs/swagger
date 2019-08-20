@@ -24,5 +24,5 @@ export const exploreApiSecurityMetadata = (instance, prototype, method) => {
     SwaggerScanner.addSecurity(meta.name, meta.type, scopes);
     return { [meta.name]: scopes };
   });
-  return { security };
+  return security;
 };
