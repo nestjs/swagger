@@ -15,9 +15,9 @@ export const ApiModelProperty = (
     in?: string;
     multipleOf?: number;
     maximum?: number;
-    exclusiveMaximum?: number;
+    exclusiveMaximum?: boolean;
     minimum?: number;
-    exclusiveMinimum?: number;
+    exclusiveMinimum?: boolean;
     maxLength?: number;
     minLength?: number;
     pattern?: string;
@@ -27,6 +27,7 @@ export const ApiModelProperty = (
     maxProperties?: number;
     minProperties?: number;
     readOnly?: boolean;
+    nullable?: boolean;
     xml?: any;
     example?: any;
   } = {}
@@ -51,9 +52,9 @@ export const ApiModelPropertyOptional = (
     in?: string;
     multipleOf?: number;
     maximum?: number;
-    exclusiveMaximum?: number;
+    exclusiveMaximum?: boolean;
     minimum?: number;
-    exclusiveMinimum?: number;
+    exclusiveMinimum?: boolean;
     maxLength?: number;
     minLength?: number;
     pattern?: string;
@@ -63,6 +64,7 @@ export const ApiModelPropertyOptional = (
     maxProperties?: number;
     minProperties?: number;
     readOnly?: boolean;
+    nullable?: boolean;
     xml?: any;
     example?: any;
   } = {}

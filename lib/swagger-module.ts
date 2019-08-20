@@ -10,16 +10,16 @@ import { merge } from 'lodash';
 import { SwaggerScanner } from './swagger-scanner';
 
 export class SwaggerModule {
-  private static readonly swaggerScanner = new SwaggerScanner();
-
   public static createDocument(
     app: INestApplication,
     config: SwaggerBaseConfig,
     options: SwaggerDocumentOptions = {}
   ): SwaggerDocument {
-    const document = this.swaggerScanner.scanApplication(
+    const swaggerScanner = new SwaggerScanner();
+    const document = swaggerScanner.scanApplication(
       app,
-      options.include || []
+      options.include || [],
+      options.deepScanRoutes
     );
     return {
       ...merge(document, config),
@@ -51,16 +51,19 @@ export class SwaggerModule {
     document: SwaggerDocument,
     options?: SwaggerCustomOptions
   ) {
-    const validatePath = (path): string =>
-      path.charAt(0) !== '/' ? '/' + path : path;
+    const httpAdapter = app.getHttpAdapter();
+    const validatePath = (inputPath: string): string =>
+      inputPath.charAt(0) !== '/' ? '/' + inputPath : inputPath;
 
     const finalPath = validatePath(path);
 
-    const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule');
+    const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () =>
+      require('swagger-ui-express')
+    );
     const swaggerHtml = swaggerUi.generateHTML(document, options);
     app.use(finalPath, swaggerUi.serveFiles(document, options));
-    app.use(finalPath, (req, res) => res.send(swaggerHtml));
-    app.use(finalPath + '-json', (req, res) => res.json(document));
+    httpAdapter.get(finalPath, (req, res) => res.send(swaggerHtml));
+    httpAdapter.get(finalPath + '-json', (req, res) => res.json(document));
   }
 
   private static setupFastify(
@@ -68,14 +71,19 @@ export class SwaggerModule {
     httpServer: any,
     document: SwaggerDocument
   ) {
-    httpServer.register(loadPackage('fastify-swagger', 'SwaggerModule'), {
-      swagger: document,
-      exposeRoute: true,
-      routePrefix: path,
-      mode: 'static',
-      specification: {
-        document
+    httpServer.register(
+      loadPackage('fastify-swagger', 'SwaggerModule', () =>
+        require('fastify-swagger')
+      ),
+      {
+        swagger: document,
+        exposeRoute: true,
+        routePrefix: path,
+        mode: 'static',
+        specification: {
+          document
+        }
       }
-    });
+    );
   }
 }

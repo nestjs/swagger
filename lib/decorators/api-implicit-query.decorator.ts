@@ -1,12 +1,17 @@
-import { DECORATORS } from '../constants';
+import { isNil } from 'lodash';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
-import { createMethodDecorator, createParamDecorator } from './helpers';
-import { omit, pickBy, negate, isUndefined, isNil } from 'lodash';
+import { createParamDecorator } from './helpers';
 
 const initialMetadata = {
   name: '',
   required: true
 };
+
+const getCollectionFormatOrDefault = (
+  metadata: Record<string, any>,
+  defaultValue: string
+) =>
+  isNil(metadata.collectionFormat) ? defaultValue : metadata.collectionFormat;
 
 export const ApiImplicitQuery = (metadata: {
   name: string;
@@ -40,15 +45,12 @@ export const ApiImplicitQuery = (metadata: {
         type: 'String',
         enum: metadata.enum
       };
-      param.collectionFormat = 'multi';
-      param.enum = undefined;
+      param.collectionFormat = getCollectionFormatOrDefault(metadata, 'multi');
     } else {
+      param.collectionFormat = getCollectionFormatOrDefault(metadata, 'csv');
       param.items = {
         type: metadata.type
       };
-      param.collectionFormat = isNil(metadata.collectionFormat)
-        ? 'csv'
-        : metadata.collectionFormat;
     }
   }
   return createParamDecorator(param, initialMetadata);

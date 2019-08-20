@@ -4,10 +4,10 @@ import {
   SecurityDefinitions
 } from './interfaces/swagger-base-config.interface';
 
-import { documentBase } from './fixtures/document.base';
+import { buildDocumentBase } from './fixtures/document.base';
 
 export class DocumentBuilder {
-  private readonly document: SwaggerBaseConfig = documentBase;
+  private readonly document: SwaggerBaseConfig = buildDocumentBase();
 
   public setTitle(title: string): this {
     this.document.info.title = title;
