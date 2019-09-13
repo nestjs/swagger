@@ -19,8 +19,8 @@
     "path-to-regexp": "3.0.0"
   },
   "devDependencies": {
-    "@nestjs/common": "6.5.3",
-    "@nestjs/core": "6.5.3",
+    "@nestjs/common": "6.6.7",
+    "@nestjs/core": "6.6.7",
     "@types/jest": "24.0.17",
     "@types/node": "11.13.19",
     "husky": "3.0.3",
