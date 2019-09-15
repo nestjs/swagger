@@ -63,7 +63,7 @@ export class SwaggerModule {
     const swaggerHtml = swaggerUi.generateHTML(document, options);
     app.use(finalPath, swaggerUi.serveFiles(document, options));
     httpAdapter.get(finalPath, (req, res) => res.send(swaggerHtml));
-    httpAdapter.get(finalPath + '-json', (req, res) => res.json(document));
+    httpAdapter.get(finalPath.replace(/\/$/, '') + '-json', (req, res) => res.json(document));
   }
 
   private static setupFastify(
