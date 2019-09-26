@@ -33,16 +33,11 @@ export const ApiImplicitQuery = (metadata: {
     collectionFormat: undefined
   };
 
-  if (metadata.enum) {
-    param.type = String;
-    param.enum = metadata.enum;
-  }
-
   if (metadata.isArray) {
     param.type = Array;
     if (metadata.enum) {
       param.items = {
-        type: 'String',
+        type: 'string',
         enum: metadata.enum
       };
       param.collectionFormat = getCollectionFormatOrDefault(metadata, 'multi');
@@ -52,6 +47,10 @@ export const ApiImplicitQuery = (metadata: {
         type: metadata.type
       };
     }
+  } else if (metadata.enum) {
+    param.type = String;
+    param.enum = metadata.enum;
   }
+
   return createParamDecorator(param, initialMetadata);
 };
