@@ -56,7 +56,6 @@ export class SwaggerModule {
       inputPath.charAt(0) !== '/' ? '/' + inputPath : inputPath;
 
     const finalPath = validatePath(path);
-
     const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () =>
       require('swagger-ui-express')
     );

@@ -18,3 +18,4 @@ npm-debug.log
 dist
 index.js
 index.d.ts
+/sample
