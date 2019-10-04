@@ -22,7 +22,7 @@
     "@nestjs/common": "6.6.7",
     "@nestjs/core": "6.6.7",
     "@types/jest": "24.0.18",
-    "@types/node": "11.13.20",
+    "@types/node": "11.13.22",
     "husky": "3.0.8",
     "jest": "24.9.0",
     "lint-staged": "9.2.5",
