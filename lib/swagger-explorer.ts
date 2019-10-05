@@ -38,6 +38,12 @@ export class SwaggerExplorer {
   private readonly metadataScanner = new MetadataScanner();
   private readonly modelsDefinitions = [];
 
+  private readonly bodilessOperations = [
+    RequestMethod.GET,
+    RequestMethod.HEAD,
+    RequestMethod.OPTIONS
+  ];
+
   public exploreController(
     { instance, metatype }: InstanceWrapper<Controller>,
     modulePath: string
@@ -96,6 +102,10 @@ export class SwaggerExplorer {
         if (excludeEndpoint && excludeEndpoint.disable) {
           return;
         }
+        const requestMethod = Reflect.getMetadata(
+          METHOD_METADATA,
+          targetCallback
+        ) as RequestMethod;
         const methodMetadata = mapValues(explorersSchema, (explorers: any[]) =>
           explorers.reduce((metadata, fn) => {
             const exploredMetadata = fn.call(
@@ -103,6 +113,7 @@ export class SwaggerExplorer {
               instance,
               prototype,
               targetCallback,
+              requestMethod,
               path
             );
             if (!exploredMetadata) {
@@ -120,8 +131,12 @@ export class SwaggerExplorer {
           globalMetadata,
           omitBy(methodMetadata, isEmpty)
         );
+
+        if (!this.bodilessOperations.includes(requestMethod)) {
+          this.assignDefaultMimeType(mergedMethodMetadata, 'consumes');
+        }
         this.assignDefaultMimeType(mergedMethodMetadata, 'produces');
-        this.assignDefaultMimeType(mergedMethodMetadata, 'consumes');
+
         return {
           responses: {},
           ...globalMetadata,
@@ -148,15 +163,17 @@ export class SwaggerExplorer {
     return globalMetadata;
   }
 
-  private exploreRoutePathAndMethod(instance, prototype, method, globalPath) {
+  private exploreRoutePathAndMethod(
+    instance,
+    prototype,
+    method,
+    requestMethod,
+    globalPath
+  ) {
     const routePath = Reflect.getMetadata(PATH_METADATA, method);
     if (isUndefined(routePath)) {
       return undefined;
     }
-    const requestMethod = Reflect.getMetadata(
-      METHOD_METADATA,
-      method
-    ) as RequestMethod;
     const fullPath = globalPath + this.validateRoutePath(routePath);
     return {
       method: RequestMethod[requestMethod].toLowerCase(),
