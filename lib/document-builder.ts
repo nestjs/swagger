@@ -1,12 +1,15 @@
-import {
-  SwaggerBaseConfig,
-  SwaggerScheme
-} from './interfaces/swagger-base-config.interface';
-
+import { isUndefined, negate, pickBy } from 'lodash';
 import { buildDocumentBase } from './fixtures/document.base';
+import { OpenAPIObject } from './interfaces';
+import {
+  ExternalDocumentationObject,
+  SecuritySchemeObject,
+  ServerVariableObject,
+  TagObject
+} from './interfaces/open-api-spec.interface';
 
 export class DocumentBuilder {
-  private readonly document: SwaggerBaseConfig = buildDocumentBase();
+  private readonly document: Omit<OpenAPIObject, 'paths'> = buildDocumentBase();
 
   public setTitle(title: string): this {
     this.document.info.title = title;
@@ -28,8 +31,8 @@ export class DocumentBuilder {
     return this;
   }
 
-  public setContactEmail(email: string): this {
-    this.document.info.contact = { email };
+  public setContact(name: string, url: string, email: string): this {
+    this.document.info.contact = { name, url, email };
     return this;
   }
 
@@ -38,15 +41,12 @@ export class DocumentBuilder {
     return this;
   }
 
-  public setHost(host: string): this {
-    this.document.host = host;
-    return this;
-  }
-
-  public setBasePath(basePath: string): this {
-    this.document.basePath = basePath.startsWith('/')
-      ? basePath
-      : '/' + basePath;
+  public addServer(
+    url: string,
+    description?: string,
+    variables?: Record<string, ServerVariableObject>
+  ): this {
+    this.document.servers.push({ url, description, variables });
     return this;
   }
 
@@ -55,52 +55,98 @@ export class DocumentBuilder {
     return this;
   }
 
-  public setSchemes(...schemes: ('http' | 'https')[]): this {
-    this.document.schemes = schemes as SwaggerScheme[];
+  public addTag(
+    name: string,
+    description: string = '',
+    externalDocs?: ExternalDocumentationObject
+  ): this {
+    this.document.tags = this.document.tags.concat(pickBy(
+      {
+        name,
+        description,
+        externalDocs
+      },
+      negate(isUndefined)
+    ) as TagObject);
     return this;
   }
 
-  public addTag(name: string, description: string = ''): this {
-    this.document.tags = this.document.tags.concat({ name, description });
+  public addSecurity(name: string, options: SecuritySchemeObject): this {
+    this.document.components.securitySchemes = {
+      ...(this.document.components.securitySchemes || {}),
+      [name]: options
+    };
+    return this;
+  }
+
+  public addSecurityRequirements(
+    name: string,
+    requirements: string[] = []
+  ): this {
+    this.document.security = (this.document.security || []).concat({
+      [name]: requirements
+    });
     return this;
   }
 
   public addBearerAuth(
-    name: string = 'Authorization',
-    location: 'header' | 'body' | 'query' = 'header',
-    type: string = 'apiKey'
+    options: SecuritySchemeObject = {
+      type: 'http'
+    },
+    name = 'bearer'
   ): this {
-    this.document.securityDefinitions = {
-      ...(this.document.securityDefinitions || {}),
-      bearer: {
-        type,
-        name,
-        in: location
-      }
-    };
+    this.addSecurity(name, {
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      ...options
+    });
     return this;
   }
 
   public addOAuth2(
-    flow: 'implicit' | 'password' | 'application' | 'accessCode' = 'password',
-    authorizationUrl?: string,
-    tokenUrl?: string,
-    scopes?: object
+    options: SecuritySchemeObject = {
+      type: 'oauth2'
+    },
+    name = 'oauth2'
   ): this {
-    this.document.securityDefinitions = {
-      ...(this.document.securityDefinitions || {}),
-      oauth2: {
-        type: 'oauth2',
-        flow,
-        authorizationUrl,
-        tokenUrl,
-        scopes
-      }
-    };
+    this.addSecurity(name, {
+      type: 'oauth2',
+      flows: {},
+      ...options
+    });
     return this;
   }
 
-  public build(): SwaggerBaseConfig {
+  public addApiKey(
+    options: SecuritySchemeObject = {
+      type: 'apiKey'
+    },
+    name = 'api_key'
+  ): this {
+    this.addSecurity(name, {
+      type: 'apiKey',
+      in: 'header',
+      name,
+      ...options
+    });
+    return this;
+  }
+
+  public addBasicAuth(
+    options: SecuritySchemeObject = {
+      type: 'http'
+    },
+    name = 'basic'
+  ): this {
+    this.addSecurity(name, {
+      type: 'http',
+      scheme: 'basic',
+      ...options
+    });
+    return this;
+  }
+
+  public build(): Omit<OpenAPIObject, 'components' | 'paths'> {
     return this.document;
   }
 }

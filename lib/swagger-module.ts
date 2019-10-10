@@ -1,9 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import { loadPackage } from '@nestjs/common/utils/load-package.util';
 import {
-  SwaggerBaseConfig,
+  OpenAPIObject,
   SwaggerCustomOptions,
-  SwaggerDocument,
   SwaggerDocumentOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
@@ -11,44 +10,43 @@ import { SwaggerScanner } from './swagger-scanner';
 export class SwaggerModule {
   public static createDocument(
     app: INestApplication,
-    config: SwaggerBaseConfig,
+    config: Omit<OpenAPIObject, 'paths'>,
     options: SwaggerDocumentOptions = {}
-  ): SwaggerDocument {
+  ): OpenAPIObject {
     const swaggerScanner = new SwaggerScanner();
     const document = swaggerScanner.scanApplication(
       app,
       options.include || [],
       options.deepScanRoutes
     );
+    document.components = {
+      ...(config.components || {}),
+      ...document.components
+    };
     return {
+      openapi: '3.0.0',
       ...config,
-      ...document,
-      swagger: '2.0'
+      ...document
     };
   }
 
   public static setup(
     path: string,
     app: INestApplication,
-    document: SwaggerDocument,
+    document: OpenAPIObject,
     options?: SwaggerCustomOptions
   ) {
     const httpAdapter = app.getHttpAdapter();
-    if (
-      httpAdapter &&
-      httpAdapter.constructor &&
-      httpAdapter.constructor.name === 'FastifyAdapter'
-    ) {
+    if (httpAdapter && httpAdapter.getType() === 'fastify') {
       return this.setupFastify(path, httpAdapter, document);
     }
-
     return this.setupExpress(path, app, document, options);
   }
 
   private static setupExpress(
     path: string,
     app: INestApplication,
-    document: SwaggerDocument,
+    document: OpenAPIObject,
     options?: SwaggerCustomOptions
   ) {
     const httpAdapter = app.getHttpAdapter();
@@ -61,6 +59,7 @@ export class SwaggerModule {
     );
     const swaggerHtml = swaggerUi.generateHTML(document, options);
     app.use(finalPath, swaggerUi.serveFiles(document, options));
+
     httpAdapter.get(finalPath, (req, res) => res.send(swaggerHtml));
     httpAdapter.get(finalPath + '-json', (req, res) => res.json(document));
   }
@@ -68,7 +67,7 @@ export class SwaggerModule {
   private static setupFastify(
     path: string,
     httpServer: any,
-    document: SwaggerDocument
+    document: OpenAPIObject
   ) {
     httpServer.register(
       loadPackage('fastify-swagger', 'SwaggerModule', () =>

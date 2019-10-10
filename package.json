@@ -7,31 +7,36 @@
   "repository": "https://github.com/nestjs/swagger",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "format": "prettier lib/**/*.ts --write",
+    "format": "prettier \"lib/**/*.ts\" --write",
     "prepublish:next": "npm run build",
     "publish:next": "npm publish --access public --tag next",
     "prepublish:npm": "npm run build",
     "publish:npm": "npm publish --access public",
-    "test": "jest --config jest.json"
+    "test": "jest --config jest.json",
+    "test:dev": "jest --config jest.json --watch",
+    "test:e2e": "jest --config e2e/jest-e2e.json"
   },
   "dependencies": {
     "lodash": "4.17.15",
-    "path-to-regexp": "3.0.0"
+    "path-to-regexp": "3.1.0"
   },
   "devDependencies": {
-    "@nestjs/common": "6.5.3",
-    "@nestjs/core": "6.5.3",
-    "@types/jest": "24.0.17",
-    "@types/node": "11.13.19",
+    "@nestjs/common": "6.8.2",
+    "@nestjs/core": "6.8.2",
+    "@nestjs/platform-express": "^6.8.2",
+    "@types/jest": "24.0.18",
+    "@types/lodash": "^4.14.141",
+    "@types/node": "11.13.22",
     "express": "^4.17.1",
-    "husky": "3.0.3",
-    "jest": "24.8.0",
-    "lint-staged": "9.2.1",
+    "husky": "3.0.8",
+    "jest": "24.9.0",
+    "lint-staged": "9.4.1",
     "prettier": "1.18.2",
     "reflect-metadata": "0.1.13",
+    "swagger-parser": "^8.0.1",
     "swagger-ui-express": "^4.1.1",
-    "ts-jest": "24.0.2",
-    "typescript": "3.5.3"
+    "ts-jest": "24.1.0",
+    "typescript": "3.6.3"
   },
   "peerDependencies": {
     "@nestjs/common": "^6.0.0",
