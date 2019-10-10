@@ -2,7 +2,6 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConsumes,
-  ApiFile,
   ApiOperation,
   ApiResponse,
   ApiSecurity,
@@ -20,6 +19,7 @@ import { PaginationQuery } from './dto/pagination-query.dto';
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}
 
+  @ApiUseTags('create cats')
   @Post()
   @ApiOperation({ summary: 'Create cat' })
   @ApiResponse({
@@ -53,9 +53,6 @@ export class CatsController {
     return null;
   }
 
-  @ApiFile({
-    name: 'thumbnail'
-  })
   @ApiConsumes('application/x-www-form-urlencoded')
   @Post('as-form-data')
   @ApiOperation({ summary: 'Create cat' })

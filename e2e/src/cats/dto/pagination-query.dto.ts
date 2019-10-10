@@ -11,6 +11,7 @@ export class PaginationQuery {
   page: number;
 
   @ApiProperty({
+    name: '_sortBy',
     type: [String]
   })
   sortBy: string[];

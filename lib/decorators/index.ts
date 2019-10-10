@@ -3,7 +3,6 @@ export * from './api-bearer.decorator';
 export * from './api-body.decorator';
 export * from './api-consumes.decorator';
 export * from './api-exclude-endpoint.decorator';
-export * from './api-file.decorator';
 export * from './api-header.decorator';
 export * from './api-oauth2.decorator';
 export * from './api-operation.decorator';

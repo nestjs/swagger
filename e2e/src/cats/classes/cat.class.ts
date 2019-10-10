@@ -15,6 +15,7 @@ export class Cat {
   breed: string;
 
   @ApiProperty({
+    name: '_tags',
     type: [String]
   })
   tags?: string[];
@@ -26,6 +27,7 @@ export class Cat {
   urls?: string[];
 
   @ApiProperty({
+    name: '_options',
     type: 'array',
     items: {
       type: 'object',

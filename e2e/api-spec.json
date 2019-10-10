@@ -44,7 +44,7 @@
           "age": {
             "type": "number"
           },
-          "breed": {
+          "_breed": {
             "type": "string"
           },
           "tags": {
@@ -90,7 +90,7 @@
         "required": [
           "name",
           "age",
-          "breed",
+          "_breed",
           "tags",
           "urls",
           "options",
@@ -116,7 +116,7 @@
             "example": "Maine Coon",
             "description": "The breed of the Cat"
           },
-          "tags": {
+          "_tags": {
             "type": "array",
             "items": {
               "type": "string"
@@ -128,7 +128,7 @@
               "type": "string"
             }
           },
-          "options": {
+          "_options": {
             "type": "array",
             "items": {
               "type": "object",
@@ -163,9 +163,9 @@
           "name",
           "age",
           "breed",
-          "tags",
+          "_tags",
           "urls",
-          "options",
+          "_options",
           "enum",
           "enumArr"
         ]
@@ -209,7 +209,8 @@
           }
         },
         "tags": [
-          "cats"
+          "cats",
+          "create cats"
         ],
         "security": [
           {
@@ -232,7 +233,7 @@
             }
           },
           {
-            "name": "sortBy",
+            "name": "_sortBy",
             "required": true,
             "in": "query",
             "schema": {
@@ -397,10 +398,11 @@
         "summary": "Create cat",
         "parameters": [],
         "requestBody": {
+          "required": true,
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/"
+                "$ref": "#/components/schemas/CreateCatDto"
               }
             }
           }

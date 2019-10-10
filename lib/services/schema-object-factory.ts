@@ -9,7 +9,6 @@ import {
   omit,
   omitBy
 } from 'lodash';
-import { identity } from 'rxjs';
 import { DECORATORS } from '../constants';
 import {
   BaseParameterObject,
@@ -36,9 +35,6 @@ export class SchemaObjectFactory {
     return parameters.map(param => {
       if (!isBodyParameter(param)) {
         return param;
-      }
-      if (this.isFormData(param)) {
-        return this.toFormDataSchema(param.type) as any;
       }
       if (this.isPrimitiveType(param.type)) {
         return param;
@@ -128,7 +124,7 @@ export class SchemaObjectFactory {
     if (isString(metadata.type)) {
       return {
         ...metadata,
-        name: key
+        name: metadata.name || key
       };
     }
     if (!isBuiltInType(metadata.type as Function)) {
@@ -153,7 +149,7 @@ export class SchemaObjectFactory {
     }
     return {
       ...metadata,
-      name: key,
+      name: metadata.name || key,
       type: itemType
     };
   }
@@ -188,7 +184,7 @@ export class SchemaObjectFactory {
     const validMetadataObject = omit(metadata, keysToRemove);
     if (Object.keys(validMetadataObject).length === 0) {
       return {
-        name: key,
+        name: metadata.name || key,
         required: metadata.required,
         schema: {
           $ref
@@ -196,39 +192,13 @@ export class SchemaObjectFactory {
       };
     }
     return {
-      name: key,
+      name: metadata.name || key,
       required: metadata.required,
       title: schemaObjectName,
       schema: {
         allOf: [{ $ref }, (validMetadataObject as any) as SchemaObject]
       }
     };
-  }
-
-  toFormDataSchema(type: Type<unknown>): BaseParameterObject[] {
-    const { prototype } = type;
-    if (!prototype) {
-      return [];
-    }
-    const modelProperties = this.modelPropertiesAccessor.getModelProperties(
-      prototype
-    );
-    const formDataProperties = modelProperties.map(key => {
-      const metadata: SchemaObjectMetadata =
-        Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
-        {};
-
-      if (!this.isPrimitiveType(metadata.type as Type<unknown>)) {
-        return undefined;
-      }
-      return {
-        name: key,
-        type: (metadata.type as Function).name.toLowerCase(),
-        required: metadata.required,
-        in: 'formData'
-      };
-    });
-    return formDataProperties.filter(identity);
   }
 
   transformToArraySchemaProperty(
@@ -239,7 +209,7 @@ export class SchemaObjectFactory {
     const keysToRemove = ['type', 'enum'];
     const schemaHost = {
       ...omit(metadata, keysToRemove),
-      name: key,
+      name: metadata.name || key,
       type: 'array',
       items: isString(type)
         ? {
@@ -266,10 +236,6 @@ export class SchemaObjectFactory {
 
   private isArrayCtor(type: Type<unknown> | string): boolean {
     return type === Array;
-  }
-
-  private isFormData(param: ParamWithTypeMetadata): boolean {
-    return param.in === 'formData';
   }
 
   private isPrimitiveType(type: Type<unknown> | string): boolean {
