@@ -12,6 +12,14 @@ aliases:
     run:
         name: Build
         command: npm run build
+  - &run-unit-tests
+    run:
+        name: Test
+        command: npm run test
+  - &run-e2e-tests
+    run:
+        name: E2E test
+        command: npm run test:e2e
 
 jobs:
   build:
@@ -36,9 +44,33 @@ jobs:
           name: Build
           command: npm run build    
 
+unit_tests:
+    working_directory: ~/nest
+    docker:
+      - image: circleci/node:12
+    steps:
+      - checkout
+      - *restore-cache
+      - *install-deps
+      - *build-packages
+      - *run-unit-tests
+
+e2e_tests:
+    working_directory: ~/nest
+    docker:
+      - image: circleci/node:12
+    steps:
+      - checkout
+      - *restore-cache
+      - *install-deps
+      - *build-packages
+      - *run-e2e-tests
+
 workflows:
   version: 2
   build-and-test:
     jobs:
       - build
+      - unit_tests
+      - e2e_tests
       
