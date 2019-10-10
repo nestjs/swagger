@@ -71,10 +71,10 @@ workflows:
   build-and-test:
     jobs:
       - build
-      - unit_tests
+      - unit_tests:
           requires:
             - build
-      - e2e_tests
+      - e2e_tests:
           requires:
             - build
       
