@@ -44,7 +44,7 @@ jobs:
           name: Build
           command: npm run build    
 
-unit_tests:
+  unit_tests:
     working_directory: ~/nest
     docker:
       - image: circleci/node:12
@@ -55,7 +55,7 @@ unit_tests:
       - *build-packages
       - *run-unit-tests
 
-e2e_tests:
+  e2e_tests:
     working_directory: ~/nest
     docker:
       - image: circleci/node:12
@@ -72,5 +72,9 @@ workflows:
     jobs:
       - build
       - unit_tests
+          requires:
+            - build
       - e2e_tests
+          requires:
+            - build
       
