@@ -109,6 +109,7 @@
           "age": {
             "type": "number",
             "example": 1,
+            "minimum": 0,
             "description": "The age of the Cat"
           },
           "breed": {

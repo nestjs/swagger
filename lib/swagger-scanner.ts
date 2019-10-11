@@ -34,6 +34,7 @@ export class SwaggerScanner {
           // only load submodules routes if asked
           const isGlobal = (module: Type<any>) =>
             !container.isGlobalModule(module);
+
           Array.from(relatedModules.values())
             .filter(isGlobal as any)
             .map(({ routes: relatedModuleRoutes }) => relatedModuleRoutes)

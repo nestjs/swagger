@@ -5,7 +5,7 @@ export class Cat {
   @ApiProperty({ example: 'Kitty', description: 'The name of the Cat' })
   name: string;
 
-  @ApiProperty({ example: 1, description: 'The age of the Cat' })
+  @ApiProperty({ example: 1, minimum: 0, description: 'The age of the Cat' })
   age: number;
 
   @ApiProperty({

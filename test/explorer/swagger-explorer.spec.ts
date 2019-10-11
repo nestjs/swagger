@@ -24,13 +24,13 @@ describe('SwaggerExplorer', () => {
     class CreateFoo {}
 
     class ListEntitiesDto {
-      @ApiProperty()
+      @ApiProperty({ minimum: 0 })
       page: number;
 
       @ApiProperty()
       order: string;
 
-      @ApiProperty({ type: [String] })
+      @ApiProperty({ type: [String], minItems: 3 })
       sortBy: string[];
     }
 
@@ -81,6 +81,7 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root.parameters).toEqual([
         {
           in: 'query',
+          minimum: 0,
           name: 'page',
           required: true,
           schema: {
@@ -97,6 +98,7 @@ describe('SwaggerExplorer', () => {
         },
         {
           in: 'query',
+          minItems: 3,
           name: 'sortBy',
           required: true,
           schema: {
