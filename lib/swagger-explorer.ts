@@ -33,6 +33,7 @@ import {
   exploreApiUseTagsMetadata,
   exploreGlobalApiUseTagsMetadata
 } from './explorers/api-use-tags.explorer';
+import { exploreGlobalApiHeaderMetadata } from './explorers/api-header.explorer';
 
 export class SwaggerExplorer {
   private readonly metadataScanner = new MetadataScanner();
@@ -138,7 +139,8 @@ export class SwaggerExplorer {
       exploreGlobalApiUseTagsMetadata,
       exploreGlobalApiConsumesMetadata,
       exploreGlobalApiSecurityMetadata,
-      exploreGlobalApiResponseMetadata.bind(null, this.modelsDefinitions)
+      exploreGlobalApiResponseMetadata.bind(null, this.modelsDefinitions),
+      exploreGlobalApiHeaderMetadata
     ];
     const globalMetadata = globalExplorers
       .map(explorer => explorer.call(explorer, metatype))
@@ -185,6 +187,15 @@ export class SwaggerExplorer {
 
   private mergeMetadata(globalMetadata, methodMetadata) {
     return mapValues(methodMetadata, (value, key) => {
+      if (globalMetadata['headers'] && key === 'root') {
+        const mValues = value.parameters
+          ? Object.assign({}, value, {
+              parameters: [...value.parameters, ...globalMetadata['headers']]
+            })
+          : Object.assign({}, value, { parameters: globalMetadata['headers'] });
+        return mValues;
+      }
+
       if (!globalMetadata[key]) {
         return value;
       }

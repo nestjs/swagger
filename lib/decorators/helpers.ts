@@ -10,7 +10,9 @@ export const createMethodDecorator = (metakey, metadata): MethodDecorator => {
 
 export const createClassDecorator = (metakey, metadata): ClassDecorator => {
   return target => {
-    Reflect.defineMetadata(metakey, metadata, target);
+    const properties = Reflect.getMetadata(DECORATORS.API_HEADER, target) || [];
+    Reflect.defineMetadata(metakey, [...properties, metadata], target);
+
     return target;
   };
 };
