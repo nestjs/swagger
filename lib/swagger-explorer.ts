@@ -168,17 +168,28 @@ export class SwaggerExplorer {
     return Reflect.getMetadata(PATH_METADATA, metatype);
   }
 
-  private validateRoutePath(path: string): string {
-    if (isUndefined(path)) {
-      return '';
-    }
-    let pathWithParams = '';
+  private appendRoutePath(path, pathWithParams) {
     for (const item of pathToRegexp.parse(path)) {
       if (isString(item)) {
         pathWithParams += item;
       } else {
         pathWithParams += `${item.prefix}{${item.name}}`;
       }
+    }
+    return pathWithParams;
+  }
+
+  private validateRoutePath(path: string): string {
+    if (isUndefined(path)) {
+      return '';
+    }
+    let pathWithParams = '';
+    if (Array.isArray(path)) {
+      for (const pathItem of path) {
+        pathWithParams = this.appendRoutePath(pathItem, pathWithParams);
+      }
+    } else {
+      pathWithParams = this.appendRoutePath(path, pathWithParams);
     }
     return pathWithParams === '/' ? '' : validatePath(pathWithParams);
   }

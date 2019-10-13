@@ -14,6 +14,13 @@ describe('Explore controllers', () => {
     find(): Promise<Foo> {
       return Promise.resolve({});
     }
+
+    @Get(['foos/find-all', 'foos/find_all'])
+    @ApiOperation({ title: 'List all Foos' })
+    @ApiOkResponse({ type: Foo })
+    findAll(): Promise<Foo> {
+      return Promise.resolve({});
+    }
   }
 
   it('sees a controller operation and its 200 response', () => {
@@ -26,9 +33,14 @@ describe('Explore controllers', () => {
       'path'
     );
 
-    expect(routes.length).toEqual(1);
+    expect(routes.length).toEqual(2);
     expect(routes[0].root.method).toEqual('get');
     expect(routes[0].root.path).toEqual('/path/foos/{objectId}');
     expect(routes[0].root.summary).toEqual('List all Foos');
+
+    expect(routes[1].root.method).toEqual('get');
+    expect(routes[1].root.path).toContain('find-all');
+    expect(routes[1].root.path).toContain('find_all');
+    expect(routes[1].root.summary).toEqual('List all Foos');
   });
 });
