@@ -10,6 +10,10 @@ import {
 
 export const exploreGlobalApiResponseMetadata = (definitions, metatype) => {
   const responses = Reflect.getMetadata(DECORATORS.API_RESPONSE, metatype);
+  const extraModels = Reflect.getMetadata(DECORATORS.API_EXTRA_MODELS, metatype);
+  if (extraModels) {
+    mapExtraModelsToSwaggerDefinitions(extraModels, definitions);
+  }
   return responses
     ? {
         responses: mapResponsesToSwaggerResponses(responses, definitions)
@@ -24,6 +28,10 @@ export const exploreApiResponseMetadata = (
   method
 ) => {
   const responses = Reflect.getMetadata(DECORATORS.API_RESPONSE, method);
+  const extraModels = Reflect.getMetadata(DECORATORS.API_EXTRA_MODELS, method);
+  if (extraModels) {
+    mapExtraModelsToSwaggerDefinitions(extraModels, definitions);
+  }
   if (responses) {
     return mapResponsesToSwaggerResponses(responses, definitions);
   }
@@ -53,6 +61,9 @@ const getStatusCode = method => {
 };
 
 const omitParamType = param => omit(param, 'type');
+
+const mapExtraModelsToSwaggerDefinitions = (models, definitions) =>
+  mapValues(models, model => exploreModelDefinition(model, definitions));
 
 const mapResponsesToSwaggerResponses = (responses, definitions) =>
   mapValues(
