@@ -60,4 +60,13 @@ export class CreateUserDto {
     }
   })
   options?: Record<string, any>[];
+
+  @ApiProperty({
+    oneOf: [
+      { $ref: '#/components/schemas/Cat' },
+      { $ref: '#/components/schemas/Dog' }
+    ],
+    discriminator: { propertyName: 'pet_type' }
+  })
+  allOf?: Record<string, any>;
 }

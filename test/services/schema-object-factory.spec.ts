@@ -79,9 +79,24 @@ describe('SchemaObjectFactory', () => {
               type: 'object'
             },
             type: 'array'
+          },
+          allOf: {
+            oneOf: [
+              { $ref: '#/components/schemas/Cat' },
+              { $ref: '#/components/schemas/Dog' }
+            ],
+            discriminator: { propertyName: 'pet_type' }
           }
         },
-        required: ['login', 'password', 'profile', 'tags', 'urls', 'options']
+        required: [
+          'login',
+          'password',
+          'profile',
+          'tags',
+          'urls',
+          'options',
+          'allOf'
+        ]
       });
       expect(schemas[1]['CreateProfileDto']).toEqual({
         type: 'object',

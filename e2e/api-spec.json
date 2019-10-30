@@ -35,6 +35,21 @@
       }
     },
     "schemas": {
+      "ExtraModel": {
+        "type": "object",
+        "properties": {
+          "one": {
+            "type": "string"
+          },
+          "two": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "one",
+          "two"
+        ]
+      },
       "CreateCatDto": {
         "type": "object",
         "properties": {

@@ -14,11 +14,7 @@ export class SwaggerModule {
     options: SwaggerDocumentOptions = {}
   ): OpenAPIObject {
     const swaggerScanner = new SwaggerScanner();
-    const document = swaggerScanner.scanApplication(
-      app,
-      options.include || [],
-      options.deepScanRoutes
-    );
+    const document = swaggerScanner.scanApplication(app, options);
     document.components = {
       ...(config.components || {}),
       ...document.components

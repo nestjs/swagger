@@ -25,7 +25,7 @@ export interface ApiResponseSchemaHost
 
 export type ApiResponseOptions = ApiResponseMetadata | ApiResponseSchemaHost;
 
-export function ApiResponse(options: ApiResponseOptions = {}): any {
+export function ApiResponse(options: ApiResponseOptions): any {
   const [type, isArray] = getTypeIsArrayTuple(
     (options as ApiResponseMetadata).type,
     (options as ApiResponseMetadata).isArray

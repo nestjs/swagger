@@ -4,23 +4,34 @@ import { NestContainer } from '@nestjs/core/injector/container';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { Module } from '@nestjs/core/injector/module';
 import { extend, flatten, isEmpty, reduce } from 'lodash';
-import { OpenAPIObject } from './interfaces';
+import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
 import {
   ReferenceObject,
   SchemaObject
 } from './interfaces/open-api-spec.interface';
+import { ModelPropertiesAccessor } from './services/model-properties-accessor';
+import { SchemaObjectFactory } from './services/schema-object-factory';
+import { SwaggerTypesMapper } from './services/swagger-types-mapper';
 import { SwaggerExplorer } from './swagger-explorer';
 import { SwaggerTransformer } from './swagger-transformer';
 
 export class SwaggerScanner {
-  private readonly explorer = new SwaggerExplorer();
   private readonly transfomer = new SwaggerTransformer();
+  private readonly schemaObjectFactory = new SchemaObjectFactory(
+    new ModelPropertiesAccessor(),
+    new SwaggerTypesMapper()
+  );
+  private readonly explorer = new SwaggerExplorer(this.schemaObjectFactory);
 
   public scanApplication(
     app: INestApplication,
-    includedModules: Function[],
-    deepScanRoutes?: boolean
+    options: SwaggerDocumentOptions
   ): Omit<OpenAPIObject, 'openapi' | 'info'> {
+    const {
+      deepScanRoutes,
+      include: includedModules = [],
+      extraModels = []
+    } = options;
     const container: NestContainer = (app as any).container;
     const modules: Module[] = this.getModules(
       container.getModules(),
@@ -49,6 +60,9 @@ export class SwaggerScanner {
         return this.scanModuleRoutes(allRoutes, path);
       }
     );
+    const schemas = this.explorer.getSchemas();
+    this.addExtraModels(schemas, extraModels);
+
     return {
       ...this.transfomer.normalizePaths(flatten(denormalizedPaths) as (Partial<
         OpenAPIObject
@@ -83,5 +97,11 @@ export class SwaggerScanner {
     return [...modulesContainer.values()].filter(({ metatype }) =>
       include.some(item => item === metatype)
     );
+  }
+
+  public addExtraModels(schemas: SchemaObject[], extraModels: Function[]) {
+    extraModels.forEach(item => {
+      this.schemaObjectFactory.exploreModelSchema(item, schemas);
+    });
   }
 }

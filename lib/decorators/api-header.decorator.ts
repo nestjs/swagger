@@ -1,14 +1,14 @@
-import { Type } from '@nestjs/common';
 import { isNil } from 'lodash';
+import { DECORATORS } from '../constants';
 import {
   ParameterLocation,
   ParameterObject
 } from '../interfaces/open-api-spec.interface';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
-import { createMultipleParamDecorator, createParamDecorator } from './helpers';
+import { getEnumType, getEnumValues } from '../utils/enum.utils';
+import { createClassDecorator, createParamDecorator } from './helpers';
 
 export interface ApiHeaderOptions extends Omit<ParameterObject, 'in'> {
-  type?: Type<unknown> | Function | [Function] | string;
   enum?: SwaggerEnumType;
 }
 
@@ -22,18 +22,43 @@ export function ApiHeader(options: ApiHeaderOptions): any {
     in: 'header',
     description: options.description,
     required: options.required,
-    type: options.type
+    schema: {
+      type: 'string'
+    }
   };
-  return createParamDecorator(param, defaultHeaderOptions);
+
+  if (options.enum) {
+    const enumValues = getEnumValues(options.enum);
+    param.schema = {
+      enum: enumValues,
+      type: getEnumType(enumValues)
+    };
+  }
+
+  return (
+    target: object | Function,
+    key?: string | symbol,
+    descriptor?: TypedPropertyDescriptor<any>
+  ): any => {
+    if (descriptor) {
+      return createParamDecorator(param, defaultHeaderOptions)(
+        target,
+        key,
+        descriptor
+      );
+    }
+    return createClassDecorator(DECORATORS.API_HEADERS, [param])(
+      target as Function
+    );
+  };
 }
 
 export const ApiHeaders = (headers: ApiHeaderOptions[]): MethodDecorator => {
-  const multiMetadata: ApiHeaderOptions[] = headers.map(metadata => ({
-    name: isNil(metadata.name) ? defaultHeaderOptions.name : metadata.name,
-    in: 'header',
-    description: metadata.description,
-    required: metadata.required,
-    type: String
-  }));
-  return createMultipleParamDecorator(multiMetadata, defaultHeaderOptions);
+  return (
+    target: object | Function,
+    key?: string | symbol,
+    descriptor?: TypedPropertyDescriptor<any>
+  ): any => {
+    headers.forEach(options => ApiHeader(options)(target, key, descriptor));
+  };
 };

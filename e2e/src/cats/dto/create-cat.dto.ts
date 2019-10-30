@@ -1,6 +1,8 @@
-import { ApiProperty } from '../../../../lib';
+import { ApiExtraModels, ApiProperty } from '../../../../lib';
+import { ExtraModel } from './extra-model.dto';
 import { LettersEnum } from './pagination-query.dto';
 
+@ApiExtraModels(ExtraModel)
 export class CreateCatDto {
   @ApiProperty()
   readonly name: string;

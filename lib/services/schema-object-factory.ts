@@ -10,12 +10,15 @@ import {
   omitBy
 } from 'lodash';
 import { DECORATORS } from '../constants';
+import { getTypeIsArrayTuple } from '../decorators/helpers';
+import { exploreGlobalApiExtraModelsMetadata } from '../explorers/api-extra-models.explorer';
 import {
   BaseParameterObject,
   ReferenceObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
+import { getSchemaPath } from '../utils';
 import { isBodyParameter } from '../utils/is-body-parameter.util';
 import { isBuiltInType } from '../utils/is-built-in-type.util';
 import { ModelPropertiesAccessor } from './model-properties-accessor';
@@ -47,7 +50,7 @@ export class SchemaObjectFactory {
       const name = param.name || modelName;
       const schema = {
         ...((param as BaseParameterObject).schema || {}),
-        $ref: this.getSchemaPath(modelName)
+        $ref: getSchemaPath(modelName)
       };
       const isArray = param.isArray;
       param = omit(param, 'isArray');
@@ -70,10 +73,6 @@ export class SchemaObjectFactory {
     });
   }
 
-  getSchemaPath(modelName: string): string {
-    return `#/components/schemas/${modelName}`;
-  }
-
   exploreModelSchema(
     type: Type<unknown> | Function,
     schemas: SchemaObject[],
@@ -83,12 +82,29 @@ export class SchemaObjectFactory {
     if (!prototype) {
       return '';
     }
+    const extraModels = exploreGlobalApiExtraModelsMetadata(type as Type<
+      unknown
+    >);
+    extraModels.forEach(item =>
+      this.exploreModelSchema(item, schemas, schemaRefsStack)
+    );
+
     const modelProperties = this.modelPropertiesAccessor.getModelProperties(
       prototype
     );
-    const propertiesWithType = modelProperties.map(key =>
-      this.mergePropertyWithMetadata(key, prototype, schemas, schemaRefsStack)
-    );
+    const propertiesWithType = modelProperties.map(key => {
+      const property = this.mergePropertyWithMetadata(
+        key,
+        prototype,
+        schemas,
+        schemaRefsStack
+      );
+      const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
+      if (schemaCombinators.some(key => key in property)) {
+        delete (property as SchemaObjectMetadata).type;
+      }
+      return property;
+    });
     const typeDefinition: SchemaObject = {
       type: 'object',
       properties: mapValues(keyBy(propertiesWithType, 'name'), property =>
@@ -120,6 +136,10 @@ export class SchemaObjectFactory {
 
     if (this.isLazyTypeFunc(metadata.type as Function)) {
       metadata.type = (metadata.type as Function)();
+      [metadata.type, metadata.isArray] = getTypeIsArrayTuple(
+        metadata.type,
+        metadata.isArray
+      );
     }
     if (isString(metadata.type)) {
       return {
@@ -176,7 +196,7 @@ export class SchemaObjectFactory {
         schemaRefsStack
       );
     }
-    const $ref = this.getSchemaPath(schemaObjectName);
+    const $ref = getSchemaPath(schemaObjectName);
     if (metadata.isArray) {
       return this.transformToArraySchemaProperty(metadata, key, { $ref });
     }
@@ -222,7 +242,7 @@ export class SchemaObjectFactory {
     return (schemaHost as unknown) as BaseParameterObject & Record<string, any>;
   }
 
-  mapArrayCtorParam(param: ParamWithTypeMetadata) {
+  mapArrayCtorParam(param: ParamWithTypeMetadata): any {
     return {
       ...omit(param, 'type'),
       schema: {

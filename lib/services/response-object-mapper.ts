@@ -1,18 +1,10 @@
 import { omit } from 'lodash';
-import { ApiResponseSchemaHost } from '..';
+import { ApiResponseSchemaHost } from '../decorators';
+import { getSchemaPath } from '../utils';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper';
-import { ModelPropertiesAccessor } from './model-properties-accessor';
-import { SchemaObjectFactory } from './schema-object-factory';
-import { SwaggerTypesMapper } from './swagger-types-mapper';
 
 export class ResponseObjectMapper {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
-  private readonly modelPropertiesAccessor = new ModelPropertiesAccessor();
-  private readonly swaggerTypesMapper = new SwaggerTypesMapper();
-  private readonly schemaObjectFactory = new SchemaObjectFactory(
-    this.modelPropertiesAccessor,
-    this.swaggerTypesMapper
-  );
 
   toArrayRefObject(
     response: Record<string, any>,
@@ -25,7 +17,7 @@ export class ResponseObjectMapper {
         schema: {
           type: 'array',
           items: {
-            $ref: this.schemaObjectFactory.getSchemaPath(name)
+            $ref: getSchemaPath(name)
           }
         }
       })
@@ -37,7 +29,7 @@ export class ResponseObjectMapper {
       ...response,
       ...this.mimetypeContentWrapper.wrap(produces, {
         schema: {
-          $ref: this.schemaObjectFactory.getSchemaPath(name)
+          $ref: getSchemaPath(name)
         }
       })
     };

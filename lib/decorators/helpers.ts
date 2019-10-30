@@ -15,12 +15,13 @@ export function createMethodDecorator<T = any>(
   };
 }
 
-export function createClassDecorator<T = any>(
+export function createClassDecorator<T extends Array<any> = any>(
   metakey: string,
-  metadata: T
+  metadata: T = [] as T
 ): ClassDecorator {
   return target => {
-    Reflect.defineMetadata(metakey, metadata, target);
+    const prevValue = Reflect.getMetadata(metakey, target) || [];
+    Reflect.defineMetadata(metakey, [...prevValue, ...metadata], target);
     return target;
   };
 }
@@ -86,31 +87,6 @@ export function createParamDecorator<T extends Record<string, any> = any>(
           ...initial,
           ...pickBy(metadata, negate(isUndefined))
         }
-      ],
-      descriptor.value
-    );
-    return descriptor;
-  };
-}
-
-export function createMultipleParamDecorator<
-  T extends Record<string, any> = any
->(multiMetadata: T[], initial: Partial<T>): MethodDecorator {
-  return (
-    target: object,
-    key: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    const parameters =
-      Reflect.getMetadata(DECORATORS.API_PARAMETERS, descriptor.value) || [];
-    Reflect.defineMetadata(
-      DECORATORS.API_PARAMETERS,
-      [
-        ...parameters,
-        ...multiMetadata.map(metadata => ({
-          ...initial,
-          ...pickBy(metadata, negate(isUndefined))
-        }))
       ],
       descriptor.value
     );

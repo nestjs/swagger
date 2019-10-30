@@ -5,7 +5,7 @@ import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 export class SwaggerTypesMapper {
   mapParamTypes(
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
-  ) {
+  ): any {
     return parameters.map(param => {
       if (this.hasSchemaDefinition(param as BaseParameterObject)) {
         return this.omitParamType(param);
@@ -71,7 +71,7 @@ export class SwaggerTypesMapper {
     };
   }
 
-  mapArrayType(param: ParamWithTypeMetadata, keysToRemove: string[]) {
+  mapArrayType(param: ParamWithTypeMetadata, keysToRemove: string[]): any {
     const items = omitBy(
       {
         ...((param as BaseParameterObject).schema || {}),

@@ -15,9 +15,16 @@ import {
   ApiQuery
 } from '../../lib/decorators';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
+import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
+import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
+import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
 
 describe('SwaggerExplorer', () => {
+  const schemaObjectFactory = new SchemaObjectFactory(
+    new ModelPropertiesAccessor(),
+    new SwaggerTypesMapper()
+  );
   describe('when module only uses metadata', () => {
     class Foo {}
 
@@ -49,7 +56,7 @@ describe('SwaggerExplorer', () => {
         return Promise.resolve({});
       }
 
-      @Get('foos/:objectId')
+      @Get(['foos/:objectId', 'foo/:objectId'])
       @ApiOperation({ summary: 'List all Foos' })
       @ApiOkResponse({ type: [Foo] })
       find(
@@ -61,7 +68,7 @@ describe('SwaggerExplorer', () => {
     }
 
     it('sees two controller operations and their responses', () => {
-      const explorer = new SwaggerExplorer();
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -208,7 +215,7 @@ describe('SwaggerExplorer', () => {
     }
 
     it('sees two controller operations and their responses', () => {
-      const explorer = new SwaggerExplorer();
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -336,7 +343,7 @@ describe('SwaggerExplorer', () => {
     }
 
     it('sees two controller operations and their responses', () => {
-      const explorer = new SwaggerExplorer();
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -475,7 +482,7 @@ describe('SwaggerExplorer', () => {
       }
     }
     it('should merge implicit metadata with explicit options', () => {
-      const explorer = new SwaggerExplorer();
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -602,7 +609,7 @@ describe('SwaggerExplorer', () => {
       }
     }
     it('should properly define enums', () => {
-      const explorer = new SwaggerExplorer();
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -649,12 +656,15 @@ describe('SwaggerExplorer', () => {
   describe('when headers are defined', () => {
     class Foo {}
 
+    @ApiHeader({
+      name: 'Authorization',
+      description: 'auth token'
+    })
     @Controller('')
     class FooController {
       @ApiHeader({
         name: 'X-Rate-Limit',
-        description: 'calls per hour allowed by the user',
-        type: String
+        description: 'calls per hour allowed by the user'
       })
       @Get('foos/:objectId')
       find(): Promise<Foo[]> {
@@ -662,7 +672,7 @@ describe('SwaggerExplorer', () => {
       }
     }
     it('should properly define headers', () => {
-      const explorer = new SwaggerExplorer();
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -672,6 +682,14 @@ describe('SwaggerExplorer', () => {
       );
 
       expect(routes[0].root.parameters).toEqual([
+        {
+          description: 'auth token',
+          name: 'Authorization',
+          in: 'header',
+          schema: {
+            type: 'string'
+          }
+        },
         {
           description: 'calls per hour allowed by the user',
           name: 'X-Rate-Limit',
