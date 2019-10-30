@@ -1,6 +1,5 @@
-import { DECORATORS } from '../constants';
-import { createMixedDecorator } from './helpers';
+import { ApiSecurity } from './api-security.decorator';
 
-export const ApiBearerAuth = () => {
-  return createMixedDecorator(DECORATORS.API_BEARER, []);
-};
+export function ApiBearerAuth(name = 'bearer') {
+  return ApiSecurity(name);
+}

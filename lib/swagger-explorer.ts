@@ -1,6 +1,6 @@
 import { RequestMethod } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
-import { Controller } from '@nestjs/common/interfaces';
+import { Controller, Type } from '@nestjs/common/interfaces';
 import {
   isString,
   isUndefined,
@@ -8,19 +8,26 @@ import {
 } from '@nestjs/common/utils/shared.utils';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
-import { isArray, isEmpty, mapValues, omitBy } from 'lodash';
-import * as pathToRegexp from 'path-to-regexp';
 import {
-  exploreApiConsumesMetadata,
-  exploreGlobalApiConsumesMetadata
-} from './explorers/api-consumes.explorer';
+  get,
+  head,
+  isArray,
+  isEmpty,
+  mapValues,
+  omit,
+  omitBy,
+  pick
+} from 'lodash';
+import * as pathToRegexp from 'path-to-regexp';
+import { DECORATORS } from './constants';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
+import {
+  exploreApiExtraModelsMetadata,
+  exploreGlobalApiExtraModelsMetadata
+} from './explorers/api-extra-models.explorer';
+import { exploreGlobalApiHeaderMetadata } from './explorers/api-headers.explorer';
 import { exploreApiOperationMetadata } from './explorers/api-operation.explorer';
 import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer';
-import {
-  exploreApiProducesMetadata,
-  exploreGlobalApiProducesMetadata
-} from './explorers/api-produces.explorer';
 import {
   exploreApiResponseMetadata,
   exploreGlobalApiResponseMetadata
@@ -33,48 +40,60 @@ import {
   exploreApiUseTagsMetadata,
   exploreGlobalApiUseTagsMetadata
 } from './explorers/api-use-tags.explorer';
+import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolvers.interface';
+import { DenormalizedDoc } from './interfaces/denormalized-doc.interface';
+import {
+  OpenAPIObject,
+  SchemaObject
+} from './interfaces/open-api-spec.interface';
+import { MimetypeContentWrapper } from './services/mimetype-content-wrapper';
+import { SchemaObjectFactory } from './services/schema-object-factory';
+import { isBodyParameter } from './utils/is-body-parameter.util';
+import { mergeAndUniq } from './utils/merge-and-uniq.util';
 
 export class SwaggerExplorer {
+  private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
   private readonly metadataScanner = new MetadataScanner();
-  private readonly modelsDefinitions = [];
+  private readonly schemas: SchemaObject[] = [];
+
+  constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
 
   public exploreController(
-    { instance, metatype }: InstanceWrapper<Controller>,
+    wrapper: InstanceWrapper<Controller>,
     modulePath: string
   ) {
+    const { instance, metatype } = wrapper;
     const prototype = Object.getPrototypeOf(instance);
-    const explorersSchema = {
+    const documentResolvers: DenormalizedDocResolvers = {
       root: [
         this.exploreRoutePathAndMethod,
         exploreApiOperationMetadata,
-        exploreApiParametersMetadata.bind(null, this.modelsDefinitions)
+        exploreApiParametersMetadata.bind(null, this.schemas)
       ],
-      produces: [exploreApiProducesMetadata],
-      consumes: [exploreApiConsumesMetadata],
       security: [exploreApiSecurityMetadata],
       tags: [exploreApiUseTagsMetadata],
-      responses: [exploreApiResponseMetadata.bind(null, this.modelsDefinitions)]
+      responses: [exploreApiResponseMetadata.bind(null, this.schemas)]
     };
     return this.generateDenormalizedDocument(
-      metatype,
+      metatype as Type<unknown>,
       prototype,
       instance,
-      explorersSchema,
+      documentResolvers,
       modulePath
     );
   }
 
-  public getModelsDefinitons() {
-    return this.modelsDefinitions;
+  public getSchemas(): SchemaObject[] {
+    return this.schemas;
   }
 
   private generateDenormalizedDocument(
-    metatype,
-    prototype,
-    instance,
-    explorersSchema,
-    modulePath
-  ) {
+    metatype: Type<unknown>,
+    prototype: Type<unknown>,
+    instance: object,
+    documentResolvers: DenormalizedDocResolvers,
+    modulePath: string
+  ): DenormalizedDoc[] {
     let path = this.validateRoutePath(this.reflectControllerPath(metatype));
     if (modulePath) {
       // re-validate the route after adding the module path,
@@ -83,62 +102,75 @@ export class SwaggerExplorer {
     }
     const self = this;
     const globalMetadata = this.exploreGlobalMetadata(metatype);
-    const denormalizedPaths = this.metadataScanner.scanFromPrototype(
-      instance,
-      prototype,
-      name => {
-        const targetCallback = prototype[name];
-        const excludeEndpoint = exploreApiExcludeEndpointMetadata(
-          instance,
-          prototype,
-          targetCallback
-        );
-        if (excludeEndpoint && excludeEndpoint.disable) {
-          return;
-        }
-        const methodMetadata = mapValues(explorersSchema, (explorers: any[]) =>
-          explorers.reduce((metadata, fn) => {
-            const exploredMetadata = fn.call(
-              self,
-              instance,
-              prototype,
-              targetCallback,
-              path
-            );
-            if (!exploredMetadata) {
-              return metadata;
-            }
-            if (!isArray(exploredMetadata)) {
-              return { ...metadata, ...exploredMetadata };
-            }
-            return isArray(metadata)
-              ? [...metadata, ...exploredMetadata]
-              : exploredMetadata;
-          }, {})
-        );
-        const mergedMethodMetadata = this.mergeMetadata(
-          globalMetadata,
-          omitBy(methodMetadata, isEmpty)
-        );
-        this.assignDefaultMimeType(mergedMethodMetadata, 'produces');
-        this.assignDefaultMimeType(mergedMethodMetadata, 'consumes');
-        return {
+    const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
+    this.registerExtraModels(ctrlExtraModels);
+
+    const denormalizedPaths = this.metadataScanner.scanFromPrototype<
+      any,
+      DenormalizedDoc
+    >(instance, prototype, name => {
+      const targetCallback = prototype[name];
+      const excludeEndpoint = exploreApiExcludeEndpointMetadata(
+        instance,
+        prototype,
+        targetCallback
+      );
+      if (excludeEndpoint && excludeEndpoint.disable) {
+        return;
+      }
+      const ctrlExtraModels = exploreApiExtraModelsMetadata(
+        instance,
+        prototype,
+        targetCallback
+      );
+      this.registerExtraModels(ctrlExtraModels);
+
+      const methodMetadata = mapValues(documentResolvers, (explorers: any[]) =>
+        explorers.reduce((metadata, fn) => {
+          const exploredMetadata = fn.call(
+            self,
+            instance,
+            prototype,
+            targetCallback,
+            path
+          );
+          if (!exploredMetadata) {
+            return metadata;
+          }
+          if (!isArray(exploredMetadata)) {
+            return { ...metadata, ...exploredMetadata };
+          }
+          return isArray(metadata)
+            ? [...metadata, ...exploredMetadata]
+            : exploredMetadata;
+        }, {})
+      );
+      const mergedMethodMetadata = this.mergeMetadata(
+        globalMetadata,
+        omitBy(methodMetadata, isEmpty)
+      );
+
+      return this.migrateOperationSchema(
+        {
           responses: {},
           ...globalMetadata,
           ...mergedMethodMetadata
-        };
-      }
-    );
+        },
+        prototype,
+        targetCallback
+      );
+    });
     return denormalizedPaths;
   }
 
-  private exploreGlobalMetadata(metatype) {
+  private exploreGlobalMetadata(
+    metatype: Type<unknown>
+  ): Partial<OpenAPIObject> {
     const globalExplorers = [
-      exploreGlobalApiProducesMetadata,
       exploreGlobalApiUseTagsMetadata,
-      exploreGlobalApiConsumesMetadata,
       exploreGlobalApiSecurityMetadata,
-      exploreGlobalApiResponseMetadata.bind(null, this.modelsDefinitions)
+      exploreGlobalApiResponseMetadata.bind(null, this.schemas),
+      exploreGlobalApiHeaderMetadata
     ];
     const globalMetadata = globalExplorers
       .map(explorer => explorer.call(explorer, metatype))
@@ -148,7 +180,12 @@ export class SwaggerExplorer {
     return globalMetadata;
   }
 
-  private exploreRoutePathAndMethod(instance, prototype, method, globalPath) {
+  private exploreRoutePathAndMethod(
+    instance: object,
+    prototype: Type<unknown>,
+    method: Function,
+    globalPath: string
+  ) {
     const routePath = Reflect.getMetadata(PATH_METADATA, method);
     if (isUndefined(routePath)) {
       return undefined;
@@ -160,11 +197,12 @@ export class SwaggerExplorer {
     const fullPath = globalPath + this.validateRoutePath(routePath);
     return {
       method: RequestMethod[requestMethod].toLowerCase(),
-      path: fullPath === '' ? '/' : fullPath
+      path: fullPath === '' ? '/' : fullPath,
+      operationId: method.name
     };
   }
 
-  private reflectControllerPath(metatype): string {
+  private reflectControllerPath(metatype: Type<unknown>): string {
     return Reflect.getMetadata(PATH_METADATA, metatype);
   }
 
@@ -172,35 +210,105 @@ export class SwaggerExplorer {
     if (isUndefined(path)) {
       return '';
     }
+    if (Array.isArray(path)) {
+      path = head(path);
+    }
     let pathWithParams = '';
     for (const item of pathToRegexp.parse(path)) {
-      if (isString(item)) {
-        pathWithParams += item;
-      } else {
-        pathWithParams += `${item.prefix}{${item.name}}`;
-      }
+      pathWithParams += isString(item) ? item : `${item.prefix}{${item.name}}`;
     }
     return pathWithParams === '/' ? '' : validatePath(pathWithParams);
   }
 
-  private mergeMetadata(globalMetadata, methodMetadata) {
+  private mergeMetadata(
+    globalMetadata: Record<string, any>,
+    methodMetadata: Record<string, any>
+  ): Record<string, any> {
     return mapValues(methodMetadata, (value, key) => {
       if (!globalMetadata[key]) {
         return value;
       }
       const globalValue = globalMetadata[key];
-      if (!isArray(globalValue)) {
-        return { ...globalValue, ...value };
+      if (globalMetadata.depth) {
+        return this.deepMergeMetadata(globalValue, value, globalMetadata.depth);
       }
-      return [...globalValue, ...value];
+      return this.mergeValues(globalValue, value);
     });
   }
 
-  private assignDefaultMimeType(metadata: any, key: string) {
-    if (metadata[key]) {
-      return undefined;
+  private deepMergeMetadata(
+    globalValue: Record<string, any> | Array<any>,
+    methodValue: Record<string, any> | Array<any>,
+    maxDepth: number,
+    currentDepthLevel: number = 0
+  ) {
+    if (currentDepthLevel === maxDepth) {
+      return this.mergeValues(globalValue, methodValue);
     }
-    const defaultMimeType = 'application/json';
-    metadata[key] = [defaultMimeType];
+    return mapValues(methodValue, (value, key) => {
+      if (key in globalValue) {
+        return this.deepMergeMetadata(
+          (globalValue as Record<string, any>)[key],
+          (methodValue as Record<string, any>)[key],
+          maxDepth,
+          currentDepthLevel + 1
+        );
+      }
+      return value;
+    });
+  }
+
+  private mergeValues(
+    globalValue: Record<string, any> | Array<any>,
+    methodValue: Record<string, any> | Array<any>
+  ) {
+    if (!isArray(globalValue)) {
+      return { ...globalValue, ...methodValue };
+    }
+    return [...globalValue, ...(methodValue as Array<any>)];
+  }
+
+  /**
+   * Migrates operation schema from OpenAPI 2.0 to OpenAPI 3.0
+   * Simply moves "body" parameter under "requestBody" property
+   */
+  private migrateOperationSchema(
+    document: DenormalizedDoc,
+    prototype: Type<unknown>,
+    method: Function
+  ) {
+    const parametersObject: Record<string, any>[] = get(
+      document,
+      'root.parameters'
+    );
+    const requestBodyIndex = (parametersObject || []).findIndex(
+      isBodyParameter
+    );
+    if (requestBodyIndex < 0) {
+      return document;
+    }
+    const requestBody = parametersObject[requestBodyIndex];
+    parametersObject.splice(requestBodyIndex, 1);
+
+    const classConsumes = Reflect.getMetadata(
+      DECORATORS.API_CONSUMES,
+      prototype
+    );
+    const methodConsumes = Reflect.getMetadata(DECORATORS.API_CONSUMES, method);
+    let consumes = mergeAndUniq(classConsumes, methodConsumes);
+    consumes = isEmpty(consumes) ? ['application/json'] : consumes;
+
+    const keysToRemove = ['schema', 'in', 'name'];
+    document.root.requestBody = {
+      ...omit(requestBody, keysToRemove),
+      ...this.mimetypeContentWrapper.wrap(consumes, pick(requestBody, 'schema'))
+    };
+    return document;
+  }
+
+  private registerExtraModels(extraModels: Function[]) {
+    extraModels.forEach(item =>
+      this.schemaObjectFactory.exploreModelSchema(item, this.schemas)
+    );
   }
 }

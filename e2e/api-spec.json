@@ -1,0 +1,455 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Cats example",
+    "description": "The cats API description",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "cats",
+      "description": ""
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "basic": {
+        "type": "http",
+        "scheme": "basic"
+      },
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      },
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {}
+      },
+      "api_key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "api_key"
+      }
+    },
+    "schemas": {
+      "ExtraModel": {
+        "type": "object",
+        "properties": {
+          "one": {
+            "type": "string"
+          },
+          "two": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "one",
+          "two"
+        ]
+      },
+      "CreateCatDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "age": {
+            "type": "number"
+          },
+          "_breed": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "urls": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "isReadonly": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "enum": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ]
+          },
+          "enumArr": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "age",
+          "_breed",
+          "tags",
+          "urls",
+          "options",
+          "enum",
+          "enumArr"
+        ]
+      },
+      "Cat": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Kitty",
+            "description": "The name of the Cat"
+          },
+          "age": {
+            "type": "number",
+            "example": 1,
+            "minimum": 0,
+            "description": "The age of the Cat"
+          },
+          "breed": {
+            "type": "string",
+            "example": "Maine Coon",
+            "description": "The breed of the Cat"
+          },
+          "_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "_options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "isReadonly": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "enum": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ]
+          },
+          "enumArr": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "age",
+          "breed",
+          "_tags",
+          "urls",
+          "_options",
+          "enum",
+          "enumArr"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "paths": {
+    "/cats": {
+      "post": {
+        "operationId": "create",
+        "summary": "Create cat",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCatDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The record has been successfully created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cat"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden."
+          }
+        },
+        "tags": [
+          "cats",
+          "create cats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "findAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "_sortBy",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "enum",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "enumArr",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "A",
+                  "B",
+                  "C"
+                ]
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      }
+    },
+    "/cats/{id}": {
+      "get": {
+        "operationId": "findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The found record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cat"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      }
+    },
+    "/cats/bulk": {
+      "get": {
+        "operationId": "findAllBulk",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "createBulk",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      }
+    },
+    "/cats/as-form-data": {
+      "post": {
+        "operationId": "createAsFormData",
+        "summary": "Create cat",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCatDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The record has been successfully created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cat"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden."
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      }
+    }
+  }
+}

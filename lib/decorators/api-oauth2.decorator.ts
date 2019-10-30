@@ -1,6 +1,5 @@
-import { DECORATORS } from '../constants';
-import { createMixedDecorator } from './helpers';
+import { ApiSecurity } from './api-security.decorator';
 
-export const ApiOAuth2Auth = (scopes?: string[]) => {
-  return createMixedDecorator(DECORATORS.API_OAUTH2, scopes ? scopes : []);
-};
+export function ApiOAuth2Auth(scopes: string[], name = 'oauth2') {
+  return ApiSecurity(name, scopes);
+}
