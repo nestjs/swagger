@@ -1,6 +1,7 @@
 import {
   SwaggerBaseConfig,
-  SwaggerScheme
+  SwaggerScheme,
+  SwaggerServer
 } from './interfaces/swagger-base-config.interface';
 
 import { buildDocumentBase } from './fixtures/document.base';
@@ -62,6 +63,11 @@ export class DocumentBuilder {
 
   public addTag(name: string, description: string = ''): this {
     this.document.tags = this.document.tags.concat({ name, description });
+    return this;
+  }
+
+  public addServer(description: string, url: string): this {
+    this.document.servers.concat({ description, url });
     return this;
   }
 

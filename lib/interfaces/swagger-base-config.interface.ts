@@ -38,6 +38,12 @@ export interface SwaggerBaseConfig {
       scopes?: object;
     };
   };
+  servers?: SwaggerServer[];
 }
 
 export type SwaggerScheme = 'http' | 'https';
+
+export type SwaggerServer = { 
+  url: string; 
+  description?: string;
+}
