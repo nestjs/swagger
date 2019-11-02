@@ -106,9 +106,7 @@ describe('SchemaObjectFactory', () => {
             type: 'string'
           },
           parent: {
-            schema: {
-              $ref: '#/components/schemas/CreateUserDto'
-            }
+            $ref: '#/components/schemas/CreateUserDto'
           }
         },
         required: ['firstname', 'lastname', 'parent']
