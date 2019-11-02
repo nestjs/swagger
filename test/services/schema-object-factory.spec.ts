@@ -53,9 +53,7 @@ describe('SchemaObjectFactory', () => {
             }
           },
           profile: {
-            schema: {
-              $ref: '#/components/schemas/CreateProfileDto'
-            }
+            $ref: '#/components/schemas/CreateProfileDto'
           },
           tags: {
             items: {

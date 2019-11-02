@@ -206,9 +206,7 @@ export class SchemaObjectFactory {
       return {
         name: metadata.name || key,
         required: metadata.required,
-        schema: {
-          $ref
-        }
+        $ref
       };
     }
     return {
