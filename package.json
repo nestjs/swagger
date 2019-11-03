@@ -40,8 +40,8 @@
     "typescript": "3.6.3"
   },
   "peerDependencies": {
-    "@nestjs/common": "^6.0.0",
-    "@nestjs/core": "^6.0.0",
+    "@nestjs/common": "^6.8.0",
+    "@nestjs/core": "^6.8.0",
     "reflect-metadata": "^0.1.12"
   },
   "lint-staged": {

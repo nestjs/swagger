@@ -51,7 +51,10 @@ export function ApiPropertyOptional(
 }
 
 export function ApiResponseProperty(
-  options: Pick<ApiPropertyOptions, 'type' | 'example'> = {}
+  options: Pick<
+    ApiPropertyOptions,
+    'type' | 'example' | 'format' | 'enum' | 'deprecated'
+  > = {}
 ): PropertyDecorator {
   return ApiProperty({
     readOnly: true,
