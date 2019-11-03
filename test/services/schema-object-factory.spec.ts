@@ -53,9 +53,7 @@ describe('SchemaObjectFactory', () => {
             }
           },
           profile: {
-            schema: {
-              $ref: '#/components/schemas/CreateProfileDto'
-            }
+            $ref: '#/components/schemas/CreateProfileDto'
           },
           tags: {
             items: {
@@ -108,9 +106,7 @@ describe('SchemaObjectFactory', () => {
             type: 'string'
           },
           parent: {
-            schema: {
-              $ref: '#/components/schemas/CreateUserDto'
-            }
+            $ref: '#/components/schemas/CreateUserDto'
           }
         },
         required: ['firstname', 'lastname', 'parent']
