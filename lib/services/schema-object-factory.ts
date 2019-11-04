@@ -78,6 +78,10 @@ export class SchemaObjectFactory {
     schemas: SchemaObject[],
     schemaRefsStack: string[] = []
   ) {
+    if (this.isLazyTypeFunc(type as Function)) {
+      type = (type as Function)();
+    }
+
     const { prototype } = type;
     if (!prototype) {
       return '';
