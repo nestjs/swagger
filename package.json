@@ -29,7 +29,7 @@
     "prettier": "1.18.2",
     "reflect-metadata": "0.1.13",
     "ts-jest": "24.1.0",
-    "typescript": "3.6.3"
+    "typescript": "3.7.2"
   },
   "peerDependencies": {
     "@nestjs/common": "^6.0.0",
