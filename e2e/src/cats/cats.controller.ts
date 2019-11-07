@@ -25,7 +25,7 @@ export class CatsController {
   @ApiResponse({
     status: 201,
     description: 'The record has been successfully created.',
-    type: Cat
+    type: () => Cat
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   async create(@Body() createCatDto: CreateCatDto): Promise<Cat> {
