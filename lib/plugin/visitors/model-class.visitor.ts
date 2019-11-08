@@ -136,6 +136,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       !hasPropertyKey('required', existingProperties) &&
         ts.createPropertyAssignment('required', ts.createLiteral(isRequired)),
       this.createTypePropertyAssignment(node, existingProperties),
+      this.createDefaultPropertyAssignment(node, existingProperties),
       this.createEnumPropertyAssignment(node, existingProperties)
     ];
     if (options.classValidatorShim) {
@@ -150,7 +151,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     node: PropertyDeclaration,
     existingProperties: ts.PropertyAssignment[]
   ) {
-    if (hasPropertyKey('type', existingProperties)) {
+    const key = 'type';
+    if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }
     const type = node.getType();
@@ -162,7 +164,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return undefined;
     }
     return ts.createPropertyAssignment(
-      'type',
+      key,
       ts.createArrowFunction(
         undefined,
         undefined,
@@ -178,7 +180,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     node: PropertyDeclaration,
     existingProperties: ts.PropertyAssignment[]
   ) {
-    if (hasPropertyKey('enum', existingProperties)) {
+    const key = 'enum';
+    if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }
     const type = node.getType();
@@ -189,8 +192,26 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return undefined;
     }
     return ts.createPropertyAssignment(
-      'enum',
+      key,
       ts.createIdentifier(type.getText())
+    );
+  }
+
+  createDefaultPropertyAssignment(
+    node: PropertyDeclaration,
+    existingProperties: ts.PropertyAssignment[]
+  ) {
+    const key = 'default';
+    if (hasPropertyKey(key, existingProperties)) {
+      return undefined;
+    }
+    const initializer = node.getInitializer();
+    if (!initializer) {
+      return undefined;
+    }
+    return ts.createPropertyAssignment(
+      key,
+      ts.createIdentifier(initializer.getText())
     );
   }
 

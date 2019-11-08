@@ -14,9 +14,9 @@ export class CreateCatDto {
   name: string;
   @Min(0)
   @Max(10)
-  age: number;
+  age: number = 3;
   tags: string[];
-  status: Status;
+  status: Status = Status.ENABLED;
 
   @ApiProperty({ type: String })
   @IsString()
@@ -36,6 +36,10 @@ var Status;
     Status[Status["DISABLED"] = 1] = "DISABLED";
 })(Status || (Status = {}));
 export class CreateCatDto {
+    constructor() {
+        this.age = 3;
+        this.status = Status.ENABLED;
+    }
 }
 __decorate([
     openapi.ApiProperty({ required: true, type: () => String })
@@ -43,13 +47,13 @@ __decorate([
 __decorate([
     Min(0),
     Max(10),
-    openapi.ApiProperty({ required: true, type: () => Number, minimum: 0, maximum: 10 })
+    openapi.ApiProperty({ required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 })
 ], CreateCatDto.prototype, \"age\", void 0);
 __decorate([
     openapi.ApiProperty({ required: true, type: () => [String] })
 ], CreateCatDto.prototype, \"tags\", void 0);
 __decorate([
-    openapi.ApiProperty({ required: true, enum: Status })
+    openapi.ApiProperty({ required: true, default: Status.ENABLED, enum: Status })
 ], CreateCatDto.prototype, \"status\", void 0);
 __decorate([
     ApiProperty({ type: String, required: false }),
