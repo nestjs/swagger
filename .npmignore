@@ -7,3 +7,7 @@ package-lock.json
 tslint.json
 tsconfig.json
 .prettierrc
+
+# misc
+npm-debug.log
+.DS_Store
