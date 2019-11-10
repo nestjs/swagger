@@ -2,6 +2,7 @@
 lib
 sample
 index.ts
+plugin.ts
 package-lock.json
 tslint.json
 tsconfig.json
