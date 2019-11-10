@@ -74,7 +74,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!type) {
       return undefined;
     }
-    const typeReference = getTypeReferenceAsString(type);
+    const typeReference = getTypeReferenceAsString(type, node);
     if (!typeReference) {
       return undefined;
     }

@@ -1,5 +1,5 @@
 import { head } from 'lodash';
-import { Decorator, Type } from 'ts-morph';
+import { Decorator, Node, Type } from 'ts-morph';
 import * as ts from 'typescript';
 
 export function getDecoratorOrUndefinedByNames(
@@ -9,10 +9,10 @@ export function getDecoratorOrUndefinedByNames(
   return decorators.find(item => names.includes(item.getName()));
 }
 
-export function getTypeReferenceAsString(type: Type): string {
+export function getTypeReferenceAsString(type: Type, node: Node): string {
   if (type.isArray()) {
     const arrayType = type.getArrayElementType();
-    const elementType = this.getTypeReferenceAsString(arrayType);
+    const elementType = this.getTypeReferenceAsString(arrayType, node);
     if (!elementType) {
       return undefined;
     }
@@ -29,14 +29,17 @@ export function getTypeReferenceAsString(type: Type): string {
   }
   if (isPromiseOrObservable(type.getText())) {
     const typeArguments = type.getTypeArguments();
-    const elementType = this.getTypeReferenceAsString(head(typeArguments));
+    const elementType = this.getTypeReferenceAsString(
+      head(typeArguments),
+      node
+    );
     if (!elementType) {
       return undefined;
     }
     return elementType;
   }
   if (type.isClass()) {
-    return type.getText();
+    return type.getText(node);
   }
   return undefined;
 }
