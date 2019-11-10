@@ -27,7 +27,7 @@ export function getTypeReferenceAsString(type: Type, node: Node): string {
   if (type.isString()) {
     return String.name;
   }
-  if (isPromiseOrObservable(type.getText())) {
+  if (isPromiseOrObservable(type.getText(node))) {
     const typeArguments = type.getTypeArguments();
     const elementType = this.getTypeReferenceAsString(
       head(typeArguments),

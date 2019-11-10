@@ -1,4 +1,4 @@
-import { compact, head } from 'lodash';
+import { compact, flatten, head } from 'lodash';
 import { createWrappedNode, Decorator, PropertyDeclaration } from 'ts-morph';
 import * as ts from 'typescript';
 import {
@@ -144,7 +144,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         this.createValidationPropertyAssignments(node)
       );
     }
-    return ts.createObjectLiteral(compact(properties));
+    return ts.createObjectLiteral(compact(flatten(properties)));
   }
 
   createTypePropertyAssignment(
@@ -184,17 +184,34 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }
-    const type = node.getType();
+    let type = node.getType();
     if (!type) {
       return undefined;
+    }
+    let isArray = false;
+    if (type.isArray()) {
+      type = type.getArrayElementType();
+      isArray = true;
+      if (!type) {
+        return undefined;
+      }
     }
     if (!type.isEnum()) {
       return undefined;
     }
-    return ts.createPropertyAssignment(
+    const enumProperty = ts.createPropertyAssignment(
       key,
-      ts.createIdentifier(type.getText())
+      ts.createIdentifier(type.getText(node))
     );
+    if (isArray) {
+      const isArrayKey = 'isArray';
+      const isArrayProperty = ts.createPropertyAssignment(
+        isArrayKey,
+        ts.createIdentifier('true')
+      );
+      return [enumProperty, isArrayProperty];
+    }
+    return enumProperty;
   }
 
   createDefaultPropertyAssignment(
