@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "lodash": "4.17.15",
-    "path-to-regexp": "3.1.0"
+    "path-to-regexp": "4.0.5"
   },
   "devDependencies": {
     "@nestjs/common": "6.9.0",
