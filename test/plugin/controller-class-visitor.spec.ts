@@ -8,7 +8,7 @@ import {
 describe('Controller methods', () => {
   it('should add response based on the return value', () => {
     const options: ts.CompilerOptions = {
-      module: ts.ModuleKind.ESNext,
+      module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ESNext,
       noEmitHelpers: true
     };

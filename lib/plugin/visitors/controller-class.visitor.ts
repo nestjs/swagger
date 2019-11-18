@@ -1,5 +1,9 @@
 import { compact, head } from 'lodash';
-import { createWrappedNode, MethodDeclaration } from 'ts-morph';
+import {
+  createWrappedNode,
+  MethodDeclaration,
+  PropertyAccessExpression
+} from 'ts-morph';
 import * as ts from 'typescript';
 import { ApiResponse } from '../../decorators';
 import { OPENAPI_NAMESPACE } from '../plugin-constants';
@@ -91,24 +95,26 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (hasPropertyKey('status', existingProperties)) {
       return undefined;
     }
-    const status = this.getStatusCode(node);
-    return ts.createPropertyAssignment('status', ts.createIdentifier(status));
+    const statusNode = this.getStatusCodeIdentifier(node);
+    return ts.createPropertyAssignment('status', statusNode);
   }
 
-  getStatusCode(node: MethodDeclaration) {
+  getStatusCodeIdentifier(node: MethodDeclaration) {
     const decorators = node.getDecorators();
     const httpCodeDecorator = getDecoratorOrUndefinedByNames(
       ['HttpCode'],
       decorators
     );
     if (httpCodeDecorator) {
-      const argument = head(httpCodeDecorator.getArguments());
-      return argument && argument.getText();
+      const argument = head(
+        httpCodeDecorator.getArguments()
+      ) as PropertyAccessExpression;
+      return argument && argument.compilerNode;
     }
     const postDecorator = getDecoratorOrUndefinedByNames(['Post'], decorators);
     if (postDecorator) {
-      return '201';
+      return ts.createIdentifier('201');
     }
-    return '200';
+    return ts.createIdentifier('200');
   }
 }
