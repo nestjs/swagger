@@ -37,8 +37,8 @@ import {
   exploreGlobalApiSecurityMetadata
 } from './explorers/api-security.explorer';
 import {
-  exploreApiUseTagsMetadata,
-  exploreGlobalApiUseTagsMetadata
+  exploreApiTagsMetadata,
+  exploreGlobalApiTagsMetadata
 } from './explorers/api-use-tags.explorer';
 import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolvers.interface';
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface';
@@ -71,7 +71,7 @@ export class SwaggerExplorer {
         exploreApiParametersMetadata.bind(null, this.schemas)
       ],
       security: [exploreApiSecurityMetadata],
-      tags: [exploreApiUseTagsMetadata],
+      tags: [exploreApiTagsMetadata],
       responses: [exploreApiResponseMetadata.bind(null, this.schemas)]
     };
     return this.generateDenormalizedDocument(
@@ -167,7 +167,7 @@ export class SwaggerExplorer {
     metatype: Type<unknown>
   ): Partial<OpenAPIObject> {
     const globalExplorers = [
-      exploreGlobalApiUseTagsMetadata,
+      exploreGlobalApiTagsMetadata,
       exploreGlobalApiSecurityMetadata,
       exploreGlobalApiResponseMetadata.bind(null, this.schemas),
       exploreGlobalApiHeaderMetadata

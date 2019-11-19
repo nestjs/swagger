@@ -1,5 +1,6 @@
 import { head } from 'lodash';
-import { Decorator, Node, Type } from 'ts-morph';
+import { dirname, relative } from 'path';
+import { Decorator, Type } from 'ts-morph';
 import * as ts from 'typescript';
 
 export function getDecoratorOrUndefinedByNames(
@@ -9,10 +10,10 @@ export function getDecoratorOrUndefinedByNames(
   return decorators.find(item => names.includes(item.getName()));
 }
 
-export function getTypeReferenceAsString(type: Type, node: Node): string {
+export function getTypeReferenceAsString(type: Type): string {
   if (type.isArray()) {
     const arrayType = type.getArrayElementType();
-    const elementType = this.getTypeReferenceAsString(arrayType, node);
+    const elementType = this.getTypeReferenceAsString(arrayType);
     if (!elementType) {
       return undefined;
     }
@@ -27,19 +28,16 @@ export function getTypeReferenceAsString(type: Type, node: Node): string {
   if (type.isString()) {
     return String.name;
   }
-  if (isPromiseOrObservable(type.getText(node))) {
+  if (isPromiseOrObservable(type.getText())) {
     const typeArguments = type.getTypeArguments();
-    const elementType = this.getTypeReferenceAsString(
-      head(typeArguments),
-      node
-    );
+    const elementType = this.getTypeReferenceAsString(head(typeArguments));
     if (!elementType) {
       return undefined;
     }
     return elementType;
   }
   if (type.isClass()) {
-    return type.getText(node);
+    return type.getText();
   }
   return undefined;
 }
@@ -53,4 +51,21 @@ export function hasPropertyKey(
   properties: ts.PropertyAssignment[]
 ): boolean {
   return properties.some(item => item.name.getText() === key);
+}
+
+export function replaceImportPath(typeReference: string, fileName: string) {
+  if (!typeReference.includes('import')) {
+    return typeReference;
+  }
+  let importPath = /\(\"([^)]).+(\")/.exec(typeReference)[0];
+  if (!importPath) {
+    return undefined;
+  }
+  importPath = importPath.slice(2, importPath.length - 1);
+
+  let relativePath = relative(dirname(fileName), importPath);
+  relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
+  typeReference = typeReference.replace(importPath, relativePath);
+
+  return typeReference.replace('import', 'require');
 }

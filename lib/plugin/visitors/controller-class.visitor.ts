@@ -10,7 +10,8 @@ import { OPENAPI_NAMESPACE } from '../plugin-constants';
 import {
   getDecoratorOrUndefinedByNames,
   getTypeReferenceAsString,
-  hasPropertyKey
+  hasPropertyKey,
+  replaceImportPath
 } from '../utils/plugin-utils';
 import { AbstractFileVisitor } from './abstract.visitor';
 
@@ -28,14 +29,17 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         const wrappedNode = createWrappedNode(node, {
           typeChecker
         });
-        return this.addDecoratorToNode(wrappedNode);
+        return this.addDecoratorToNode(wrappedNode, sourceFile.fileName);
       }
       return ts.visitEachChild(node, visitNode, ctx);
     };
     return ts.visitNode(sourceFile, visitNode);
   }
 
-  addDecoratorToNode(node: MethodDeclaration): ts.MethodDeclaration {
+  addDecoratorToNode(
+    node: MethodDeclaration,
+    hostFilename: string
+  ): ts.MethodDeclaration {
     const compilerNode = ts.getMutableClone(node.compilerNode);
     const { pos, end } = compilerNode.decorators || ts.createNodeArray();
 
@@ -46,7 +50,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
           ts.createCall(
             ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiResponse.name}`),
             undefined,
-            [this.createDecoratorObjectLiteralExpr(node)]
+            [this.createDecoratorObjectLiteralExpr(node, [], hostFilename)]
           )
         )
       ],
@@ -57,19 +61,21 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
   createDecoratorObjectLiteralExpr(
     node: MethodDeclaration,
-    existingProperties: ts.PropertyAssignment[] = []
+    existingProperties: ts.PropertyAssignment[] = [],
+    hostFilename: string
   ): ts.ObjectLiteralExpression {
     const properties = [
       ...existingProperties,
       this.createStatusPropertyAssignment(node, existingProperties),
-      this.createTypePropertyAssignment(node, existingProperties)
+      this.createTypePropertyAssignment(node, existingProperties, hostFilename)
     ];
     return ts.createObjectLiteral(compact(properties));
   }
 
   createTypePropertyAssignment(
     node: MethodDeclaration,
-    existingProperties: ts.PropertyAssignment[]
+    existingProperties: ts.PropertyAssignment[],
+    hostFilename: string
   ) {
     if (hasPropertyKey('type', existingProperties)) {
       return undefined;
@@ -78,10 +84,11 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!type) {
       return undefined;
     }
-    const typeReference = getTypeReferenceAsString(type, node);
+    let typeReference = getTypeReferenceAsString(type);
     if (!typeReference) {
       return undefined;
     }
+    typeReference = replaceImportPath(typeReference, hostFilename);
     return ts.createPropertyAssignment(
       'type',
       ts.createIdentifier(typeReference)

@@ -1,6 +1,7 @@
 import { ApiExtraModels, ApiProperty } from '../../../../lib';
 import { ExtraModel } from './extra-model.dto';
 import { LettersEnum } from './pagination-query.dto';
+import { TagDto } from './tag.dto';
 
 @ApiExtraModels(ExtraModel)
 export class CreateCatDto {
@@ -40,11 +41,14 @@ export class CreateCatDto {
   @ApiProperty({
     enum: LettersEnum
   })
-  enum: LettersEnum;
+  readonly enum: LettersEnum;
 
   @ApiProperty({
     enum: LettersEnum,
     isArray: true
   })
-  enumArr: LettersEnum;
+  readonly enumArr: LettersEnum;
+
+  @ApiProperty({ description: 'tag' })
+  readonly tag: TagDto;
 }

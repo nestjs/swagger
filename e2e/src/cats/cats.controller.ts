@@ -5,7 +5,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiSecurity,
-  ApiUseTags
+  ApiTags
 } from '../../../lib';
 import { CatsService } from './cats.service';
 import { Cat } from './classes/cat.class';
@@ -14,12 +14,12 @@ import { PaginationQuery } from './dto/pagination-query.dto';
 
 @ApiSecurity('basic')
 @ApiBearerAuth()
-@ApiUseTags('cats')
+@ApiTags('cats')
 @Controller('cats')
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}
 
-  @ApiUseTags('create cats')
+  @ApiTags('create cats')
   @Post()
   @ApiOperation({ summary: 'Create cat' })
   @ApiResponse({

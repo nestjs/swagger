@@ -204,23 +204,13 @@ export class SchemaObjectFactory {
     if (metadata.isArray) {
       return this.transformToArraySchemaProperty(metadata, key, { $ref });
     }
-    const keysToRemove = ['type', 'isArray', 'required'];
+    const keysToRemove = ['type', 'isArray'];
     const validMetadataObject = omit(metadata, keysToRemove);
-    if (Object.keys(validMetadataObject).length === 0) {
-      return {
-        name: metadata.name || key,
-        required: metadata.required,
-        $ref
-      };
-    }
-    return {
+    return ({
+      ...validMetadataObject,
       name: metadata.name || key,
-      required: metadata.required,
-      title: schemaObjectName,
-      schema: {
-        allOf: [{ $ref }, (validMetadataObject as any) as SchemaObject]
-      }
-    };
+      $ref
+    } as any) as BaseParameterObject;
   }
 
   transformToArraySchemaProperty(

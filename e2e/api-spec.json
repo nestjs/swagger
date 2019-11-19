@@ -50,6 +50,18 @@
           "two"
         ]
       },
+      "TagDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "name"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
       "CreateCatDto": {
         "type": "object",
         "properties": {
@@ -100,6 +112,10 @@
                 "C"
               ]
             }
+          },
+          "tag": {
+            "description": "tag",
+            "$ref": "#/components/schemas/TagDto"
           }
         },
         "required": [
@@ -110,7 +126,8 @@
           "urls",
           "options",
           "enum",
-          "enumArr"
+          "enumArr",
+          "tag"
         ]
       },
       "Cat": {
