@@ -1,4 +1,4 @@
-import { ts } from 'ts-morph';
+import * as ts from 'typescript';
 import { OPENAPI_NAMESPACE, OPENAPI_PACKAGE_NAME } from '../plugin-constants';
 
 export class AbstractFileVisitor {

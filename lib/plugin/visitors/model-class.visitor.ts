@@ -1,5 +1,4 @@
 import { compact, flatten, head } from 'lodash';
-import { createWrappedNode, Decorator, PropertyDeclaration } from 'ts-morph';
 import * as ts from 'typescript';
 import {
   ApiHideProperty,
@@ -8,6 +7,13 @@ import {
 } from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { OPENAPI_NAMESPACE } from '../plugin-constants';
+import {
+  getDecoratorArguments,
+  getText,
+  getTypeArguments,
+  isArray,
+  isEnum
+} from '../utils/ast-utils';
 import {
   getDecoratorOrUndefinedByNames,
   getTypeReferenceAsString,
@@ -28,10 +34,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
     const visitNode = (node: ts.Node): ts.Node => {
       if (ts.isPropertyDeclaration(node)) {
-        const wrappedNode = createWrappedNode(node, {
-          typeChecker
-        });
-        const decorators = wrappedNode.getDecorators();
+        const decorators = node.decorators;
         const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
           [ApiHideProperty.name],
           decorators
@@ -46,15 +49,16 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
         if (!propertyDecorator) {
           return this.addDecoratorToNode(
-            wrappedNode,
+            node,
+            typeChecker,
             options,
             sourceFile.fileName
           );
         }
         return this.addPropertiesToExisitingDecorator(
           propertyDecorator,
-          wrappedNode,
           node,
+          typeChecker,
           options,
           sourceFile.fileName
         );
@@ -65,11 +69,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   addDecoratorToNode(
-    node: PropertyDeclaration,
+    compilerNode: ts.PropertyDeclaration,
+    typeChecker: ts.TypeChecker,
     options: PluginOptions,
     hostFilename: string
   ): ts.PropertyDeclaration {
-    const compilerNode = ts.getMutableClone(node.compilerNode);
     const { pos, end } = compilerNode.decorators || ts.createNodeArray();
 
     compilerNode.decorators = Object.assign(
@@ -81,7 +85,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             undefined,
             [
               this.createDecoratorObjectLiteralExpr(
-                node,
+                compilerNode,
+                typeChecker,
                 [],
                 options,
                 hostFilename
@@ -96,13 +101,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   addPropertiesToExisitingDecorator(
-    existingDecorator: Decorator,
-    wrappedNode: PropertyDeclaration,
-    originalNode: ts.Node,
+    compilerNode: ts.Decorator,
+    originalNode: ts.PropertyDeclaration,
+    typeChecker: ts.TypeChecker,
     options: PluginOptions,
     hostFilename: string
   ): ts.Node {
-    const compilerNode = ts.getMutableClone(existingDecorator.compilerNode);
     const callExpr = compilerNode.expression as ts.CallExpression;
     if (!callExpr) {
       return originalNode;
@@ -117,7 +121,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       callExpr.arguments = Object.assign(
         [
           this.createDecoratorObjectLiteralExpr(
-            wrappedNode,
+            originalNode,
+            typeChecker,
             [],
             options,
             hostFilename
@@ -133,7 +138,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     callExpr.arguments = Object.assign(
       [
         this.createDecoratorObjectLiteralExpr(
-          wrappedNode,
+          originalNode,
+          typeChecker,
           decoratorProperties as ts.PropertyAssignment[],
           options,
           hostFilename
@@ -148,20 +154,31 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createDecoratorObjectLiteralExpr(
-    node: PropertyDeclaration,
+    node: ts.PropertyDeclaration,
+    typeChecker: ts.TypeChecker,
     existingProperties: ts.PropertyAssignment[] = [],
     options: PluginOptions = {},
     hostFilename: string = ''
   ): ts.ObjectLiteralExpression {
-    const isRequired = !node.hasQuestionToken();
+    const isRequired = !node.questionToken;
 
     let properties = [
       ...existingProperties,
       !hasPropertyKey('required', existingProperties) &&
         ts.createPropertyAssignment('required', ts.createLiteral(isRequired)),
-      this.createTypePropertyAssignment(node, existingProperties, hostFilename),
+      this.createTypePropertyAssignment(
+        node,
+        typeChecker,
+        existingProperties,
+        hostFilename
+      ),
       this.createDefaultPropertyAssignment(node, existingProperties),
-      this.createEnumPropertyAssignment(node, existingProperties, hostFilename)
+      this.createEnumPropertyAssignment(
+        node,
+        typeChecker,
+        existingProperties,
+        hostFilename
+      )
     ];
     if (options.classValidatorShim) {
       properties = properties.concat(
@@ -172,7 +189,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createTypePropertyAssignment(
-    node: PropertyDeclaration,
+    node: ts.PropertyDeclaration,
+    typeChecker: ts.TypeChecker,
     existingProperties: ts.PropertyAssignment[],
     hostFilename: string
   ) {
@@ -180,11 +198,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }
-    const type = node.getType();
+    const type = typeChecker.getTypeAtLocation(node);
     if (!type) {
       return undefined;
     }
-    let typeReference = getTypeReferenceAsString(type);
+    let typeReference = getTypeReferenceAsString(type, typeChecker);
     if (!typeReference) {
       return undefined;
     }
@@ -203,7 +221,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createEnumPropertyAssignment(
-    node: PropertyDeclaration,
+    node: ts.PropertyDeclaration,
+    typeChecker: ts.TypeChecker,
     existingProperties: ts.PropertyAssignment[],
     hostFilename: string
   ) {
@@ -211,27 +230,27 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }
-    let type = node.getType();
+    let type = typeChecker.getTypeAtLocation(node);
     if (!type) {
       return undefined;
     }
-    let isArray = false;
-    if (type.isArray()) {
-      type = type.getArrayElementType();
-      isArray = true;
+    let isArrayType = false;
+    if (isArray(type)) {
+      type = getTypeArguments(type)[0];
+      isArrayType = true;
       if (!type) {
         return undefined;
       }
     }
-    if (!type.isEnum()) {
+    if (!isEnum(type)) {
       return undefined;
     }
-    const enumRef = replaceImportPath(type.getText(), hostFilename);
+    const enumRef = replaceImportPath(getText(type, typeChecker), hostFilename);
     const enumProperty = ts.createPropertyAssignment(
       key,
       ts.createIdentifier(enumRef)
     );
-    if (isArray) {
+    if (isArrayType) {
       const isArrayKey = 'isArray';
       const isArrayProperty = ts.createPropertyAssignment(
         isArrayKey,
@@ -243,14 +262,14 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createDefaultPropertyAssignment(
-    node: PropertyDeclaration,
+    node: ts.PropertyDeclaration,
     existingProperties: ts.PropertyAssignment[]
   ) {
     const key = 'default';
     if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }
-    const initializer = node.getInitializer();
+    const initializer = node.initializer;
     if (!initializer) {
       return undefined;
     }
@@ -261,10 +280,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createValidationPropertyAssignments(
-    node: PropertyDeclaration
+    node: ts.PropertyDeclaration
   ): ts.PropertyAssignment[] {
     const assignments = [];
-    const decorators = node.getDecorators();
+    const decorators = node.decorators;
 
     this.addPropertyByValidationDecorator(
       'Min',
@@ -297,7 +316,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   addPropertyByValidationDecorator(
     decoratorName: string,
     propertyKey: string,
-    decorators: Decorator[],
+    decorators: ts.NodeArray<ts.Decorator>,
     assignments: ts.PropertyAssignment[]
   ) {
     const decoratorRef = getDecoratorOrUndefinedByNames(
@@ -307,7 +326,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (!decoratorRef) {
       return;
     }
-    const argument = head(decoratorRef.getArguments());
+    const argument: ts.Expression = head(getDecoratorArguments(decoratorRef));
     assignments.push(
       ts.createPropertyAssignment(
         propertyKey,

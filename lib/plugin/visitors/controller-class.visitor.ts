@@ -1,12 +1,8 @@
 import { compact, head } from 'lodash';
-import {
-  createWrappedNode,
-  MethodDeclaration,
-  PropertyAccessExpression
-} from 'ts-morph';
 import * as ts from 'typescript';
 import { ApiResponse } from '../../decorators';
 import { OPENAPI_NAMESPACE } from '../plugin-constants';
+import { getDecoratorArguments } from '../utils/ast-utils';
 import {
   getDecoratorOrUndefinedByNames,
   getTypeReferenceAsString,
@@ -26,10 +22,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
     const visitNode = (node: ts.Node): ts.Node => {
       if (ts.isMethodDeclaration(node)) {
-        const wrappedNode = createWrappedNode(node, {
-          typeChecker
-        });
-        return this.addDecoratorToNode(wrappedNode, sourceFile.fileName);
+        return this.addDecoratorToNode(node, typeChecker, sourceFile.fileName);
       }
       return ts.visitEachChild(node, visitNode, ctx);
     };
@@ -37,10 +30,10 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   }
 
   addDecoratorToNode(
-    node: MethodDeclaration,
+    compilerNode: ts.MethodDeclaration,
+    typeChecker: ts.TypeChecker,
     hostFilename: string
   ): ts.MethodDeclaration {
-    const compilerNode = ts.getMutableClone(node.compilerNode);
     const { pos, end } = compilerNode.decorators || ts.createNodeArray();
 
     compilerNode.decorators = Object.assign(
@@ -50,7 +43,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
           ts.createCall(
             ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiResponse.name}`),
             undefined,
-            [this.createDecoratorObjectLiteralExpr(node, [], hostFilename)]
+            [
+              this.createDecoratorObjectLiteralExpr(
+                compilerNode,
+                typeChecker,
+                [],
+                hostFilename
+              )
+            ]
           )
         )
       ],
@@ -60,31 +60,39 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   }
 
   createDecoratorObjectLiteralExpr(
-    node: MethodDeclaration,
+    node: ts.MethodDeclaration,
+    typeChecker: ts.TypeChecker,
     existingProperties: ts.PropertyAssignment[] = [],
     hostFilename: string
   ): ts.ObjectLiteralExpression {
     const properties = [
       ...existingProperties,
       this.createStatusPropertyAssignment(node, existingProperties),
-      this.createTypePropertyAssignment(node, existingProperties, hostFilename)
+      this.createTypePropertyAssignment(
+        node,
+        typeChecker,
+        existingProperties,
+        hostFilename
+      )
     ];
     return ts.createObjectLiteral(compact(properties));
   }
 
   createTypePropertyAssignment(
-    node: MethodDeclaration,
+    node: ts.MethodDeclaration,
+    typeChecker: ts.TypeChecker,
     existingProperties: ts.PropertyAssignment[],
     hostFilename: string
   ) {
     if (hasPropertyKey('type', existingProperties)) {
       return undefined;
     }
-    const type = node.getReturnType();
+    const signature = typeChecker.getSignatureFromDeclaration(node);
+    const type = typeChecker.getReturnTypeOfSignature(signature);
     if (!type) {
       return undefined;
     }
-    let typeReference = getTypeReferenceAsString(type);
+    let typeReference = getTypeReferenceAsString(type, typeChecker);
     if (!typeReference) {
       return undefined;
     }
@@ -96,7 +104,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   }
 
   createStatusPropertyAssignment(
-    node: MethodDeclaration,
+    node: ts.MethodDeclaration,
     existingProperties: ts.PropertyAssignment[]
   ) {
     if (hasPropertyKey('status', existingProperties)) {
@@ -106,17 +114,15 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     return ts.createPropertyAssignment('status', statusNode);
   }
 
-  getStatusCodeIdentifier(node: MethodDeclaration) {
-    const decorators = node.getDecorators();
+  getStatusCodeIdentifier(node: ts.MethodDeclaration) {
+    const decorators = node.decorators;
     const httpCodeDecorator = getDecoratorOrUndefinedByNames(
       ['HttpCode'],
       decorators
     );
     if (httpCodeDecorator) {
-      const argument = head(
-        httpCodeDecorator.getArguments()
-      ) as PropertyAccessExpression;
-      return argument && argument.compilerNode;
+      const argument = head(getDecoratorArguments(httpCodeDecorator));
+      return argument;
     }
     const postDecorator = getDecoratorOrUndefinedByNames(['Post'], decorators);
     if (postDecorator) {

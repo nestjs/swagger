@@ -1,43 +1,59 @@
 import { head } from 'lodash';
-import { dirname, relative } from 'path';
-import { Decorator, Type } from 'ts-morph';
+import { dirname, relative, sep } from 'path';
 import * as ts from 'typescript';
+import {
+  getDecoratorName,
+  getText,
+  getTypeArguments,
+  isArray,
+  isBoolean,
+  isNumber,
+  isString
+} from './ast-utils';
 
 export function getDecoratorOrUndefinedByNames(
   names: string[],
-  decorators: Decorator[]
-): Decorator | undefined {
-  return decorators.find(item => names.includes(item.getName()));
+  decorators: ts.NodeArray<ts.Decorator>
+): ts.Decorator | undefined {
+  return (decorators || ts.createNodeArray()).find(item =>
+    names.includes(getDecoratorName(item))
+  );
 }
 
-export function getTypeReferenceAsString(type: Type): string {
-  if (type.isArray()) {
-    const arrayType = type.getArrayElementType();
-    const elementType = this.getTypeReferenceAsString(arrayType);
+export function getTypeReferenceAsString(
+  type: ts.Type,
+  typeChecker: ts.TypeChecker
+): string {
+  if (isArray(type)) {
+    const arrayType = getTypeArguments(type)[0];
+    const elementType = getTypeReferenceAsString(arrayType, typeChecker);
     if (!elementType) {
       return undefined;
     }
     return `[${elementType}]`;
   }
-  if (type.isBoolean()) {
+  if (isBoolean(type)) {
     return Boolean.name;
   }
-  if (type.isNumber()) {
+  if (isNumber(type)) {
     return Number.name;
   }
-  if (type.isString()) {
+  if (isString(type)) {
     return String.name;
   }
-  if (isPromiseOrObservable(type.getText())) {
-    const typeArguments = type.getTypeArguments();
-    const elementType = this.getTypeReferenceAsString(head(typeArguments));
+  if (isPromiseOrObservable(getText(type, typeChecker))) {
+    const typeArguments = getTypeArguments(type);
+    const elementType = getTypeReferenceAsString(
+      head(typeArguments),
+      typeChecker
+    );
     if (!elementType) {
       return undefined;
     }
     return elementType;
   }
   if (type.isClass()) {
-    return type.getText();
+    return getText(type, typeChecker);
   }
   return undefined;
 }
@@ -64,7 +80,8 @@ export function replaceImportPath(typeReference: string, fileName: string) {
   importPath = importPath.slice(2, importPath.length - 1);
 
   let relativePath = relative(dirname(fileName), importPath);
-  relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
+  relativePath =
+    relativePath[0] !== '.' ? '.' + sep + relativePath : relativePath;
   typeReference = typeReference.replace(importPath, relativePath);
 
   return typeReference.replace('import', 'require');

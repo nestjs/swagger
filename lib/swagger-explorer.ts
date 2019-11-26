@@ -60,7 +60,8 @@ export class SwaggerExplorer {
 
   public exploreController(
     wrapper: InstanceWrapper<Controller>,
-    modulePath: string
+    modulePath?: string,
+    globalPrefix?: string
   ) {
     const { instance, metatype } = wrapper;
     const prototype = Object.getPrototypeOf(instance);
@@ -79,7 +80,8 @@ export class SwaggerExplorer {
       prototype,
       instance,
       documentResolvers,
-      modulePath
+      modulePath,
+      globalPrefix
     );
   }
 
@@ -92,7 +94,8 @@ export class SwaggerExplorer {
     prototype: Type<unknown>,
     instance: object,
     documentResolvers: DenormalizedDocResolvers,
-    modulePath: string
+    modulePath?: string,
+    globalPrefix?: string
   ): DenormalizedDoc[] {
     let path = this.validateRoutePath(this.reflectControllerPath(metatype));
     if (modulePath) {
@@ -100,6 +103,10 @@ export class SwaggerExplorer {
       // since maybe module path itself has url parameters segments.
       path = this.validateRoutePath(modulePath + path);
     }
+    if (globalPrefix) {
+      path = this.validateRoutePath(globalPrefix + path);
+    }
+
     const self = this;
     const globalMetadata = this.exploreGlobalMetadata(metatype);
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);

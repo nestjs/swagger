@@ -14,6 +14,7 @@ import { SchemaObjectFactory } from './services/schema-object-factory';
 import { SwaggerTypesMapper } from './services/swagger-types-mapper';
 import { SwaggerExplorer } from './swagger-explorer';
 import { SwaggerTransformer } from './swagger-transformer';
+import { stripLastSlash } from './utils/strip-last-slash.util';
 
 export class SwaggerScanner {
   private readonly transfomer = new SwaggerTransformer();
@@ -37,6 +38,8 @@ export class SwaggerScanner {
       container.getModules(),
       includedModules
     );
+    const globalPrefix = stripLastSlash(this.getGlobalPrefix(app));
+
     const denormalizedPaths = modules.map(
       ({ routes, metatype, relatedModules }) => {
         let allRoutes = new Map(routes);
@@ -57,17 +60,15 @@ export class SwaggerScanner {
           ? Reflect.getMetadata(MODULE_PATH, metatype)
           : undefined;
 
-        return this.scanModuleRoutes(allRoutes, path);
+        return this.scanModuleRoutes(allRoutes, path, globalPrefix);
       }
     );
+
     const schemas = this.explorer.getSchemas();
     this.addExtraModels(schemas, extraModels);
 
     return {
-      ...this.transfomer.normalizePaths(flatten(denormalizedPaths) as (Partial<
-        OpenAPIObject
-      > &
-        Record<'root', any>)[]),
+      ...this.transfomer.normalizePaths(flatten(denormalizedPaths)),
       components: {
         schemas: reduce(this.explorer.getSchemas(), extend) as Record<
           string,
@@ -79,10 +80,11 @@ export class SwaggerScanner {
 
   public scanModuleRoutes(
     routes: Map<string, InstanceWrapper>,
-    modulePath?: string
-  ): Omit<OpenAPIObject, 'openapi' | 'info'> {
+    modulePath?: string,
+    globalPrefix?: string
+  ): Array<Omit<OpenAPIObject, 'openapi' | 'info'> & Record<'root', any>> {
     const denormalizedArray = [...routes.values()].map(ctrl =>
-      this.explorer.exploreController(ctrl, modulePath)
+      this.explorer.exploreController(ctrl, modulePath, globalPrefix)
     );
     return flatten(denormalizedArray) as any;
   }
@@ -103,5 +105,10 @@ export class SwaggerScanner {
     extraModels.forEach(item => {
       this.schemaObjectFactory.exploreModelSchema(item, schemas);
     });
+  }
+
+  private getGlobalPrefix(app: INestApplication): string {
+    const internalConfigRef = (app as any).config;
+    return (internalConfigRef && internalConfigRef.getGlobalPrefix()) || '';
   }
 }
