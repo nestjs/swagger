@@ -1,5 +1,5 @@
 import { head } from 'lodash';
-import { dirname, relative, sep } from 'path';
+import { dirname, relative } from 'path';
 import * as ts from 'typescript';
 import {
   getDecoratorName,
@@ -80,8 +80,7 @@ export function replaceImportPath(typeReference: string, fileName: string) {
   importPath = importPath.slice(2, importPath.length - 1);
 
   let relativePath = relative(dirname(fileName), importPath);
-  relativePath =
-    relativePath[0] !== '.' ? '.' + sep + relativePath : relativePath;
+  relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
   typeReference = typeReference.replace(importPath, relativePath);
 
   return typeReference.replace('import', 'require');
