@@ -40,7 +40,7 @@ export class SwaggerScanner {
       container.getModules(),
       includedModules
     );
-    const globalPrefix = ignoreGlobalPrefix
+    const globalPrefix = !ignoreGlobalPrefix
       ? stripLastSlash(this.getGlobalPrefix(app))
       : '';
 
