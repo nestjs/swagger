@@ -31,14 +31,18 @@ export class SwaggerScanner {
     const {
       deepScanRoutes,
       include: includedModules = [],
-      extraModels = []
+      extraModels = [],
+      ignoreGlobalPrefix = false
     } = options;
+
     const container: NestContainer = (app as any).container;
     const modules: Module[] = this.getModules(
       container.getModules(),
       includedModules
     );
-    const globalPrefix = stripLastSlash(this.getGlobalPrefix(app));
+    const globalPrefix = ignoreGlobalPrefix
+      ? stripLastSlash(this.getGlobalPrefix(app))
+      : '';
 
     const denormalizedPaths = modules.map(
       ({ routes, metatype, relatedModules }) => {
