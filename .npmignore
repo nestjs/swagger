@@ -1,13 +1,20 @@
 # source
 lib
 sample
+test
+e2e
+
+jest.json
 index.ts
 plugin.ts
 package-lock.json
 tslint.json
 tsconfig.json
 .prettierrc
+.circleci
+.github
 
 # misc
+renovate.json
 npm-debug.log
 .DS_Store

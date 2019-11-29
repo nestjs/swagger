@@ -2,6 +2,8 @@ import 'reflect-metadata';
 import { ApiProperty, ApiPropertyOptional } from '../../../lib/decorators';
 import { CreateProfileDto } from './create-profile.dto';
 
+class House {}
+
 export class CreateUserDto {
   @ApiProperty()
   login: string;
@@ -69,4 +71,7 @@ export class CreateUserDto {
     discriminator: { propertyName: 'pet_type' }
   })
   allOf?: Record<string, any>;
+
+  @ApiProperty({ type: [House] })
+  houses: House[];
 }

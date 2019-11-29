@@ -25,7 +25,7 @@ describe('SchemaObjectFactory', () => {
         schemas
       );
 
-      expect(schemas[0][schemaKey]).toEqual({
+      expect(schemas[1][schemaKey]).toEqual({
         type: 'object',
         properties: {
           login: {
@@ -34,6 +34,12 @@ describe('SchemaObjectFactory', () => {
           password: {
             type: 'string',
             examples: ['test', 'test2']
+          },
+          houses: {
+            items: {
+              $ref: '#/components/schemas/House'
+            },
+            type: 'array'
           },
           age: {
             type: 'number',
@@ -93,10 +99,11 @@ describe('SchemaObjectFactory', () => {
           'tags',
           'urls',
           'options',
-          'allOf'
+          'allOf',
+          'houses'
         ]
       });
-      expect(schemas[1]['CreateProfileDto']).toEqual({
+      expect(schemas[2]['CreateProfileDto']).toEqual({
         type: 'object',
         properties: {
           firstname: {
