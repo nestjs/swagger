@@ -148,16 +148,16 @@ describe('SwaggerExplorer', () => {
       expect(routes[1].root.parameters.length).toEqual(2);
       expect(routes[1].root.parameters).toEqual([
         {
-          in: 'query',
-          name: 'page',
+          in: 'path',
+          name: 'objectId',
           required: true,
           schema: {
             type: 'string'
           }
         },
         {
-          in: 'path',
-          name: 'objectId',
+          in: 'query',
+          name: 'page',
           required: true,
           schema: {
             type: 'string'
@@ -267,16 +267,16 @@ describe('SwaggerExplorer', () => {
       expect(routes[1].root.parameters.length).toEqual(2);
       expect(routes[1].root.parameters).toEqual([
         {
-          in: 'query',
-          name: 'page',
+          in: 'path',
+          name: 'objectId',
           required: true,
           schema: {
             type: 'string'
           }
         },
         {
-          in: 'path',
-          name: 'objectId',
+          in: 'query',
+          name: 'page',
           required: true,
           schema: {
             type: 'string'

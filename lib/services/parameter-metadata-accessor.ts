@@ -6,6 +6,7 @@ import {
 import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum';
 import { isEmpty, mapValues, omitBy } from 'lodash';
 import { ParameterLocation } from '../interfaces/open-api-spec.interface';
+import { reverseObjectKeys } from '../utils/reverse-object-keys.util';
 
 interface ParamMetadata {
   index: number;
@@ -44,7 +45,7 @@ export class ParameterMetadataAccessor {
       ) || {};
 
     const parametersWithType: ParamsWithType = mapValues(
-      routeArgsMetadata,
+      reverseObjectKeys(routeArgsMetadata),
       (param: ParamMetadata) => ({
         type: types[param.index],
         name: param.data,
