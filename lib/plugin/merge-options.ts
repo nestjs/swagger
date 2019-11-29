@@ -7,7 +7,7 @@ export interface PluginOptions {
 }
 
 const defaultOptions: PluginOptions = {
-  dtoFileNameSuffix: ['.dto.ts'],
+  dtoFileNameSuffix: ['.dto.ts', '.entity.ts'],
   controllerFileNameSuffix: ['.controller.ts'],
   classValidatorShim: true
 };
