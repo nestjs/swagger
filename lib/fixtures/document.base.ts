@@ -1,13 +1,14 @@
-import { SwaggerScheme } from '../interfaces/swagger-base-config.interface';
+import { OpenAPIObject } from '../interfaces';
 
-export const buildDocumentBase = () => ({
-  swagger: '2.0',
+export const buildDocumentBase = (): Omit<OpenAPIObject, 'paths'> => ({
+  openapi: '3.0.0',
   info: {
+    title: '',
     description: '',
     version: '1.0.0',
-    title: ''
+    contact: {}
   },
-  basePath: '/',
   tags: [],
-  schemes: ['http'] as SwaggerScheme[]
+  servers: [],
+  components: {}
 });

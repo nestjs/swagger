@@ -1,28 +1,46 @@
+import { Type } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common/enums/http-status.enum';
 import { omit } from 'lodash';
 import { DECORATORS } from '../constants';
+import {
+  ResponseObject,
+  SchemaObject
+} from '../interfaces/open-api-spec.interface';
 import { getTypeIsArrayTuple } from './helpers';
 
-export interface ResponseMetadata {
-  description?: string;
-  type?: any;
+export interface ApiResponseMetadata
+  extends Omit<ResponseObject, 'description'> {
+  status?: number | 'default';
+  type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
-  headers?: any;
+  description?: string;
 }
 
-export const ApiResponse = (
-  metadata: {
-    status: number;
-  } & ResponseMetadata
-) => {
-  const [type, isArray] = getTypeIsArrayTuple(metadata.type, metadata.isArray);
+export interface ApiResponseSchemaHost
+  extends Omit<ResponseObject, 'description'> {
+  schema: SchemaObject;
+  status?: number;
+  description?: string;
+}
 
-  metadata.type = type;
-  metadata.isArray = isArray;
-  metadata.description = metadata.description ? metadata.description : '';
+export type ApiResponseOptions = ApiResponseMetadata | ApiResponseSchemaHost;
 
-  const groupedMetadata = { [metadata.status]: omit(metadata, 'status') };
-  return (target, key?, descriptor?: PropertyDescriptor) => {
+export function ApiResponse(options: ApiResponseOptions): any {
+  const [type, isArray] = getTypeIsArrayTuple(
+    (options as ApiResponseMetadata).type,
+    (options as ApiResponseMetadata).isArray
+  );
+
+  (options as ApiResponseMetadata).type = type;
+  (options as ApiResponseMetadata).isArray = isArray;
+  options.description = options.description ? options.description : '';
+
+  const groupedMetadata = { [options.status]: omit(options, 'status') };
+  return (
+    target: object,
+    key?: string | symbol,
+    descriptor?: TypedPropertyDescriptor<any>
+  ): any => {
     if (descriptor) {
       const responses =
         Reflect.getMetadata(DECORATORS.API_RESPONSE, descriptor.value) || {};
@@ -48,142 +66,156 @@ export const ApiResponse = (
     );
     return target;
   };
-};
+}
 
-export const ApiOkResponse = (metadata: ResponseMetadata) =>
+export const ApiOkResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.OK
   });
 
-export const ApiCreatedResponse = (metadata: ResponseMetadata) =>
+export const ApiCreatedResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.CREATED
   });
 
-export const ApiAcceptedResponse = (metadata: ResponseMetadata) =>
+export const ApiAcceptedResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.ACCEPTED
   });
 
-export const ApiNoContentResponse = (metadata: ResponseMetadata) =>
+export const ApiNoContentResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.NO_CONTENT
   });
 
-export const ApiMovedPermanentlyResponse = (metadata: ResponseMetadata) =>
+export const ApiMovedPermanentlyResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.MOVED_PERMANENTLY
   });
 
-export const ApiBadRequestResponse = (metadata: ResponseMetadata) =>
+export const ApiBadRequestResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.BAD_REQUEST
   });
 
-export const ApiUnauthorizedResponse = (metadata: ResponseMetadata) =>
+export const ApiUnauthorizedResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.UNAUTHORIZED
   });
 
-export const ApiTooManyRequestsResponse = (metadata: ResponseMetadata) =>
+export const ApiTooManyRequestsResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.TOO_MANY_REQUESTS
   });
 
-export const ApiNotFoundResponse = (metadata: ResponseMetadata) =>
+export const ApiNotFoundResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.NOT_FOUND
   });
 
-export const ApiInternalServerErrorResponse = (metadata: ResponseMetadata) =>
+export const ApiInternalServerErrorResponse = (
+  options: ApiResponseOptions = {}
+) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.INTERNAL_SERVER_ERROR
   });
 
-export const ApiBadGatewayResponse = (metadata: ResponseMetadata) =>
+export const ApiBadGatewayResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.BAD_GATEWAY
   });
 
-export const ApiConflictResponse = (metadata: ResponseMetadata) =>
+export const ApiConflictResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.CONFLICT
   });
 
-export const ApiForbiddenResponse = (metadata: ResponseMetadata) =>
+export const ApiForbiddenResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.FORBIDDEN
   });
 
-export const ApiGatewayTimeoutResponse = (metadata: ResponseMetadata) =>
+export const ApiGatewayTimeoutResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.GATEWAY_TIMEOUT
   });
 
-export const ApiGoneResponse = (metadata: ResponseMetadata) =>
+export const ApiGoneResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.GONE
   });
 
-export const ApiMethodNotAllowedResponse = (metadata: ResponseMetadata) =>
+export const ApiMethodNotAllowedResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.METHOD_NOT_ALLOWED
   });
 
-export const ApiNotAcceptableResponse = (metadata: ResponseMetadata) =>
+export const ApiNotAcceptableResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.NOT_ACCEPTABLE
   });
 
-export const ApiNotImplementedResponse = (metadata: ResponseMetadata) =>
+export const ApiNotImplementedResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.NOT_IMPLEMENTED
   });
 
-export const ApiPayloadTooLargeResponse = (metadata: ResponseMetadata) =>
+export const ApiPayloadTooLargeResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.PAYLOAD_TOO_LARGE
   });
 
-export const ApiRequestTimeoutResponse = (metadata: ResponseMetadata) =>
+export const ApiRequestTimeoutResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.REQUEST_TIMEOUT
   });
 
-export const ApiServiceUnavailableResponse = (metadata: ResponseMetadata) =>
+export const ApiServiceUnavailableResponse = (
+  options: ApiResponseOptions = {}
+) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.SERVICE_UNAVAILABLE
   });
 
-export const ApiUnprocessableEntityResponse = (metadata: ResponseMetadata) =>
+export const ApiUnprocessableEntityResponse = (
+  options: ApiResponseOptions = {}
+) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.UNPROCESSABLE_ENTITY
   });
 
-export const ApiUnsupportedMediaTypeResponse = (metadata: ResponseMetadata) =>
+export const ApiUnsupportedMediaTypeResponse = (
+  options: ApiResponseOptions = {}
+) =>
   ApiResponse({
-    ...metadata,
+    ...options,
     status: HttpStatus.UNSUPPORTED_MEDIA_TYPE
+  });
+
+export const ApiDefaultResponse = (options: ApiResponseOptions = {}) =>
+  ApiResponse({
+    ...options,
+    status: 'default'
   });

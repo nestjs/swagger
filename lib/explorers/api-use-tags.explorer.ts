@@ -1,11 +1,13 @@
+import { Type } from '@nestjs/common';
 import { DECORATORS } from '../constants';
-import { isUndefined } from '@nestjs/common/utils/shared.utils';
 
-export const exploreGlobalApiUseTagsMetadata = metatype => {
-  const tags = Reflect.getMetadata(DECORATORS.API_USE_TAGS, metatype);
+export const exploreGlobalApiTagsMetadata = (metatype: Type<unknown>) => {
+  const tags = Reflect.getMetadata(DECORATORS.API_TAGS, metatype);
   return tags ? { tags } : undefined;
 };
 
-export const exploreApiUseTagsMetadata = (instance, prototype, method) => {
-  return Reflect.getMetadata(DECORATORS.API_USE_TAGS, method);
-};
+export const exploreApiTagsMetadata = (
+  instance: object,
+  prototype: Type<unknown>,
+  method: object
+) => Reflect.getMetadata(DECORATORS.API_TAGS, method);

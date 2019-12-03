@@ -1,18 +1,20 @@
 {
   "name": "@nestjs/swagger",
-  "version": "3.1.0",
+  "version": "4.0.0",
   "description": "Nest - modern, fast, powerful node.js web framework (@swagger)",
   "author": "Kamil Mysliwiec",
   "license": "MIT",
   "repository": "https://github.com/nestjs/swagger",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "format": "prettier lib/**/*.ts --write",
+    "format": "prettier \"lib/**/*.ts\" --write",
     "prepublish:next": "npm run build",
     "publish:next": "npm publish --access public --tag next",
     "prepublish:npm": "npm run build",
     "publish:npm": "npm publish --access public",
-    "test": "jest --config jest.json"
+    "test": "jest --config jest.json",
+    "test:dev": "jest --config jest.json --watch",
+    "test:e2e": "jest --config e2e/jest-e2e.json"
   },
   "dependencies": {
     "lodash": "4.17.15",
@@ -21,19 +23,24 @@
   "devDependencies": {
     "@nestjs/common": "6.10.5",
     "@nestjs/core": "6.10.5",
+    "@nestjs/platform-express": "6.10.5",
     "@types/jest": "24.0.23",
+    "@types/lodash": "4.14.141",
     "@types/node": "11.15.0",
+    "express": "^4.17.1",
     "husky": "3.1.0",
     "jest": "24.9.0",
     "lint-staged": "9.5.0",
     "prettier": "1.19.1",
     "reflect-metadata": "0.1.13",
+    "swagger-parser": "8.0.1",
+    "swagger-ui-express": "4.1.1",
     "ts-jest": "24.2.0",
     "typescript": "3.7.2"
   },
   "peerDependencies": {
-    "@nestjs/common": "^6.0.0",
-    "@nestjs/core": "^6.0.0",
+    "@nestjs/common": "^6.8.0",
+    "@nestjs/core": "^6.8.0",
     "reflect-metadata": "^0.1.12"
   },
   "lint-staged": {

@@ -1,30 +1,23 @@
+import { isUndefined, negate, pickBy } from 'lodash';
 import { DECORATORS } from '../constants';
+import { OperationObject } from '../interfaces/open-api-spec.interface';
 import { createMethodDecorator } from './helpers';
-import { pickBy, isNil, negate, isUndefined } from 'lodash';
 
-const initialMetadata = {
+export type ApiOperationOptions = Partial<OperationObject>;
+
+const defaultOperationOptions: ApiOperationOptions = {
   summary: ''
 };
 
-export const ApiOperation = (metadata: {
-  title: string;
-  description?: string;
-  operationId?: string;
-  deprecated?: boolean;
-}): MethodDecorator => {
+export function ApiOperation(options: ApiOperationOptions): MethodDecorator {
   return createMethodDecorator(
     DECORATORS.API_OPERATION,
     pickBy(
       {
-        ...initialMetadata,
-        summary: isNil(metadata.title)
-          ? initialMetadata.summary
-          : metadata.title,
-        description: metadata.description,
-        operationId: metadata.operationId,
-        deprecated: metadata.deprecated
-      },
+        ...defaultOperationOptions,
+        ...options
+      } as ApiOperationOptions,
       negate(isUndefined)
     )
   );
-};
+}
