@@ -5,7 +5,12 @@ import {
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
-import { getEnumType, getEnumValues } from '../utils/enum.utils';
+import {
+  addEnumArraySchema,
+  addEnumSchema,
+  isEnumArray,
+  isEnumDefined
+} from '../utils/enum.utils';
 import { createParamDecorator } from './helpers';
 
 type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
@@ -27,37 +32,17 @@ const defaultQueryOptions: ApiQueryOptions = {
   required: true
 };
 
-const isEnumArray = (obj: Record<string, any>): obj is ApiQueryMetadata =>
-  obj.isArray && obj.enum;
-
 export function ApiQuery(options: ApiQueryOptions): MethodDecorator {
-  const param = {
+  const param: ApiQueryMetadata & Record<string, any> = {
     name: isNil(options.name) ? defaultQueryOptions.name : options.name,
     in: 'query',
     ...omit(options, 'enum')
   };
 
   if (isEnumArray(options)) {
-    const paramSchema: SchemaObject =
-      ((param as ApiQuerySchemaHost).schema as SchemaObject) || {};
-    (param as ApiQuerySchemaHost).schema = paramSchema;
-    paramSchema.type = 'array';
-
-    delete (param as ApiQueryMetadata).isArray;
-
-    const enumValues = getEnumValues(options.enum);
-    paramSchema.items = {
-      type: getEnumType(enumValues),
-      enum: enumValues
-    };
-  } else if ((options as ApiQueryMetadata).enum) {
-    const paramSchema: SchemaObject =
-      ((param as ApiQuerySchemaHost).schema as SchemaObject) || {};
-    const enumValues = getEnumValues((options as ApiQueryMetadata).enum);
-
-    (param as ApiQuerySchemaHost).schema = paramSchema;
-    paramSchema.enum = enumValues;
-    paramSchema.type = getEnumType(enumValues);
+    addEnumArraySchema(param, options);
+  } else if (isEnumDefined(options)) {
+    addEnumSchema(param, options);
   }
   return createParamDecorator(param, defaultQueryOptions);
 }

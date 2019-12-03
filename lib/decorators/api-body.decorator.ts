@@ -1,8 +1,16 @@
 import { Type } from '@nestjs/common';
+import { omit } from 'lodash';
 import {
   RequestBodyObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
+import { SwaggerEnumType } from '../types/swagger-enum.type';
+import {
+  addEnumArraySchema,
+  addEnumSchema,
+  isEnumArray,
+  isEnumDefined
+} from '../utils/enum.utils';
 import { createParamDecorator, getTypeIsArrayTuple } from './helpers';
 
 type RequestBodyOptions = Omit<RequestBodyObject, 'content'>;
@@ -10,6 +18,7 @@ type RequestBodyOptions = Omit<RequestBodyObject, 'content'>;
 interface ApiBodyMetadata extends RequestBodyOptions {
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
+  enum?: SwaggerEnumType;
 }
 
 interface ApiBodySchemaHost extends RequestBodyOptions {
@@ -28,11 +37,17 @@ export function ApiBody(options: ApiBodyOptions): MethodDecorator {
     (options as ApiBodyMetadata).type,
     (options as ApiBodyMetadata).isArray
   );
-  const param: ApiBodyMetadata & { in: 'body' } = {
+  const param: ApiBodyMetadata & Record<string, any> = {
     in: 'body',
-    ...options,
+    ...omit(options, 'enum'),
     type,
     isArray
   };
+
+  if (isEnumArray(options)) {
+    addEnumArraySchema(param, options);
+  } else if (isEnumDefined(options)) {
+    addEnumSchema(param, options);
+  }
   return createParamDecorator(param, defaultBodyMetadata);
 }
