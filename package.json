@@ -27,7 +27,7 @@
     "@types/jest": "24.0.23",
     "@types/lodash": "4.14.141",
     "@types/node": "11.15.0",
-    "express": "^4.17.1",
+    "express": "4.17.1",
     "husky": "3.1.0",
     "jest": "24.9.0",
     "lint-staged": "9.5.0",
