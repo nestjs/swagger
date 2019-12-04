@@ -101,8 +101,8 @@ export function getDecoratorName(decorator: Decorator) {
     const callExpression = decorator.expression;
 
     if (
-      (callExpression as Identifier).escapedText ===
-      `${OPENAPI_NAMESPACE}.${ApiResponse.name}`
+      ((callExpression as CallExpression).expression as Identifier)
+        .escapedText === `${OPENAPI_NAMESPACE}.${ApiResponse.name}`
     ) {
       return undefined;
     }
