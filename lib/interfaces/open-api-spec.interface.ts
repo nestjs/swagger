@@ -148,7 +148,7 @@ export interface EncodingPropertyObject {
 }
 
 export interface ResponsesObject
-  extends Record<string, ResponseObject | ReferenceObject> {
+  extends Record<string, ResponseObject | ReferenceObject | undefined> {
   default?: ResponseObject | ReferenceObject;
 }
 
