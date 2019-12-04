@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { omit } from 'lodash';
+import { isNil, omit } from 'lodash';
 import {
   RequestBodyObject,
   SchemaObject
@@ -28,6 +28,7 @@ interface ApiBodySchemaHost extends RequestBodyOptions {
 export type ApiBodyOptions = ApiBodyMetadata | ApiBodySchemaHost;
 
 const defaultBodyMetadata: ApiBodyMetadata = {
+  name: '',
   type: String,
   required: true
 };
@@ -38,6 +39,7 @@ export function ApiBody(options: ApiBodyOptions): MethodDecorator {
     (options as ApiBodyMetadata).isArray
   );
   const param: ApiBodyMetadata & Record<string, any> = {
+    name: isNil(options.name) ? defaultBodyMetadata.name : options.name,
     in: 'body',
     ...omit(options, 'enum'),
     type,

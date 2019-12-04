@@ -125,6 +125,7 @@ export interface ParameterObject extends BaseParameterObject {
 }
 
 export interface RequestBodyObject {
+  name: string;
   description?: string;
   content: ContentObject;
   required?: boolean;
