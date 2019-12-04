@@ -1,6 +1,7 @@
 import {
   CallExpression,
   Decorator,
+  Identifier,
   LeftHandSideExpression,
   Node,
   PropertyAccessExpression,
@@ -10,6 +11,8 @@ import {
   TypeFlags,
   TypeFormatFlags
 } from 'typescript';
+import { ApiResponse } from '../../decorators';
+import { OPENAPI_NAMESPACE } from '../plugin-constants';
 
 export function isArray(type: Type) {
   const symbol = type.getSymbol();
@@ -96,6 +99,13 @@ export function getDecoratorName(decorator: Decorator) {
     decorator.expression.kind === SyntaxKind.CallExpression;
   if (isDecoratorFactory) {
     const callExpression = decorator.expression;
+
+    if (
+      (callExpression as Identifier).escapedText ===
+      `${OPENAPI_NAMESPACE}.${ApiResponse.name}`
+    ) {
+      return undefined;
+    }
     return getIdentifierFromName(
       (callExpression as CallExpression).expression
     ).getText();
