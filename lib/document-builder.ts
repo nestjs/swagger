@@ -60,14 +60,16 @@ export class DocumentBuilder {
     description: string = '',
     externalDocs?: ExternalDocumentationObject
   ): this {
-    this.document.tags = this.document.tags.concat(pickBy(
-      {
-        name,
-        description,
-        externalDocs
-      },
-      negate(isUndefined)
-    ) as TagObject);
+    this.document.tags = this.document.tags.concat(
+      pickBy(
+        {
+          name,
+          description,
+          externalDocs
+        },
+        negate(isUndefined)
+      ) as TagObject
+    );
     return this;
   }
 
