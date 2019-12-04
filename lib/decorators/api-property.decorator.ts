@@ -6,7 +6,8 @@ import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers';
 export interface ApiPropertyOptions
   extends Omit<SchemaObjectMetadata, 'name' | 'enum'> {
   name?: string;
-  enum?: any[] | Record<string, any>;
+  enum?: any[] | Record<string, any> | Function;
+  enumName?: string;
 }
 
 const isEnumArray = (obj: ApiPropertyOptions): boolean =>
@@ -27,15 +28,17 @@ export function ApiProperty(
 
     const enumValues = getEnumValues(options.enum);
     options.items = {
-      type: getEnumType(enumValues),
-      enum: enumValues
+      type: getEnumType(enumValues.values),
+      enum: enumValues.values
     };
+    options.enumName = enumValues.enumName;
     delete options.enum;
   } else if (options.enum) {
     const enumValues = getEnumValues(options.enum);
 
-    options.enum = enumValues;
-    options.type = getEnumType(enumValues);
+    options.enum = enumValues.values;
+    options.type = getEnumType(enumValues.values);
+    options.enumName = enumValues.enumName;
   }
 
   return createPropertyDecorator(DECORATORS.API_MODEL_PROPERTIES, options);

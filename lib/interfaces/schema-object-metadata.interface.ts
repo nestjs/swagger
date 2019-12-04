@@ -7,4 +7,5 @@ export interface SchemaObjectMetadata
   isArray?: boolean;
   required?: boolean;
   name?: string;
+  enumName?: string;
 }

@@ -28,7 +28,7 @@ export function ApiHeader(options: ApiHeaderOptions): any {
   };
 
   if (options.enum) {
-    const enumValues = getEnumValues(options.enum);
+    const enumValues = getEnumValues(options.enum).values;
     param.schema = {
       enum: enumValues,
       type: getEnumType(enumValues)

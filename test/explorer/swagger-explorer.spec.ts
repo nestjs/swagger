@@ -481,6 +481,7 @@ describe('SwaggerExplorer', () => {
         return Promise.resolve([]);
       }
     }
+
     it('should merge implicit metadata with explicit options', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
@@ -589,6 +590,12 @@ describe('SwaggerExplorer', () => {
       C = 'c'
     }
 
+    enum QueryEnum {
+      D = 'd',
+      E = 'e',
+      F = 'f'
+    }
+
     class Foo {}
 
     @Controller('')
@@ -598,16 +605,27 @@ describe('SwaggerExplorer', () => {
         name: 'objectId',
         enum: ParamEnum
       })
-      @ApiParam({
-        name: 'objectId',
-        enum: ParamEnum
-      })
-      @ApiQuery({ name: 'order', enum: ['d', 'e', 'f'] })
+      @ApiQuery({ name: 'order', enum: QueryEnum })
       @ApiQuery({ name: 'page', enum: ['d', 'e', 'f'], isArray: true })
       find(): Promise<Foo[]> {
         return Promise.resolve([]);
       }
     }
+
+    @Controller('')
+    class BarController {
+      @Get('bars/:objectId')
+      @ApiParam({
+        name: 'objectId',
+        enum: () => ParamEnum
+      })
+      @ApiQuery({ name: 'order', enum: () => QueryEnum })
+      @ApiQuery({ name: 'page', enum: () => QueryEnum, isArray: true })
+      findBar(): Promise<Foo> {
+        return Promise.resolve(null);
+      }
+    }
+
     it('should properly define enums', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
@@ -651,6 +669,47 @@ describe('SwaggerExplorer', () => {
         }
       ]);
     });
+
+    it('should properly define enum as schema with lazy function', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new BarController(),
+          metatype: BarController
+        } as InstanceWrapper<BarController>,
+        'path'
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          in: 'query',
+          name: 'page',
+          required: true,
+          schema: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/QueryEnum'
+            }
+          }
+        },
+        {
+          in: 'query',
+          name: 'order',
+          required: true,
+          schema: {
+            $ref: '#/components/schemas/QueryEnum'
+          }
+        },
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            $ref: '#/components/schemas/ParamEnum'
+          }
+        }
+      ]);
+    });
   });
 
   describe('when headers are defined', () => {
@@ -671,6 +730,7 @@ describe('SwaggerExplorer', () => {
         return Promise.resolve([]);
       }
     }
+
     it('should properly define headers', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(

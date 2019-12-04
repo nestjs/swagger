@@ -37,8 +37,12 @@ export function ApiParam(options: ApiParamOptions): MethodDecorator {
     param.schema = param.schema || ({} as SchemaObject);
 
     const enumValues = getEnumValues((options as ApiParamMetadata).enum);
-    (param.schema as SchemaObject).type = getEnumType(enumValues);
-    (param.schema as SchemaObject).enum = enumValues;
+    (param.schema as SchemaObject).type = getEnumType(enumValues.values);
+    (param.schema as SchemaObject).enum = enumValues.values;
+
+    if (enumValues.enumName) {
+      param['enumName'] = enumValues.enumName;
+    }
   }
   return createParamDecorator(param, defaultParamOptions);
 }
