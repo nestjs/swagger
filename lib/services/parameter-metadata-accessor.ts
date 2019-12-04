@@ -21,6 +21,7 @@ export interface ParamWithTypeMetadata {
   isArray?: boolean;
   required: true;
   enum?: unknown[];
+  enumName?: string;
 }
 export type ParamsWithType = Record<string, ParamWithTypeMetadata>;
 
@@ -68,9 +69,8 @@ export class ParameterMetadataAccessor {
   private mapParamType(key: string): string {
     const keyPair = key.split(':');
     switch (Number(keyPair[0])) {
-      case RouteParamtypes.BODY: {
+      case RouteParamtypes.BODY:
         return 'body';
-      }
       case RouteParamtypes.PARAM:
         return 'path';
       case RouteParamtypes.QUERY:

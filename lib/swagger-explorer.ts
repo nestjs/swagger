@@ -55,6 +55,7 @@ export class SwaggerExplorer {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
   private readonly metadataScanner = new MetadataScanner();
   private readonly schemas: SchemaObject[] = [];
+  private readonly schemaRefsStack: string[] = [];
 
   constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
 
@@ -69,7 +70,11 @@ export class SwaggerExplorer {
       root: [
         this.exploreRoutePathAndMethod,
         exploreApiOperationMetadata,
-        exploreApiParametersMetadata.bind(null, this.schemas)
+        exploreApiParametersMetadata.bind(
+          null,
+          this.schemas,
+          this.schemaRefsStack
+        )
       ],
       security: [exploreApiSecurityMetadata],
       tags: [exploreApiTagsMetadata],

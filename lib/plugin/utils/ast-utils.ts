@@ -99,10 +99,11 @@ export function getDecoratorName(decorator: Decorator) {
     decorator.expression.kind === SyntaxKind.CallExpression;
   if (isDecoratorFactory) {
     const callExpression = decorator.expression;
-
+    const identifier = (callExpression as CallExpression)
+      .expression as Identifier;
     if (
-      ((callExpression as CallExpression).expression as Identifier)
-        .escapedText === `${OPENAPI_NAMESPACE}.${ApiResponse.name}`
+      identifier &&
+      identifier.escapedText === `${OPENAPI_NAMESPACE}.${ApiResponse.name}`
     ) {
       return undefined;
     }

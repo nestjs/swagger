@@ -1,3 +1,4 @@
+import { ApiProperty } from '../../lib/decorators';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
@@ -18,6 +19,66 @@ describe('SchemaObjectFactory', () => {
   });
 
   describe('exploreModelSchema', () => {
+    enum Role {
+      Admin = 'admin',
+      User = 'user'
+    }
+
+    class CreatePersonDto {
+      @ApiProperty()
+      name: string;
+      @ApiProperty({ enum: () => Role })
+      role: Role;
+    }
+
+    class Person {
+      @ApiProperty({ enum: () => Role })
+      role: Role;
+    }
+
+    it('should explore enum', () => {
+      const schemas = [];
+      schemaObjectFactory.exploreModelSchema(Person, schemas);
+
+      expect(schemas).toHaveLength(2);
+
+      expect(schemas[0]['Role']).toBeDefined();
+      expect(schemas[0]['Role']).toEqual({
+        type: 'string',
+        enum: ['admin', 'user']
+      });
+      expect(schemas[1]['Person']).toBeDefined();
+      expect(schemas[1]['Person']).toEqual({
+        type: 'object',
+        properties: {
+          role: {
+            $ref: '#/components/schemas/Role'
+          }
+        },
+        required: ['role']
+      });
+
+      schemaObjectFactory.exploreModelSchema(CreatePersonDto, schemas, [
+        'Person',
+        'Role'
+      ]);
+
+      expect(schemas).toHaveLength(3);
+      expect(schemas[2]['CreatePersonDto']).toBeDefined();
+      expect(schemas[2]['CreatePersonDto']).toEqual({
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string'
+          },
+          role: {
+            $ref: '#/components/schemas/Role'
+          }
+        },
+        required: ['name', 'role']
+      });
+    });
+
     it('should create openapi schema', () => {
       const schemas = [];
       const schemaKey = schemaObjectFactory.exploreModelSchema(
