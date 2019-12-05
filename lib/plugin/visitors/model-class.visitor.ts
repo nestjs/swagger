@@ -74,18 +74,19 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     options: PluginOptions,
     hostFilename: string
   ): ts.PropertyDeclaration {
-    const { pos, end } = compilerNode.decorators || ts.createNodeArray();
+    const node = ts.getMutableClone(compilerNode);
+    const { pos, end } = node.decorators || ts.createNodeArray();
 
-    compilerNode.decorators = Object.assign(
+    node.decorators = Object.assign(
       [
-        ...(compilerNode.decorators || ts.createNodeArray()),
+        ...(node.decorators || ts.createNodeArray()),
         ts.createDecorator(
           ts.createCall(
             ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiProperty.name}`),
             undefined,
             [
               this.createDecoratorObjectLiteralExpr(
-                compilerNode,
+                node,
                 typeChecker,
                 [],
                 options,
@@ -97,7 +98,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       ],
       { pos, end }
     );
-    return compilerNode;
+    return node;
   }
 
   addPropertiesToExisitingDecorator(
