@@ -66,7 +66,9 @@ export function hasPropertyKey(
   key: string,
   properties: ts.PropertyAssignment[]
 ): boolean {
-  return properties.some(item => item.name.getText() === key);
+  return properties
+    .filter(item => !isDynamicallyAdded(item))
+    .some(item => item.name.getText() === key);
 }
 
 export function replaceImportPath(typeReference: string, fileName: string) {
@@ -84,4 +86,8 @@ export function replaceImportPath(typeReference: string, fileName: string) {
   typeReference = typeReference.replace(importPath, relativePath);
 
   return typeReference.replace('import', 'require');
+}
+
+export function isDynamicallyAdded(identifier: ts.Node) {
+  return identifier && !identifier.parent && identifier.pos === -1;
 }
