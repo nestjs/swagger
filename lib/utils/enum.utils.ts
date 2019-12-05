@@ -31,8 +31,11 @@ export function getEnumValues(
 
 function _getEnumNameFromTypeFn(fnString: string): string {
   return fnString
-    .replace(/(?:\s|return|{|}|\(|\)|)+/gm, '')
+    .replace(/(?:\s|return|{|}|\(|\)|\$|_|,|;|\d)+/gm, '')
+    .replace(/^[^A-Z]+/, '')
     .split('=>')
+    .pop()
+    .split('.')
     .pop();
 }
 
