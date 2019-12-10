@@ -21,9 +21,9 @@
     "path-to-regexp": "6.1.0"
   },
   "devDependencies": {
-    "@nestjs/common": "6.10.8",
-    "@nestjs/core": "6.10.8",
-    "@nestjs/platform-express": "6.10.8",
+    "@nestjs/common": "6.10.9",
+    "@nestjs/core": "6.10.9",
+    "@nestjs/platform-express": "6.10.9",
     "@types/jest": "24.0.23",
     "@types/lodash": "4.14.149",
     "@types/node": "11.15.0",
