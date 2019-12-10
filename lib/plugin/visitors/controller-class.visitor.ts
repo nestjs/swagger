@@ -34,8 +34,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     hostFilename: string
   ): ts.MethodDeclaration {
-    const nodeArray = compilerNode.decorators || ts.createNodeArray();
     const node = ts.getMutableClone(compilerNode);
+    const nodeArray = node.decorators || ts.createNodeArray();
     const { pos, end } = nodeArray;
 
     node.decorators = Object.assign(
@@ -124,7 +124,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     );
     if (httpCodeDecorator) {
       const argument = head(getDecoratorArguments(httpCodeDecorator));
-      return argument;
+      if (argument) {
+        return argument;
+      }
     }
     const postDecorator = getDecoratorOrUndefinedByNames(['Post'], decorators);
     if (postDecorator) {

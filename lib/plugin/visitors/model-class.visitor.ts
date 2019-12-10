@@ -75,11 +75,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     hostFilename: string
   ): ts.PropertyDeclaration {
     const node = ts.getMutableClone(compilerNode);
-    const { pos, end } = node.decorators || ts.createNodeArray();
+    const nodeArray = node.decorators || ts.createNodeArray();
+    const { pos, end } = nodeArray;
 
     node.decorators = Object.assign(
       [
-        ...(node.decorators || ts.createNodeArray()),
+        ...nodeArray,
         ts.createDecorator(
           ts.createCall(
             ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiProperty.name}`),
@@ -108,21 +109,26 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     options: PluginOptions,
     hostFilename: string
   ): ts.Node {
-    const callExpr = compilerNode.expression as ts.CallExpression;
-    if (!callExpr) {
+    if (!compilerNode.expression) {
       return originalNode;
     }
+    if (!(compilerNode.expression as ts.CallExpression).arguments) {
+      return originalNode;
+    }
+    const propertyNode = ts.getMutableClone(compilerNode);
+    const callExpr = ts.getMutableClone(
+      propertyNode.expression
+    ) as ts.CallExpression;
     const callArgs = callExpr.arguments;
-    if (!callArgs) {
-      return originalNode;
-    }
+    const node = ts.getMutableClone(originalNode);
+
     const { pos, end } = callArgs;
     const decoratorArgument = head(callArgs) as ts.ObjectLiteralExpression;
     if (!decoratorArgument) {
       callExpr.arguments = Object.assign(
         [
           this.createDecoratorObjectLiteralExpr(
-            originalNode,
+            node,
             typeChecker,
             [],
             options,
@@ -139,7 +145,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     callExpr.arguments = Object.assign(
       [
         this.createDecoratorObjectLiteralExpr(
-          originalNode,
+          node,
           typeChecker,
           decoratorProperties as ts.PropertyAssignment[],
           options,
@@ -151,7 +157,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         end
       }
     );
-    return originalNode;
+    return node;
   }
 
   createDecoratorObjectLiteralExpr(
