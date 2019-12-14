@@ -41,6 +41,7 @@ export function ApiProperty(
     options.enumName = enumValues.enumName;
   }
 
+  !options.enumName && delete options.enumName;
   return createPropertyDecorator(DECORATORS.API_MODEL_PROPERTIES, options);
 }
 

@@ -103,4 +103,4 @@ export const isEnumDefined = <T extends Partial<Record<'enum', any>>>(
 ): obj is T => obj.enum;
 
 export const isEnumMetadata = (metadata: SchemaObjectMetadata) =>
-  metadata.enum || (metadata.isArray && metadata.items['enum']);
+  metadata.enum || (metadata.isArray && metadata.items?.['enum']);

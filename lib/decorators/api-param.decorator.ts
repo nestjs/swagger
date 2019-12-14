@@ -44,5 +44,7 @@ export function ApiParam(options: ApiParamOptions): MethodDecorator {
       param['enumName'] = enumValues.enumName;
     }
   }
+
+  !param['enumName'] && delete param['enumName'];
   return createParamDecorator(param, defaultParamOptions);
 }
