@@ -34,18 +34,20 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     hostFilename: string
   ): ts.MethodDeclaration {
-    const { pos, end } = compilerNode.decorators || ts.createNodeArray();
+    const nodeArray = compilerNode.decorators || ts.createNodeArray();
+    const node = ts.getMutableClone(compilerNode);
+    const { pos, end } = nodeArray;
 
-    compilerNode.decorators = Object.assign(
+    node.decorators = Object.assign(
       [
-        ...(compilerNode.decorators || ts.createNodeArray()),
+        ...nodeArray,
         ts.createDecorator(
           ts.createCall(
             ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiResponse.name}`),
             undefined,
             [
               this.createDecoratorObjectLiteralExpr(
-                compilerNode,
+                node,
                 typeChecker,
                 [],
                 hostFilename
@@ -56,7 +58,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       ],
       { pos, end }
     );
-    return compilerNode;
+    return node;
   }
 
   createDecoratorObjectLiteralExpr(

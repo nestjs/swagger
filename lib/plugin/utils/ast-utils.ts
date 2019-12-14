@@ -11,8 +11,7 @@ import {
   TypeFlags,
   TypeFormatFlags
 } from 'typescript';
-import { ApiResponse } from '../../decorators';
-import { OPENAPI_NAMESPACE } from '../plugin-constants';
+import { isDynamicallyAdded } from './plugin-utils';
 
 export function isArray(type: Type) {
   const symbol = type.getSymbol();
@@ -101,10 +100,7 @@ export function getDecoratorName(decorator: Decorator) {
     const callExpression = decorator.expression;
     const identifier = (callExpression as CallExpression)
       .expression as Identifier;
-    if (
-      identifier &&
-      identifier.escapedText === `${OPENAPI_NAMESPACE}.${ApiResponse.name}`
-    ) {
+    if (isDynamicallyAdded(identifier)) {
       return undefined;
     }
     return getIdentifierFromName(
