@@ -1,6 +1,10 @@
 import { isString } from 'lodash';
-import { SchemaObject } from '../interfaces/open-api-spec.interface';
+import {
+  BaseParameterObject,
+  SchemaObject
+} from '../interfaces/open-api-spec.interface';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
+import { ParamWithTypeMetadata } from '../services/parameter-metadata-accessor';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
 
 export function getEnumValues(
@@ -93,6 +97,18 @@ export function addEnumSchema(
   paramSchema.type = getEnumType(enumValues.values);
   paramDefinition.enumName = enumValues.enumName;
 }
+
+export const cleanUpParam = (
+  param: ParamWithTypeMetadata & BaseParameterObject
+) => {
+  if (param.isArray) {
+    delete param.isArray;
+    delete param['items'];
+  }
+
+  delete param.enumName;
+  delete param.enum;
+};
 
 export const isEnumArray = <T extends Partial<Record<'isArray' | 'enum', any>>>(
   obj: Record<string, any>

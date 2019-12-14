@@ -19,7 +19,7 @@ import {
 } from '../interfaces/open-api-spec.interface';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
 import { getSchemaPath } from '../utils';
-import { isEnumMetadata } from '../utils/enum.utils';
+import { cleanUpParam, isEnumMetadata } from '../utils/enum.utils';
 import { isBodyParameter } from '../utils/is-body-parameter.util';
 import { isBuiltInType } from '../utils/is-built-in-type.util';
 import { ModelPropertiesAccessor } from './model-properties-accessor';
@@ -207,20 +207,27 @@ export class SchemaObjectFactory {
 
     if (!includes(schemaRefsStack, enumName)) {
       schemaRefsStack.push(enumName);
+
+      const _enum = param.enum
+        ? param.enum
+        : param.schema['items']
+        ? param.schema['items']['enum']
+        : param.schema['enum'];
+
       schemas.push({
         [enumName]: {
           type: 'string',
-          enum: param.schema['items']
-            ? param.schema['items']['enum']
-            : param.schema['enum']
+          enum: _enum
         }
       });
     }
 
-    param.schema = param.schema['items']
-      ? { type: 'array', items: { $ref } }
-      : { $ref };
-    delete param.enumName;
+    param.schema =
+      param.isArray || param.schema?.['items']
+        ? { type: 'array', items: { $ref } }
+        : { $ref };
+
+    cleanUpParam(param);
     return param;
   }
 
