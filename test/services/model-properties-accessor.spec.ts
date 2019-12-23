@@ -11,6 +11,11 @@ describe('ModelPropertiesAccessor', () => {
     password: string;
   }
 
+  class UpdateUserDto extends CreateUserDto {
+    @ApiProperty()
+    password: string;
+  }
+
   let modelPropertiesAccessor: ModelPropertiesAccessor;
 
   beforeEach(() => {
@@ -22,6 +27,14 @@ describe('ModelPropertiesAccessor', () => {
       expect(
         modelPropertiesAccessor.getModelProperties(
           (CreateUserDto.prototype as any) as Type<any>
+        )
+      ).toEqual(['login', 'password']);
+    });
+
+    it('should not duplicate properties when the ApiProperty decorator is applied on base class and sub class', () => {
+      expect(
+        modelPropertiesAccessor.getModelProperties(
+          (UpdateUserDto.prototype as any) as Type<any>
         )
       ).toEqual(['login', 'password']);
     });

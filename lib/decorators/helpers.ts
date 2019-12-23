@@ -35,7 +35,7 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
       Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES_ARRAY, target) || [];
     Reflect.defineMetadata(
       DECORATORS.API_MODEL_PROPERTIES_ARRAY,
-      [...properties, `:${propertyKey}`],
+      [...new Set([...properties, `:${propertyKey}`])],
       target
     );
     Reflect.defineMetadata(
