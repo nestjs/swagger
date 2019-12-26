@@ -13,7 +13,7 @@ export class SwaggerTypesMapper {
       const { type } = param as ParamWithTypeMetadata;
       const typeName =
         type && isFunction(type)
-          ? this.mapTypeToOpenAPIType(type.name)
+          ? this.mapTypeToOpenAPIType(type().name)
           : this.mapTypeToOpenAPIType(type);
 
       const paramWithTypeMetadata = omitBy(
