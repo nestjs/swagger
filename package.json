@@ -24,7 +24,7 @@
     "@nestjs/common": "6.10.12",
     "@nestjs/core": "6.10.12",
     "@nestjs/platform-express": "6.10.12",
-    "@types/jest": "24.0.24",
+    "@types/jest": "24.0.25",
     "@types/lodash": "4.14.149",
     "@types/node": "11.15.0",
     "express": "4.17.1",
