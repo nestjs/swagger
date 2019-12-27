@@ -10,7 +10,7 @@ import {
 } from './fixtures/create-cat.dto';
 
 describe('API model properties', () => {
-  it('should add @ApiProperty() to all properties without this decorator', () => {
+  it('should add the metadata factory when no decorators exist', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.ESNext,
       target: ts.ScriptTarget.ESNext,
@@ -29,7 +29,7 @@ describe('API model properties', () => {
     expect(result.outputText).toEqual(createCatDtoTextTranspiled);
   });
 
-  it('should add @ApiProperty() to all properties (even without any decorator)', () => {
+  it('should add partial metadata factory when some decorators exist', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.ESNext,
       target: ts.ScriptTarget.ESNext,

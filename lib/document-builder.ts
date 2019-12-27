@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { isUndefined, negate, pickBy } from 'lodash';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
@@ -9,6 +10,7 @@ import {
 } from './interfaces/open-api-spec.interface';
 
 export class DocumentBuilder {
+  private readonly logger = new Logger(DocumentBuilder.name);
   private readonly document: Omit<OpenAPIObject, 'paths'> = buildDocumentBase();
 
   public setTitle(title: string): this {
@@ -55,19 +57,28 @@ export class DocumentBuilder {
     return this;
   }
 
+  public setBasePath(path: string) {
+    this.logger.warn(
+      'The "setBasePath" method has been deprecated. Now, a global prefix is populated automatically. If you want to ignore it, take a look here: https://docs.nestjs.com/recipes/swagger#global-prefix. Alternatively, you can use "addServer" method to set up multiple different paths.'
+    );
+    return this;
+  }
+
   public addTag(
     name: string,
     description: string = '',
     externalDocs?: ExternalDocumentationObject
   ): this {
-    this.document.tags = this.document.tags.concat(pickBy(
-      {
-        name,
-        description,
-        externalDocs
-      },
-      negate(isUndefined)
-    ) as TagObject);
+    this.document.tags = this.document.tags.concat(
+      pickBy(
+        {
+          name,
+          description,
+          externalDocs
+        },
+        negate(isUndefined)
+      ) as TagObject
+    );
     return this;
   }
 

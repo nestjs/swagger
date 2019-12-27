@@ -64,7 +64,7 @@ export function isPromiseOrObservable(type: string) {
 
 export function hasPropertyKey(
   key: string,
-  properties: ts.PropertyAssignment[]
+  properties: ts.NodeArray<ts.PropertyAssignment>
 ): boolean {
   return properties
     .filter(item => !isDynamicallyAdded(item))

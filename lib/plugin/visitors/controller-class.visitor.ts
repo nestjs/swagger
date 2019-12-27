@@ -49,7 +49,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
               this.createDecoratorObjectLiteralExpr(
                 node,
                 typeChecker,
-                [],
+                ts.createNodeArray(),
                 hostFilename
               )
             ]
@@ -64,7 +64,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   createDecoratorObjectLiteralExpr(
     node: ts.MethodDeclaration,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.PropertyAssignment[] = [],
+    existingProperties: ts.NodeArray<
+      ts.PropertyAssignment
+    > = ts.createNodeArray(),
     hostFilename: string
   ): ts.ObjectLiteralExpression {
     const properties = [
@@ -83,7 +85,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   createTypePropertyAssignment(
     node: ts.MethodDeclaration,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.PropertyAssignment[],
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string
   ) {
     if (hasPropertyKey('type', existingProperties)) {
@@ -107,7 +109,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
   createStatusPropertyAssignment(
     node: ts.MethodDeclaration,
-    existingProperties: ts.PropertyAssignment[]
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>
   ) {
     if (hasPropertyKey('status', existingProperties)) {
       return undefined;
