@@ -467,6 +467,27 @@
           }
         ]
       }
+    },
+    "/api/cats/site*": {
+      "get": {
+        "operationId": "getSite",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      }
     }
   }
 }
