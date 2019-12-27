@@ -1,3 +1,4 @@
+import { ApiProperty } from '../../lib/decorators';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
@@ -117,6 +118,34 @@ describe('SchemaObjectFactory', () => {
           }
         },
         required: ['firstname', 'lastname', 'parent']
+      });
+    });
+
+    it('should override base class metadata', () => {
+      class CreatUserDto {
+        @ApiProperty({ minLength: 0, required: true })
+        name: string;
+      }
+
+      class UpdateUserDto extends CreatUserDto {
+        @ApiProperty({ minLength: 1, required: false })
+        name: string;
+      }
+
+      const schemas = [];
+
+      schemaObjectFactory.exploreModelSchema(CreatUserDto, schemas);
+      schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+
+      expect(schemas[0][CreatUserDto.name]).toEqual({
+        type: 'object',
+        properties: { name: { type: 'string', minLength: 0 } },
+        required: ['name']
+      });
+
+      expect(schemas[1][UpdateUserDto.name]).toEqual({
+        type: 'object',
+        properties: { name: { type: 'string', minLength: 1 } }
       });
     });
   });
