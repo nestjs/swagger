@@ -32,6 +32,8 @@ export class ParametersMetadataMapper {
         return { ...param, name };
       }
       const { prototype } = param.type;
+
+      this.modelPropertiesAccessor.applyMetadataFactory(prototype);
       const modelProperties = this.modelPropertiesAccessor.getModelProperties(
         prototype
       );

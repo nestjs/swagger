@@ -104,7 +104,7 @@ export class SwaggerExplorer {
       path = this.validateRoutePath(modulePath + path);
     }
     if (globalPrefix) {
-      path = this.validateRoutePath(globalPrefix + path);
+      path = validatePath(globalPrefix) + path;
     }
 
     const self = this;

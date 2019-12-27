@@ -6,6 +6,7 @@ import {
   SwaggerDocumentOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
+import { validatePath } from './utils/validate-path.util';
 
 export class SwaggerModule {
   public static createDocument(
@@ -46,9 +47,6 @@ export class SwaggerModule {
     options?: SwaggerCustomOptions
   ) {
     const httpAdapter = app.getHttpAdapter();
-    const validatePath = (inputPath: string): string =>
-      inputPath.charAt(0) !== '/' ? '/' + inputPath : inputPath;
-
     const finalPath = validatePath(path);
     const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () =>
       require('swagger-ui-express')

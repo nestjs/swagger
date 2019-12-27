@@ -37,7 +37,6 @@ export function ApiProperty(
     options.enum = enumValues;
     options.type = getEnumType(enumValues);
   }
-
   return createPropertyDecorator(DECORATORS.API_MODEL_PROPERTIES, options);
 }
 

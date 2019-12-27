@@ -86,13 +86,14 @@ export class SchemaObjectFactory {
     if (!prototype) {
       return '';
     }
-    const extraModels = exploreGlobalApiExtraModelsMetadata(type as Type<
-      unknown
-    >);
+    const extraModels = exploreGlobalApiExtraModelsMetadata(
+      type as Type<unknown>
+    );
     extraModels.forEach(item =>
       this.exploreModelSchema(item, schemas, schemaRefsStack)
     );
 
+    this.modelPropertiesAccessor.applyMetadataFactory(prototype);
     const modelProperties = this.modelPropertiesAccessor.getModelProperties(
       prototype
     );

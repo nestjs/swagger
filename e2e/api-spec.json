@@ -211,7 +211,7 @@
     }
   ],
   "paths": {
-    "/cats": {
+    "/api/cats": {
       "post": {
         "operationId": "create",
         "summary": "Create cat",
@@ -332,7 +332,7 @@
         ]
       }
     },
-    "/cats/{id}": {
+    "/api/cats/{id}": {
       "get": {
         "operationId": "findOne",
         "parameters": [
@@ -370,7 +370,7 @@
         ]
       }
     },
-    "/cats/bulk": {
+    "/api/cats/bulk": {
       "get": {
         "operationId": "findAllBulk",
         "parameters": [],
@@ -425,7 +425,7 @@
         ]
       }
     },
-    "/cats/as-form-data": {
+    "/api/cats/as-form-data": {
       "post": {
         "operationId": "createAsFormData",
         "summary": "Create cat",

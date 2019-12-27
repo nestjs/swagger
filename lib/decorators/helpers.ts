@@ -33,20 +33,37 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
   return (target: object, propertyKey: string) => {
     const properties =
       Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES_ARRAY, target) || [];
-    Reflect.defineMetadata(
-      DECORATORS.API_MODEL_PROPERTIES_ARRAY,
-      [...properties, `:${propertyKey}`],
-      target
-    );
-    Reflect.defineMetadata(
-      metakey,
-      {
-        type: Reflect.getMetadata('design:type', target, propertyKey),
-        ...pickBy(metadata, negate(isUndefined))
-      },
-      target,
-      propertyKey
-    );
+
+    const key = `:${propertyKey}`;
+    if (!properties.includes(key)) {
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES_ARRAY,
+        [...properties, `:${propertyKey}`],
+        target
+      );
+    }
+    const existingMetadata = Reflect.getMetadata(metakey, target, propertyKey);
+    if (existingMetadata) {
+      Reflect.defineMetadata(
+        metakey,
+        {
+          ...pickBy(metadata, negate(isUndefined)),
+          existingMetadata
+        },
+        target,
+        propertyKey
+      );
+    } else {
+      Reflect.defineMetadata(
+        metakey,
+        {
+          type: Reflect.getMetadata('design:type', target, propertyKey),
+          ...pickBy(metadata, negate(isUndefined))
+        },
+        target,
+        propertyKey
+      );
+    }
   };
 }
 
