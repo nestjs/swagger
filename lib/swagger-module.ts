@@ -63,19 +63,21 @@ export class SwaggerModule {
     httpServer: any,
     document: OpenAPIObject
   ) {
-    httpServer.register(
-      loadPackage('fastify-swagger', 'SwaggerModule', () =>
-        require('fastify-swagger')
-      ),
-      {
-        swagger: document,
-        exposeRoute: true,
-        routePrefix: path,
-        mode: 'static',
-        specification: {
-          document
+    httpServer.register(async (httpServer: any) => {
+      httpServer.register(
+        loadPackage('fastify-swagger', 'SwaggerModule', () =>
+          require('fastify-swagger')
+        ),
+        {
+          swagger: document,
+          exposeRoute: true,
+          routePrefix: path,
+          mode: 'static',
+          specification: {
+            document
+          }
         }
-      }
-    );
+      );
+    });
   }
 }
