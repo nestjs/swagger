@@ -47,8 +47,8 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
       Reflect.defineMetadata(
         metakey,
         {
-          ...pickBy(metadata, negate(isUndefined)),
-          existingMetadata
+          ...existingMetadata,
+          ...pickBy(metadata, negate(isUndefined))
         },
         target,
         propertyKey
