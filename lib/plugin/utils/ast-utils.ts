@@ -4,6 +4,8 @@ import {
   Identifier,
   LeftHandSideExpression,
   Node,
+  ObjectFlags,
+  ObjectType,
   PropertyAccessExpression,
   SyntaxKind,
   Type,
@@ -37,6 +39,10 @@ export function isNumber(type: Type) {
   return hasFlag(type, TypeFlags.Number);
 }
 
+export function isInterface(type: Type) {
+  return hasObjectFlag(type, ObjectFlags.Interface);
+}
+
 export function isEnum(type: Type) {
   const hasEnumFlag = hasFlag(type, TypeFlags.Enum);
   if (hasEnumFlag) {
@@ -62,6 +68,10 @@ export function isEnumLiteral(type: Type) {
 
 export function hasFlag(type: Type, flag: TypeFlags) {
   return (type.flags & flag) === flag;
+}
+
+export function hasObjectFlag(type: Type, flag: ObjectFlags) {
+  return ((type as ObjectType).objectFlags & flag) === flag;
 }
 
 export function getText(

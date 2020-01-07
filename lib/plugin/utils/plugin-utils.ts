@@ -7,6 +7,8 @@ import {
   getTypeArguments,
   isArray,
   isBoolean,
+  isEnum,
+  isInterface,
   isNumber,
   isString
 } from './ast-utils';
@@ -55,7 +57,17 @@ export function getTypeReferenceAsString(
   if (type.isClass()) {
     return getText(type, typeChecker);
   }
-  return undefined;
+  try {
+    const text = getText(type, typeChecker);
+    const isBlacklisted =
+      isEnum(type) || isInterface(type) || type.isUnionOrIntersection();
+    if (isBlacklisted && text !== Date.name) {
+      return undefined;
+    }
+    return text;
+  } catch {
+    return undefined;
+  }
 }
 
 export function isPromiseOrObservable(type: string) {

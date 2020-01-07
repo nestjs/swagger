@@ -10,7 +10,7 @@ interface Node {
     id: number;
 }
 
-export class CreateCatDto {
+export class CreateCatDto2 {
   name: string;
   age: number = 3;
   tags: string[];
@@ -25,7 +25,7 @@ export const createCatDtoTextAltTranspiled = `var Status;
     Status[Status[\"ENABLED\"] = 0] = \"ENABLED\";
     Status[Status[\"DISABLED\"] = 1] = \"DISABLED\";
 })(Status || (Status = {}));
-export class CreateCatDto {
+export class CreateCatDto2 {
     constructor() {
         this.age = 3;
         this.status = Status.ENABLED;
