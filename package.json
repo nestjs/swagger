@@ -37,7 +37,7 @@
     "reflect-metadata": "0.1.13",
     "swagger-parser": "8.0.4",
     "swagger-ui-express": "4.1.2",
-    "ts-jest": "24.2.0",
+    "ts-jest": "24.3.0",
     "typescript": "3.7.4"
   },
   "peerDependencies": {
