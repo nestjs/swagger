@@ -47,7 +47,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           node,
           typeChecker,
           options,
-          sourceFile.fileName
+          sourceFile.fileName,
+          sourceFile
         );
         return node;
       }
@@ -92,7 +93,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     compilerNode: ts.PropertyDeclaration,
     typeChecker: ts.TypeChecker,
     options: PluginOptions,
-    hostFilename: string
+    hostFilename: string,
+    sourceFile
   ) {
     const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
       compilerNode,
@@ -101,7 +103,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       options,
       hostFilename
     );
-    this.addClassMetadata(compilerNode, objectLiteralExpr);
+    this.addClassMetadata(compilerNode, objectLiteralExpr, sourceFile);
   }
 
   createDecoratorObjectLiteralExpr(
@@ -291,7 +293,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
   addClassMetadata(
     node: ts.PropertyDeclaration,
-    objectLiteral: ts.ObjectLiteralExpression
+    objectLiteral: ts.ObjectLiteralExpression,
+    sourceFile
   ) {
     const hostClass = node.parent;
     const className = hostClass.name && hostClass.name.getText();
@@ -299,8 +302,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return;
     }
     const existingMetadata = metadataHostMap.get(className) || {};
-    const propertyName = node.name && node.name.getText();
-    if (!propertyName) {
+    const propertyName = node.name && node.name.getText(sourceFile);
+    if (
+      !propertyName ||
+      (node.name && node.name.kind === ts.SyntaxKind.ComputedPropertyName)
+    ) {
       return;
     }
     metadataHostMap.set(className, {
