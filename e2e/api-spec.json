@@ -80,6 +80,10 @@
               "type": "string"
             }
           },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
           "urls": {
             "type": "string"
           },
@@ -123,6 +127,7 @@
           "age",
           "_breed",
           "tags",
+          "createdAt",
           "urls",
           "options",
           "enum",

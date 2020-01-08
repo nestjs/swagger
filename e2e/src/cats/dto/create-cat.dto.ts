@@ -19,6 +19,9 @@ export class CreateCatDto {
   })
   readonly tags?: string[];
 
+  @ApiProperty()
+  createdAt: Date;
+
   @ApiProperty({
     type: 'string',
     isArray: true
