@@ -47,6 +47,10 @@ describe('SchemaObjectFactory', () => {
             format: 'int64',
             example: 10
           },
+          createdAt: {
+            format: 'date-time',
+            type: 'string'
+          },
           custom: {
             readOnly: true,
             type: 'array',
@@ -101,7 +105,8 @@ describe('SchemaObjectFactory', () => {
           'urls',
           'options',
           'allOf',
-          'houses'
+          'houses',
+          'createdAt'
         ]
       });
       expect(schemas[2]['CreateProfileDto']).toEqual({

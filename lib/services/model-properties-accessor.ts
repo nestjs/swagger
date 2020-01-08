@@ -2,7 +2,7 @@ import { Type } from '@nestjs/common';
 import { isFunction, isString } from '@nestjs/common/utils/shared.utils';
 import 'reflect-metadata';
 import { DECORATORS } from '../constants';
-import { ApiProperty } from '../decorators';
+import { createApiPropertyDecorator } from '../decorators/api-property.decorator';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 
 export class ModelPropertiesAccessor {
@@ -29,7 +29,7 @@ export class ModelPropertiesAccessor {
     const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
     const properties = Object.keys(metadata);
     properties.forEach(key => {
-      ApiProperty(metadata[key])(prototype, key);
+      createApiPropertyDecorator(metadata[key], false)(prototype, key);
     });
   }
 }

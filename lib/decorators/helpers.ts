@@ -28,7 +28,8 @@ export function createClassDecorator<T extends Array<any> = any>(
 
 export function createPropertyDecorator<T extends Record<string, any> = any>(
   metakey: string,
-  metadata: T
+  metadata: T,
+  overrideExisting = true
 ): PropertyDecorator {
   return (target: object, propertyKey: string) => {
     const properties =
@@ -44,15 +45,18 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
     }
     const existingMetadata = Reflect.getMetadata(metakey, target, propertyKey);
     if (existingMetadata) {
-      Reflect.defineMetadata(
-        metakey,
-        {
-          ...existingMetadata,
-          ...pickBy(metadata, negate(isUndefined))
-        },
-        target,
-        propertyKey
-      );
+      const newMetadata = pickBy(metadata, negate(isUndefined));
+      const metadataToSave = overrideExisting
+        ? {
+            ...existingMetadata,
+            ...newMetadata
+          }
+        : {
+            ...newMetadata,
+            ...existingMetadata
+          };
+
+      Reflect.defineMetadata(metakey, metadataToSave, target, propertyKey);
     } else {
       Reflect.defineMetadata(
         metakey,

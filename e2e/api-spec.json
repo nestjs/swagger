@@ -155,6 +155,10 @@
               "type": "string"
             }
           },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
           "urls": {
             "type": "array",
             "items": {
@@ -197,6 +201,7 @@
           "age",
           "breed",
           "_tags",
+          "createdAt",
           "urls",
           "_options",
           "enum",

@@ -21,6 +21,7 @@ import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.inter
 import { getSchemaPath } from '../utils';
 import { isBodyParameter } from '../utils/is-body-parameter.util';
 import { isBuiltInType } from '../utils/is-built-in-type.util';
+import { isDateCtor } from '../utils/is-date-ctor.util';
 import { ModelPropertiesAccessor } from './model-properties-accessor';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 import { SwaggerTypesMapper } from './swagger-types-mapper';
@@ -149,6 +150,20 @@ export class SchemaObjectFactory {
     if (isString(metadata.type)) {
       return {
         ...metadata,
+        name: metadata.name || key
+      };
+    }
+    if (isDateCtor(metadata.type as Function)) {
+      if (metadata.isArray) {
+        return this.transformToArraySchemaProperty(metadata, key, {
+          format: metadata.format || 'date-time',
+          type: 'string'
+        });
+      }
+      return {
+        format: 'date-time',
+        ...metadata,
+        type: 'string',
         name: metadata.name || key
       };
     }
