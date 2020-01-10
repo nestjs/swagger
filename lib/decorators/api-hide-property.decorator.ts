@@ -1,7 +1,3 @@
-export function ApiHideProperty() {
-  return (
-    target: Object,
-    propertyKey: string | symbol,
-    parameterIndex: number
-  ) => {};
+export function ApiHideProperty(): PropertyDecorator {
+  return (target: Object, propertyKey: string | symbol) => {};
 }
