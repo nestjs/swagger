@@ -1,5 +1,5 @@
-export function ApiHideProperty(): PropertyDecorator {
-  return () => (
+export function ApiHideProperty() {
+  return (
     target: Object,
     propertyKey: string | symbol,
     parameterIndex: number
