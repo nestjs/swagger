@@ -28,6 +28,8 @@ export class CreateCatDto {
 
   @ApiHideProperty()
   hidden: number;
+
+  static staticProperty: string;
 }
 `;
 

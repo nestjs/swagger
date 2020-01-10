@@ -43,6 +43,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         if (hidePropertyDecorator) {
           return node;
         }
+        const isPropertyStatic = (node.modifiers || []).some(
+          modifier => modifier.kind === ts.SyntaxKind.StaticKeyword
+        );
+        if (isPropertyStatic) {
+          return node;
+        }
         this.inspectPropertyDeclaration(
           node,
           typeChecker,
