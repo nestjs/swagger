@@ -80,7 +80,7 @@ describe('SwaggerExplorer', () => {
       expect(routes.length).toEqual(2);
 
       // POST
-      expect(routes[0].root.operationId).toEqual('create');
+      expect(routes[0].root.operationId).toEqual('FooController_create');
       expect(routes[0].root.method).toEqual('post');
       expect(routes[0].root.path).toEqual('/path/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
@@ -141,7 +141,7 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.operationId).toEqual('find');
+      expect(routes[1].root.operationId).toEqual('FooController_find');
       expect(routes[1].root.method).toEqual('get');
       expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
       expect(routes[1].root.summary).toEqual('List all Foos');
@@ -227,7 +227,7 @@ describe('SwaggerExplorer', () => {
       expect(routes.length).toEqual(2);
 
       // POST
-      expect(routes[0].root.operationId).toEqual('create');
+      expect(routes[0].root.operationId).toEqual('FooController_create');
       expect(routes[0].root.method).toEqual('post');
       expect(routes[0].root.path).toEqual('/path/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
@@ -260,7 +260,7 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.operationId).toEqual('find');
+      expect(routes[1].root.operationId).toEqual('FooController_find');
       expect(routes[1].root.method).toEqual('get');
       expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
       expect(routes[1].root.summary).toEqual('List all Foos');
@@ -355,7 +355,7 @@ describe('SwaggerExplorer', () => {
       expect(routes.length).toEqual(2);
 
       // POST
-      expect(routes[0].root.operationId).toEqual('create');
+      expect(routes[0].root.operationId).toEqual('FooController_create');
       expect(routes[0].root.method).toEqual('post');
       expect(routes[0].root.path).toEqual('/path/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
@@ -385,7 +385,7 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.operationId).toEqual('find');
+      expect(routes[1].root.operationId).toEqual('FooController_find');
       expect(routes[1].root.method).toEqual('get');
       expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
       expect(routes[1].root.summary).toEqual('List all Foos');
@@ -438,7 +438,7 @@ describe('SwaggerExplorer', () => {
       @ApiBody({ type: CreateFoo })
       @ApiOperation({
         summary: 'Create foo',
-        operationId: 'FooController_create',
+        operationId: 'FooController_create2',
         description: 'Allows creating Foo item',
         tags: ['foo']
       })
@@ -464,7 +464,7 @@ describe('SwaggerExplorer', () => {
       @ApiQuery({ name: 'page', type: String })
       @ApiOperation({
         summary: 'List all Foos',
-        operationId: 'FooController_find'
+        operationId: 'FooController_find2'
       })
       @ApiBody({
         schema: {
@@ -496,7 +496,7 @@ describe('SwaggerExplorer', () => {
       // POST
       expect(routes[0].root.description).toEqual('Allows creating Foo item');
       expect(routes[0].root.tags).toEqual(['foo']);
-      expect(routes[0].root.operationId).toEqual('FooController_create');
+      expect(routes[0].root.operationId).toEqual('FooController_create2');
       expect(routes[0].root.parameters.length).toEqual(0);
       expect(routes[0].root.requestBody).toEqual({
         required: true,
@@ -527,7 +527,7 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.operationId).toEqual('FooController_find');
+      expect(routes[1].root.operationId).toEqual('FooController_find2');
       expect(routes[1].root.parameters.length).toEqual(2);
       expect(routes[1].root.parameters).toEqual([
         {
