@@ -670,6 +670,11 @@ describe('SwaggerExplorer', () => {
       find(): Promise<Foo[]> {
         return Promise.resolve([]);
       }
+
+      @Post('foos')
+      create(): Promise<any> {
+        return Promise.resolve();
+      }
     }
     it('should properly define headers', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
@@ -693,6 +698,16 @@ describe('SwaggerExplorer', () => {
         {
           description: 'calls per hour allowed by the user',
           name: 'X-Rate-Limit',
+          in: 'header',
+          schema: {
+            type: 'string'
+          }
+        }
+      ]);
+      expect(routes[1].root.parameters).toEqual([
+        {
+          description: 'auth token',
+          name: 'Authorization',
           in: 'header',
           schema: {
             type: 'string'

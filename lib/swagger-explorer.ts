@@ -231,6 +231,9 @@ export class SwaggerExplorer {
     globalMetadata: Record<string, any>,
     methodMetadata: Record<string, any>
   ): Record<string, any> {
+    if (!methodMetadata.root.parameters) {
+      methodMetadata.root.parameters = [];
+    }
     return mapValues(methodMetadata, (value, key) => {
       if (!globalMetadata[key]) {
         return value;
