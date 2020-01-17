@@ -7,6 +7,7 @@ import {
   getTypeArguments,
   isArray,
   isBoolean,
+  isInterface,
   isNumber,
   isString
 } from './ast-utils';
@@ -28,7 +29,7 @@ export function getTypeReferenceAsString(
     const arrayType = getTypeArguments(type)[0];
     const elementType = getTypeReferenceAsString(arrayType, typeChecker);
     if (!elementType) {
-      return undefined;
+      return `undefined`;
     }
     return `[${elementType}]`;
   }
@@ -57,7 +58,18 @@ export function getTypeReferenceAsString(
   }
   try {
     const text = getText(type, typeChecker);
-    return text === Date.name ? text : undefined;
+    if (text === Date.name) {
+      return text;
+    }
+    if (
+      text === 'any' ||
+      text === 'unknown' ||
+      text === 'object' ||
+      isInterface(type)
+    ) {
+      return 'Object';
+    }
+    return undefined;
   } catch {
     return undefined;
   }
