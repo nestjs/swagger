@@ -25,12 +25,12 @@
     "@nestjs/core": "6.10.14",
     "@nestjs/platform-express": "6.10.14",
     "@nestjs/platform-fastify": "6.10.14",
-    "@types/jest": "24.0.25",
+    "@types/jest": "24.9.0",
     "@types/lodash": "4.14.149",
     "@types/node": "11.15.0",
     "express": "4.17.1",
     "fastify-swagger": "2.5.0",
-    "husky": "4.0.7",
+    "husky": "4.0.10",
     "jest": "24.9.0",
     "lint-staged": "9.5.0",
     "prettier": "1.19.1",
@@ -38,7 +38,7 @@
     "swagger-parser": "8.0.4",
     "swagger-ui-express": "4.1.2",
     "ts-jest": "24.3.0",
-    "typescript": "3.7.4"
+    "typescript": "3.7.5"
   },
   "peerDependencies": {
     "@nestjs/common": "^6.8.0",
