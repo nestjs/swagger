@@ -205,8 +205,15 @@ export class SwaggerExplorer {
     return {
       method: RequestMethod[requestMethod].toLowerCase(),
       path: fullPath === '' ? '/' : fullPath,
-      operationId: method.name
+      operationId: this.getOperationId(instance, method)
     };
+  }
+
+  private getOperationId(instance: object, method: Function): string {
+    if (instance.constructor) {
+      return `${instance.constructor.name}_${method.name}`;
+    }
+    return method.name;
   }
 
   private reflectControllerPath(metatype: Type<unknown>): string {
