@@ -32,7 +32,7 @@
     "fastify-swagger": "2.5.0",
     "husky": "4.0.10",
     "jest": "24.9.0",
-    "lint-staged": "9.5.0",
+    "lint-staged": "10.0.0",
     "prettier": "1.19.1",
     "reflect-metadata": "0.1.13",
     "swagger-parser": "8.0.4",
