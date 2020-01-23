@@ -25,7 +25,9 @@ export interface ApiResponseSchemaHost
 
 export type ApiResponseOptions = ApiResponseMetadata | ApiResponseSchemaHost;
 
-export function ApiResponse(options: ApiResponseOptions): any {
+export function ApiResponse(
+  options: ApiResponseOptions
+): MethodDecorator & ClassDecorator {
   const [type, isArray] = getTypeIsArrayTuple(
     (options as ApiResponseMetadata).type,
     (options as ApiResponseMetadata).isArray

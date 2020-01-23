@@ -74,7 +74,7 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
 export function createMixedDecorator<T = any>(
   metakey: string,
   metadata: T
-): any {
+): MethodDecorator & ClassDecorator {
   return (
     target: object,
     key?: string | symbol,
