@@ -82,7 +82,6 @@ export class SchemaObjectFactory {
     if (this.isLazyTypeFunc(type as Function)) {
       type = (type as Function)();
     }
-
     const { prototype } = type;
     if (!prototype) {
       return '';
@@ -134,17 +133,27 @@ export class SchemaObjectFactory {
     key: string,
     prototype: Type<unknown>,
     schemas: SchemaObject[],
-    schemaRefsStack: string[] = []
+    schemaRefsStack: string[] = [],
+    metadata?: SchemaObjectMetadata
   ): SchemaObjectMetadata | ReferenceObject {
-    const metadata: SchemaObjectMetadata =
-      Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
-      {};
-
+    if (!metadata) {
+      metadata =
+        Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
+        {};
+    }
     if (this.isLazyTypeFunc(metadata.type as Function)) {
       metadata.type = (metadata.type as Function)();
       [metadata.type, metadata.isArray] = getTypeIsArrayTuple(
-        metadata.type,
+        metadata.type as Function,
         metadata.isArray
+      );
+    }
+    if (this.isObjectLiteral(metadata.type as Record<string, any>)) {
+      return this.createFromObjectLiteral(
+        key,
+        metadata.type as Record<string, any>,
+        schemas,
+        schemaRefsStack
       );
     }
     if (isString(metadata.type)) {
@@ -262,6 +271,33 @@ export class SchemaObjectFactory {
     };
   }
 
+  createFromObjectLiteral(
+    key: string,
+    literalObj: Record<string, any>,
+    schemas: SchemaObject[],
+    schemaRefsStack: string[] = []
+  ) {
+    const objLiteralKeys = Object.keys(literalObj);
+    const properties = {};
+    objLiteralKeys.forEach(key => {
+      const propertyMetadata = this.mergePropertyWithMetadata(
+        key,
+        Object,
+        schemas,
+        schemaRefsStack,
+        literalObj[key]
+      );
+      const keysToRemove = ['isArray', 'name'];
+      const validMetadataObject = omit(propertyMetadata, keysToRemove);
+      properties[key] = validMetadataObject;
+    });
+    return {
+      name: key,
+      type: 'object',
+      properties
+    };
+  }
+
   private isArrayCtor(type: Type<unknown> | string): boolean {
     return type === Array;
   }
@@ -280,5 +316,25 @@ export class SchemaObjectFactory {
 
   private getTypeName(type: Type<unknown> | string): string {
     return type && isFunction(type) ? type.name : (type as string);
+  }
+
+  private isObjectLiteral(obj: Record<string, any> | undefined) {
+    if (typeof obj !== 'object' || !obj) {
+      return false;
+    }
+    const hasOwnProp = Object.prototype.hasOwnProperty;
+    let objPrototype = obj;
+    while (
+      Object.getPrototypeOf(
+        (objPrototype = Object.getPrototypeOf(objPrototype))
+      ) !== null
+    );
+
+    for (const prop in obj) {
+      if (!hasOwnProp.call(obj, prop) && !hasOwnProp.call(objPrototype, prop)) {
+        return false;
+      }
+    }
+    return Object.getPrototypeOf(obj) === objPrototype;
   }
 }

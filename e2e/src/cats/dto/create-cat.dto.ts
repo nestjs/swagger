@@ -54,4 +54,9 @@ export class CreateCatDto {
 
   @ApiProperty({ description: 'tag' })
   readonly tag: TagDto;
+
+  nested: {
+    first: string;
+    second: number;
+  };
 }

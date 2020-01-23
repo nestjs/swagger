@@ -100,7 +100,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     options: PluginOptions,
     hostFilename: string,
-    sourceFile
+    sourceFile: ts.SourceFile
   ) {
     const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
       compilerNode,
@@ -113,7 +113,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createDecoratorObjectLiteralExpr(
-    node: ts.PropertyDeclaration,
+    node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<
       ts.PropertyAssignment
@@ -151,7 +151,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createTypePropertyAssignment(
-    node: ts.PropertyDeclaration,
+    node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string
@@ -163,6 +163,34 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const type = typeChecker.getTypeAtLocation(node);
     if (!type) {
       return undefined;
+    }
+    if (ts.isTypeLiteralNode(node.type)) {
+      const propertyAssignments = Array.from(node.type.members || []).map(
+        member => {
+          const literalExpr = this.createDecoratorObjectLiteralExpr(
+            member as ts.PropertySignature,
+            typeChecker,
+            existingProperties,
+            {},
+            hostFilename
+          );
+          return ts.createPropertyAssignment(
+            ts.createIdentifier(member.name.getText()),
+            literalExpr
+          );
+        }
+      );
+      return ts.createPropertyAssignment(
+        key,
+        ts.createArrowFunction(
+          undefined,
+          undefined,
+          [],
+          undefined,
+          undefined,
+          ts.createParen(ts.createObjectLiteral(propertyAssignments))
+        )
+      );
     }
     let typeReference = getTypeReferenceAsString(type, typeChecker);
     if (!typeReference) {
@@ -183,7 +211,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createEnumPropertyAssignment(
-    node: ts.PropertyDeclaration,
+    node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string
@@ -224,7 +252,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createDefaultPropertyAssignment(
-    node: ts.PropertyDeclaration,
+    node: ts.PropertyDeclaration | ts.PropertySignature,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>
   ) {
     const key = 'default';
@@ -242,7 +270,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createValidationPropertyAssignments(
-    node: ts.PropertyDeclaration
+    node: ts.PropertyDeclaration | ts.PropertySignature
   ): ts.PropertyAssignment[] {
     const assignments = [];
     const decorators = node.decorators;
@@ -300,7 +328,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   addClassMetadata(
     node: ts.PropertyDeclaration,
     objectLiteral: ts.ObjectLiteralExpression,
-    sourceFile
+    sourceFile: ts.SourceFile
   ) {
     const hostClass = node.parent;
     const className = hostClass.name && hostClass.name.getText();

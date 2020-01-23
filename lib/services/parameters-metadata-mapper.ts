@@ -22,7 +22,7 @@ export class ParametersMetadataMapper {
         return undefined;
       }
       if (param.name) {
-        // "name" is equal to "data" passed to the decorator
+        // when "name" is present, the "data" argument was passed to the decorator
         // e.g. `@Query('param')
         return param;
       }
