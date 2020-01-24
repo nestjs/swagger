@@ -21,10 +21,10 @@
     "path-to-regexp": "3.2.0"
   },
   "devDependencies": {
-    "@nestjs/common": "6.10.14",
-    "@nestjs/core": "6.10.14",
-    "@nestjs/platform-express": "6.10.14",
-    "@nestjs/platform-fastify": "6.10.14",
+    "@nestjs/common": "6.11.0",
+    "@nestjs/core": "6.11.0",
+    "@nestjs/platform-express": "6.11.0",
+    "@nestjs/platform-fastify": "6.11.0",
     "@types/jest": "24.9.1",
     "@types/lodash": "4.14.149",
     "@types/node": "11.15.0",
