@@ -19,7 +19,10 @@ export class CreateCatDto2 {
   nodes: Node[];
   nested: {
       first: string,
-      second: number
+      second: number,
+      status: Status,
+      tags: string[],
+      nodes: Node[]
   }
 }
 `;
@@ -35,7 +38,7 @@ export class CreateCatDto2 {
         this.status = Status.ENABLED;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, nested: { required: true, type: () => ({ first: { required: true, type: () => String }, second: { required: true, type: () => Number } }) } };
+        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, nested: { required: true, type: () => ({ first: { required: true, type: () => String }, second: { required: true, type: () => Number }, status: { required: true, enum: Status }, tags: { required: true, type: () => [String] }, nodes: { required: true, type: () => [Object] } }) } };
     }
 }
 `;

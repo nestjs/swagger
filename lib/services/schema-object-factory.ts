@@ -19,6 +19,7 @@ import {
 } from '../interfaces/open-api-spec.interface';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
 import { getSchemaPath } from '../utils';
+import { getEnumType, getEnumValues, isEnumArray } from '../utils/enum.utils';
 import { isBodyParameter } from '../utils/is-body-parameter.util';
 import { isBuiltInType } from '../utils/is-built-in-type.util';
 import { isDateCtor } from '../utils/is-date-ctor.util';
@@ -280,12 +281,28 @@ export class SchemaObjectFactory {
     const objLiteralKeys = Object.keys(literalObj);
     const properties = {};
     objLiteralKeys.forEach(key => {
+      const propertyCompilerMetadata = literalObj[key];
+      if (isEnumArray<Record<string, any>>(propertyCompilerMetadata)) {
+        propertyCompilerMetadata.type = 'array';
+
+        const enumValues = getEnumValues(propertyCompilerMetadata.enum);
+        propertyCompilerMetadata.items = {
+          type: getEnumType(enumValues),
+          enum: enumValues
+        };
+        delete propertyCompilerMetadata.enum;
+      } else if (propertyCompilerMetadata.enum) {
+        const enumValues = getEnumValues(propertyCompilerMetadata.enum);
+
+        propertyCompilerMetadata.enum = enumValues;
+        propertyCompilerMetadata.type = getEnumType(enumValues);
+      }
       const propertyMetadata = this.mergePropertyWithMetadata(
         key,
         Object,
         schemas,
         schemaRefsStack,
-        literalObj[key]
+        propertyCompilerMetadata
       );
       const keysToRemove = ['isArray', 'name'];
       const validMetadataObject = omit(propertyMetadata, keysToRemove);
