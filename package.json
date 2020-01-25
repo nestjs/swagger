@@ -15,6 +15,7 @@
     "test": "jest --config jest.json",
     "test:dev": "jest --config jest.json --watch",
     "test:e2e": "jest --config e2e/jest-e2e.json",
+    "prerelease": "npm run build",
     "release": "release-it"
   },
   "dependencies": {
@@ -22,6 +23,8 @@
     "path-to-regexp": "3.2.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^8.3.5",
+    "@commitlint/config-angular": "^8.3.4",
     "@nestjs/common": "6.11.1",
     "@nestjs/core": "6.11.1",
     "@nestjs/platform-express": "6.11.1",
@@ -55,7 +58,8 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "lint-staged",
+      "commit-msg": "commitlint -c .commitlintrc.json -E HUSKY_GIT_PARAMS"
     }
   }
 }
