@@ -164,7 +164,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (!type) {
       return undefined;
     }
-    if (ts.isTypeLiteralNode(node.type)) {
+    if (node.type && ts.isTypeLiteralNode(node.type)) {
       const propertyAssignments = Array.from(node.type.members || []).map(
         member => {
           const literalExpr = this.createDecoratorObjectLiteralExpr(
