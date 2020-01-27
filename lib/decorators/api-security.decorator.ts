@@ -12,7 +12,7 @@ export function ApiSecurity(
     target: object,
     key?: string | symbol,
     descriptor?: TypedPropertyDescriptor<any>
-  ) => {
+  ): any => {
     if (descriptor) {
       metadata = extendMetadata(
         metadata,
@@ -24,7 +24,7 @@ export function ApiSecurity(
         metadata,
         descriptor.value
       );
-      return descriptor.value;
+      return descriptor;
     }
     metadata = extendMetadata(metadata, DECORATORS.API_SECURITY, target);
     Reflect.defineMetadata(DECORATORS.API_SECURITY, metadata, target);
