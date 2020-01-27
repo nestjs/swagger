@@ -19,9 +19,10 @@ import {
 } from '../interfaces/open-api-spec.interface';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
 import { getSchemaPath } from '../utils';
-import { isEnumMetadata } from '../utils/enum.utils';
+import { getEnumType, getEnumValues, isEnumArray } from '../utils/enum.utils';
 import { isBodyParameter } from '../utils/is-body-parameter.util';
 import { isBuiltInType } from '../utils/is-built-in-type.util';
+import { isDateCtor } from '../utils/is-date-ctor.util';
 import { ModelPropertiesAccessor } from './model-properties-accessor';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 import { SwaggerTypesMapper } from './swagger-types-mapper';
@@ -90,7 +91,6 @@ export class SchemaObjectFactory {
     if (this.isLazyTypeFunc(type as Function)) {
       type = (type as Function)();
     }
-
     const { prototype } = type;
     if (!prototype) {
       return '';
@@ -102,6 +102,7 @@ export class SchemaObjectFactory {
       this.exploreModelSchema(item, schemas, schemaRefsStack)
     );
 
+    this.modelPropertiesAccessor.applyMetadataFactory(prototype);
     const modelProperties = this.modelPropertiesAccessor.getModelProperties(
       prototype
     );
@@ -142,17 +143,27 @@ export class SchemaObjectFactory {
     key: string,
     prototype: Type<unknown>,
     schemas: SchemaObject[],
-    schemaRefsStack: string[] = []
+    schemaRefsStack: string[] = [],
+    metadata?: SchemaObjectMetadata
   ): SchemaObjectMetadata | ReferenceObject {
-    const metadata: SchemaObjectMetadata =
-      Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
-      {};
-
+    if (!metadata) {
+      metadata =
+        Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
+        {};
+    }
     if (this.isLazyTypeFunc(metadata.type as Function)) {
       metadata.type = (metadata.type as Function)();
       [metadata.type, metadata.isArray] = getTypeIsArrayTuple(
-        metadata.type,
+        metadata.type as Function,
         metadata.isArray
+      );
+    }
+    if (this.isObjectLiteral(metadata.type as Record<string, any>)) {
+      return this.createFromObjectLiteral(
+        key,
+        metadata.type as Record<string, any>,
+        schemas,
+        schemaRefsStack
       );
     }
     if (isString(metadata.type)) {
@@ -167,6 +178,20 @@ export class SchemaObjectFactory {
 
       return {
         ...metadata,
+        name: metadata.name || key
+      };
+    }
+    if (isDateCtor(metadata.type as Function)) {
+      if (metadata.isArray) {
+        return this.transformToArraySchemaProperty(metadata, key, {
+          format: metadata.format || 'date-time',
+          type: 'string'
+        });
+      }
+      return {
+        format: 'date-time',
+        ...metadata,
+        type: 'string',
         name: metadata.name || key
       };
     }
@@ -336,6 +361,49 @@ export class SchemaObjectFactory {
     };
   }
 
+  createFromObjectLiteral(
+    key: string,
+    literalObj: Record<string, any>,
+    schemas: SchemaObject[],
+    schemaRefsStack: string[] = []
+  ) {
+    const objLiteralKeys = Object.keys(literalObj);
+    const properties = {};
+    objLiteralKeys.forEach(key => {
+      const propertyCompilerMetadata = literalObj[key];
+      if (isEnumArray<Record<string, any>>(propertyCompilerMetadata)) {
+        propertyCompilerMetadata.type = 'array';
+
+        const enumValues = getEnumValues(propertyCompilerMetadata.enum);
+        propertyCompilerMetadata.items = {
+          type: getEnumType(enumValues),
+          enum: enumValues
+        };
+        delete propertyCompilerMetadata.enum;
+      } else if (propertyCompilerMetadata.enum) {
+        const enumValues = getEnumValues(propertyCompilerMetadata.enum);
+
+        propertyCompilerMetadata.enum = enumValues;
+        propertyCompilerMetadata.type = getEnumType(enumValues);
+      }
+      const propertyMetadata = this.mergePropertyWithMetadata(
+        key,
+        Object,
+        schemas,
+        schemaRefsStack,
+        propertyCompilerMetadata
+      );
+      const keysToRemove = ['isArray', 'name'];
+      const validMetadataObject = omit(propertyMetadata, keysToRemove);
+      properties[key] = validMetadataObject;
+    });
+    return {
+      name: key,
+      type: 'object',
+      properties
+    };
+  }
+
   private isArrayCtor(type: Type<unknown> | string): boolean {
     return type === Array;
   }
@@ -354,5 +422,25 @@ export class SchemaObjectFactory {
 
   private getTypeName(type: Type<unknown> | string): string {
     return type && isFunction(type) ? type.name : (type as string);
+  }
+
+  private isObjectLiteral(obj: Record<string, any> | undefined) {
+    if (typeof obj !== 'object' || !obj) {
+      return false;
+    }
+    const hasOwnProp = Object.prototype.hasOwnProperty;
+    let objPrototype = obj;
+    while (
+      Object.getPrototypeOf(
+        (objPrototype = Object.getPrototypeOf(objPrototype))
+      ) !== null
+    );
+
+    for (const prop in obj) {
+      if (!hasOwnProp.call(obj, prop) && !hasOwnProp.call(objPrototype, prop)) {
+        return false;
+      }
+    }
+    return Object.getPrototypeOf(obj) === objPrototype;
   }
 }

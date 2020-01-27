@@ -20,6 +20,9 @@ export class Cat {
   })
   tags?: string[];
 
+  @ApiProperty()
+  createdAt: Date;
+
   @ApiProperty({
     type: String,
     isArray: true

@@ -12,11 +12,13 @@ describe('Validate OpenAPI schema', () => {
     const app = await NestFactory.create(ApplicationModule, {
       logger: false
     });
+    app.setGlobalPrefix('api/');
 
     const options = new DocumentBuilder()
       .setTitle('Cats example')
       .setDescription('The cats API description')
       .setVersion('1.0')
+      .setBasePath('api')
       .addTag('cats')
       .addBasicAuth()
       .addBearerAuth()

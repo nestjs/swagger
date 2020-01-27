@@ -74,4 +74,7 @@ export class CreateUserDto {
 
   @ApiProperty({ type: [House] })
   houses: House[];
+
+  @ApiProperty()
+  createdAt: Date;
 }

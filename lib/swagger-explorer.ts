@@ -109,7 +109,7 @@ export class SwaggerExplorer {
       path = this.validateRoutePath(modulePath + path);
     }
     if (globalPrefix) {
-      path = this.validateRoutePath(globalPrefix + path);
+      path = validatePath(globalPrefix) + path;
     }
 
     const self = this;
@@ -210,8 +210,15 @@ export class SwaggerExplorer {
     return {
       method: RequestMethod[requestMethod].toLowerCase(),
       path: fullPath === '' ? '/' : fullPath,
-      operationId: method.name
+      operationId: this.getOperationId(instance, method)
     };
+  }
+
+  private getOperationId(instance: object, method: Function): string {
+    if (instance.constructor) {
+      return `${instance.constructor.name}_${method.name}`;
+    }
+    return method.name;
   }
 
   private reflectControllerPath(metatype: Type<unknown>): string {
@@ -236,6 +243,9 @@ export class SwaggerExplorer {
     globalMetadata: Record<string, any>,
     methodMetadata: Record<string, any>
   ): Record<string, any> {
+    if (methodMetadata.root && !methodMetadata.root.parameters) {
+      methodMetadata.root.parameters = [];
+    }
     return mapValues(methodMetadata, (value, key) => {
       if (!globalMetadata[key]) {
         return value;

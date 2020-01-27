@@ -1,12 +1,8 @@
 import { compact, flatten, head } from 'lodash';
 import * as ts from 'typescript';
-import {
-  ApiHideProperty,
-  ApiProperty,
-  ApiPropertyOptional
-} from '../../decorators';
+import { ApiHideProperty } from '../../decorators';
 import { PluginOptions } from '../merge-options';
-import { OPENAPI_NAMESPACE } from '../plugin-constants';
+import { METADATA_FACTORY_NAME } from '../plugin-constants';
 import {
   getDecoratorArguments,
   getText,
@@ -22,6 +18,8 @@ import {
 } from '../utils/plugin-utils';
 import { AbstractFileVisitor } from './abstract.visitor';
 
+const metadataHostMap = new Map();
+
 export class ModelClassVisitor extends AbstractFileVisitor {
   visit(
     sourceFile: ts.SourceFile,
@@ -33,7 +31,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     sourceFile = this.updateImports(sourceFile);
 
     const visitNode = (node: ts.Node): ts.Node => {
-      if (ts.isPropertyDeclaration(node)) {
+      if (ts.isClassDeclaration(node)) {
+        node = ts.visitEachChild(node, visitNode, ctx);
+        return this.addMetadataFactory(node as ts.ClassDeclaration);
+      } else if (ts.isPropertyDeclaration(node)) {
         const decorators = node.decorators;
         const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
           [ApiHideProperty.name],
@@ -42,122 +43,81 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         if (hidePropertyDecorator) {
           return node;
         }
-        const propertyDecorator = getDecoratorOrUndefinedByNames(
-          [ApiProperty.name, ApiPropertyOptional.name],
-          decorators
+        const isPropertyStatic = (node.modifiers || []).some(
+          modifier => modifier.kind === ts.SyntaxKind.StaticKeyword
         );
-
-        if (!propertyDecorator) {
-          return this.addDecoratorToNode(
-            node,
-            typeChecker,
-            options,
-            sourceFile.fileName
-          );
+        if (isPropertyStatic) {
+          return node;
         }
-        return this.addPropertiesToExisitingDecorator(
-          propertyDecorator,
+        this.inspectPropertyDeclaration(
           node,
           typeChecker,
           options,
-          sourceFile.fileName
+          sourceFile.fileName,
+          sourceFile
         );
+        return node;
       }
       return ts.visitEachChild(node, visitNode, ctx);
     };
     return ts.visitNode(sourceFile, visitNode);
   }
 
-  addDecoratorToNode(
+  addMetadataFactory(node: ts.ClassDeclaration) {
+    const classMetadata = this.getClassMetadata(node as ts.ClassDeclaration);
+    if (!classMetadata) {
+      return node;
+    }
+    const classMutableNode = ts.getMutableClone(node);
+    const returnValue = ts.createObjectLiteral(
+      Object.keys(classMetadata).map(key =>
+        ts.createPropertyAssignment(
+          ts.createIdentifier(key),
+          classMetadata[key]
+        )
+      )
+    );
+    const method = ts.createMethod(
+      undefined,
+      [ts.createModifier(ts.SyntaxKind.StaticKeyword)],
+      undefined,
+      ts.createIdentifier(METADATA_FACTORY_NAME),
+      undefined,
+      undefined,
+      [],
+      undefined,
+      ts.createBlock([ts.createReturn(returnValue)], true)
+    );
+    (classMutableNode as ts.ClassDeclaration).members = ts.createNodeArray([
+      ...(classMutableNode as ts.ClassDeclaration).members,
+      method
+    ]);
+    return classMutableNode;
+  }
+
+  inspectPropertyDeclaration(
     compilerNode: ts.PropertyDeclaration,
     typeChecker: ts.TypeChecker,
     options: PluginOptions,
-    hostFilename: string
-  ): ts.PropertyDeclaration {
-    const node = ts.getMutableClone(compilerNode);
-    const { pos, end } = node.decorators || ts.createNodeArray();
-
-    node.decorators = Object.assign(
-      [
-        ...(node.decorators || ts.createNodeArray()),
-        ts.createDecorator(
-          ts.createCall(
-            ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiProperty.name}`),
-            undefined,
-            [
-              this.createDecoratorObjectLiteralExpr(
-                node,
-                typeChecker,
-                [],
-                options,
-                hostFilename
-              )
-            ]
-          )
-        )
-      ],
-      { pos, end }
+    hostFilename: string,
+    sourceFile: ts.SourceFile
+  ) {
+    const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
+      compilerNode,
+      typeChecker,
+      ts.createNodeArray(),
+      options,
+      hostFilename
     );
-    return node;
-  }
-
-  addPropertiesToExisitingDecorator(
-    compilerNode: ts.Decorator,
-    originalNode: ts.PropertyDeclaration,
-    typeChecker: ts.TypeChecker,
-    options: PluginOptions,
-    hostFilename: string
-  ): ts.Node {
-    const callExpr = compilerNode.expression as ts.CallExpression;
-    if (!callExpr) {
-      return originalNode;
-    }
-    const callArgs = callExpr.arguments;
-    if (!callArgs) {
-      return originalNode;
-    }
-    const { pos, end } = callArgs;
-    const decoratorArgument = head(callArgs) as ts.ObjectLiteralExpression;
-    if (!decoratorArgument) {
-      callExpr.arguments = Object.assign(
-        [
-          this.createDecoratorObjectLiteralExpr(
-            originalNode,
-            typeChecker,
-            [],
-            options,
-            hostFilename
-          )
-        ],
-        { pos, end }
-      );
-    }
-
-    const decoratorProperties =
-      (decoratorArgument && decoratorArgument.properties) || [];
-
-    callExpr.arguments = Object.assign(
-      [
-        this.createDecoratorObjectLiteralExpr(
-          originalNode,
-          typeChecker,
-          decoratorProperties as ts.PropertyAssignment[],
-          options,
-          hostFilename
-        )
-      ],
-      {
-        pos,
-        end
-      }
-    );
-    return originalNode;
+    this.addClassMetadata(compilerNode, objectLiteralExpr, sourceFile);
   }
 
   createDecoratorObjectLiteralExpr(
-    node: ts.PropertyDeclaration,
+    node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.PropertyAssignment[] = [],
+    existingProperties: ts.NodeArray<
+      ts.PropertyAssignment
+    > = ts.createNodeArray(),
     options: PluginOptions = {},
     hostFilename: string = ''
   ): ts.ObjectLiteralExpression {
@@ -186,13 +146,14 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         this.createValidationPropertyAssignments(node)
       );
     }
-    return ts.createObjectLiteral(compact(flatten(properties)));
+    const objectLiteral = ts.createObjectLiteral(compact(flatten(properties)));
+    return objectLiteral;
   }
 
   createTypePropertyAssignment(
-    node: ts.PropertyDeclaration,
+    node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.PropertyAssignment[],
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string
   ) {
     const key = 'type';
@@ -202,6 +163,34 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const type = typeChecker.getTypeAtLocation(node);
     if (!type) {
       return undefined;
+    }
+    if (node.type && ts.isTypeLiteralNode(node.type)) {
+      const propertyAssignments = Array.from(node.type.members || []).map(
+        member => {
+          const literalExpr = this.createDecoratorObjectLiteralExpr(
+            member as ts.PropertySignature,
+            typeChecker,
+            existingProperties,
+            {},
+            hostFilename
+          );
+          return ts.createPropertyAssignment(
+            ts.createIdentifier(member.name.getText()),
+            literalExpr
+          );
+        }
+      );
+      return ts.createPropertyAssignment(
+        key,
+        ts.createArrowFunction(
+          undefined,
+          undefined,
+          [],
+          undefined,
+          undefined,
+          ts.createParen(ts.createObjectLiteral(propertyAssignments))
+        )
+      );
     }
     let typeReference = getTypeReferenceAsString(type, typeChecker);
     if (!typeReference) {
@@ -222,9 +211,9 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createEnumPropertyAssignment(
-    node: ts.PropertyDeclaration,
+    node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.PropertyAssignment[],
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string
   ) {
     const key = 'enum';
@@ -263,8 +252,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createDefaultPropertyAssignment(
-    node: ts.PropertyDeclaration,
-    existingProperties: ts.PropertyAssignment[]
+    node: ts.PropertyDeclaration | ts.PropertySignature,
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>
   ) {
     const key = 'default';
     if (hasPropertyKey(key, existingProperties)) {
@@ -281,7 +270,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   createValidationPropertyAssignments(
-    node: ts.PropertyDeclaration
+    node: ts.PropertyDeclaration | ts.PropertySignature
   ): ts.PropertyAssignment[] {
     const assignments = [];
     const decorators = node.decorators;
@@ -334,5 +323,36 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         ts.createIdentifier(argument && argument.getText())
       )
     );
+  }
+
+  addClassMetadata(
+    node: ts.PropertyDeclaration,
+    objectLiteral: ts.ObjectLiteralExpression,
+    sourceFile: ts.SourceFile
+  ) {
+    const hostClass = node.parent;
+    const className = hostClass.name && hostClass.name.getText();
+    if (!className) {
+      return;
+    }
+    const existingMetadata = metadataHostMap.get(className) || {};
+    const propertyName = node.name && node.name.getText(sourceFile);
+    if (
+      !propertyName ||
+      (node.name && node.name.kind === ts.SyntaxKind.ComputedPropertyName)
+    ) {
+      return;
+    }
+    metadataHostMap.set(className, {
+      ...existingMetadata,
+      [propertyName]: objectLiteral
+    });
+  }
+
+  getClassMetadata(node: ts.ClassDeclaration) {
+    if (!node.name) {
+      return;
+    }
+    return metadataHostMap.get(node.name.getText());
   }
 }
