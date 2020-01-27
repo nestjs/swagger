@@ -23,8 +23,8 @@
     "path-to-regexp": "3.2.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^8.3.5",
-    "@commitlint/config-angular": "^8.3.4",
+    "@commitlint/cli": "8.3.5",
+    "@commitlint/config-angular": "8.3.4",
     "@nestjs/common": "6.11.1",
     "@nestjs/core": "6.11.1",
     "@nestjs/platform-express": "6.11.1",
