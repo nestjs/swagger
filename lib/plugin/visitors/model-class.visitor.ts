@@ -259,9 +259,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }
-    const initializer = node.initializer;
+    let initializer = node.initializer;
     if (!initializer) {
       return undefined;
+    }
+    if (ts.isAsExpression(initializer)) {
+      initializer = initializer.expression;
     }
     return ts.createPropertyAssignment(
       key,
