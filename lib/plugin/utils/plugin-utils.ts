@@ -7,6 +7,7 @@ import {
   getTypeArguments,
   isArray,
   isBoolean,
+  isEnum,
   isInterface,
   isNumber,
   isString
@@ -67,6 +68,12 @@ export function getTypeReferenceAsString(
       text === 'object' ||
       isInterface(type)
     ) {
+      return 'Object';
+    }
+    if (isEnum(type)) {
+      return undefined;
+    }
+    if (type.aliasSymbol) {
       return 'Object';
     }
     return undefined;
