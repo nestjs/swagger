@@ -2,7 +2,12 @@ import { DECORATORS } from '../constants';
 import { createMixedDecorator } from './helpers';
 
 export function ApiExtension(extensionKey: string, extensionProperties: any) {
-  //@TODO: We should validate that extensionKey is prefixed with 'x-'
+  if (!extensionKey.startsWith('x-')) {
+    throw new Error(
+      'Extension key is not prefixed. Please ensure you prefix it with `x-`.'
+    );
+  }
+
   const extensionObject = {
     [extensionKey]: {
       ...extensionProperties
