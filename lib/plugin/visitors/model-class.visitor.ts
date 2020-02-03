@@ -266,10 +266,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (ts.isAsExpression(initializer)) {
       initializer = initializer.expression;
     }
-    return ts.createPropertyAssignment(
-      key,
-      ts.createIdentifier(initializer.getText())
-    );
+    return ts.createPropertyAssignment(key, ts.getMutableClone(initializer));
   }
 
   createValidationPropertyAssignments(
@@ -320,12 +317,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return;
     }
     const argument: ts.Expression = head(getDecoratorArguments(decoratorRef));
-    assignments.push(
-      ts.createPropertyAssignment(
-        propertyKey,
-        ts.createIdentifier(argument && argument.getText())
-      )
-    );
+    if (argument) {
+      assignments.push(
+        ts.createPropertyAssignment(propertyKey, ts.getMutableClone(argument))
+      );
+    }
   }
 
   addClassMetadata(
