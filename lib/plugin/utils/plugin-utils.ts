@@ -126,7 +126,7 @@ export function replaceImportPath(typeReference: string, fileName: string) {
     const indexText = '/index';
     const indexPos = relativePath.indexOf(indexText);
     if (indexPos >= 0) {
-      relativePath = relativePath.slice(indexPos + indexText.length);
+      relativePath = relativePath.slice(0, indexPos);
     }
   }
 
