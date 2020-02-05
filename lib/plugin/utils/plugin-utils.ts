@@ -107,8 +107,30 @@ export function replaceImportPath(typeReference: string, fileName: string) {
 
   let relativePath = posix.relative(dirname(fileName), importPath);
   relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
-  typeReference = typeReference.replace(importPath, relativePath);
 
+  const nodeModulesText = 'node_modules';
+  const nodeModulePos = relativePath.indexOf(nodeModulesText);
+  if (nodeModulePos >= 0) {
+    relativePath = relativePath.slice(
+      nodeModulePos + nodeModulesText.length + 1 // slash
+    );
+
+    const typesText = '@types';
+    const typesPos = relativePath.indexOf(typesText);
+    if (typesPos >= 0) {
+      relativePath = relativePath.slice(
+        typesPos + typesText.length + 1 //slash
+      );
+    }
+
+    const indexText = '/index';
+    const indexPos = relativePath.indexOf(indexText);
+    if (indexPos >= 0) {
+      relativePath = relativePath.slice(indexPos + indexText.length);
+    }
+  }
+
+  typeReference = typeReference.replace(importPath, relativePath);
   return typeReference.replace('import', 'require');
 }
 
