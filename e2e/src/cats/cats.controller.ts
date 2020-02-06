@@ -65,4 +65,7 @@ export class CatsController {
   async createAsFormData(@Body() createCatDto: CreateCatDto): Promise<Cat> {
     return this.catsService.create(createCatDto);
   }
+
+  @Get('site*')
+  getSite() {}
 }

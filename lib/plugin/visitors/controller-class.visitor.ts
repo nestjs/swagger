@@ -34,8 +34,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     hostFilename: string
   ): ts.MethodDeclaration {
-    const nodeArray = compilerNode.decorators || ts.createNodeArray();
     const node = ts.getMutableClone(compilerNode);
+    const nodeArray = node.decorators || ts.createNodeArray();
     const { pos, end } = nodeArray;
 
     node.decorators = Object.assign(
@@ -49,7 +49,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
               this.createDecoratorObjectLiteralExpr(
                 node,
                 typeChecker,
-                [],
+                ts.createNodeArray(),
                 hostFilename
               )
             ]
@@ -64,7 +64,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   createDecoratorObjectLiteralExpr(
     node: ts.MethodDeclaration,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.PropertyAssignment[] = [],
+    existingProperties: ts.NodeArray<
+      ts.PropertyAssignment
+    > = ts.createNodeArray(),
     hostFilename: string
   ): ts.ObjectLiteralExpression {
     const properties = [
@@ -83,7 +85,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   createTypePropertyAssignment(
     node: ts.MethodDeclaration,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.PropertyAssignment[],
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string
   ) {
     if (hasPropertyKey('type', existingProperties)) {
@@ -98,6 +100,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!typeReference) {
       return undefined;
     }
+    if (typeReference.includes('node_modules')) {
+      return undefined;
+    }
     typeReference = replaceImportPath(typeReference, hostFilename);
     return ts.createPropertyAssignment(
       'type',
@@ -107,7 +112,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
   createStatusPropertyAssignment(
     node: ts.MethodDeclaration,
-    existingProperties: ts.PropertyAssignment[]
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>
   ) {
     if (hasPropertyKey('status', existingProperties)) {
       return undefined;
@@ -124,7 +129,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     );
     if (httpCodeDecorator) {
       const argument = head(getDecoratorArguments(httpCodeDecorator));
-      return argument;
+      if (argument) {
+        return argument;
+      }
     }
     const postDecorator = getDecoratorOrUndefinedByNames(['Post'], decorators);
     if (postDecorator) {

@@ -7,6 +7,8 @@ import {
   getTypeArguments,
   isArray,
   isBoolean,
+  isEnum,
+  isInterface,
   isNumber,
   isString
 } from './ast-utils';
@@ -28,7 +30,7 @@ export function getTypeReferenceAsString(
     const arrayType = getTypeArguments(type)[0];
     const elementType = getTypeReferenceAsString(arrayType, typeChecker);
     if (!elementType) {
-      return undefined;
+      return `undefined`;
     }
     return `[${elementType}]`;
   }
@@ -55,7 +57,29 @@ export function getTypeReferenceAsString(
   if (type.isClass()) {
     return getText(type, typeChecker);
   }
-  return undefined;
+  try {
+    const text = getText(type, typeChecker);
+    if (text === Date.name) {
+      return text;
+    }
+    if (
+      text === 'any' ||
+      text === 'unknown' ||
+      text === 'object' ||
+      isInterface(type)
+    ) {
+      return 'Object';
+    }
+    if (isEnum(type)) {
+      return undefined;
+    }
+    if (type.aliasSymbol) {
+      return 'Object';
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function isPromiseOrObservable(type: string) {
@@ -64,7 +88,7 @@ export function isPromiseOrObservable(type: string) {
 
 export function hasPropertyKey(
   key: string,
-  properties: ts.PropertyAssignment[]
+  properties: ts.NodeArray<ts.PropertyAssignment>
 ): boolean {
   return properties
     .filter(item => !isDynamicallyAdded(item))
@@ -83,8 +107,30 @@ export function replaceImportPath(typeReference: string, fileName: string) {
 
   let relativePath = posix.relative(dirname(fileName), importPath);
   relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
-  typeReference = typeReference.replace(importPath, relativePath);
 
+  const nodeModulesText = 'node_modules';
+  const nodeModulePos = relativePath.indexOf(nodeModulesText);
+  if (nodeModulePos >= 0) {
+    relativePath = relativePath.slice(
+      nodeModulePos + nodeModulesText.length + 1 // slash
+    );
+
+    const typesText = '@types';
+    const typesPos = relativePath.indexOf(typesText);
+    if (typesPos >= 0) {
+      relativePath = relativePath.slice(
+        typesPos + typesText.length + 1 //slash
+      );
+    }
+
+    const indexText = '/index';
+    const indexPos = relativePath.indexOf(indexText);
+    if (indexPos >= 0) {
+      relativePath = relativePath.slice(0, indexPos);
+    }
+  }
+
+  typeReference = typeReference.replace(importPath, relativePath);
   return typeReference.replace('import', 'require');
 }
 

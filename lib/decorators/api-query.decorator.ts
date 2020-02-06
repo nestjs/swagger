@@ -11,7 +11,7 @@ import {
   isEnumArray,
   isEnumDefined
 } from '../utils/enum.utils';
-import { createParamDecorator } from './helpers';
+import { createParamDecorator, getTypeIsArrayTuple } from './helpers';
 
 type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
 
@@ -33,10 +33,16 @@ const defaultQueryOptions: ApiQueryOptions = {
 };
 
 export function ApiQuery(options: ApiQueryOptions): MethodDecorator {
+  const [type, isArray] = getTypeIsArrayTuple(
+    (options as ApiQueryMetadata).type,
+    (options as ApiQueryMetadata).isArray
+  );
   const param: ApiQueryMetadata & Record<string, any> = {
     name: isNil(options.name) ? defaultQueryOptions.name : options.name,
     in: 'query',
-    ...omit(options, 'enum')
+    ...omit(options, 'enum'),
+    type,
+    isArray
   };
 
   if (isEnumArray(options)) {

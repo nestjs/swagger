@@ -16,6 +16,34 @@ const isEnumArray = (obj: ApiPropertyOptions): boolean =>
 export function ApiProperty(
   options: ApiPropertyOptions = {}
 ): PropertyDecorator {
+  return createApiPropertyDecorator(options);
+}
+
+export function ApiPropertyOptional(
+  options: ApiPropertyOptions = {}
+): PropertyDecorator {
+  return ApiProperty({
+    ...options,
+    required: false
+  });
+}
+
+export function ApiResponseProperty(
+  options: Pick<
+    ApiPropertyOptions,
+    'type' | 'example' | 'format' | 'enum' | 'deprecated'
+  > = {}
+): PropertyDecorator {
+  return ApiProperty({
+    readOnly: true,
+    ...options
+  });
+}
+
+export function createApiPropertyDecorator(
+  options: ApiPropertyOptions = {},
+  overrideExisting = true
+): PropertyDecorator {
   const [type, isArray] = getTypeIsArrayTuple(options.type, options.isArray);
   options = {
     ...options,
@@ -42,7 +70,11 @@ export function ApiProperty(
   }
 
   !options.enumName && delete options.enumName;
-  return createPropertyDecorator(DECORATORS.API_MODEL_PROPERTIES, options);
+  return createPropertyDecorator(
+    DECORATORS.API_MODEL_PROPERTIES,
+    options,
+    overrideExisting
+  );
 }
 
 export function ApiPropertyOptional(

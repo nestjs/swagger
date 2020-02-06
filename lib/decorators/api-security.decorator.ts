@@ -2,7 +2,10 @@ import { DECORATORS } from '../constants';
 import { SecurityRequirementObject } from '../interfaces/open-api-spec.interface';
 import { extendMetadata } from '../utils/extend-metadata.util';
 
-export function ApiSecurity(name: string, requirements: string[] = []) {
+export function ApiSecurity(
+  name: string,
+  requirements: string[] = []
+): ClassDecorator & MethodDecorator {
   let metadata: SecurityRequirementObject[] = [{ [name]: requirements }];
 
   return (

@@ -19,6 +19,9 @@ export class CreateCatDto {
   })
   readonly tags?: string[];
 
+  @ApiProperty()
+  createdAt: Date;
+
   @ApiProperty({
     type: 'string',
     isArray: true
@@ -51,4 +54,9 @@ export class CreateCatDto {
 
   @ApiProperty({ description: 'tag' })
   readonly tag: TagDto;
+
+  nested: {
+    first: string;
+    second: number;
+  };
 }

@@ -107,6 +107,10 @@ describe('SchemaObjectFactory', () => {
             format: 'int64',
             example: 10
           },
+          createdAt: {
+            format: 'date-time',
+            type: 'string'
+          },
           custom: {
             readOnly: true,
             type: 'array',
@@ -161,7 +165,8 @@ describe('SchemaObjectFactory', () => {
           'urls',
           'options',
           'allOf',
-          'houses'
+          'houses',
+          'createdAt'
         ]
       });
       expect(schemas[2]['CreateProfileDto']).toEqual({
@@ -178,6 +183,34 @@ describe('SchemaObjectFactory', () => {
           }
         },
         required: ['firstname', 'lastname', 'parent']
+      });
+    });
+
+    it('should override base class metadata', () => {
+      class CreatUserDto {
+        @ApiProperty({ minLength: 0, required: true })
+        name: string;
+      }
+
+      class UpdateUserDto extends CreatUserDto {
+        @ApiProperty({ minLength: 1, required: false })
+        name: string;
+      }
+
+      const schemas = [];
+
+      schemaObjectFactory.exploreModelSchema(CreatUserDto, schemas);
+      schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+
+      expect(schemas[0][CreatUserDto.name]).toEqual({
+        type: 'object',
+        properties: { name: { type: 'string', minLength: 0 } },
+        required: ['name']
+      });
+
+      expect(schemas[1][UpdateUserDto.name]).toEqual({
+        type: 'object',
+        properties: { name: { type: 'string', minLength: 1 } }
       });
     });
   });

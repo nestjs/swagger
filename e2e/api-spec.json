@@ -80,6 +80,10 @@
               "type": "string"
             }
           },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
           "urls": {
             "type": "string"
           },
@@ -123,6 +127,7 @@
           "age",
           "_breed",
           "tags",
+          "createdAt",
           "urls",
           "options",
           "enum",
@@ -154,6 +159,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
           },
           "urls": {
             "type": "array",
@@ -197,6 +206,7 @@
           "age",
           "breed",
           "_tags",
+          "createdAt",
           "urls",
           "_options",
           "enum",
@@ -219,9 +229,9 @@
     }
   ],
   "paths": {
-    "/cats": {
+    "/api/cats": {
       "post": {
-        "operationId": "create",
+        "operationId": "CatsController_create",
         "summary": "Create cat",
         "parameters": [],
         "requestBody": {
@@ -263,7 +273,7 @@
         ]
       },
       "get": {
-        "operationId": "findAll",
+        "operationId": "CatsController_findAll",
         "parameters": [
           {
             "name": "page",
@@ -330,9 +340,9 @@
         ]
       }
     },
-    "/cats/{id}": {
+    "/api/cats/{id}": {
       "get": {
-        "operationId": "findOne",
+        "operationId": "CatsController_findOne",
         "parameters": [
           {
             "name": "id",
@@ -368,9 +378,9 @@
         ]
       }
     },
-    "/cats/bulk": {
+    "/api/cats/bulk": {
       "get": {
-        "operationId": "findAllBulk",
+        "operationId": "CatsController_findAllBulk",
         "parameters": [],
         "responses": {
           "200": {
@@ -390,7 +400,7 @@
         ]
       },
       "post": {
-        "operationId": "createBulk",
+        "operationId": "CatsController_createBulk",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -423,9 +433,9 @@
         ]
       }
     },
-    "/cats/as-form-data": {
+    "/api/cats/as-form-data": {
       "post": {
-        "operationId": "createAsFormData",
+        "operationId": "CatsController_createAsFormData",
         "summary": "Create cat",
         "parameters": [],
         "requestBody": {
@@ -451,6 +461,28 @@
           },
           "403": {
             "description": "Forbidden."
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      }
+    },
+    "/api/cats/site*": {
+      "get": {
+        "operationId": "CatsController_getSite",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
           }
         },
         "tags": [

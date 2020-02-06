@@ -22,7 +22,7 @@ export class ParametersMetadataMapper {
         return undefined;
       }
       if (param.name) {
-        // "name" is equal to "data" passed to the decorator
+        // when "name" is present, the "data" argument was passed to the decorator
         // e.g. `@Query('param')
         return param;
       }
@@ -32,6 +32,8 @@ export class ParametersMetadataMapper {
         return { ...param, name };
       }
       const { prototype } = param.type;
+
+      this.modelPropertiesAccessor.applyMetadataFactory(prototype);
       const modelProperties = this.modelPropertiesAccessor.getModelProperties(
         prototype
       );

@@ -24,45 +24,39 @@ export class CreateCatDto {
 
   nodes: Node[];
 
+  date: Date;
+
   @ApiHideProperty()
   hidden: number;
+
+  static staticProperty: string;
 }
 `;
 
 export const createCatDtoTextTranspiled = `import { IsString } from 'class-validator';
 var Status;
 (function (Status) {
-    Status[Status["ENABLED"] = 0] = "ENABLED";
-    Status[Status["DISABLED"] = 1] = "DISABLED";
+    Status[Status[\"ENABLED\"] = 0] = \"ENABLED\";
+    Status[Status[\"DISABLED\"] = 1] = \"DISABLED\";
 })(Status || (Status = {}));
 export class CreateCatDto {
     constructor() {
         this.age = 3;
         this.status = Status.ENABLED;
     }
+    static _OPENAPI_METADATA_FACTORY() {
+        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, date: { required: true, type: () => Date } };
+    }
 }
 __decorate([
-    openapi.ApiProperty({ required: true, type: () => String })
-], CreateCatDto.prototype, \"name\", void 0);
-__decorate([
     Min(0),
-    Max(10),
-    openapi.ApiProperty({ required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 })
+    Max(10)
 ], CreateCatDto.prototype, \"age\", void 0);
 __decorate([
-    openapi.ApiProperty({ required: true, type: () => [String] })
-], CreateCatDto.prototype, \"tags\", void 0);
-__decorate([
-    openapi.ApiProperty({ required: true, default: Status.ENABLED, enum: Status })
-], CreateCatDto.prototype, \"status\", void 0);
-__decorate([
-    ApiProperty({ type: String, required: false }),
+    ApiProperty({ type: String }),
     IsString()
 ], CreateCatDto.prototype, \"breed\", void 0);
 __decorate([
-    openapi.ApiProperty({ required: true })
-], CreateCatDto.prototype, "nodes", void 0);
-__decorate([
     ApiHideProperty()
-], CreateCatDto.prototype, "hidden", void 0);
+], CreateCatDto.prototype, \"hidden\", void 0);
 `;
