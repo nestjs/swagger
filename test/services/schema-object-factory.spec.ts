@@ -27,12 +27,12 @@ describe('SchemaObjectFactory', () => {
     class CreatePersonDto {
       @ApiProperty()
       name: string;
-      @ApiProperty({ enum: () => Role })
+      @ApiProperty({ enum: Role, enumName: 'Role' })
       role: Role;
     }
 
     class Person {
-      @ApiProperty({ enum: () => Role })
+      @ApiProperty({ enum: Role, enumName: 'Role' })
       role: Role;
     }
 

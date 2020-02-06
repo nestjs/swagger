@@ -50,6 +50,14 @@
           "two"
         ]
       },
+      "LettersEnum": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
       "TagDto": {
         "type": "object",
         "properties": {
@@ -99,22 +107,12 @@
             }
           },
           "enum": {
-            "type": "string",
-            "enum": [
-              "A",
-              "B",
-              "C"
-            ]
+            "$ref": "#/components/schemas/LettersEnum"
           },
           "enumArr": {
             "type": "array",
             "items": {
-              "type": "string",
-              "enum": [
-                "A",
-                "B",
-                "C"
-              ]
+              "$ref": "#/components/schemas/LettersEnum"
             }
           },
           "tag": {
@@ -211,14 +209,6 @@
           "_options",
           "enum",
           "enumArr"
-        ]
-      },
-      "LettersEnum": {
-        "type": "string",
-        "enum": [
-          "A",
-          "B",
-          "C"
         ]
       }
     }

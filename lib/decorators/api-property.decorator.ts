@@ -6,7 +6,7 @@ import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers';
 export interface ApiPropertyOptions
   extends Omit<SchemaObjectMetadata, 'name' | 'enum'> {
   name?: string;
-  enum?: any[] | Record<string, any> | Function;
+  enum?: any[] | Record<string, any>;
   enumName?: string;
 }
 
@@ -17,27 +17,6 @@ export function ApiProperty(
   options: ApiPropertyOptions = {}
 ): PropertyDecorator {
   return createApiPropertyDecorator(options);
-}
-
-export function ApiPropertyOptional(
-  options: ApiPropertyOptions = {}
-): PropertyDecorator {
-  return ApiProperty({
-    ...options,
-    required: false
-  });
-}
-
-export function ApiResponseProperty(
-  options: Pick<
-    ApiPropertyOptions,
-    'type' | 'example' | 'format' | 'enum' | 'deprecated'
-  > = {}
-): PropertyDecorator {
-  return ApiProperty({
-    readOnly: true,
-    ...options
-  });
 }
 
 export function createApiPropertyDecorator(
@@ -56,17 +35,15 @@ export function createApiPropertyDecorator(
 
     const enumValues = getEnumValues(options.enum);
     options.items = {
-      type: getEnumType(enumValues.values),
-      enum: enumValues.values
+      type: getEnumType(enumValues),
+      enum: enumValues
     };
-    options.enumName = enumValues.enumName;
     delete options.enum;
   } else if (options.enum) {
     const enumValues = getEnumValues(options.enum);
 
-    options.enum = enumValues.values;
-    options.type = getEnumType(enumValues.values);
-    options.enumName = enumValues.enumName;
+    options.enum = enumValues;
+    options.type = getEnumType(enumValues);
   }
 
   !options.enumName && delete options.enumName;

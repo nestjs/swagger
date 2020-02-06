@@ -617,10 +617,16 @@ describe('SwaggerExplorer', () => {
       @Get('bars/:objectId')
       @ApiParam({
         name: 'objectId',
-        enum: () => ParamEnum
+        enum: ParamEnum,
+        enumName: 'ParamEnum'
       })
-      @ApiQuery({ name: 'order', enum: () => QueryEnum })
-      @ApiQuery({ name: 'page', enum: () => QueryEnum, isArray: true })
+      @ApiQuery({ name: 'order', enum: QueryEnum, enumName: 'QueryEnum' })
+      @ApiQuery({
+        name: 'page',
+        enum: QueryEnum,
+        enumName: 'QueryEnum',
+        isArray: true
+      })
       findBar(): Promise<Foo> {
         return Promise.resolve(null);
       }
