@@ -20,16 +20,23 @@ export class ModelPropertiesAccessor {
   }
 
   applyMetadataFactory(prototype: Type<unknown>) {
-    if (!prototype.constructor) {
-      return;
-    }
-    if (!prototype.constructor[METADATA_FACTORY_NAME]) {
-      return;
-    }
-    const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
-    const properties = Object.keys(metadata);
-    properties.forEach(key => {
-      createApiPropertyDecorator(metadata[key], false)(prototype, key);
-    });
+    const classPrototype = prototype;
+    do {
+      if (!prototype.constructor) {
+        return;
+      }
+      if (!prototype.constructor[METADATA_FACTORY_NAME]) {
+        continue;
+      }
+      const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
+      const properties = Object.keys(metadata);
+      properties.forEach(key => {
+        createApiPropertyDecorator(metadata[key], false)(classPrototype, key);
+      });
+    } while (
+      (prototype = Reflect.getPrototypeOf(prototype) as Type<any>) &&
+      prototype !== Object.prototype &&
+      prototype
+    );
   }
 }

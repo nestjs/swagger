@@ -12,6 +12,10 @@ import {
   createCatDtoText,
   createCatDtoTextTranspiled
 } from './fixtures/create-cat.dto';
+import {
+  es5CreateCatDtoText,
+  es5CreateCatDtoTextTranspiled
+} from './fixtures/es5-class.dto';
 
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist', () => {
@@ -69,5 +73,24 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(createCatDtoTextAlt2Transpiled);
+  });
+
+  it('should manage imports statements when code "downleveled"', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES5,
+      noEmitHelpers: true
+    };
+    const filename = 'es5-class.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(es5CreateCatDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classValidatorShim: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(es5CreateCatDtoTextTranspiled);
   });
 });
