@@ -10,6 +10,7 @@ describe('Controller methods', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ESNext,
+      newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true
     };
     const filename = 'app.controller.ts';
