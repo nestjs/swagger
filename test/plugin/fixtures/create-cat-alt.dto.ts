@@ -24,6 +24,8 @@ export class CreateCatDto2 {
   nodes: Node[];
   alias: AliasedType;
   numberAlias: NumberAlias;
+  union: 1 | 2;
+  intersection: Function & string;
   nested: {
       first: string,
       second: number,
@@ -47,7 +49,7 @@ export class CreateCatDto2 {
         this.status = Status.ENABLED;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number }, nested: { required: true, type: () => ({ first: { required: true, type: () => String }, second: { required: true, type: () => Number }, status: { required: true, enum: Status }, tags: { required: true, type: () => [String] }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number } }) } };
+        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number }, union: { required: true, type: () => Object }, intersection: { required: true, type: () => Object }, nested: { required: true, type: () => ({ first: { required: true, type: () => String }, second: { required: true, type: () => Number }, status: { required: true, enum: Status }, tags: { required: true, type: () => [String] }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number } }) } };
     }
 }
 `;

@@ -66,7 +66,8 @@ export function getTypeReferenceAsString(
       text === 'any' ||
       text === 'unknown' ||
       text === 'object' ||
-      isInterface(type)
+      isInterface(type) ||
+      (type.isUnionOrIntersection() && !isEnum(type))
     ) {
       return 'Object';
     }
