@@ -34,7 +34,7 @@
     "@types/node": "11.15.0",
     "express": "4.17.1",
     "fastify-swagger": "2.5.0",
-    "husky": "4.2.2",
+    "husky": "4.2.3",
     "jest": "25.1.0",
     "lint-staged": "10.0.7",
     "prettier": "1.19.1",
