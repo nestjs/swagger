@@ -49,13 +49,17 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         if (isPropertyStatic) {
           return node;
         }
-        this.inspectPropertyDeclaration(
-          node,
-          typeChecker,
-          options,
-          sourceFile.fileName,
-          sourceFile
-        );
+        try {
+          this.inspectPropertyDeclaration(
+            node,
+            typeChecker,
+            options,
+            sourceFile.fileName,
+            sourceFile
+          );
+        } catch (err) {
+          return node;
+        }
         return node;
       }
       return ts.visitEachChild(node, visitNode, ctx);

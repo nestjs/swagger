@@ -34,6 +34,9 @@ export class CreateCatDto2 {
       nodes: Node[]
       alias: AliasedType,
       numberAlias: NumberAlias,
+  },
+  prop: {
+    [x: string]: string;
   }
 }
 `;
