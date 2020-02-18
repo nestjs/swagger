@@ -23,7 +23,8 @@ describe('API model properties', () => {
       module: ts.ModuleKind.ESNext,
       target: ts.ScriptTarget.ESNext,
       newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true
+      noEmitHelpers: true,
+      strict: true
     };
     const filename = 'create-cat.dto.ts';
     const fakeProgram = ts.createProgram([filename], options);
@@ -43,7 +44,8 @@ describe('API model properties', () => {
       module: ts.ModuleKind.ESNext,
       target: ts.ScriptTarget.ESNext,
       newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true
+      noEmitHelpers: true,
+      strict: true
     };
     const filename = 'create-cat.dto.ts';
     const fakeProgram = ts.createProgram([filename], options);
@@ -63,7 +65,8 @@ describe('API model properties', () => {
       module: ts.ModuleKind.ESNext,
       target: ts.ScriptTarget.ESNext,
       newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true
+      noEmitHelpers: true,
+      strict: true
     };
     const filename = 'create-cat-alt2.dto.ts';
     const fakeProgram = ts.createProgram([filename], options);
@@ -83,7 +86,8 @@ describe('API model properties', () => {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES5,
       newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true
+      noEmitHelpers: true,
+      strict: true
     };
     const filename = 'es5-class.dto.ts';
     const fakeProgram = ts.createProgram([filename], options);

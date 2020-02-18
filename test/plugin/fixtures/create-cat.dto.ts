@@ -17,6 +17,7 @@ export class CreateCatDto {
   age: number = 3;
   tags: string[];
   status: Status = Status.ENABLED;
+  status2?: Status;
 
   @ApiProperty({ type: String })
   @IsString()
@@ -45,7 +46,7 @@ export class CreateCatDto {
         this.status = Status.ENABLED;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, date: { required: true, type: () => Date } };
+        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, date: { required: true, type: () => Date } };
     }
 }
 __decorate([
