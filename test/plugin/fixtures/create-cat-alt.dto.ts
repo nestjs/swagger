@@ -20,7 +20,7 @@ export class CreateCatDto2 {
   age: number = 3;
   tags: string[];
   status: Status = Status.ENABLED;
-  readonly breed?: string;
+  readonly breed?: string | undefined;
   nodes: Node[];
   alias: AliasedType;
   numberAlias: NumberAlias;
