@@ -6,7 +6,8 @@ import {
   Post,
   Query,
   UseInterceptors,
-  UploadedFile
+  UploadedFile,
+  UploadedFiles
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -15,7 +16,8 @@ import {
   ApiOperation,
   ApiResponse,
   ApiSecurity,
-  ApiTags
+  ApiTags,
+  ApiMultipart
 } from '../../../lib';
 import { CatsService } from './cats.service';
 import { Cat } from './classes/cat.class';
@@ -98,5 +100,15 @@ export class CatsController {
   })
   uploadFile(@UploadedFile() file) {
     return file;
+  }
+
+  @Post('uploadApiFileUpload')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiMultipart({
+    binaryFiles: [{ name: 'file1' }, { name: 'file2' }]
+  })
+  uploadFileApiFileUpload(@UploadedFiles() files) {
+    return files;
   }
 }

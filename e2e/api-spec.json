@@ -537,6 +537,48 @@
           }
         ]
       }
+    },
+    "/api/cats/uploadApiFileUpload": {
+      "post": {
+        "operationId": "CatsController_uploadFileApiFileUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file1": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "file2": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      }
     }
   }
 }

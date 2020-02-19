@@ -6,7 +6,8 @@ import {
   Post,
   Query,
   UseInterceptors,
-  UploadedFile
+  UploadedFile,
+  UploadedFiles
 } from '@nestjs/common';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import {
@@ -21,7 +22,8 @@ import {
   ApiParam,
   ApiProduces,
   ApiProperty,
-  ApiQuery
+  ApiQuery,
+  ApiMultipart
 } from '../../lib/decorators';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
@@ -776,6 +778,60 @@ describe('SwaggerExplorer', () => {
               type: 'object',
               properties: {
                 file: {
+                  type: 'string',
+                  format: 'binary'
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+  });
+
+  describe('When ApiMultipart is given', () => {
+    @Controller('')
+    class FooController {
+      @Post('upload')
+      @ApiConsumes('multipart/form-data')
+      @UseInterceptors(FileInterceptor('file'))
+      @ApiMultipart({
+        binaryFiles: [{ name: 'file1' }, { name: 'file2' }]
+      })
+      uploadFile(@UploadedFiles() files) {
+        return files;
+      }
+    }
+
+    it('Should have responseBody', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path'
+      );
+
+      expect(routes.length).toEqual(1);
+
+      // POST
+      expect(routes[0].root.operationId).toEqual('FooController_uploadFile');
+      expect(routes[0].root.method).toEqual('post');
+      expect(routes[0].root.path).toEqual('/path/upload');
+      expect(routes[0].root.parameters.length).toEqual(0);
+      expect(routes[0].root.requestBody).toEqual({
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              properties: {
+                file1: {
+                  type: 'string',
+                  format: 'binary'
+                },
+                file2: {
                   type: 'string',
                   format: 'binary'
                 }
