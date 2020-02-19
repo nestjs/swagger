@@ -50,10 +50,16 @@ export class SchemaObjectFactory {
 
       const modelName = this.exploreModelSchema(param.type, schemas);
       const name = param.name || modelName;
-      const schema = {
-        ...((param as BaseParameterObject).schema || {}),
-        $ref: getSchemaPath(modelName)
-      };
+
+      const schema = modelName
+        ? {
+            ...((param as BaseParameterObject).schema || {}),
+            $ref: getSchemaPath(modelName)
+          }
+        : {
+            ...((param as BaseParameterObject).schema || {})
+          };
+
       const isArray = param.isArray;
       param = omit(param, 'isArray');
 

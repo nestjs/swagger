@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseInterceptors,
+  UploadedFile
+} from '@nestjs/common';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import {
   ApiBadRequestResponse,
@@ -19,6 +28,7 @@ import { ModelPropertiesAccessor } from '../../lib/services/model-properties-acc
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 describe('SwaggerExplorer', () => {
   const schemaObjectFactory = new SchemaObjectFactory(
@@ -714,6 +724,66 @@ describe('SwaggerExplorer', () => {
           }
         }
       ]);
+    });
+  });
+
+  describe('When custom api body is given', () => {
+    @Controller('')
+    class FooController {
+      @Post('upload')
+      @ApiConsumes('multipart/form-data')
+      @UseInterceptors(FileInterceptor('file'))
+      @ApiBody({
+        type: 'multipart/form-data',
+        required: true,
+        schema: {
+          type: 'object',
+          properties: {
+            file: {
+              type: 'string',
+              format: 'binary'
+            }
+          }
+        }
+      })
+      uploadFile(@UploadedFile() file) {
+        return file;
+      }
+    }
+
+    it('Should have responseBody', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path'
+      );
+
+      expect(routes.length).toEqual(1);
+
+      // POST
+      expect(routes[0].root.operationId).toEqual('FooController_uploadFile');
+      expect(routes[0].root.method).toEqual('post');
+      expect(routes[0].root.path).toEqual('/path/upload');
+      expect(routes[0].root.parameters.length).toEqual(0);
+      expect(routes[0].root.requestBody).toEqual({
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              properties: {
+                file: {
+                  type: 'string',
+                  format: 'binary'
+                }
+              }
+            }
+          }
+        }
+      });
     });
   });
 });
