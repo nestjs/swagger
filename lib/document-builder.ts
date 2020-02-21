@@ -66,7 +66,7 @@ export class DocumentBuilder {
 
   public addTag(
     name: string,
-    description: string = '',
+    description = '',
     externalDocs?: ExternalDocumentationObject
   ): this {
     this.document.tags = this.document.tags.concat(

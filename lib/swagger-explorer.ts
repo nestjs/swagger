@@ -107,6 +107,7 @@ export class SwaggerExplorer {
       path = validatePath(globalPrefix) + path;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     const globalMetadata = this.exploreGlobalMetadata(metatype);
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
@@ -257,7 +258,7 @@ export class SwaggerExplorer {
     globalValue: Record<string, any> | Array<any>,
     methodValue: Record<string, any> | Array<any>,
     maxDepth: number,
-    currentDepthLevel: number = 0
+    currentDepthLevel = 0
   ) {
     if (currentDepthLevel === maxDepth) {
       return this.mergeValues(globalValue, methodValue);

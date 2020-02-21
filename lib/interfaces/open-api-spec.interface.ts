@@ -181,7 +181,7 @@ export interface LinkObject {
 }
 
 export type LinkParametersObject = Record<string, any>;
-export interface HeaderObject extends BaseParameterObject {}
+export type HeaderObject = BaseParameterObject;
 export interface TagObject {
   name: string;
   description?: string;

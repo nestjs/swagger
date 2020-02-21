@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 export function ApiHideProperty(): PropertyDecorator {
-  return (target: Object, propertyKey: string | symbol) => {};
+  return (target: Record<string, any>, propertyKey: string | symbol) => {};
 }

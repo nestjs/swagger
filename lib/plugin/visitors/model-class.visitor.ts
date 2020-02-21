@@ -120,7 +120,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       ts.PropertyAssignment
     > = ts.createNodeArray(),
     options: PluginOptions = {},
-    hostFilename: string = ''
+    hostFilename = ''
   ): ts.ObjectLiteralExpression {
     const isRequired = !node.questionToken;
 
