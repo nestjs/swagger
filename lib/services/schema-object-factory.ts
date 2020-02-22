@@ -233,9 +233,8 @@ export class SchemaObjectFactory {
     const keysToRemove = ['type', 'isArray'];
     const validMetadataObject = omit(metadata, keysToRemove);
     return ({
-      ...validMetadataObject,
       name: metadata.name || key,
-      $ref
+      allOf: [{ $ref }, { ...validMetadataObject }]
     } as any) as BaseParameterObject;
   }
 

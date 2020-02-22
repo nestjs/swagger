@@ -64,7 +64,14 @@ describe('SchemaObjectFactory', () => {
             }
           },
           profile: {
-            $ref: '#/components/schemas/CreateProfileDto'
+            allOf: [
+              {
+                $ref: '#/components/schemas/CreateProfileDto'
+              },
+              {
+                description: 'Profile'
+              }
+            ]
           },
           tags: {
             items: {
@@ -119,7 +126,12 @@ describe('SchemaObjectFactory', () => {
             type: 'string'
           },
           parent: {
-            $ref: '#/components/schemas/CreateUserDto'
+            allOf: [
+              {
+                $ref: '#/components/schemas/CreateUserDto'
+              },
+              {}
+            ]
           }
         },
         required: ['firstname', 'lastname', 'parent']
