@@ -42,12 +42,14 @@ export class CreateCatDto {
   readonly options?: Record<string, any>[];
 
   @ApiProperty({
-    enum: LettersEnum
+    enum: LettersEnum,
+    enumName: 'LettersEnum'
   })
   readonly enum: LettersEnum;
 
   @ApiProperty({
     enum: LettersEnum,
+    enumName: 'LettersEnum',
     isArray: true
   })
   readonly enumArr: LettersEnum;

@@ -13,6 +13,7 @@ type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
 interface ApiParamMetadata extends ParameterOptions {
   type?: Type<unknown> | Function | [Function] | string;
   enum?: SwaggerEnumType;
+  enumName?: string;
 }
 
 interface ApiParamSchemaHost extends ParameterOptions {
@@ -33,12 +34,19 @@ export function ApiParam(options: ApiParamOptions): MethodDecorator {
     ...omit(options, 'enum')
   };
 
-  if ((options as ApiParamMetadata).enum) {
+  const apiParamMetadata = options as ApiParamMetadata;
+  if (apiParamMetadata.enum) {
     param.schema = param.schema || ({} as SchemaObject);
 
-    const enumValues = getEnumValues((options as ApiParamMetadata).enum);
-    (param.schema as SchemaObject).type = getEnumType(enumValues);
-    (param.schema as SchemaObject).enum = enumValues;
+    const paramSchema = param.schema as SchemaObject;
+    const enumValues = getEnumValues(apiParamMetadata.enum);
+    paramSchema.type = getEnumType(enumValues);
+    paramSchema.enum = enumValues;
+
+    if (apiParamMetadata.enumName) {
+      param.enumName = apiParamMetadata.enumName;
+    }
   }
+
   return createParamDecorator(param, defaultParamOptions);
 }
