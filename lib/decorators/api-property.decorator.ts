@@ -7,6 +7,7 @@ export interface ApiPropertyOptions
   extends Omit<SchemaObjectMetadata, 'name' | 'enum'> {
   name?: string;
   enum?: any[] | Record<string, any>;
+  enumName?: string;
 }
 
 const isEnumArray = (obj: ApiPropertyOptions): boolean =>
@@ -16,27 +17,6 @@ export function ApiProperty(
   options: ApiPropertyOptions = {}
 ): PropertyDecorator {
   return createApiPropertyDecorator(options);
-}
-
-export function ApiPropertyOptional(
-  options: ApiPropertyOptions = {}
-): PropertyDecorator {
-  return ApiProperty({
-    ...options,
-    required: false
-  });
-}
-
-export function ApiResponseProperty(
-  options: Pick<
-    ApiPropertyOptions,
-    'type' | 'example' | 'format' | 'enum' | 'deprecated'
-  > = {}
-): PropertyDecorator {
-  return ApiProperty({
-    readOnly: true,
-    ...options
-  });
 }
 
 export function createApiPropertyDecorator(
@@ -65,9 +45,32 @@ export function createApiPropertyDecorator(
     options.enum = enumValues;
     options.type = getEnumType(enumValues);
   }
+
+  !options.enumName && delete options.enumName;
   return createPropertyDecorator(
     DECORATORS.API_MODEL_PROPERTIES,
     options,
     overrideExisting
   );
+}
+
+export function ApiPropertyOptional(
+  options: ApiPropertyOptions = {}
+): PropertyDecorator {
+  return ApiProperty({
+    ...options,
+    required: false
+  });
+}
+
+export function ApiResponseProperty(
+  options: Pick<
+    ApiPropertyOptions,
+    'type' | 'example' | 'format' | 'enum' | 'deprecated'
+  > = {}
+): PropertyDecorator {
+  return ApiProperty({
+    readOnly: true,
+    ...options
+  });
 }

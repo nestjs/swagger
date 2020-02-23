@@ -20,12 +20,14 @@ export class PaginationQuery {
   limit: number;
 
   @ApiProperty({
-    enum: LettersEnum
+    enum: LettersEnum,
+    enumName: 'LettersEnum'
   })
   enum: LettersEnum;
 
   @ApiProperty({
     enum: LettersEnum,
+    enumName: 'LettersEnum',
     isArray: true
   })
   enumArr: LettersEnum;

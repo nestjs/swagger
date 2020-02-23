@@ -19,7 +19,13 @@ import {
 } from '../interfaces/open-api-spec.interface';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
 import { getSchemaPath } from '../utils';
-import { getEnumType, getEnumValues, isEnumArray } from '../utils/enum.utils';
+import {
+  cleanUpParam,
+  isEnumMetadata,
+  getEnumType,
+  getEnumValues,
+  isEnumArray
+} from '../utils/enum.utils';
 import { isBodyParameter } from '../utils/is-body-parameter.util';
 import { isBuiltInType } from '../utils/is-built-in-type.util';
 import { isDateCtor } from '../utils/is-date-ctor.util';
@@ -35,10 +41,14 @@ export class SchemaObjectFactory {
 
   createFromModel(
     parameters: ParamWithTypeMetadata[],
-    schemas: SchemaObject[]
+    schemas: SchemaObject[],
+    schemaRefsStack: string[] = []
   ): Array<ParamWithTypeMetadata | BaseParameterObject> {
     return parameters.map(param => {
       if (!isBodyParameter(param)) {
+        if (param.enumName) {
+          return this.createEnumParam(param, schemas, schemaRefsStack);
+        }
         return param;
       }
       if (this.isPrimitiveType(param.type)) {
@@ -48,7 +58,11 @@ export class SchemaObjectFactory {
         return this.mapArrayCtorParam(param);
       }
 
-      const modelName = this.exploreModelSchema(param.type, schemas);
+      const modelName = this.exploreModelSchema(
+        param.type,
+        schemas,
+        schemaRefsStack
+      );
       const name = param.name || modelName;
       const schema = {
         ...((param as BaseParameterObject).schema || {}),
@@ -105,6 +119,7 @@ export class SchemaObjectFactory {
         schemas,
         schemaRefsStack
       );
+
       const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
       if (schemaCombinators.some(key => key in property)) {
         delete (property as SchemaObjectMetadata).type;
@@ -114,7 +129,7 @@ export class SchemaObjectFactory {
     const typeDefinition: SchemaObject = {
       type: 'object',
       properties: mapValues(keyBy(propertiesWithType, 'name'), property =>
-        omit(property, ['name', 'isArray', 'required'])
+        omit(property, ['name', 'isArray', 'required', 'enumName'])
       ) as Record<string, SchemaObject | ReferenceObject>
     };
     const typeDefinitionRequiredFields = (propertiesWithType as SchemaObjectMetadata[])
@@ -158,6 +173,15 @@ export class SchemaObjectFactory {
       );
     }
     if (isString(metadata.type)) {
+      if (isEnumMetadata(metadata)) {
+        return this.createEnumSchemaType(
+          key,
+          metadata,
+          schemas,
+          schemaRefsStack
+        );
+      }
+
       return {
         ...metadata,
         name: metadata.name || key
@@ -202,6 +226,84 @@ export class SchemaObjectFactory {
       name: metadata.name || key,
       type: itemType
     };
+  }
+
+  createEnumParam(
+    param: ParamWithTypeMetadata & BaseParameterObject,
+    schemas: SchemaObject[],
+    schemaRefsStack: string[]
+  ) {
+    let enumName = param.enumName;
+    const $ref = getSchemaPath(enumName);
+
+    if (!includes(schemaRefsStack, enumName)) {
+      schemaRefsStack.push(enumName);
+
+      const _enum = param.enum
+        ? param.enum
+        : param.schema['items']
+        ? param.schema['items']['enum']
+        : param.schema['enum'];
+
+      schemas.push({
+        [enumName]: {
+          type: 'string',
+          enum: _enum
+        }
+      });
+    }
+
+    param.schema =
+      param.isArray || param.schema?.['items']
+        ? { type: 'array', items: { $ref } }
+        : { $ref };
+
+    cleanUpParam(param);
+    return param;
+  }
+
+  createEnumSchemaType(
+    key: string,
+    metadata: SchemaObjectMetadata,
+    schemas: SchemaObject[],
+    schemaRefsStack: string[]
+  ): BaseParameterObject & Record<string, any> {
+    if (!metadata.enumName) {
+      return {
+        ...metadata,
+        name: metadata.name || key
+      } as any;
+    }
+
+    let enumName = metadata.enumName;
+    const $ref = getSchemaPath(enumName);
+
+    if (!includes(schemaRefsStack, enumName)) {
+      schemaRefsStack.push(enumName);
+      schemas.push({
+        [enumName]: {
+          type: 'string',
+          enum: metadata.isArray ? metadata.items['enum'] : metadata.enum
+        }
+      });
+    }
+
+    const _schemaObject = {
+      ...metadata,
+      name: metadata.name || key,
+      type: metadata.isArray ? 'array' : 'string'
+    };
+
+    const _ref = metadata.isArray ? { items: { $ref } } : { $ref };
+
+    const _paramObject = { ..._schemaObject, ..._ref };
+
+    if (!metadata.isArray) {
+      delete _paramObject.type;
+    }
+
+    delete _paramObject.enum;
+    return _paramObject as any;
   }
 
   createNotBuiltInTypeReference(

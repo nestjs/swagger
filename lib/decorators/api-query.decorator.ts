@@ -19,6 +19,7 @@ interface ApiQueryMetadata extends ParameterOptions {
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   enum?: SwaggerEnumType;
+  enumName?: string;
 }
 
 interface ApiQuerySchemaHost extends ParameterOptions {
@@ -50,5 +51,7 @@ export function ApiQuery(options: ApiQueryOptions): MethodDecorator {
   } else if (isEnumDefined(options)) {
     addEnumSchema(param, options);
   }
+
+  !param['enumName'] && delete param['enumName'];
   return createParamDecorator(param, defaultQueryOptions);
 }
