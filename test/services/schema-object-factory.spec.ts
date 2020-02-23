@@ -64,7 +64,14 @@ describe('SchemaObjectFactory', () => {
             }
           },
           profile: {
-            $ref: '#/components/schemas/CreateProfileDto'
+            allOf: [
+              {
+                $ref: '#/components/schemas/CreateProfileDto'
+              },
+              {
+                description: 'Profile'
+              }
+            ]
           },
           tags: {
             items: {

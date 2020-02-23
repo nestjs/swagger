@@ -118,8 +118,14 @@
             }
           },
           "tag": {
-            "description": "tag",
-            "$ref": "#/components/schemas/TagDto"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TagDto"
+              },
+              {
+                "description": "tag"
+              }
+            ]
           }
         },
         "required": [
