@@ -54,7 +54,7 @@ export class CreateCatDto {
   })
   readonly enumArr: LettersEnum;
 
-  @ApiProperty({ description: 'tag' })
+  @ApiProperty({ description: 'tag', required: false })
   readonly tag: TagDto;
 
   nested: {

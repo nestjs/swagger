@@ -134,8 +134,7 @@
           "urls",
           "options",
           "enum",
-          "enumArr",
-          "tag"
+          "enumArr"
         ]
       },
       "Cat": {
