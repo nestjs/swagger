@@ -203,10 +203,12 @@ export class SwaggerExplorer {
       method
     ) as RequestMethod;
     const fullPath = globalPath + this.validateRoutePath(routePath);
+    const apiExtension = Reflect.getMetadata(DECORATORS.API_EXTENSION, method);
     return {
       method: RequestMethod[requestMethod].toLowerCase(),
       path: fullPath === '' ? '/' : fullPath,
-      operationId: this.getOperationId(instance, method)
+      operationId: this.getOperationId(instance, method),
+      ...apiExtension
     };
   }
 
