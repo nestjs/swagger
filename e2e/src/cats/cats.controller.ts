@@ -5,6 +5,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiSecurity,
+  ApiExtension,
   ApiTags
 } from '../../../lib';
 import { CatsService } from './cats.service';
@@ -28,6 +29,7 @@ export class CatsController {
     type: () => Cat
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiExtension('x-foo', { test: 'bar ' })
   async create(@Body() createCatDto: CreateCatDto): Promise<Cat> {
     return this.catsService.create(createCatDto);
   }

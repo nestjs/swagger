@@ -224,6 +224,9 @@
     "/api/cats": {
       "post": {
         "operationId": "CatsController_create",
+        "x-foo": {
+          "test": "bar "
+        },
         "summary": "Create cat",
         "parameters": [],
         "requestBody": {
