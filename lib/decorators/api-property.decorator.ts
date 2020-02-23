@@ -46,7 +46,6 @@ export function createApiPropertyDecorator(
     options.type = getEnumType(enumValues);
   }
 
-  !options.enumName && delete options.enumName;
   return createPropertyDecorator(
     DECORATORS.API_MODEL_PROPERTIES,
     options,

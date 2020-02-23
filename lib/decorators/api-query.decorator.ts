@@ -34,9 +34,10 @@ const defaultQueryOptions: ApiQueryOptions = {
 };
 
 export function ApiQuery(options: ApiQueryOptions): MethodDecorator {
+  const apiQueryMetadata = options as ApiQueryMetadata;
   const [type, isArray] = getTypeIsArrayTuple(
-    (options as ApiQueryMetadata).type,
-    (options as ApiQueryMetadata).isArray
+    apiQueryMetadata.type,
+    apiQueryMetadata.isArray
   );
   const param: ApiQueryMetadata & Record<string, any> = {
     name: isNil(options.name) ? defaultQueryOptions.name : options.name,
@@ -52,6 +53,5 @@ export function ApiQuery(options: ApiQueryOptions): MethodDecorator {
     addEnumSchema(param, options);
   }
 
-  !param['enumName'] && delete param['enumName'];
   return createParamDecorator(param, defaultQueryOptions);
 }

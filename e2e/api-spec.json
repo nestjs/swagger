@@ -110,7 +110,6 @@
             "$ref": "#/components/schemas/LettersEnum"
           },
           "enumArr": {
-            "type": "array",
             "items": {
               "$ref": "#/components/schemas/LettersEnum"
             }

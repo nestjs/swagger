@@ -20,11 +20,10 @@ import {
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
 import { getSchemaPath } from '../utils';
 import {
-  cleanUpParam,
-  isEnumMetadata,
   getEnumType,
   getEnumValues,
-  isEnumArray
+  isEnumArray,
+  isEnumMetadata
 } from '../utils/enum.utils';
 import { isBodyParameter } from '../utils/is-body-parameter.util';
 import { isBuiltInType } from '../utils/is-built-in-type.util';
@@ -233,7 +232,7 @@ export class SchemaObjectFactory {
     schemas: SchemaObject[],
     schemaRefsStack: string[]
   ) {
-    let enumName = param.enumName;
+    const enumName = param.enumName;
     const $ref = getSchemaPath(enumName);
 
     if (!includes(schemaRefsStack, enumName)) {
@@ -258,8 +257,7 @@ export class SchemaObjectFactory {
         ? { type: 'array', items: { $ref } }
         : { $ref };
 
-    cleanUpParam(param);
-    return param;
+    return omit(param, ['isArray', 'items', 'enumName', 'enum']);
   }
 
   createEnumSchemaType(
@@ -267,15 +265,14 @@ export class SchemaObjectFactory {
     metadata: SchemaObjectMetadata,
     schemas: SchemaObject[],
     schemaRefsStack: string[]
-  ): BaseParameterObject & Record<string, any> {
+  ) {
     if (!metadata.enumName) {
       return {
         ...metadata,
         name: metadata.name || key
-      } as any;
+      };
     }
-
-    let enumName = metadata.enumName;
+    const enumName = metadata.enumName;
     const $ref = getSchemaPath(enumName);
 
     if (!includes(schemaRefsStack, enumName)) {
@@ -283,7 +280,10 @@ export class SchemaObjectFactory {
       schemas.push({
         [enumName]: {
           type: 'string',
-          enum: metadata.isArray ? metadata.items['enum'] : metadata.enum
+          enum:
+            metadata.isArray && metadata.items
+              ? metadata.items['enum']
+              : metadata.enum
         }
       });
     }
@@ -294,16 +294,10 @@ export class SchemaObjectFactory {
       type: metadata.isArray ? 'array' : 'string'
     };
 
-    const _ref = metadata.isArray ? { items: { $ref } } : { $ref };
+    const refHost = metadata.isArray ? { items: { $ref } } : { $ref };
+    const paramObject = { ..._schemaObject, ...refHost };
 
-    const _paramObject = { ..._schemaObject, ..._ref };
-
-    if (!metadata.isArray) {
-      delete _paramObject.type;
-    }
-
-    delete _paramObject.enum;
-    return _paramObject as any;
+    return omit(paramObject, ['enum', 'type']);
   }
 
   createNotBuiltInTypeReference(

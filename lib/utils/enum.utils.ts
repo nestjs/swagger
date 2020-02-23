@@ -1,17 +1,12 @@
 import { isString } from 'lodash';
-import {
-  BaseParameterObject,
-  SchemaObject
-} from '../interfaces/open-api-spec.interface';
+import { SchemaObject } from '../interfaces/open-api-spec.interface';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
-import { ParamWithTypeMetadata } from '../services/parameter-metadata-accessor';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
 
 export function getEnumValues(enumType: SwaggerEnumType): string[] | number[] {
   if (Array.isArray(enumType)) {
     return enumType as string[];
   }
-
   if (typeof enumType !== 'object') {
     return [];
   }
@@ -21,8 +16,7 @@ export function getEnumValues(enumType: SwaggerEnumType): string[] | number[] {
 
   for (const key in enumType) {
     const value = enumType[key];
-    // filter out cases where enum key also becomes its value (A: B, B: A)	    // filter out cases where enum key also
-    // becomes its value (A: B, B: A)
+    // filter out cases where enum key also becomes its value (A: B, B: A)
     if (
       !uniqueValues.hasOwnProperty(value) &&
       !uniqueValues.hasOwnProperty(key)
@@ -74,18 +68,6 @@ export function addEnumSchema(
     paramDefinition.enumName = decoratorOptions.enumName;
   }
 }
-
-export const cleanUpParam = (
-  param: ParamWithTypeMetadata & BaseParameterObject
-) => {
-  if (param.isArray) {
-    delete param.isArray;
-    delete param['items'];
-  }
-
-  delete param.enumName;
-  delete param.enum;
-};
 
 export const isEnumArray = <T extends Partial<Record<'isArray' | 'enum', any>>>(
   obj: Record<string, any>
