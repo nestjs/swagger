@@ -11,7 +11,11 @@ import {
   Type,
   TypeChecker,
   TypeFlags,
-  TypeFormatFlags
+  TypeFormatFlags,
+  SourceFile,
+  getTrailingCommentRanges,
+  getLeadingCommentRanges,
+  CommentRange
 } from 'typescript';
 import { isDynamicallyAdded } from './plugin-utils';
 
@@ -74,6 +78,8 @@ export function hasObjectFlag(type: Type, flag: ObjectFlags) {
   return ((type as ObjectType).objectFlags & flag) === flag;
 }
 
+// exprot function getDescription()
+
 export function getText(
   type: Type,
   typeChecker: TypeChecker,
@@ -96,6 +102,46 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
   if (enclosingNode && enclosingNode.kind === SyntaxKind.TypeAliasDeclaration)
     formatFlags |= TypeFormatFlags.InTypeAlias;
   return formatFlags;
+}
+
+export function getMainCommentAnExamplesOfNode(
+  node: Node,
+  sourceFile: SourceFile,
+  needExamples?: boolean
+): [string, string[]] {
+  const sourceText = sourceFile.getText();
+  const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
+
+  const commentResult = [];
+  const examplesResult = [];
+  const extractCommentsAndExamples = (comments?: CommentRange[]) =>
+    comments?.forEach(comment => {
+      const commentSource = sourceText.substring(comment.pos, comment.end);
+      const oneComment = commentSource.replace(replaceRegex, '').trim();
+      if (oneComment) {
+        commentResult.push(oneComment);
+      }
+      if (needExamples) {
+        const regexOfExample = /@example *['"]?([^ ]+?)['"]? *$/gim;
+        let execResult: RegExpExecArray;
+        while (
+          (execResult = regexOfExample.exec(commentSource)) &&
+          execResult.length > 1
+        ) {
+          examplesResult.push(execResult[1]);
+        }
+      }
+    });
+  extractCommentsAndExamples(
+    getLeadingCommentRanges(sourceText, node.getFullStart())
+  );
+  if (!commentResult.length) {
+    extractCommentsAndExamples(
+      getTrailingCommentRanges(sourceText, node.getFullStart())
+    );
+  }
+
+  return [commentResult.join('\n'), examplesResult];
 }
 
 export function getDecoratorArguments(decorator: Decorator) {

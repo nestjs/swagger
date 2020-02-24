@@ -1,8 +1,11 @@
 import { compact, head } from 'lodash';
 import * as ts from 'typescript';
-import { ApiResponse } from '../../decorators';
+import { ApiResponse, ApiOperation } from '../../decorators';
 import { OPENAPI_NAMESPACE } from '../plugin-constants';
-import { getDecoratorArguments } from '../utils/ast-utils';
+import {
+  getDecoratorArguments,
+  getMainCommentAnExamplesOfNode
+} from '../utils/ast-utils';
 import {
   getDecoratorOrUndefinedByNames,
   getTypeReferenceAsString,
@@ -22,7 +25,12 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
     const visitNode = (node: ts.Node): ts.Node => {
       if (ts.isMethodDeclaration(node)) {
-        return this.addDecoratorToNode(node, typeChecker, sourceFile.fileName);
+        return this.addDecoratorToNode(
+          node,
+          typeChecker,
+          sourceFile.fileName,
+          sourceFile
+        );
       }
       return ts.visitEachChild(node, visitNode, ctx);
     };
@@ -32,17 +40,17 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   addDecoratorToNode(
     compilerNode: ts.MethodDeclaration,
     typeChecker: ts.TypeChecker,
-    hostFilename: string
+    hostFilename: string,
+    sourceFile: ts.SourceFile
   ): ts.MethodDeclaration {
     const node = ts.getMutableClone(compilerNode);
-    if (!node.decorators) {
-      return compilerNode;
-    }
-    const { pos, end } = node.decorators;
+    const nodeArray = node.decorators || ts.createNodeArray();
+    const { pos, end } = nodeArray;
 
     node.decorators = Object.assign(
       [
-        ...node.decorators,
+        ...this.createApiOperationOrEmptyInArray(node, nodeArray, sourceFile),
+        ...nodeArray,
         ts.createDecorator(
           ts.createCall(
             ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiResponse.name}`),
@@ -61,6 +69,56 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       { pos, end }
     );
     return node;
+  }
+
+  createApiOperationOrEmptyInArray(
+    node: ts.MethodDeclaration,
+    nodeArray: ts.NodeArray<ts.Decorator>,
+    sourceFile: ts.SourceFile
+  ) {
+    const descriptionKey = 'description';
+    const apiOperationDecorator = getDecoratorOrUndefinedByNames(
+      [ApiOperation.name],
+      nodeArray
+    );
+    let apiOperationOptions: ts.ObjectLiteralExpression;
+    let apiOperationOptionsProperties: ts.NodeArray<ts.PropertyAssignment>;
+    let comments;
+    if (
+      // No ApiOperation or No ApiOperationOptions or ApiOperationOptions is empty or No description in ApiOperationOptions
+      (!apiOperationDecorator ||
+        !(apiOperationOptions = head(
+          getDecoratorArguments(apiOperationDecorator)
+        )) ||
+        !(apiOperationOptionsProperties = apiOperationOptions.properties as ts.NodeArray<
+          ts.PropertyAssignment
+        >) ||
+        !hasPropertyKey(descriptionKey, apiOperationOptionsProperties)) &&
+      // Has comments
+      ([comments] = getMainCommentAnExamplesOfNode(node, sourceFile))[0]
+    ) {
+      const properties = [
+        ts.createPropertyAssignment(descriptionKey, ts.createLiteral(comments)),
+        ...(apiOperationOptionsProperties ?? ts.createNodeArray())
+      ];
+      const apiOperationDecoratorArguments: ts.NodeArray<ts.Expression> = ts.createNodeArray(
+        [ts.createObjectLiteral(compact(properties))]
+      );
+      if (apiOperationDecorator) {
+        (apiOperationDecorator.expression as ts.CallExpression).arguments = apiOperationDecoratorArguments;
+      } else {
+        return [
+          ts.createDecorator(
+            ts.createCall(
+              ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiOperation.name}`),
+              undefined,
+              apiOperationDecoratorArguments
+            )
+          )
+        ];
+      }
+    }
+    return [];
   }
 
   createDecoratorObjectLiteralExpr(

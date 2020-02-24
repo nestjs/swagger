@@ -1,9 +1,18 @@
 import { compact, flatten, head } from 'lodash';
 import * as ts from 'typescript';
-import { ApiHideProperty } from '../../decorators';
+import {
+  ApiHideProperty,
+  ApiProperty,
+  ApiPropertyOptional
+} from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { METADATA_FACTORY_NAME } from '../plugin-constants';
-import { getDecoratorArguments, getText, isEnum } from '../utils/ast-utils';
+import {
+  getDecoratorArguments,
+  getText,
+  isEnum,
+  getMainCommentAnExamplesOfNode
+} from '../utils/ast-utils';
 import {
   extractTypeArgumentIfArray,
   getDecoratorOrUndefinedByNames,
@@ -40,6 +49,23 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         if (hidePropertyDecorator) {
           return node;
         }
+
+        let apiOperationOptionsProperties: ts.NodeArray<ts.PropertyAssignment>;
+        const apiPropertyDecorator = getDecoratorOrUndefinedByNames(
+          [ApiProperty.name, ApiPropertyOptional.name],
+          decorators
+        );
+        if (apiPropertyDecorator) {
+          apiOperationOptionsProperties = head(
+            getDecoratorArguments(apiPropertyDecorator)
+          )?.properties;
+          node.decorators = ts.createNodeArray([
+            ...node.decorators.filter(
+              decorator => decorator != apiPropertyDecorator
+            )
+          ]);
+        }
+
         const isPropertyStatic = (node.modifiers || []).some(
           (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword
         );
@@ -51,6 +77,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             node,
             typeChecker,
             options,
+            apiOperationOptionsProperties ?? ts.createNodeArray(),
             sourceFile.fileName,
             sourceFile
           );
@@ -100,15 +127,17 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     compilerNode: ts.PropertyDeclaration,
     typeChecker: ts.TypeChecker,
     options: PluginOptions,
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string,
     sourceFile: ts.SourceFile
   ) {
     const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
       compilerNode,
       typeChecker,
-      ts.createNodeArray(),
+      existingProperties,
       options,
-      hostFilename
+      hostFilename,
+      sourceFile
     );
     this.addClassMetadata(compilerNode, objectLiteralExpr, sourceFile);
   }
@@ -120,12 +149,57 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       ts.PropertyAssignment
     > = ts.createNodeArray(),
     options: PluginOptions = {},
-    hostFilename = ''
+    hostFilename = '',
+    sourceFile?: ts.SourceFile
   ): ts.ObjectLiteralExpression {
     const isRequired = !node.questionToken;
 
+    const descriptionPropertyWapper = [];
+    const examplesPropertyWapper = [];
+    if (sourceFile) {
+      const [comments, examples] = getMainCommentAnExamplesOfNode(
+        node,
+        sourceFile,
+        true
+      );
+      if (!hasPropertyKey('description', existingProperties) && comments) {
+        descriptionPropertyWapper.push(
+          ts.createPropertyAssignment('description', ts.createLiteral(comments))
+        );
+      }
+      if (
+        !(
+          hasPropertyKey('example', existingProperties) ||
+          hasPropertyKey('examples', existingProperties)
+        ) &&
+        examples.length
+      ) {
+        console.log(
+          examples,
+          hasPropertyKey('example', existingProperties),
+          hasPropertyKey('examples', existingProperties),
+          '==============================================='
+        );
+        if (examples.length == 1) {
+          examplesPropertyWapper.push(
+            ts.createPropertyAssignment(
+              'example',
+              ts.createLiteral(examples[0])
+            )
+          );
+        } else {
+          examplesPropertyWapper.push(
+            ts.createPropertyAssignment(
+              'examples',
+              ts.createArrayLiteral(examples.map(e => ts.createLiteral(e)))
+            )
+          );
+        }
+      }
+    }
     let properties = [
       ...existingProperties,
+      ...descriptionPropertyWapper,
       !hasPropertyKey('required', existingProperties) &&
         ts.createPropertyAssignment('required', ts.createLiteral(isRequired)),
       this.createTypePropertyAssignment(
@@ -134,6 +208,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         existingProperties,
         hostFilename
       ),
+      ...examplesPropertyWapper,
       this.createDefaultPropertyAssignment(node, existingProperties),
       this.createEnumPropertyAssignment(
         node,
