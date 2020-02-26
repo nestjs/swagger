@@ -174,12 +174,6 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         ) &&
         examples.length
       ) {
-        console.log(
-          examples,
-          hasPropertyKey('example', existingProperties),
-          hasPropertyKey('examples', existingProperties),
-          '==============================================='
-        );
         if (examples.length == 1) {
           examplesPropertyWapper.push(
             ts.createPropertyAssignment(
