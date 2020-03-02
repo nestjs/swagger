@@ -45,10 +45,7 @@ export class SchemaObjectFactory {
   ): Array<ParamWithTypeMetadata | BaseParameterObject> {
     return parameters.map(param => {
       if (!isBodyParameter(param)) {
-        if (param.enumName) {
-          return this.createEnumParam(param, schemas, schemaRefsStack);
-        }
-        return param;
+        return this.createQueryOrParamSchema(param, schemas, schemaRefsStack);
       }
       if (this.isPrimitiveType(param.type)) {
         return param;
@@ -86,6 +83,23 @@ export class SchemaObjectFactory {
         schema
       };
     });
+  }
+
+  createQueryOrParamSchema(
+    param: ParamWithTypeMetadata,
+    schemas: SchemaObject[],
+    schemaRefsStack: string[]
+  ) {
+    if (param.enumName) {
+      return this.createEnumParam(param, schemas, schemaRefsStack);
+    }
+    if (this.isLazyTypeFunc(param.type)) {
+      return {
+        ...param,
+        type: (param.type as Function)()
+      };
+    }
+    return param;
   }
 
   exploreModelSchema(
