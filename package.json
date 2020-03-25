@@ -41,7 +41,7 @@
     "express": "4.17.1",
     "fastify-swagger": "2.5.0",
     "husky": "4.2.3",
-    "jest": "25.1.0",
+    "jest": "25.2.0",
     "lint-staged": "10.0.9",
     "prettier": "2.0.2",
     "reflect-metadata": "0.1.13",
