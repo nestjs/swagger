@@ -2,6 +2,10 @@ import { Type } from '@nestjs/common';
 import { DECORATORS } from '../constants';
 import { ApiProperty } from '../decorators';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
+import {
+  inheritTransformationMetadata,
+  inheritValidationMetadata
+} from './type-helpers.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
@@ -11,17 +15,23 @@ export function OmitType<T, K extends keyof T>(
 ): Type<Omit<T, typeof keys[number]>> {
   const fields = modelPropertiesAccessor
     .getModelProperties(classRef.prototype)
-    .filter(item => !keys.includes(item as K));
+    .filter((item) => !keys.includes(item as K));
 
   abstract class OmitTypeClass {}
 
-  fields.forEach(key => {
+  const isInheritedPredicate = (propertyKey: string) =>
+    !keys.includes(propertyKey as K);
+  inheritValidationMetadata(classRef, OmitTypeClass, isInheritedPredicate);
+  inheritTransformationMetadata(classRef, OmitTypeClass, isInheritedPredicate);
+
+  fields.forEach((propertyKey) => {
     const metadata = Reflect.getMetadata(
       DECORATORS.API_MODEL_PROPERTIES,
       classRef.prototype,
-      key
+      propertyKey
     );
-    ApiProperty(metadata)(OmitTypeClass.prototype, key);
+    const decoratorFactory = ApiProperty(metadata);
+    decoratorFactory(OmitTypeClass.prototype, propertyKey);
   });
   return OmitTypeClass as Type<Omit<T, typeof keys[number]>>;
 }
