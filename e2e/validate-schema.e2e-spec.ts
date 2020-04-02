@@ -24,6 +24,7 @@ describe('Validate OpenAPI schema', () => {
       .addBearerAuth()
       .addOAuth2()
       .addApiKey()
+      .addCookieAuth()
       .addSecurityRequirements('bearer')
       .build();
 
