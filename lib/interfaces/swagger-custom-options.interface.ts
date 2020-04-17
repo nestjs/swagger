@@ -9,5 +9,5 @@ export interface SwaggerCustomOptions {
   customSiteTitle?: string;
   validatorUrl?: string;
   url?: string;
-  urls?: {url: string, name: string}[];
+  urls?: Record<'url' | 'name', string>[];
 }
