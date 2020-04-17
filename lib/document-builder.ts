@@ -157,6 +157,22 @@ export class DocumentBuilder {
     return this;
   }
 
+  public addCookieAuth(
+    cookieName: string = 'connect.sid',
+    options: SecuritySchemeObject = {
+      type: 'apiKey'
+    },
+    securityName = 'cookie'
+  ): this {
+    this.addSecurity(securityName, {
+      type: 'apiKey',
+      in: 'cookie',
+      name: cookieName,
+      ...options
+    });
+    return this;
+  }
+
   public build(): Omit<OpenAPIObject, 'components' | 'paths'> {
     return this.document;
   }

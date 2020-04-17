@@ -32,6 +32,11 @@
         "type": "apiKey",
         "in": "header",
         "name": "api_key"
+      },
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "connect.sid"
       }
     },
     "schemas": {

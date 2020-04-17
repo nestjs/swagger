@@ -27,6 +27,7 @@ describe('Fastify Swagger', () => {
       .addBearerAuth()
       .addOAuth2()
       .addApiKey()
+      .addCookieAuth()
       .addSecurityRequirements('bearer');
   });
 
@@ -58,10 +59,7 @@ describe('Fastify Swagger', () => {
     await app.init();
     // otherwise throws "FastifyError [FST_ERR_DEC_ALREADY_PRESENT]: FST_ERR_DEC_ALREADY_PRESENT: The decorator 'swagger' has already been added!"
     await expect(
-      app
-        .getHttpAdapter()
-        .getInstance()
-        .ready()
+      app.getHttpAdapter().getInstance().ready()
     ).resolves.toBeDefined();
   });
 });
