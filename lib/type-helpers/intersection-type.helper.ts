@@ -1,11 +1,12 @@
 import { Type } from '@nestjs/common';
-import { DECORATORS } from '../constants';
-import { ApiProperty } from '../decorators';
-import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
 import {
   inheritTransformationMetadata,
   inheritValidationMetadata
-} from './type-helpers.utils';
+} from '@nestjs/mapped-types';
+import { DECORATORS } from '../constants';
+import { ApiProperty } from '../decorators';
+import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
+import { clonePluginMetadataFactory } from './mapped-types.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
@@ -25,6 +26,15 @@ export function IntersectionType<A, B>(
   inheritTransformationMetadata(classARef, IntersectionTypeClass);
   inheritValidationMetadata(classBRef, IntersectionTypeClass);
   inheritTransformationMetadata(classBRef, IntersectionTypeClass);
+
+  clonePluginMetadataFactory(
+    IntersectionTypeClass as Type<unknown>,
+    classARef.prototype
+  );
+  clonePluginMetadataFactory(
+    IntersectionTypeClass as Type<unknown>,
+    classBRef.prototype
+  );
 
   fieldsOfA.forEach((propertyKey) => {
     const metadata = Reflect.getMetadata(
