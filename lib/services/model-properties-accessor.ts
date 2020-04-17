@@ -30,7 +30,7 @@ export class ModelPropertiesAccessor {
       }
       const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
       const properties = Object.keys(metadata);
-      properties.forEach(key => {
+      properties.forEach((key) => {
         createApiPropertyDecorator(metadata[key], false)(classPrototype, key);
       });
     } while (

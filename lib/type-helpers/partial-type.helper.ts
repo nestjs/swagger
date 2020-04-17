@@ -1,12 +1,14 @@
 import { Type } from '@nestjs/common';
-import { DECORATORS } from '../constants';
-import { ApiProperty } from '../decorators';
-import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
 import {
   applyIsOptionalDecorator,
   inheritTransformationMetadata,
   inheritValidationMetadata
-} from './type-helpers.utils';
+} from '@nestjs/mapped-types';
+import { mapValues } from 'lodash';
+import { DECORATORS } from '../constants';
+import { ApiProperty } from '../decorators';
+import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
+import { clonePluginMetadataFactory } from './mapped-types.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
@@ -16,6 +18,13 @@ export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
   abstract class PartialTypeClass {}
   inheritValidationMetadata(classRef, PartialTypeClass);
   inheritTransformationMetadata(classRef, PartialTypeClass);
+
+  clonePluginMetadataFactory(
+    PartialTypeClass as Type<unknown>,
+    classRef.prototype,
+    (metadata: Record<string, any>) =>
+      mapValues(metadata, (item) => ({ ...item, required: false }))
+  );
 
   fields.forEach((key) => {
     const metadata =

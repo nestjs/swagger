@@ -1,11 +1,13 @@
 import { Type } from '@nestjs/common';
-import { DECORATORS } from '../constants';
-import { ApiProperty } from '../decorators';
-import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
 import {
   inheritTransformationMetadata,
   inheritValidationMetadata
-} from './type-helpers.utils';
+} from '@nestjs/mapped-types';
+import { pick } from 'lodash';
+import { DECORATORS } from '../constants';
+import { ApiProperty } from '../decorators';
+import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
+import { clonePluginMetadataFactory } from './mapped-types.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
@@ -23,6 +25,12 @@ export function PickType<T, K extends keyof T>(
     keys.includes(propertyKey as K);
   inheritValidationMetadata(classRef, PickTypeClass, isInheritedPredicate);
   inheritTransformationMetadata(classRef, PickTypeClass, isInheritedPredicate);
+
+  clonePluginMetadataFactory(
+    PickTypeClass as Type<unknown>,
+    classRef.prototype,
+    (metadata: Record<string, any>) => pick(metadata, keys)
+  );
 
   fields.forEach((propertyKey) => {
     const metadata = Reflect.getMetadata(
