@@ -48,7 +48,7 @@
     "lint-staged": "10.1.7",
     "prettier": "2.0.4",
     "reflect-metadata": "0.1.13",
-    "release-it": "13.5.4",
+    "release-it": "13.5.5",
     "swagger-parser": "9.0.1",
     "swagger-ui-express": "4.1.4",
     "ts-jest": "25.4.0",
