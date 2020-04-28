@@ -28,6 +28,7 @@ import {
 import { isBodyParameter } from '../utils/is-body-parameter.util';
 import { isBuiltInType } from '../utils/is-built-in-type.util';
 import { isDateCtor } from '../utils/is-date-ctor.util';
+import { isQueryParameter } from '../utils/is-query-parameter.util';
 import { ModelPropertiesAccessor } from './model-properties-accessor';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 import { SwaggerTypesMapper } from './swagger-types-mapper';
@@ -43,9 +44,9 @@ export class SchemaObjectFactory {
     schemas: SchemaObject[],
     schemaRefsStack: string[] = []
   ): Array<ParamWithTypeMetadata | BaseParameterObject> {
-    return parameters.map(param => {
-      if (!isBodyParameter(param)) {
-        return this.createQueryOrParamSchema(param, schemas, schemaRefsStack);
+    return parameters.map((param) => {
+      if (!isBodyParameter(param) && !isQueryParameter(param)) {
+        return this.createParamSchema(param, schemas, schemaRefsStack);
       }
       if (this.isPrimitiveType(param.type)) {
         return param;
@@ -85,7 +86,7 @@ export class SchemaObjectFactory {
     });
   }
 
-  createQueryOrParamSchema(
+  createParamSchema(
     param: ParamWithTypeMetadata,
     schemas: SchemaObject[],
     schemaRefsStack: string[]
@@ -117,7 +118,7 @@ export class SchemaObjectFactory {
     const extraModels = exploreGlobalApiExtraModelsMetadata(
       type as Type<unknown>
     );
-    extraModels.forEach(item =>
+    extraModels.forEach((item) =>
       this.exploreModelSchema(item, schemas, schemaRefsStack)
     );
 
@@ -125,7 +126,7 @@ export class SchemaObjectFactory {
     const modelProperties = this.modelPropertiesAccessor.getModelProperties(
       prototype
     );
-    const propertiesWithType = modelProperties.map(key => {
+    const propertiesWithType = modelProperties.map((key) => {
       const property = this.mergePropertyWithMetadata(
         key,
         prototype,
@@ -134,20 +135,20 @@ export class SchemaObjectFactory {
       );
 
       const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
-      if (schemaCombinators.some(key => key in property)) {
+      if (schemaCombinators.some((key) => key in property)) {
         delete (property as SchemaObjectMetadata).type;
       }
       return property;
     });
     const typeDefinition: SchemaObject = {
       type: 'object',
-      properties: mapValues(keyBy(propertiesWithType, 'name'), property =>
+      properties: mapValues(keyBy(propertiesWithType, 'name'), (property) =>
         omit(property, ['name', 'isArray', 'required', 'enumName'])
       ) as Record<string, SchemaObject | ReferenceObject>
     };
     const typeDefinitionRequiredFields = (propertiesWithType as SchemaObjectMetadata[])
-      .filter(property => property.required != false)
-      .map(property => property.name);
+      .filter((property) => property.required != false)
+      .map((property) => property.name);
 
     if (typeDefinitionRequiredFields.length > 0) {
       typeDefinition['required'] = typeDefinitionRequiredFields;
@@ -399,7 +400,7 @@ export class SchemaObjectFactory {
   ) {
     const objLiteralKeys = Object.keys(literalObj);
     const properties = {};
-    objLiteralKeys.forEach(key => {
+    objLiteralKeys.forEach((key) => {
       const propertyCompilerMetadata = literalObj[key];
       if (isEnumArray<Record<string, any>>(propertyCompilerMetadata)) {
         propertyCompilerMetadata.type = 'array';
@@ -440,7 +441,8 @@ export class SchemaObjectFactory {
 
   private isPrimitiveType(type: Type<unknown> | string): boolean {
     return (
-      isFunction(type) && [String, Boolean, Number].some(item => item === type)
+      isFunction(type) &&
+      [String, Boolean, Number].some((item) => item === type)
     );
   }
 
