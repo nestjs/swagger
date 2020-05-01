@@ -40,6 +40,7 @@ export class CatsController {
     description: 'The found record',
     type: Cat
   })
+  @ApiExtension('x-auth-type', 'NONE')
   findOne(@Param('id') id: string): Cat {
     return this.catsService.findOne(+id);
   }

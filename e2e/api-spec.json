@@ -345,6 +345,7 @@
     "/api/cats/{id}": {
       "get": {
         "operationId": "CatsController_findOne",
+        "x-auth-type": "NONE",
         "parameters": [
           {
             "name": "id",

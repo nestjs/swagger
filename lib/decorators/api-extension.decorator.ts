@@ -9,9 +9,10 @@ export function ApiExtension(extensionKey: string, extensionProperties: any) {
   }
 
   const extensionObject = {
-    [extensionKey]: {
-      ...extensionProperties
-    }
+    [extensionKey]:
+      typeof extensionProperties !== 'string'
+        ? { ...extensionProperties }
+        : extensionProperties
   };
 
   return createMixedDecorator(DECORATORS.API_EXTENSION, extensionObject);
