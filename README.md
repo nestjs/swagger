@@ -45,7 +45,7 @@ The following decorators have been changed/renamed:
 - `@ApiImplicitParam` is now `@ApiParam`
 - `@ApiImplicitBody` is now `@ApiBody`
 - `@ApiImplicitHeader` is now `@ApiHeader`
-- `@ApiOperation({{ '{' }} title: 'test' {{ '}' }})` is now `@ApiOperation({{ '{' }} summary: 'test' {{ '}' }})`
+- `@ApiOperation({ title: 'test' })` is now `@ApiOperation({ summary: 'test' })`
 - `@ApiUseTags` is now `@ApiTags`
 
 `DocumentBuilder` breaking changes (updated method signatures):
