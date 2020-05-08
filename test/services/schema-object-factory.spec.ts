@@ -145,6 +145,12 @@ describe('SchemaObjectFactory', () => {
             },
             type: 'array'
           },
+          luckyNumbers: {
+            type: 'array',
+            items: {
+              type: 'integer'
+            }
+          },
           options: {
             items: {
               properties: {
@@ -170,6 +176,7 @@ describe('SchemaObjectFactory', () => {
           'profile',
           'tags',
           'urls',
+          'luckyNumbers',
           'options',
           'allOf',
           'houses',
