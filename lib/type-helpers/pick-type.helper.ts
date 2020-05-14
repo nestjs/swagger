@@ -13,7 +13,7 @@ const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
 export function PickType<T, K extends keyof T>(
   classRef: Type<T>,
-  keys: K[]
+  keys: readonly K[]
 ): Type<Pick<T, typeof keys[number]>> {
   const fields = modelPropertiesAccessor
     .getModelProperties(classRef.prototype)
