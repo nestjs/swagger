@@ -18,4 +18,9 @@ export interface SwaggerDocumentOptions {
    * If `true`, swagger will also load routes from the modules imported by `include` modules
    */
   deepScanRoutes?: boolean;
+
+  /**
+   * If `true`, only uses the method name in operations (getUser) instead of methods prefixed by the controller name (UserController_getUser).
+   */
+  useMethodNameForOperations?: boolean;
 }

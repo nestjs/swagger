@@ -19,12 +19,14 @@ import { ModelPropertiesAccessor } from '../../lib/services/model-properties-acc
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
+import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 
 describe('SwaggerExplorer', () => {
   const schemaObjectFactory = new SchemaObjectFactory(
     new ModelPropertiesAccessor(),
     new SwaggerTypesMapper()
   );
+
   describe('when module only uses metadata', () => {
     class Foo {}
 
@@ -76,11 +78,35 @@ describe('SwaggerExplorer', () => {
         } as InstanceWrapper<FooController>,
         'path'
       );
+      const operationPrefix = 'FooController_';
 
+      validateRoutes(routes, operationPrefix);
+    });
+
+    it('sees two controller operations and their responses with useMethodNameForOperations = true', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path',
+        undefined,
+        true
+      );
+      const operationPrefix = '';
+
+      validateRoutes(routes, operationPrefix);
+    });
+
+    const validateRoutes = (
+      routes: DenormalizedDoc[],
+      operationPrefix: string
+    ) => {
       expect(routes.length).toEqual(2);
 
       // POST
-      expect(routes[0].root.operationId).toEqual('FooController_create');
+      expect(routes[0].root.operationId).toEqual(operationPrefix + 'create');
       expect(routes[0].root.method).toEqual('post');
       expect(routes[0].root.path).toEqual('/path/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
@@ -141,7 +167,7 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.operationId).toEqual('FooController_find');
+      expect(routes[1].root.operationId).toEqual(operationPrefix + 'find');
       expect(routes[1].root.method).toEqual('get');
       expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
       expect(routes[1].root.summary).toEqual('List all Foos');
@@ -179,8 +205,9 @@ describe('SwaggerExplorer', () => {
           }
         }
       });
-    });
+    };
   });
+
   describe('when explicit decorators and metadata are used', () => {
     class Foo {}
 
@@ -223,11 +250,35 @@ describe('SwaggerExplorer', () => {
         } as InstanceWrapper<FooController>,
         'path'
       );
+      const prefix = 'FooController_';
 
+      validateRoutes(routes, prefix);
+    });
+
+    it('sees two controller operations and their responses when useMethodNameForOperations = true', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path',
+        undefined,
+        true
+      );
+      const prefix = '';
+
+      validateRoutes(routes, prefix);
+    });
+
+    const validateRoutes = (
+      routes: DenormalizedDoc[],
+      operationPrefix: string
+    ) => {
       expect(routes.length).toEqual(2);
 
       // POST
-      expect(routes[0].root.operationId).toEqual('FooController_create');
+      expect(routes[0].root.operationId).toEqual(operationPrefix + 'create');
       expect(routes[0].root.method).toEqual('post');
       expect(routes[0].root.path).toEqual('/path/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
@@ -260,7 +311,7 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.operationId).toEqual('FooController_find');
+      expect(routes[1].root.operationId).toEqual(operationPrefix + 'find');
       expect(routes[1].root.method).toEqual('get');
       expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
       expect(routes[1].root.summary).toEqual('List all Foos');
@@ -310,7 +361,7 @@ describe('SwaggerExplorer', () => {
           }
         }
       });
-    });
+    };
   });
   describe('when only explicit decorators are used', () => {
     class Foo {}
@@ -351,11 +402,35 @@ describe('SwaggerExplorer', () => {
         } as InstanceWrapper<FooController>,
         'path'
       );
+      const operationPrefix = 'FooController_';
 
+      validateRoutes(routes, operationPrefix);
+    });
+
+    it('sees two controller operations and their responses when useMethodNameForOperations = true', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path',
+        undefined,
+        true
+      );
+      const operationPrefix = '';
+
+      validateRoutes(routes, operationPrefix);
+    });
+
+    const validateRoutes = (
+      routes: DenormalizedDoc[],
+      operationPrefix: string
+    ) => {
       expect(routes.length).toEqual(2);
 
       // POST
-      expect(routes[0].root.operationId).toEqual('FooController_create');
+      expect(routes[0].root.operationId).toEqual(operationPrefix + 'create');
       expect(routes[0].root.method).toEqual('post');
       expect(routes[0].root.path).toEqual('/path/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
@@ -385,7 +460,7 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.operationId).toEqual('FooController_find');
+      expect(routes[1].root.operationId).toEqual(operationPrefix + 'find');
       expect(routes[1].root.method).toEqual('get');
       expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
       expect(routes[1].root.summary).toEqual('List all Foos');
@@ -424,7 +499,7 @@ describe('SwaggerExplorer', () => {
           }
         }
       });
-    });
+    };
   });
   describe('when custom properties are passed', () => {
     class Foo {}
@@ -492,6 +567,25 @@ describe('SwaggerExplorer', () => {
         'path'
       );
 
+      validateRoutes(routes);
+    });
+
+    it('should merge implicit metadata with explicit options and useMethodNameForOperations = true', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path',
+        undefined,
+        true
+      );
+
+      validateRoutes(routes);
+    });
+
+    const validateRoutes = (routes: DenormalizedDoc[]) => {
       expect(routes.length).toEqual(2);
 
       // POST
@@ -581,7 +675,7 @@ describe('SwaggerExplorer', () => {
           }
         }
       });
-    });
+    };
   });
   describe('when enum is used', () => {
     enum ParamEnum {
