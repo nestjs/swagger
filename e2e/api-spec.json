@@ -235,7 +235,17 @@
           "test": "bar "
         },
         "summary": "Create cat",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "xsff",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -277,6 +287,15 @@
       "get": {
         "operationId": "CatsController_findAll",
         "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "xsff",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "page",
             "required": true,
@@ -348,6 +367,15 @@
         "x-auth-type": "NONE",
         "parameters": [
           {
+            "name": "header",
+            "in": "header",
+            "description": "xsff",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -384,7 +412,17 @@
     "/api/cats/bulk": {
       "get": {
         "operationId": "CatsController_findAllBulk",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "xsff",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -404,7 +442,17 @@
       },
       "post": {
         "operationId": "CatsController_createBulk",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "xsff",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -440,7 +488,17 @@
       "post": {
         "operationId": "CatsController_createAsFormData",
         "summary": "Create cat",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "xsff",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -482,7 +540,17 @@
     "/api/cats/site*": {
       "get": {
         "operationId": "CatsController_getSite",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "xsff",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""

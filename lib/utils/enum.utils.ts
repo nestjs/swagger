@@ -34,7 +34,7 @@ export function getEnumType(values: (string | number)[]): 'string' | 'number' {
 }
 
 export function addEnumArraySchema(
-  paramDefinition: Record<'schema' | 'isArray' | 'enumName', any>,
+  paramDefinition: Partial<Record<'schema' | 'isArray' | 'enumName', any>>,
   decoratorOptions: Partial<Record<'enum' | 'enumName', any>>
 ) {
   const paramSchema: SchemaObject = paramDefinition.schema || {};
@@ -54,8 +54,8 @@ export function addEnumArraySchema(
 }
 
 export function addEnumSchema(
-  paramDefinition: Record<'schema' | 'enumName', any>,
-  decoratorOptions: Partial<Record<'enum' | 'enumName', any>>
+  paramDefinition: Partial<Record<string, any>>,
+  decoratorOptions: Partial<Record<string, any>>
 ) {
   const paramSchema: SchemaObject = paramDefinition.schema || {};
   const enumValues = getEnumValues(decoratorOptions.enum);

@@ -2,10 +2,11 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConsumes,
+  ApiExtension,
+  ApiHeader,
   ApiOperation,
   ApiResponse,
   ApiSecurity,
-  ApiExtension,
   ApiTags
 } from '../../../lib';
 import { CatsService } from './cats.service';
@@ -16,6 +17,7 @@ import { PaginationQuery } from './dto/pagination-query.dto';
 @ApiSecurity('basic')
 @ApiBearerAuth()
 @ApiTags('cats')
+@ApiHeader({ name: 'header', required: false, description: 'Test' })
 @Controller('cats')
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}

@@ -121,7 +121,7 @@ export class SwaggerExplorer {
     const denormalizedPaths = this.metadataScanner.scanFromPrototype<
       any,
       DenormalizedDoc
-    >(instance, prototype, name => {
+    >(instance, prototype, (name) => {
       const targetCallback = prototype[name];
       const excludeEndpoint = exploreApiExcludeEndpointMetadata(
         instance,
@@ -166,7 +166,7 @@ export class SwaggerExplorer {
       return this.migrateOperationSchema(
         {
           responses: {},
-          ...globalMetadata,
+          ...omit(globalMetadata, 'chunks'),
           ...mergedMethodMetadata
         },
         prototype,
@@ -186,9 +186,17 @@ export class SwaggerExplorer {
       exploreGlobalApiHeaderMetadata
     ];
     const globalMetadata = globalExplorers
-      .map(explorer => explorer.call(explorer, metatype))
-      .filter(val => !isUndefined(val))
-      .reduce((curr, next) => ({ ...curr, ...next }), {});
+      .map((explorer) => explorer.call(explorer, metatype))
+      .filter((val) => !isUndefined(val))
+      .reduce((curr, next) => {
+        if (next.depth) {
+          return {
+            ...curr,
+            chunks: (curr.chunks || []).concat(next)
+          };
+        }
+        return { ...curr, ...next };
+      }, {});
 
     return globalMetadata;
   }
@@ -249,16 +257,27 @@ export class SwaggerExplorer {
     if (methodMetadata.root && !methodMetadata.root.parameters) {
       methodMetadata.root.parameters = [];
     }
-    return mapValues(methodMetadata, (value, key) => {
-      if (!globalMetadata[key]) {
+    const deepMerge = (metadata: Record<string, any>) => (
+      value: Record<string, unknown>,
+      key: string
+    ) => {
+      if (!metadata[key]) {
         return value;
       }
-      const globalValue = globalMetadata[key];
-      if (globalMetadata.depth) {
-        return this.deepMergeMetadata(globalValue, value, globalMetadata.depth);
+      const globalValue = metadata[key];
+      if (metadata.depth) {
+        return this.deepMergeMetadata(globalValue, value, metadata.depth);
       }
       return this.mergeValues(globalValue, value);
-    });
+    };
+
+    if (globalMetadata.chunks) {
+      const { chunks } = globalMetadata;
+      chunks.forEach((chunk: Record<string, any>) => {
+        methodMetadata = mapValues(methodMetadata, deepMerge(chunk));
+      });
+    }
+    return mapValues(methodMetadata, deepMerge(globalMetadata));
   }
 
   private deepMergeMetadata(
@@ -332,7 +351,7 @@ export class SwaggerExplorer {
   }
 
   private registerExtraModels(extraModels: Function[]) {
-    extraModels.forEach(item =>
+    extraModels.forEach((item) =>
       this.schemaObjectFactory.exploreModelSchema(item, this.schemas)
     );
   }
