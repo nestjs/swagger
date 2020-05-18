@@ -31,7 +31,7 @@
     "@nestjs/core": "7.0.13",
     "@nestjs/platform-express": "7.0.13",
     "@nestjs/platform-fastify": "7.0.13",
-    "@types/jest": "25.2.2",
+    "@types/jest": "25.2.3",
     "@types/lodash": "4.14.151",
     "@types/node": "11.15.0",
     "@typescript-eslint/eslint-plugin": "2.34.0",
