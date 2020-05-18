@@ -51,11 +51,16 @@ export class SwaggerModule {
     const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () =>
       require('swagger-ui-express')
     );
+    const YAML = loadPackage('yaml', 'SwaggerModule', () => require('yaml'));
     const swaggerHtml = swaggerUi.generateHTML(document, options);
     app.use(finalPath, swaggerUi.serveFiles(document, options));
 
     httpAdapter.get(finalPath, (req, res) => res.send(swaggerHtml));
     httpAdapter.get(finalPath + '-json', (req, res) => res.json(document));
+    httpAdapter.get(finalPath + '-yaml', (req, res) => {
+      res.header('Content-Type', 'application/x-yaml');
+      res.send(YAML.stringify(document));
+    });
   }
 
   private static setupFastify(
