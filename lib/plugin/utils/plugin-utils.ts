@@ -1,5 +1,5 @@
 import { head } from 'lodash';
-import { dirname, posix } from 'path';
+import { dirname, relative } from 'path';
 import * as ts from 'typescript';
 import {
   getDecoratorName,
@@ -17,7 +17,7 @@ export function getDecoratorOrUndefinedByNames(
   names: string[],
   decorators: ts.NodeArray<ts.Decorator>
 ): ts.Decorator | undefined {
-  return (decorators || ts.createNodeArray()).find(item =>
+  return (decorators || ts.createNodeArray()).find((item) =>
     names.includes(getDecoratorName(item))
   );
 }
@@ -99,8 +99,8 @@ export function hasPropertyKey(
   properties: ts.NodeArray<ts.PropertyAssignment>
 ): boolean {
   return properties
-    .filter(item => !isDynamicallyAdded(item))
-    .some(item => item.name.getText() === key);
+    .filter((item) => !isDynamicallyAdded(item))
+    .some((item) => item.name.getText() === key);
 }
 
 export function replaceImportPath(typeReference: string, fileName: string) {
@@ -113,7 +113,7 @@ export function replaceImportPath(typeReference: string, fileName: string) {
   }
   importPath = importPath.slice(2, importPath.length - 1);
 
-  let relativePath = posix.relative(dirname(fileName), importPath);
+  let relativePath = relative(dirname(fileName), importPath);
   relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
   const nodeModulesText = 'node_modules';
