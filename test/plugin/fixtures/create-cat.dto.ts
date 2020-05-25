@@ -49,26 +49,30 @@ var Status;
 })(Status || (Status = {}));
 var OneValueEnum;
 (function (OneValueEnum) {
-    OneValueEnum[OneValueEnum["ONE"] = 0] = "ONE";
+    OneValueEnum[OneValueEnum[\"ONE\"] = 0] = \"ONE\";
 })(OneValueEnum || (OneValueEnum = {}));
-export class CreateCatDto {
-    constructor() {
-        this.age = 3;
-        this.status = Status.ENABLED;
+let CreateCatDto = /** @class */ (() => {
+    class CreateCatDto {
+        constructor() {
+            this.age = 3;
+            this.status = Status.ENABLED;
+        }
+        static _OPENAPI_METADATA_FACTORY() {
+            return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, statusArr: { required: false, enum: Status, isArray: true }, oneValueEnum: { required: false, enum: OneValueEnum }, oneValueEnumArr: { required: false, enum: OneValueEnum }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, date: { required: true, type: () => Date } };
+        }
     }
-    static _OPENAPI_METADATA_FACTORY() {
-        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, statusArr: { required: false, enum: Status, isArray: true }, oneValueEnum: { required: false, enum: OneValueEnum }, oneValueEnumArr: { required: false, enum: OneValueEnum }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, date: { required: true, type: () => Date } };
-    }
-}
-__decorate([
-    Min(0),
-    Max(10)
-], CreateCatDto.prototype, \"age\", void 0);
-__decorate([
-    ApiProperty({ type: String }),
-    IsString()
-], CreateCatDto.prototype, \"breed\", void 0);
-__decorate([
-    ApiHideProperty()
-], CreateCatDto.prototype, \"hidden\", void 0);
+    __decorate([
+        Min(0),
+        Max(10)
+    ], CreateCatDto.prototype, \"age\", void 0);
+    __decorate([
+        ApiProperty({ type: String }),
+        IsString()
+    ], CreateCatDto.prototype, \"breed\", void 0);
+    __decorate([
+        ApiHideProperty()
+    ], CreateCatDto.prototype, \"hidden\", void 0);
+    return CreateCatDto;
+})();
+export { CreateCatDto };
 `;
