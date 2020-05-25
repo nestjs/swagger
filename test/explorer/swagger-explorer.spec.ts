@@ -88,10 +88,10 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root.parameters).toEqual([
         {
           in: 'query',
-          minimum: 0,
           name: 'page',
           required: true,
           schema: {
+            minimum: 0,
             type: 'number'
           }
         },
@@ -105,10 +105,10 @@ describe('SwaggerExplorer', () => {
         },
         {
           in: 'query',
-          minItems: 3,
           name: 'sortBy',
           required: true,
           schema: {
+            minItems: 3,
             items: {
               type: 'string'
             },
