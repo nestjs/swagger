@@ -14,18 +14,22 @@ export abstract class Audit {
 `;
 
 export const createCatDtoTextAlt2Transpiled = `import { CreateDateColumn, UpdateDateColumn, VersionColumn } from 'typeorm';
-export class Audit {
-    static _OPENAPI_METADATA_FACTORY() {
-        return { createdAt: { required: true, type: () => Object }, updatedAt: { required: true, type: () => Object }, version: { required: true, type: () => Object } };
+let Audit = /** @class */ (() => {
+    class Audit {
+        static _OPENAPI_METADATA_FACTORY() {
+            return { createdAt: { required: true, type: () => Object }, updatedAt: { required: true, type: () => Object }, version: { required: true, type: () => Object } };
+        }
     }
-}
-__decorate([
-    CreateDateColumn()
-], Audit.prototype, "createdAt", void 0);
-__decorate([
-    UpdateDateColumn()
-], Audit.prototype, "updatedAt", void 0);
-__decorate([
-    VersionColumn()
-], Audit.prototype, "version", void 0);
+    __decorate([
+        CreateDateColumn()
+    ], Audit.prototype, \"createdAt\", void 0);
+    __decorate([
+        UpdateDateColumn()
+    ], Audit.prototype, \"updatedAt\", void 0);
+    __decorate([
+        VersionColumn()
+    ], Audit.prototype, \"version\", void 0);
+    return Audit;
+})();
+export { Audit };
 `;
