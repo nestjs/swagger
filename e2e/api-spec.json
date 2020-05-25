@@ -82,7 +82,9 @@
             "type": "string"
           },
           "age": {
-            "type": "number"
+            "type": "number",
+            "minimum": 1,
+            "maximum": 200
           },
           "_breed": {
             "type": "string"
@@ -239,7 +241,7 @@
           {
             "name": "header",
             "in": "header",
-            "description": "xsff",
+            "description": "Test",
             "required": false,
             "schema": {
               "type": "string"
@@ -290,7 +292,7 @@
           {
             "name": "header",
             "in": "header",
-            "description": "xsff",
+            "description": "Test",
             "required": false,
             "schema": {
               "type": "string"
@@ -301,6 +303,13 @@
             "required": true,
             "in": "query",
             "schema": {
+              "minimum": 0,
+              "maximum": 10000,
+              "exclusiveMaximum": true,
+              "exclusiveMinimum": true,
+              "title": "Page",
+              "format": "int32",
+              "default": 0,
               "type": "number"
             }
           },
@@ -369,7 +378,7 @@
           {
             "name": "header",
             "in": "header",
-            "description": "xsff",
+            "description": "Test",
             "required": false,
             "schema": {
               "type": "string"
@@ -416,7 +425,7 @@
           {
             "name": "header",
             "in": "header",
-            "description": "xsff",
+            "description": "Test",
             "required": false,
             "schema": {
               "type": "string"
@@ -446,7 +455,7 @@
           {
             "name": "header",
             "in": "header",
-            "description": "xsff",
+            "description": "Test",
             "required": false,
             "schema": {
               "type": "string"
@@ -492,7 +501,7 @@
           {
             "name": "header",
             "in": "header",
-            "description": "xsff",
+            "description": "Test",
             "required": false,
             "schema": {
               "type": "string"
@@ -544,7 +553,7 @@
           {
             "name": "header",
             "in": "header",
-            "description": "xsff",
+            "description": "Test",
             "required": false,
             "schema": {
               "type": "string"

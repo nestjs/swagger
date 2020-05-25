@@ -1,12 +1,16 @@
 import { isFunction, isUndefined, omit, omitBy } from 'lodash';
-import { BaseParameterObject } from '../interfaces/open-api-spec.interface';
+import { ApiPropertyOptions } from '../decorators';
+import {
+  BaseParameterObject,
+  SchemaObject
+} from '../interfaces/open-api-spec.interface';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 
 export class SwaggerTypesMapper {
   mapParamTypes(
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
-  ): any {
-    return parameters.map(param => {
+  ) {
+    return parameters.map((param) => {
       if (this.hasSchemaDefinition(param as BaseParameterObject)) {
         return this.omitParamType(param);
       }
@@ -24,7 +28,13 @@ export class SwaggerTypesMapper {
         isUndefined
       );
 
-      const keysToRemove = ['type', 'isArray', 'enum', 'items'];
+      const keysToRemove: Array<keyof ApiPropertyOptions> = [
+        'type',
+        'isArray',
+        'enum',
+        'items',
+        ...this.getSchemaOptionsKeys()
+      ];
       if (this.isEnumArrayType(paramWithTypeMetadata)) {
         return this.mapEnumArrayType(
           paramWithTypeMetadata as ParamWithTypeMetadata,
@@ -40,10 +50,11 @@ export class SwaggerTypesMapper {
         ...omit(param, keysToRemove),
         schema: omitBy(
           {
+            ...this.getSchemaOptions(param),
             ...((param as BaseParameterObject).schema || {}),
             enum: paramWithTypeMetadata.enum,
             type: paramWithTypeMetadata.type
-          },
+          } as Partial<SchemaObject>,
           isUndefined
         )
       };
@@ -57,21 +68,24 @@ export class SwaggerTypesMapper {
     return (type as string).charAt(0).toLowerCase() + (type as string).slice(1);
   }
 
-  isEnumArrayType(param: Record<string, any>): boolean {
-    return param.isArray && param.items && param.items.enum;
-  }
-
-  mapEnumArrayType(param: Record<string, any>, keysToRemove: string[]) {
+  mapEnumArrayType(
+    param: Record<string, any>,
+    keysToRemove: Array<keyof ApiPropertyOptions>
+  ) {
     return {
       ...omit(param, keysToRemove),
       schema: {
+        ...this.getSchemaOptions(param),
         type: 'array',
         items: param.items
       }
     };
   }
 
-  mapArrayType(param: ParamWithTypeMetadata, keysToRemove: string[]): any {
+  mapArrayType(
+    param: ParamWithTypeMetadata,
+    keysToRemove: Array<keyof ApiPropertyOptions>
+  ) {
     const items = omitBy(
       {
         ...((param as BaseParameterObject).schema || {}),
@@ -83,19 +97,54 @@ export class SwaggerTypesMapper {
     return {
       ...omit(param, keysToRemove),
       schema: {
+        ...this.getSchemaOptions(param),
         type: 'array',
         items
       }
     };
   }
 
-  hasSchemaDefinition(
+  private getSchemaOptions(param: Record<string, any>): Partial<SchemaObject> {
+    const schemaKeys = this.getSchemaOptionsKeys();
+    const optionsObject: Partial<SchemaObject> = schemaKeys.reduce(
+      (acc, key) => ({
+        ...acc,
+        [key]: param[key]
+      }),
+      {}
+    );
+    return omitBy(optionsObject, isUndefined);
+  }
+
+  private isEnumArrayType(param: Record<string, any>): boolean {
+    return param.isArray && param.items && param.items.enum;
+  }
+
+  private hasSchemaDefinition(
     param: BaseParameterObject
   ): param is BaseParameterObject {
     return !!param.schema;
   }
 
-  omitParamType(param: ParamWithTypeMetadata | BaseParameterObject) {
+  private omitParamType(param: ParamWithTypeMetadata | BaseParameterObject) {
     return omit(param, 'type');
+  }
+
+  private getSchemaOptionsKeys(): Array<keyof SchemaObject> {
+    return [
+      'minimum',
+      'maximum',
+      'maxProperties',
+      'minItems',
+      'minProperties',
+      'maxItems',
+      'exclusiveMaximum',
+      'exclusiveMinimum',
+      'uniqueItems',
+      'title',
+      'format',
+      'pattern',
+      'default'
+    ];
   }
 }
