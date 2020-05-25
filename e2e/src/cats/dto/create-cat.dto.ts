@@ -8,7 +8,7 @@ export class CreateCatDto {
   @ApiProperty()
   readonly name: string;
 
-  @ApiProperty()
+  @ApiProperty({ minimum: 1, maximum: 200 })
   readonly age: number;
 
   @ApiProperty({ name: '_breed', type: String })
