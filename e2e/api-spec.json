@@ -100,7 +100,10 @@
             "type": "string"
           },
           "urls": {
-            "type": "string"
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "options": {
             "type": "array",
