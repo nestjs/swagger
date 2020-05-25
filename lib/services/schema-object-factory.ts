@@ -194,6 +194,13 @@ export class SchemaObjectFactory {
           schemaRefsStack
         );
       }
+      if (metadata.isArray) {
+        return this.transformToArraySchemaProperty(
+          metadata,
+          key,
+          metadata.type
+        );
+      }
 
       return {
         ...metadata,

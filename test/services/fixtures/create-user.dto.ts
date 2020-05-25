@@ -52,6 +52,12 @@ export class CreateUserDto {
   urls: string[];
 
   @ApiProperty({
+    type: 'integer',
+    isArray: true
+  })
+  luckyNumbers: number[];
+
+  @ApiProperty({
     type: 'array',
     items: {
       type: 'object',
