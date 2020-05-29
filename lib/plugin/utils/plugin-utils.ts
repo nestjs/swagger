@@ -17,9 +17,14 @@ export function getDecoratorOrUndefinedByNames(
   names: string[],
   decorators: ts.NodeArray<ts.Decorator>
 ): ts.Decorator | undefined {
-  return (decorators || ts.createNodeArray()).find(item =>
-    names.includes(getDecoratorName(item))
-  );
+  return (decorators || ts.createNodeArray()).find((item) => {
+    try {
+      const decoratorName = getDecoratorName(item);
+      return names.includes(decoratorName);
+    } catch {
+      return false;
+    }
+  });
 }
 
 export function getTypeReferenceAsString(
@@ -99,8 +104,8 @@ export function hasPropertyKey(
   properties: ts.NodeArray<ts.PropertyAssignment>
 ): boolean {
   return properties
-    .filter(item => !isDynamicallyAdded(item))
-    .some(item => item.name.getText() === key);
+    .filter((item) => !isDynamicallyAdded(item))
+    .some((item) => item.name.getText() === key);
 }
 
 export function replaceImportPath(typeReference: string, fileName: string) {

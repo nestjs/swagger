@@ -41,7 +41,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           return node;
         }
         const isPropertyStatic = (node.modifiers || []).some(
-          modifier => modifier.kind === ts.SyntaxKind.StaticKeyword
+          (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword
         );
         if (isPropertyStatic) {
           return node;
@@ -71,7 +71,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
     const classMutableNode = ts.getMutableClone(node);
     const returnValue = ts.createObjectLiteral(
-      Object.keys(classMetadata).map(key =>
+      Object.keys(classMetadata).map((key) =>
         ts.createPropertyAssignment(
           ts.createIdentifier(key),
           classMetadata[key]
@@ -167,7 +167,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
     if (node.type && ts.isTypeLiteralNode(node.type)) {
       const propertyAssignments = Array.from(node.type.members || []).map(
-        member => {
+        (member) => {
           const literalExpr = this.createDecoratorObjectLiteralExpr(
             member as ts.PropertySignature,
             typeChecker,
