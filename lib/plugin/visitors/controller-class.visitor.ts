@@ -35,12 +35,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     hostFilename: string
   ): ts.MethodDeclaration {
     const node = ts.getMutableClone(compilerNode);
-    const nodeArray = node.decorators || ts.createNodeArray();
-    const { pos, end } = nodeArray;
+    if (!node.decorators) {
+      return compilerNode;
+    }
+    const { pos, end } = node.decorators;
 
     node.decorators = Object.assign(
       [
-        ...nodeArray,
+        ...node.decorators,
         ts.createDecorator(
           ts.createCall(
             ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiResponse.name}`),
