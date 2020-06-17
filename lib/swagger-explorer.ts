@@ -56,7 +56,8 @@ export class SwaggerExplorer {
   private readonly metadataScanner = new MetadataScanner();
   private readonly schemas: SchemaObject[] = [];
   private readonly schemaRefsStack: string[] = [];
-  private useMethodNameForOperations: boolean;
+  private operationIdFactory = (controllerKey: string, methodKey: string) =>
+    `${controllerKey}_${methodKey}`;
 
   constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
 
@@ -64,9 +65,11 @@ export class SwaggerExplorer {
     wrapper: InstanceWrapper<Controller>,
     modulePath?: string,
     globalPrefix?: string,
-    useMethodNameForOperations?: boolean
+    operationIdFactory?: (controllerKey: string, methodKey: string) => string
   ) {
-    this.useMethodNameForOperations = useMethodNameForOperations;
+    if (operationIdFactory) {
+      this.operationIdFactory = operationIdFactory;
+    }
     const { instance, metatype } = wrapper;
     const prototype = Object.getPrototypeOf(instance);
     const documentResolvers: DenormalizedDocResolvers = {
@@ -229,10 +232,10 @@ export class SwaggerExplorer {
   }
 
   private getOperationId(instance: object, method: Function): string {
-    if (instance.constructor && !this.useMethodNameForOperations) {
-      return `${instance.constructor.name}_${method.name}`;
-    }
-    return method.name;
+    return this.operationIdFactory(
+      instance.constructor?.name || '',
+      method.name
+    );
   }
 
   private reflectControllerPath(metatype: Type<unknown>): string {

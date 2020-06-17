@@ -20,7 +20,9 @@ export interface SwaggerDocumentOptions {
   deepScanRoutes?: boolean;
 
   /**
-   * If `true`, only uses the method name in operations (getUser) instead of methods prefixed by the controller name (UserController_getUser).
+   * Custom operationIdFactory that will be used to generate the `operationId` based on the `controllerKey` and
+   * `methodKey`
+   * @default () => controllerKey_methodKey
    */
-  useMethodNameForOperations?: boolean;
+  operationIdFactory?: (controllerKey: string, methodKey: string) => string;
 }

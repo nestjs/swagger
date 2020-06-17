@@ -196,6 +196,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (hasPropertyKey(key, existingProperties)) {
       return [];
     }
+<<<<<<< HEAD
     if (node) {
       if (ts.isTypeLiteralNode(node)) {
         const propertyAssignments = Array.from(node.members || []).map(
@@ -239,6 +240,17 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         if (remainingTypes.length === 1) {
           const remainingTypesProperties = this.createTypePropertyAssignments(
             remainingTypes[0],
+=======
+    const type = typeChecker.getTypeAtLocation(node);
+    if (!type) {
+      return undefined;
+    }
+    if (node.type && ts.isTypeLiteralNode(node.type)) {
+      const propertyAssignments = Array.from(node.type.members || []).map(
+        (member) => {
+          const literalExpr = this.createDecoratorObjectLiteralExpr(
+            member as ts.PropertySignature,
+>>>>>>> feat(lib): add operation id factory
             typeChecker,
             existingProperties,
             hostFilename

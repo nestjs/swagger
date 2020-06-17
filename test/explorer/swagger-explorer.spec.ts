@@ -26,6 +26,11 @@ describe('SwaggerExplorer', () => {
     new ModelPropertiesAccessor(),
     new SwaggerTypesMapper()
   );
+  const methodKeyOperationIdFactory = (_, methodKey: string) => methodKey;
+  const controllerKeyMethodKeyOperationIdFactory = (
+    controllerKey: string,
+    methodKey: string
+  ) => `${controllerKey}.${methodKey}`;
 
   describe('when module only uses metadata', () => {
     class Foo {}
@@ -83,7 +88,7 @@ describe('SwaggerExplorer', () => {
       validateRoutes(routes, operationPrefix);
     });
 
-    it('sees two controller operations and their responses with useMethodNameForOperations = true', () => {
+    it('sees two controller operations and their responses with custom operationIdFactory to return methodKey', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
@@ -92,9 +97,25 @@ describe('SwaggerExplorer', () => {
         } as InstanceWrapper<FooController>,
         'path',
         undefined,
-        true
+        methodKeyOperationIdFactory
       );
       const operationPrefix = '';
+
+      validateRoutes(routes, operationPrefix);
+    });
+
+    it('sees two controller operations and their responses with custom operationIdFactory to return controllerKey.methodKey', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path',
+        undefined,
+        controllerKeyMethodKeyOperationIdFactory
+      );
+      const operationPrefix = 'FooController.';
 
       validateRoutes(routes, operationPrefix);
     });
@@ -255,7 +276,7 @@ describe('SwaggerExplorer', () => {
       validateRoutes(routes, prefix);
     });
 
-    it('sees two controller operations and their responses when useMethodNameForOperations = true', () => {
+    it('sees two controller operations and their responses with custom operationIdFactory to return methodKey', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
@@ -264,9 +285,25 @@ describe('SwaggerExplorer', () => {
         } as InstanceWrapper<FooController>,
         'path',
         undefined,
-        true
+        methodKeyOperationIdFactory
       );
       const prefix = '';
+
+      validateRoutes(routes, prefix);
+    });
+
+    it('sees two controller operations and their responses with custom operationIdFactory to return controllerKey.methodKey', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path',
+        undefined,
+        controllerKeyMethodKeyOperationIdFactory
+      );
+      const prefix = 'FooController.';
 
       validateRoutes(routes, prefix);
     });
@@ -407,7 +444,7 @@ describe('SwaggerExplorer', () => {
       validateRoutes(routes, operationPrefix);
     });
 
-    it('sees two controller operations and their responses when useMethodNameForOperations = true', () => {
+    it('sees two controller operations and their responses with custom operationIdFactory to return methodKey', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
@@ -416,9 +453,25 @@ describe('SwaggerExplorer', () => {
         } as InstanceWrapper<FooController>,
         'path',
         undefined,
-        true
+        methodKeyOperationIdFactory
       );
       const operationPrefix = '';
+
+      validateRoutes(routes, operationPrefix);
+    });
+
+    it('sees two controller operations and their responses with custom operationIdFactory to return controllerKey.methodKey', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path',
+        undefined,
+        controllerKeyMethodKeyOperationIdFactory
+      );
+      const operationPrefix = 'FooController.';
 
       validateRoutes(routes, operationPrefix);
     });
@@ -570,7 +623,7 @@ describe('SwaggerExplorer', () => {
       validateRoutes(routes);
     });
 
-    it('should merge implicit metadata with explicit options and useMethodNameForOperations = true', () => {
+    it('should merge implicit metadata with explicit options and use default operationIdFactory', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
@@ -578,8 +631,7 @@ describe('SwaggerExplorer', () => {
           metatype: FooController
         } as InstanceWrapper<FooController>,
         'path',
-        undefined,
-        true
+        undefined
       );
 
       validateRoutes(routes);
