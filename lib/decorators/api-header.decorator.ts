@@ -59,6 +59,6 @@ export const ApiHeaders = (headers: ApiHeaderOptions[]): MethodDecorator => {
     key?: string | symbol,
     descriptor?: TypedPropertyDescriptor<any>
   ): any => {
-    headers.forEach(options => ApiHeader(options)(target, key, descriptor));
+    headers.forEach((options) => ApiHeader(options)(target, key, descriptor));
   };
 };
