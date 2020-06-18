@@ -158,7 +158,7 @@ export class DocumentBuilder {
   }
 
   public addCookieAuth(
-    cookieName: string = 'connect.sid',
+    cookieName = 'connect.sid',
     options: SecuritySchemeObject = {
       type: 'apiKey'
     },

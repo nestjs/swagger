@@ -74,10 +74,13 @@ function removeBodyMetadataIfExplicitExists(
   properties: ParamWithTypeMetadata[],
   explicitParams: any[]
 ) {
-  const isBodyReflected = some(properties, p => p.in === 'body');
-  const isBodyDefinedExplicitly = some(explicitParams, p => p.in === 'body');
+  const isBodyReflected = some(properties, (p) => p.in === 'body');
+  const isBodyDefinedExplicitly = some(explicitParams, (p) => p.in === 'body');
   if (isBodyReflected && isBodyDefinedExplicitly) {
-    return omitBy(properties, p => p.in === 'body') as ParamWithTypeMetadata[];
+    return omitBy(
+      properties,
+      (p) => p.in === 'body'
+    ) as ParamWithTypeMetadata[];
   }
   return properties;
 }
