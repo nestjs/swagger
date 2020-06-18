@@ -317,8 +317,13 @@ export class SchemaObjectFactory {
 
     const refHost = metadata.isArray ? { items: { $ref } } : { $ref };
     const paramObject = { ..._schemaObject, ...refHost };
+    const pathsToOmit = ['enum', 'enumName'];
 
-    return omit(paramObject, ['enum', 'type']);
+    if (!metadata.isArray) {
+      pathsToOmit.push('type');
+    }
+
+    return omit(paramObject, pathsToOmit);
   }
 
   createNotBuiltInTypeReference(
