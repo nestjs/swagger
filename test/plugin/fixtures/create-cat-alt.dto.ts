@@ -46,23 +46,19 @@ export class CreateCatDto2 {
 export const createCatDtoTextAltTranspiled = `import * as package from 'class-validator';
 var Status;
 (function (Status) {
-    Status[Status[\"ENABLED\"] = 0] = \"ENABLED\";
-    Status[Status[\"DISABLED\"] = 1] = \"DISABLED\";
+    Status[Status["ENABLED"] = 0] = "ENABLED";
+    Status[Status["DISABLED"] = 1] = "DISABLED";
 })(Status || (Status = {}));
-let CreateCatDto2 = /** @class */ (() => {
-    class CreateCatDto2 {
-        constructor() {
-            this.age = 3;
-            this.status = Status.ENABLED;
-        }
-        static _OPENAPI_METADATA_FACTORY() {
-            return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number }, union: { required: true, type: () => Object }, intersection: { required: true, type: () => Object }, nested: { required: true, type: () => ({ first: { required: true, type: () => String }, second: { required: true, type: () => Number }, status: { required: true, enum: Status }, tags: { required: true, type: () => [String] }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number } }) } };
-        }
+export class CreateCatDto2 {
+    constructor() {
+        this.age = 3;
+        this.status = Status.ENABLED;
     }
-    __decorate([
-        package.IsString()
-    ], CreateCatDto2.prototype, \"name\", void 0);
-    return CreateCatDto2;
-})();
-export { CreateCatDto2 };
+    static _OPENAPI_METADATA_FACTORY() {
+        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number }, union: { required: true, type: () => Object }, intersection: { required: true, type: () => Object }, nested: { required: true, type: () => ({ first: { required: true, type: () => String }, second: { required: true, type: () => Number }, status: { required: true, enum: Status }, tags: { required: true, type: () => [String] }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number } }) } };
+    }
+}
+__decorate([
+    package.IsString()
+], CreateCatDto2.prototype, "name", void 0);
 `;

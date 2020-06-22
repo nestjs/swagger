@@ -19,24 +19,21 @@ const openapi = require(\"@nestjs/swagger\");
 const common_1 = require(\"@nestjs/common\");
 class Cat {
 }
-let AppController = /** @class */ (() => {
-    let AppController = class AppController {
-        async create() { }
-        async findAll() { }
-    };
-    __decorate([
-        common_1.Post(),
-        openapi.ApiResponse({ status: 201, type: Cat })
-    ], AppController.prototype, \"create\", null);
-    __decorate([
-        Get(),
-        HttpCode(common_1.HttpStatus.NO_CONTENT),
-        openapi.ApiResponse({ status: common_1.HttpStatus.NO_CONTENT, type: [Cat] })
-    ], AppController.prototype, \"findAll\", null);
-    AppController = __decorate([
-        common_1.Controller('cats')
-    ], AppController);
-    return AppController;
-})();
+let AppController = class AppController {
+    async create() { }
+    async findAll() { }
+};
+__decorate([
+    common_1.Post(),
+    openapi.ApiResponse({ status: 201, type: Cat })
+], AppController.prototype, \"create\", null);
+__decorate([
+    Get(),
+    HttpCode(common_1.HttpStatus.NO_CONTENT),
+    openapi.ApiResponse({ status: common_1.HttpStatus.NO_CONTENT, type: [Cat] })
+], AppController.prototype, \"findAll\", null);
+AppController = __decorate([
+    common_1.Controller('cats')
+], AppController);
 exports.AppController = AppController;
 `;
