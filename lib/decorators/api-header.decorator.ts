@@ -1,4 +1,4 @@
-import { isNil } from 'lodash';
+import { isNil, isUndefined, negate, pickBy } from 'lodash';
 import { DECORATORS } from '../constants';
 import {
   ParameterLocation,
@@ -17,15 +17,19 @@ const defaultHeaderOptions: Partial<ApiHeaderOptions> = {
 };
 
 export function ApiHeader(options: ApiHeaderOptions): any {
-  const param: ApiHeaderOptions & { in: ParameterLocation } = {
-    name: isNil(options.name) ? defaultHeaderOptions.name : options.name,
-    in: 'header',
-    description: options.description,
-    required: options.required,
-    schema: {
-      type: 'string'
-    }
-  };
+  const param = pickBy<ApiHeaderOptions & { in: ParameterLocation }>(
+    {
+      name: isNil(options.name) ? defaultHeaderOptions.name : options.name,
+      in: 'header',
+      description: options.description,
+      required: options.required,
+      schema: {
+        ...(options.schema || {}),
+        type: 'string'
+      }
+    },
+    negate(isUndefined)
+  );
 
   if (options.enum) {
     const enumValues = getEnumValues(options.enum);
