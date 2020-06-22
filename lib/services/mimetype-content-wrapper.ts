@@ -6,7 +6,7 @@ export class MimetypeContentWrapper {
     obj: Record<string, any>
   ): Record<'content', ContentObject> {
     const content = mimetype
-      .map(item => ({
+      .map((item) => ({
         [item]: obj
       }))
       .reduce((a, b) => ({ ...a, ...b }), {});

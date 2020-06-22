@@ -6,7 +6,7 @@ export function getSchemaPath(model: string | Function): string {
 }
 
 export function refs(...models: Function[]) {
-  return models.map(item => ({
+  return models.map((item) => ({
     $ref: getSchemaPath(item.name)
   }));
 }

@@ -56,7 +56,7 @@ export class SwaggerScanner {
           Array.from(relatedModules.values())
             .filter(isGlobal as any)
             .map(({ routes: relatedModuleRoutes }) => relatedModuleRoutes)
-            .forEach(relatedModuleRoutes => {
+            .forEach((relatedModuleRoutes) => {
               allRoutes = new Map([...allRoutes, ...relatedModuleRoutes]);
             });
         }
@@ -87,7 +87,7 @@ export class SwaggerScanner {
     modulePath?: string,
     globalPrefix?: string
   ): Array<Omit<OpenAPIObject, 'openapi' | 'info'> & Record<'root', any>> {
-    const denormalizedArray = [...routes.values()].map(ctrl =>
+    const denormalizedArray = [...routes.values()].map((ctrl) =>
       this.explorer.exploreController(ctrl, modulePath, globalPrefix)
     );
     return flatten(denormalizedArray) as any;
@@ -101,12 +101,12 @@ export class SwaggerScanner {
       return [...modulesContainer.values()];
     }
     return [...modulesContainer.values()].filter(({ metatype }) =>
-      include.some(item => item === metatype)
+      include.some((item) => item === metatype)
     );
   }
 
   public addExtraModels(schemas: SchemaObject[], extraModels: Function[]) {
-    extraModels.forEach(item => {
+    extraModels.forEach((item) => {
       this.schemaObjectFactory.exploreModelSchema(item, schemas);
     });
   }

@@ -34,6 +34,8 @@ describe('SchemaObjectFactory', () => {
     class Person {
       @ApiProperty({ enum: Role, enumName: 'Role' })
       role: Role;
+      @ApiProperty({ enum: Role, enumName: 'Role', isArray: true })
+      roles: Role[];
     }
 
     it('should explore enum', () => {
@@ -53,9 +55,15 @@ describe('SchemaObjectFactory', () => {
         properties: {
           role: {
             $ref: '#/components/schemas/Role'
+          },
+          roles: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/Role'
+            }
           }
         },
-        required: ['role']
+        required: ['role', 'roles']
       });
 
       schemaObjectFactory.exploreModelSchema(CreatePersonDto, schemas, [

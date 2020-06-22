@@ -19,7 +19,7 @@ export function createClassDecorator<T extends Array<any> = any>(
   metakey: string,
   metadata: T = [] as T
 ): ClassDecorator {
-  return target => {
+  return (target) => {
     const prevValue = Reflect.getMetadata(metakey, target) || [];
     Reflect.defineMetadata(metakey, [...prevValue, ...metadata], target);
     return target;

@@ -38,7 +38,7 @@ export class ParametersMetadataMapper {
         prototype
       );
 
-      return modelProperties.map(key =>
+      return modelProperties.map((key) =>
         this.mergeImplicitWithExplicit(key, prototype, param)
       );
     });
