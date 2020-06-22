@@ -7,6 +7,7 @@ import {
 import { mapValues } from 'lodash';
 import { DECORATORS } from '../constants';
 import { ApiProperty } from '../decorators';
+import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
 import { clonePluginMetadataFactory } from './mapped-types.utils';
 
@@ -41,6 +42,13 @@ export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
     decoratorFactory(PartialTypeClass.prototype, key);
     applyIsOptionalDecorator(PartialTypeClass, key);
   });
+
+  if (PartialTypeClass[METADATA_FACTORY_NAME]) {
+    const pluginFields = Object.keys(PartialTypeClass[METADATA_FACTORY_NAME]());
+    pluginFields.forEach((key) =>
+      applyIsOptionalDecorator(PartialTypeClass, key)
+    );
+  }
 
   return PartialTypeClass as Type<Partial<T>>;
 }

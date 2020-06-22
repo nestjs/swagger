@@ -1,6 +1,6 @@
 import { Type } from '@nestjs/common';
 import { Expose, Transform } from 'class-transformer';
-import { IsString } from 'class-validator';
+import { IsString, validate } from 'class-validator';
 import { DECORATORS } from '../../lib/constants';
 import { ApiProperty } from '../../lib/decorators';
 import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
@@ -9,6 +9,12 @@ import { PartialType } from '../../lib/type-helpers';
 
 describe('PartialType', () => {
   class CreateUserDto {
+    @IsString()
+    firstName: string;
+
+    @IsString()
+    lastName: string;
+
     @ApiProperty({ required: true })
     login: string;
 
@@ -34,6 +40,13 @@ describe('PartialType', () => {
     modelPropertiesAccessor = new ModelPropertiesAccessor();
   });
 
+  describe('Validation metadata', () => {
+    it('should apply @IsOptional to properties reflected by the plugin', async () => {
+      const updateDto = new UpdateUserDto();
+      const validationErrors = await validate(updateDto);
+      expect(validationErrors).toHaveLength(0);
+    });
+  });
   describe('OpenAPI metadata', () => {
     it('should return partial class', () => {
       const prototype = (UpdateUserDto.prototype as any) as Type<unknown>;
