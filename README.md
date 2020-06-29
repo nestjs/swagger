@@ -30,7 +30,7 @@ $ npm i --save @nestjs/swagger
 
 ## Quick Start
 
-[Overview & Tutorial](https://docs.nestjs.com/recipes/swagger)
+[Overview & Tutorial](https://docs.nestjs.com/openapi/introduction)
 
 ## Migration from v3
 
