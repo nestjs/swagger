@@ -120,6 +120,7 @@
             "$ref": "#/components/schemas/LettersEnum"
           },
           "enumArr": {
+            "type": "array",
             "items": {
               "$ref": "#/components/schemas/LettersEnum"
             }
@@ -247,6 +248,7 @@
             "description": "Test",
             "required": false,
             "schema": {
+              "default": "test",
               "type": "string"
             }
           }
@@ -298,6 +300,7 @@
             "description": "Test",
             "required": false,
             "schema": {
+              "default": "test",
               "type": "string"
             }
           },
@@ -384,6 +387,7 @@
             "description": "Test",
             "required": false,
             "schema": {
+              "default": "test",
               "type": "string"
             }
           },
@@ -431,6 +435,7 @@
             "description": "Test",
             "required": false,
             "schema": {
+              "default": "test",
               "type": "string"
             }
           }
@@ -461,6 +466,7 @@
             "description": "Test",
             "required": false,
             "schema": {
+              "default": "test",
               "type": "string"
             }
           }
@@ -507,6 +513,7 @@
             "description": "Test",
             "required": false,
             "schema": {
+              "default": "test",
               "type": "string"
             }
           }
@@ -559,6 +566,7 @@
             "description": "Test",
             "required": false,
             "schema": {
+              "default": "test",
               "type": "string"
             }
           }

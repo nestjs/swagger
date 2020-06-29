@@ -16,7 +16,9 @@ const defaultHeaderOptions: Partial<ApiHeaderOptions> = {
   name: ''
 };
 
-export function ApiHeader(options: ApiHeaderOptions): any {
+export function ApiHeader(
+  options: ApiHeaderOptions
+): MethodDecorator & ClassDecorator {
   const param = pickBy<ApiHeaderOptions & { in: ParameterLocation }>(
     {
       name: isNil(options.name) ? defaultHeaderOptions.name : options.name,
@@ -57,7 +59,9 @@ export function ApiHeader(options: ApiHeaderOptions): any {
   };
 }
 
-export const ApiHeaders = (headers: ApiHeaderOptions[]): MethodDecorator => {
+export const ApiHeaders = (
+  headers: ApiHeaderOptions[]
+): MethodDecorator & ClassDecorator => {
   return (
     target: object | Function,
     key?: string | symbol,
