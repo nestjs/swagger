@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@nestjs/mapped-types": "0.0.5",
-    "lodash": "4.17.15",
+    "lodash": "4.17.19",
     "path-to-regexp": "3.2.0"
   },
   "devDependencies": {
