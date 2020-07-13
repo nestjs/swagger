@@ -51,7 +51,7 @@
     "release-it": "13.6.5",
     "swagger-parser": "10.0.0",
     "swagger-ui-express": "4.1.4",
-    "ts-jest": "26.1.1",
+    "ts-jest": "26.1.2",
     "typescript": "3.9.6"
   },
   "peerDependencies": {
