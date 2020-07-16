@@ -63,7 +63,7 @@ export class SwaggerModule {
     });
     httpAdapter.get(finalPath + '-json', (_, res) => {
       res.writeHead(undefined, 200, { 'Content-Type': 'application/json' });
-      res.end(swaggerHtml);
+      res.end(document);
     });
   }
   private static setupExpress(

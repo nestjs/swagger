@@ -20,6 +20,7 @@
     "release": "release-it"
   },
   "dependencies": {
+    "@nestjs/azure-func-http": "^0.5.2",
     "@nestjs/mapped-types": "0.0.5",
     "lodash": "4.17.19",
     "path-to-regexp": "3.2.0"

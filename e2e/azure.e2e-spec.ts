@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
 import { INestApplication } from '@nestjs/common';
 
-describe.only('Azure Swagger', () => {
+describe('Azure Swagger', () => {
   let app: INestApplication;
   let builder: DocumentBuilder;
 
@@ -47,7 +47,7 @@ describe.only('Azure Swagger', () => {
     }
   });
 
-  it.only('should setup multiple routes', async () => {
+  it('should setup multiple routes', async () => {
     const document1 = SwaggerModule.createDocument(app, builder.build());
     SwaggerModule.setup('/swagger1', app, document1);
 
