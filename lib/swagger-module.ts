@@ -34,12 +34,38 @@ export class SwaggerModule {
     options?: SwaggerCustomOptions
   ) {
     const httpAdapter = app.getHttpAdapter();
-    if (httpAdapter && httpAdapter.getType() === 'fastify') {
+    const adapterType = httpAdapter && httpAdapter.getType();
+    if (adapterType === 'fastify') {
       return this.setupFastify(path, httpAdapter, document);
+    }
+    if (adapterType === 'azure-http') {
+      return this.setupAzure(path, app, document, options);
     }
     return this.setupExpress(path, app, document, options);
   }
+  private static setupAzure(
+    path: string,
+    app: INestApplication,
+    document: OpenAPIObject,
+    options?: SwaggerCustomOptions
+  ) {
+    const httpAdapter = app.getHttpAdapter();
+    const finalPath = validatePath(path);
+    const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () =>
+      require('swagger-ui-express')
+    );
+    const swaggerHtml = swaggerUi.generateHTML(document, options);
+    app.use(finalPath, swaggerUi.serveFiles(document, options));
 
+    httpAdapter.get(finalPath, (_, res) => {
+      res.writeHead(undefined, 200, { 'Content-Type': 'text/html' });
+      res.end(swaggerHtml);
+    });
+    httpAdapter.get(finalPath + '-json', (_, res) => {
+      res.writeHead(undefined, 200, { 'Content-Type': 'application/json' });
+      res.end(swaggerHtml);
+    });
+  }
   private static setupExpress(
     path: string,
     app: INestApplication,
