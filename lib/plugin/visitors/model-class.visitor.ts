@@ -15,7 +15,7 @@ import {
 } from '../utils/plugin-utils';
 import { AbstractFileVisitor } from './abstract.visitor';
 
-const metadataHostMap = new Map();
+type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
 export class ModelClassVisitor extends AbstractFileVisitor {
   visit(
@@ -27,11 +27,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const typeChecker = program.getTypeChecker();
     sourceFile = this.updateImports(sourceFile);
 
-    const visitNode = (node: ts.Node): ts.Node => {
-      if (ts.isClassDeclaration(node)) {
-        node = ts.visitEachChild(node, visitNode, ctx);
-        return this.addMetadataFactory(node as ts.ClassDeclaration);
-      } else if (ts.isPropertyDeclaration(node)) {
+    const propertyNodeVisitorFactory = (metadata: ClassMetadata) => (
+      node: ts.Node
+    ): ts.Node => {
+      if (ts.isPropertyDeclaration(node)) {
         const decorators = node.decorators;
         const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
           [ApiHideProperty.name],
@@ -52,23 +51,32 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             typeChecker,
             options,
             sourceFile.fileName,
-            sourceFile
+            sourceFile,
+            metadata
           );
         } catch (err) {
           return node;
         }
-        return node;
       }
-      return ts.visitEachChild(node, visitNode, ctx);
+      return node;
     };
-    return ts.visitNode(sourceFile, visitNode);
+
+    const visitClassNode = (node: ts.Node): ts.Node => {
+      if (ts.isClassDeclaration(node)) {
+        const metadata: ClassMetadata = {};
+        node = ts.visitEachChild(
+          node,
+          propertyNodeVisitorFactory(metadata),
+          ctx
+        );
+        return this.addMetadataFactory(node as ts.ClassDeclaration, metadata);
+      }
+      return ts.visitEachChild(node, visitClassNode, ctx);
+    };
+    return ts.visitNode(sourceFile, visitClassNode);
   }
 
-  addMetadataFactory(node: ts.ClassDeclaration) {
-    const classMetadata = this.getClassMetadata(node as ts.ClassDeclaration);
-    if (!classMetadata) {
-      return node;
-    }
+  addMetadataFactory(node: ts.ClassDeclaration, classMetadata: ClassMetadata) {
     const classMutableNode = ts.getMutableClone(node);
     const returnValue = ts.createObjectLiteral(
       Object.keys(classMetadata).map((key) =>
@@ -101,7 +109,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     options: PluginOptions,
     hostFilename: string,
-    sourceFile: ts.SourceFile
+    sourceFile: ts.SourceFile,
+    metadata: ClassMetadata
   ) {
     const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
       compilerNode,
@@ -110,7 +119,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       options,
       hostFilename
     );
-    this.addClassMetadata(compilerNode, objectLiteralExpr, sourceFile);
+    this.addClassMetadata(
+      compilerNode,
+      objectLiteralExpr,
+      sourceFile,
+      metadata
+    );
   }
 
   createDecoratorObjectLiteralExpr(
@@ -344,14 +358,14 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   addClassMetadata(
     node: ts.PropertyDeclaration,
     objectLiteral: ts.ObjectLiteralExpression,
-    sourceFile: ts.SourceFile
+    sourceFile: ts.SourceFile,
+    metadata: ClassMetadata
   ) {
     const hostClass = node.parent;
     const className = hostClass.name && hostClass.name.getText();
     if (!className) {
       return;
     }
-    const existingMetadata = metadataHostMap.get(className) || {};
     const propertyName = node.name && node.name.getText(sourceFile);
     if (
       !propertyName ||
@@ -359,16 +373,6 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     ) {
       return;
     }
-    metadataHostMap.set(className, {
-      ...existingMetadata,
-      [propertyName]: objectLiteral
-    });
-  }
-
-  getClassMetadata(node: ts.ClassDeclaration) {
-    if (!node.name) {
-      return;
-    }
-    return metadataHostMap.get(node.name.getText());
+    metadata[propertyName] = objectLiteral;
   }
 }
