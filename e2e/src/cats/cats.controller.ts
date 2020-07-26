@@ -17,7 +17,12 @@ import { PaginationQuery } from './dto/pagination-query.dto';
 @ApiSecurity('basic')
 @ApiBearerAuth()
 @ApiTags('cats')
-@ApiHeader({ name: 'header', required: false, description: 'Test' })
+@ApiHeader({
+  name: 'header',
+  required: false,
+  description: 'Test',
+  schema: { default: 'test' }
+})
 @Controller('cats')
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}

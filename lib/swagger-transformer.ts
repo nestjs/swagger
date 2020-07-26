@@ -5,12 +5,12 @@ export class SwaggerTransformer {
   public normalizePaths(
     denormalizedDoc: (Partial<OpenAPIObject> & Record<'root', any>)[]
   ): Record<'paths', OpenAPIObject['paths']> {
-    const roots = filter(denormalizedDoc, r => r.root);
+    const roots = filter(denormalizedDoc, (r) => r.root);
     const groupedByPath = groupBy(
       roots,
       ({ root }: Record<'root', any>) => root.path
     );
-    const paths = mapValues(groupedByPath, routes => {
+    const paths = mapValues(groupedByPath, (routes) => {
       const keyByMethod = keyBy(
         routes,
         ({ root }: Record<'root', any>) => root.method

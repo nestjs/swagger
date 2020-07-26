@@ -1,4 +1,4 @@
-import { isNil } from 'lodash';
+import { isNil, isUndefined, negate, pickBy } from 'lodash';
 import { DECORATORS } from '../constants';
 import {
   ParameterLocation,
@@ -16,16 +16,22 @@ const defaultHeaderOptions: Partial<ApiHeaderOptions> = {
   name: ''
 };
 
-export function ApiHeader(options: ApiHeaderOptions): any {
-  const param: ApiHeaderOptions & { in: ParameterLocation } = {
-    name: isNil(options.name) ? defaultHeaderOptions.name : options.name,
-    in: 'header',
-    description: options.description,
-    required: options.required,
-    schema: {
-      type: 'string'
-    }
-  };
+export function ApiHeader(
+  options: ApiHeaderOptions
+): MethodDecorator & ClassDecorator {
+  const param = pickBy<ApiHeaderOptions & { in: ParameterLocation }>(
+    {
+      name: isNil(options.name) ? defaultHeaderOptions.name : options.name,
+      in: 'header',
+      description: options.description,
+      required: options.required,
+      schema: {
+        ...(options.schema || {}),
+        type: 'string'
+      }
+    },
+    negate(isUndefined)
+  );
 
   if (options.enum) {
     const enumValues = getEnumValues(options.enum);
@@ -53,12 +59,14 @@ export function ApiHeader(options: ApiHeaderOptions): any {
   };
 }
 
-export const ApiHeaders = (headers: ApiHeaderOptions[]): MethodDecorator => {
+export const ApiHeaders = (
+  headers: ApiHeaderOptions[]
+): MethodDecorator & ClassDecorator => {
   return (
     target: object | Function,
     key?: string | symbol,
     descriptor?: TypedPropertyDescriptor<any>
   ): any => {
-    headers.forEach(options => ApiHeader(options)(target, key, descriptor));
+    headers.forEach((options) => ApiHeader(options)(target, key, descriptor));
   };
 };

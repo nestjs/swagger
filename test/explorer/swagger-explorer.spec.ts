@@ -723,7 +723,10 @@ describe('SwaggerExplorer', () => {
 
     @ApiHeader({
       name: 'Authorization',
-      description: 'auth token'
+      description: 'auth token',
+      schema: {
+        default: 'default token'
+      }
     })
     @Controller('')
     class FooController {
@@ -758,6 +761,7 @@ describe('SwaggerExplorer', () => {
           name: 'Authorization',
           in: 'header',
           schema: {
+            default: 'default token',
             type: 'string'
           }
         },
@@ -776,6 +780,7 @@ describe('SwaggerExplorer', () => {
           name: 'Authorization',
           in: 'header',
           schema: {
+            default: 'default token',
             type: 'string'
           }
         }

@@ -6,7 +6,7 @@ import { ModelClassVisitor } from './visitors/model-class.visitor';
 const modelClassVisitor = new ModelClassVisitor();
 const controllerClassVisitor = new ControllerClassVisitor();
 const isFilenameMatched = (patterns: string[], filename: string) =>
-  patterns.some(path => filename.includes(path));
+  patterns.some((path) => filename.includes(path));
 
 export const before = (options?: Record<string, any>, program?: ts.Program) => {
   options = mergePluginOptions(options);
