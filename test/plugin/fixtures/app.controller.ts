@@ -40,6 +40,7 @@ Object.defineProperty(exports, \"__esModule\", { value: true });
 exports.AppController = void 0;
 const openapi = require(\"@nestjs/swagger\");
 const common_1 = require(\"@nestjs/common\");
+const swagger_1 = require("@nestjs/swagger");
 class Cat {
 }
 let AppController = class AppController {
