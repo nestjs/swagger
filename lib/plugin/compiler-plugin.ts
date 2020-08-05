@@ -17,7 +17,7 @@ export const before = (options?: Record<string, any>, program?: ts.Program) => {
         return modelClassVisitor.visit(sf, ctx, program, options);
       }
       if (isFilenameMatched(options.controllerFileNameSuffix, sf.fileName)) {
-        return controllerClassVisitor.visit(sf, ctx, program);
+        return controllerClassVisitor.visit(sf, ctx, program, options);
       }
       return sf;
     };

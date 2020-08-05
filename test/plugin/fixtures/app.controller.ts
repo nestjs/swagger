@@ -63,19 +63,17 @@ let AppController = class AppController {
     async findAll() { }
 };
 __decorate([
-    openapi.ApiOperation({ description: "create a Cat" }),
+    openapi.ApiOperation({ summary: "create a Cat" }),
     common_1.Post(),
     openapi.ApiResponse({ status: 201, type: Cat })
 ], AppController.prototype, \"create\", null);
 __decorate([
-    swagger_1.ApiOperation({ description: "find a Cat" }),
+    swagger_1.ApiOperation({ summary: "find a Cat" }),
     Get(),
     openapi.ApiResponse({ status: 200, type: Cat })
 ], AppController.prototype, \"findOne\", null);
 __decorate([
-    swagger_1.ApiOperation({
-        description: 'find all Cats',
-    }),
+    swagger_1.ApiOperation({ summary: "find all Cats im comment", description: 'find all Cats' }),
     Get(),
     HttpCode(common_1.HttpStatus.NO_CONTENT),
     openapi.ApiResponse({ status: common_1.HttpStatus.NO_CONTENT, type: [Cat] })

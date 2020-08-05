@@ -162,9 +162,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         sourceFile,
         true
       );
-      if (!hasPropertyKey('description', existingProperties) && comments) {
+      const keyOfComment = options?.dtoKeyOfComment ??'description';
+      if (!hasPropertyKey(keyOfComment, existingProperties) && comments) {
         descriptionPropertyWapper.push(
-          ts.createPropertyAssignment('description', ts.createLiteral(comments))
+          ts.createPropertyAssignment(keyOfComment, ts.createLiteral(comments))
         );
       }
       if (

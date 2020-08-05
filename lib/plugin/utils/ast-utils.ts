@@ -109,8 +109,9 @@ export function getMainCommentAnExamplesOfNode(
   sourceFile: SourceFile,
   needExamples?: boolean
 ): [string, string[]] {
-  const sourceText = sourceFile.getText();
-  const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
+  const sourceText = sourceFile.getFullText();
+
+  const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/\/+.*|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
 
   const commentResult = [];
   const examplesResult = [];

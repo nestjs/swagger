@@ -6,6 +6,7 @@ import { CONSTANT_STRING, CONSTANT_OBJECT, MIN_VAL } from './constants';
 export class CreateCatDtoEs5 {
   // field name
   name: string = CONSTANT_STRING;
+  /** status */
   status: Status = Status.ENABLED;
   obj = CONSTANT_OBJECT;
 
@@ -25,12 +26,13 @@ var CreateCatDtoEs5 = /** @class */ (function () {
     function CreateCatDtoEs5() {
         // field name
         this.name = constants_1.CONSTANT_STRING;
+        /** status */
         this.status = status_1.Status.ENABLED;
         this.obj = constants_1.CONSTANT_OBJECT;
         this.age = 3;
     }
     CreateCatDtoEs5._OPENAPI_METADATA_FACTORY = function () {
-        return { name: { description: "field name", required: true, type: function () { return String; }, default: constants_1.CONSTANT_STRING }, status: { required: true, type: function () { return Object; }, default: status_1.Status.ENABLED }, obj: { required: true, type: function () { return Object; }, default: constants_1.CONSTANT_OBJECT }, age: { required: true, type: function () { return Number; }, default: 3, minimum: constants_1.MIN_VAL, maximum: 10 } };
+        return { name: { required: true, type: function () { return String; }, default: constants_1.CONSTANT_STRING }, status: { description: "status", required: true, type: function () { return Object; }, default: status_1.Status.ENABLED }, obj: { required: true, type: function () { return Object; }, default: constants_1.CONSTANT_OBJECT }, age: { required: true, type: function () { return Number; }, default: 3, minimum: constants_1.MIN_VAL, maximum: 10 } };
     };
     __decorate([
         Min(constants_1.MIN_VAL),
