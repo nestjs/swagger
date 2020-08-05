@@ -11,7 +11,7 @@ import {
   getDecoratorArguments,
   getText,
   isEnum,
-  getMainCommentAnExamplesOfNode
+  getMainCommentAndExamplesOfNode
 } from '../utils/ast-utils';
 import {
   extractTypeArgumentIfArray,
@@ -157,7 +157,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const descriptionPropertyWapper = [];
     const examplesPropertyWapper = [];
     if (sourceFile) {
-      const [comments, examples] = getMainCommentAnExamplesOfNode(
+      const [comments, examples] = getMainCommentAndExamplesOfNode(
         node,
         sourceFile,
         true

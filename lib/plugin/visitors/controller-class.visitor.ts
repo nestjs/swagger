@@ -4,7 +4,7 @@ import { ApiResponse, ApiOperation } from '../../decorators';
 import { OPENAPI_NAMESPACE } from '../plugin-constants';
 import {
   getDecoratorArguments,
-  getMainCommentAnExamplesOfNode
+  getMainCommentAndExamplesOfNode
 } from '../utils/ast-utils';
 import {
   getDecoratorOrUndefinedByNames,
@@ -105,7 +105,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         >) ||
         !hasPropertyKey(keyToGenerate, apiOperationOptionsProperties)) &&
       // Has comments
-      ([comments] = getMainCommentAnExamplesOfNode(node, sourceFile))[0]
+      ([comments] = getMainCommentAndExamplesOfNode(node, sourceFile))[0]
     ) {
       const properties = [
         ts.createPropertyAssignment(keyToGenerate, ts.createLiteral(comments)),

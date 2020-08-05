@@ -78,8 +78,6 @@ export function hasObjectFlag(type: Type, flag: ObjectFlags) {
   return ((type as ObjectType).objectFlags & flag) === flag;
 }
 
-// exprot function getDescription()
-
 export function getText(
   type: Type,
   typeChecker: TypeChecker,
@@ -104,7 +102,7 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
   return formatFlags;
 }
 
-export function getMainCommentAnExamplesOfNode(
+export function getMainCommentAndExamplesOfNode(
   node: Node,
   sourceFile: SourceFile,
   needExamples?: boolean
