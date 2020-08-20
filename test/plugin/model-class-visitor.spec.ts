@@ -1,6 +1,11 @@
 import * as ts from 'typescript';
 import { before } from '../../lib/plugin/compiler-plugin';
 import {
+  changedCatDtoText,
+  changedCatDtoTextTranspiled,
+  originalCatDtoText
+} from './fixtures/changed-class.dto';
+import {
   createCatDtoAltText,
   createCatDtoTextAltTranspiled
 } from './fixtures/create-cat-alt.dto';
@@ -125,5 +130,35 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(nullableDtoTextTranspiled);
+  });
+
+  it('should remove properties from metadata when properties removed from dto', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES5,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      strict: true
+    };
+    const filename = 'changed-class.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    ts.transpileModule(originalCatDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classValidatorShim: true }, fakeProgram)]
+      }
+    });
+
+    const changedResult = ts.transpileModule(changedCatDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classValidatorShim: true }, fakeProgram)]
+      }
+    });
+
+    expect(changedResult.outputText).toEqual(changedCatDtoTextTranspiled);
   });
 });
