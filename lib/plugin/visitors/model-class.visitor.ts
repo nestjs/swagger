@@ -3,7 +3,12 @@ import * as ts from 'typescript';
 import { ApiHideProperty } from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { METADATA_FACTORY_NAME } from '../plugin-constants';
-import { getDecoratorArguments, getText, isEnum } from '../utils/ast-utils';
+import {
+  getDecoratorArguments,
+  getMainCommentAndExamplesOfNode,
+  getText,
+  isEnum
+} from '../utils/ast-utils';
 import {
   extractTypeArgumentIfArray,
   getDecoratorOrUndefinedByNames,
@@ -39,8 +44,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         if (hidePropertyDecorator) {
           return node;
         }
+
         const isPropertyStatic = (node.modifiers || []).some(
-          (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword
+          (modifier: ts.Modifier) =>
+            modifier.kind === ts.SyntaxKind.StaticKeyword
         );
         if (isPropertyStatic) {
           return node;
@@ -117,7 +124,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       typeChecker,
       ts.createNodeArray(),
       options,
-      hostFilename
+      hostFilename,
+      sourceFile
     );
     this.addClassMetadata(
       compilerNode,
@@ -134,9 +142,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       ts.PropertyAssignment
     > = ts.createNodeArray(),
     options: PluginOptions = {},
-    hostFilename = ''
+    hostFilename = '',
+    sourceFile?: ts.SourceFile
   ): ts.ObjectLiteralExpression {
     const isRequired = !node.questionToken;
+
     let properties = [
       ...existingProperties,
       !hasPropertyKey('required', existingProperties) &&
@@ -146,6 +156,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         typeChecker,
         existingProperties,
         hostFilename
+      ),
+      ...this.createDescriptionAndExamplePropertyAssigments(
+        node,
+        existingProperties,
+        options,
+        sourceFile
       ),
       this.createDefaultPropertyAssignment(node, existingProperties),
       this.createEnumPropertyAssignment(
@@ -416,5 +432,54 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return;
     }
     metadata[propertyName] = objectLiteral;
+  }
+
+  createDescriptionAndExamplePropertyAssigments(
+    node: ts.PropertyDeclaration | ts.PropertySignature,
+    existingProperties: ts.NodeArray<
+      ts.PropertyAssignment
+    > = ts.createNodeArray(),
+    options: PluginOptions = {},
+    sourceFile?: ts.SourceFile
+  ): ts.PropertyAssignment[] {
+    if (!options.introspectComments || !sourceFile) {
+      return [];
+    }
+    const propertyAssignments = [];
+    const [comments, examples] = getMainCommentAndExamplesOfNode(
+      node,
+      sourceFile,
+      true
+    );
+
+    const keyOfComment = options.dtoKeyOfComment;
+    if (!hasPropertyKey(keyOfComment, existingProperties) && comments) {
+      const descriptionPropertyAssignment = ts.createPropertyAssignment(
+        keyOfComment,
+        ts.createLiteral(comments)
+      );
+      propertyAssignments.push(descriptionPropertyAssignment);
+    }
+
+    const hasExampleOrExamplesKey =
+      hasPropertyKey('example', existingProperties) ||
+      hasPropertyKey('examples', existingProperties);
+
+    if (!hasExampleOrExamplesKey && examples.length) {
+      if (examples.length === 1) {
+        const examplePropertyAssignment = ts.createPropertyAssignment(
+          'example',
+          ts.createLiteral(examples[0])
+        );
+        propertyAssignments.push(examplePropertyAssignment);
+      } else {
+        const examplesPropertyAssignment = ts.createPropertyAssignment(
+          'examples',
+          ts.createArrayLiteral(examples.map((e) => ts.createLiteral(e)))
+        );
+        propertyAssignments.push(examplesPropertyAssignment);
+      }
+    }
+    return propertyAssignments;
   }
 }

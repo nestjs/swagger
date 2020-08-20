@@ -19,7 +19,14 @@ describe('Controller methods', () => {
     const result = ts.transpileModule(appControllerText, {
       compilerOptions: options,
       fileName: filename,
-      transformers: { before: [before({}, fakeProgram)] }
+      transformers: {
+        before: [
+          before(
+            { controllerKeyOfComment: 'summary', introspectComments: true },
+            fakeProgram
+          )
+        ]
+      }
     });
     expect(result.outputText).toEqual(appControllerTextTranspiled);
   });

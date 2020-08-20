@@ -4,12 +4,18 @@ export interface PluginOptions {
   dtoFileNameSuffix?: string | string[];
   controllerFileNameSuffix?: string | string[];
   classValidatorShim?: boolean;
+  dtoKeyOfComment?: string;
+  controllerKeyOfComment?: string;
+  introspectComments?: boolean;
 }
 
 const defaultOptions: PluginOptions = {
   dtoFileNameSuffix: ['.dto.ts', '.entity.ts'],
   controllerFileNameSuffix: ['.controller.ts'],
-  classValidatorShim: true
+  classValidatorShim: true,
+  dtoKeyOfComment: 'description',
+  controllerKeyOfComment: 'description',
+  introspectComments: false
 };
 
 export const mergePluginOptions = (

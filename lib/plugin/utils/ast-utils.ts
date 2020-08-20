@@ -1,12 +1,16 @@
 import {
   CallExpression,
+  CommentRange,
   Decorator,
+  getLeadingCommentRanges,
+  getTrailingCommentRanges,
   Identifier,
   LeftHandSideExpression,
   Node,
   ObjectFlags,
   ObjectType,
   PropertyAccessExpression,
+  SourceFile,
   SyntaxKind,
   Type,
   TypeChecker,
@@ -96,6 +100,50 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
   if (enclosingNode && enclosingNode.kind === SyntaxKind.TypeAliasDeclaration)
     formatFlags |= TypeFormatFlags.InTypeAlias;
   return formatFlags;
+}
+
+export function getMainCommentAndExamplesOfNode(
+  node: Node,
+  sourceFile: SourceFile,
+  includeExamples?: boolean
+): [string, string[]] {
+  const sourceText = sourceFile.getFullText();
+  const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/\/+.*|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
+
+  const commentResult = [];
+  const examplesResult = [];
+  const introspectCommentsAndExamples = (comments?: CommentRange[]) =>
+    comments?.forEach((comment) => {
+      const commentSource = sourceText.substring(comment.pos, comment.end);
+      const oneComment = commentSource.replace(replaceRegex, '').trim();
+      if (oneComment) {
+        commentResult.push(oneComment);
+      }
+      if (includeExamples) {
+        const regexOfExample = /@example *['"]?([^ ]+?)['"]? *$/gim;
+        let execResult: RegExpExecArray;
+        while (
+          (execResult = regexOfExample.exec(commentSource)) &&
+          execResult.length > 1
+        ) {
+          examplesResult.push(execResult[1]);
+        }
+      }
+    });
+
+  const leadingCommentRanges = getLeadingCommentRanges(
+    sourceText,
+    node.getFullStart()
+  );
+  introspectCommentsAndExamples(leadingCommentRanges);
+  if (!commentResult.length) {
+    const trailingCommentRanges = getTrailingCommentRanges(
+      sourceText,
+      node.getFullStart()
+    );
+    introspectCommentsAndExamples(trailingCommentRanges);
+  }
+  return [commentResult.join('\n'), examplesResult];
 }
 
 export function getDecoratorArguments(decorator: Decorator) {

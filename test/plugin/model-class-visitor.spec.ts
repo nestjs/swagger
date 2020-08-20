@@ -27,7 +27,7 @@ import {
 } from './fixtures/nullable.dto';
 
 describe('API model properties', () => {
-  it('should add the metadata factory when no decorators exist', () => {
+  it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.ESNext,
       target: ts.ScriptTarget.ESNext,
@@ -42,7 +42,16 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            {
+              classValidatorShim: true,
+              dtoKeyOfComment: 'title',
+              introspectComments: true
+            },
+            fakeProgram
+          )
+        ]
       }
     });
     expect(result.outputText).toEqual(createCatDtoTextTranspiled);
@@ -63,7 +72,7 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({}, fakeProgram)]
+        before: [before({ introspectComments: true }, fakeProgram)]
       }
     });
     expect(result.outputText).toEqual(createCatDtoTextAltTranspiled);
@@ -84,7 +93,12 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
       }
     });
     expect(result.outputText).toEqual(createCatDtoTextAlt2Transpiled);
@@ -105,7 +119,12 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
       }
     });
     expect(result.outputText).toEqual(es5CreateCatDtoTextTranspiled);
@@ -126,7 +145,12 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
       }
     });
     expect(result.outputText).toEqual(nullableDtoTextTranspiled);
@@ -147,7 +171,12 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
       }
     });
 
@@ -155,7 +184,12 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
       }
     });
 
