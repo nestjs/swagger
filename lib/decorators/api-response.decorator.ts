@@ -181,6 +181,14 @@ export const ApiNotImplementedResponse = (options: ApiResponseOptions = {}) =>
     status: HttpStatus.NOT_IMPLEMENTED
   });
 
+export const ApiPreconditionFailedResponse = (
+  options: ApiResponseOptions = {}
+) =>
+  ApiResponse({
+    ...options,
+    status: HttpStatus.PRECONDITION_FAILED
+  });
+
 export const ApiPayloadTooLargeResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
     ...options,
