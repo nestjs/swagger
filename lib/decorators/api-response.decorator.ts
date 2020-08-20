@@ -4,7 +4,8 @@ import { omit } from 'lodash';
 import { DECORATORS } from '../constants';
 import {
   ResponseObject,
-  SchemaObject
+  SchemaObject,
+  ReferenceObject
 } from '../interfaces/open-api-spec.interface';
 import { getTypeIsArrayTuple } from './helpers';
 
@@ -18,7 +19,7 @@ export interface ApiResponseMetadata
 
 export interface ApiResponseSchemaHost
   extends Omit<ResponseObject, 'description'> {
-  schema: SchemaObject;
+  schema: SchemaObject & Partial<ReferenceObject>;
   status?: number;
   description?: string;
 }
