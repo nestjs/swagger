@@ -44,7 +44,11 @@ describe('API model properties', () => {
       transformers: {
         before: [
           before(
-            { classValidatorShim: true, dtoKeyOfComment: 'title' },
+            {
+              classValidatorShim: true,
+              dtoKeyOfComment: 'title',
+              introspectComments: true
+            },
             fakeProgram
           )
         ]
@@ -68,7 +72,7 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({}, fakeProgram)]
+        before: [before({ introspectComments: true }, fakeProgram)]
       }
     });
     expect(result.outputText).toEqual(createCatDtoTextAltTranspiled);
@@ -89,7 +93,12 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
       }
     });
     expect(result.outputText).toEqual(createCatDtoTextAlt2Transpiled);
@@ -110,7 +119,12 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
       }
     });
     expect(result.outputText).toEqual(es5CreateCatDtoTextTranspiled);
@@ -131,7 +145,12 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
       }
     });
     expect(result.outputText).toEqual(nullableDtoTextTranspiled);
@@ -152,7 +171,12 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
       }
     });
 
@@ -160,7 +184,12 @@ describe('API model properties', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ classValidatorShim: true }, fakeProgram)]
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
       }
     });
 

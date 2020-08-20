@@ -1,6 +1,7 @@
 import { compact, head } from 'lodash';
 import * as ts from 'typescript';
-import { ApiResponse, ApiOperation } from '../../decorators';
+import { ApiOperation, ApiResponse } from '../../decorators';
+import { PluginOptions } from '../merge-options';
 import { OPENAPI_NAMESPACE } from '../plugin-constants';
 import {
   getDecoratorArguments,
@@ -13,7 +14,6 @@ import {
   replaceImportPath
 } from '../utils/plugin-utils';
 import { AbstractFileVisitor } from './abstract.visitor';
-import { PluginOptions } from '../merge-options';
 
 export class ControllerClassVisitor extends AbstractFileVisitor {
   visit(
@@ -27,13 +27,17 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
     const visitNode = (node: ts.Node): ts.Node => {
       if (ts.isMethodDeclaration(node)) {
-        return this.addDecoratorToNode(
-          node,
-          typeChecker,
-          options,
-          sourceFile.fileName,
-          sourceFile
-        );
+        try {
+          return this.addDecoratorToNode(
+            node,
+            typeChecker,
+            options,
+            sourceFile.fileName,
+            sourceFile
+          );
+        } catch {
+          return node;
+        }
       }
       return ts.visitEachChild(node, visitNode, ctx);
     };
@@ -53,7 +57,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
     node.decorators = Object.assign(
       [
-        ...this.createApiOperationOrEmptyInArray(
+        ...this.createApiOperationDecorator(
           node,
           nodeArray,
           options,
@@ -80,36 +84,47 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     return node;
   }
 
-  createApiOperationOrEmptyInArray(
+  createApiOperationDecorator(
     node: ts.MethodDeclaration,
     nodeArray: ts.NodeArray<ts.Decorator>,
     options: PluginOptions,
     sourceFile: ts.SourceFile
   ) {
+    if (!options.introspectComments) {
+      return [];
+    }
     const keyToGenerate = options.controllerKeyOfComment;
     const apiOperationDecorator = getDecoratorOrUndefinedByNames(
       [ApiOperation.name],
       nodeArray
     );
-    let apiOperationOptions: ts.ObjectLiteralExpression;
-    let apiOperationOptionsProperties: ts.NodeArray<ts.PropertyAssignment>;
-    let comments;
+    const apiOperationExpr: ts.ObjectLiteralExpression | undefined =
+      apiOperationDecorator &&
+      head(getDecoratorArguments(apiOperationDecorator));
+    const apiOperationExprProperties =
+      apiOperationExpr &&
+      (apiOperationExpr.properties as ts.NodeArray<ts.PropertyAssignment>);
+
     if (
-      // No ApiOperation or No ApiOperationOptions or ApiOperationOptions is empty or No description in ApiOperationOptions
-      (!apiOperationDecorator ||
-        !(apiOperationOptions = head(
-          getDecoratorArguments(apiOperationDecorator)
-        )) ||
-        !(apiOperationOptionsProperties = apiOperationOptions.properties as ts.NodeArray<
-          ts.PropertyAssignment
-        >) ||
-        !hasPropertyKey(keyToGenerate, apiOperationOptionsProperties)) &&
-      // Has comments
-      ([comments] = getMainCommentAndExamplesOfNode(node, sourceFile))[0]
+      !apiOperationDecorator ||
+      !apiOperationExpr ||
+      !apiOperationExprProperties ||
+      !hasPropertyKey(keyToGenerate, apiOperationExprProperties)
     ) {
+      const [extractedComments] = getMainCommentAndExamplesOfNode(
+        node,
+        sourceFile
+      );
+      if (!extractedComments) {
+        // Node does not have any comments
+        return [];
+      }
       const properties = [
-        ts.createPropertyAssignment(keyToGenerate, ts.createLiteral(comments)),
-        ...(apiOperationOptionsProperties ?? ts.createNodeArray())
+        ts.createPropertyAssignment(
+          keyToGenerate,
+          ts.createLiteral(extractedComments)
+        ),
+        ...(apiOperationExprProperties ?? ts.createNodeArray())
       ];
       const apiOperationDecoratorArguments: ts.NodeArray<ts.Expression> = ts.createNodeArray(
         [ts.createObjectLiteral(compact(properties))]

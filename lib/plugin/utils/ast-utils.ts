@@ -1,21 +1,21 @@
 import {
   CallExpression,
+  CommentRange,
   Decorator,
+  getLeadingCommentRanges,
+  getTrailingCommentRanges,
   Identifier,
   LeftHandSideExpression,
   Node,
   ObjectFlags,
   ObjectType,
   PropertyAccessExpression,
+  SourceFile,
   SyntaxKind,
   Type,
   TypeChecker,
   TypeFlags,
-  TypeFormatFlags,
-  SourceFile,
-  getTrailingCommentRanges,
-  getLeadingCommentRanges,
-  CommentRange
+  TypeFormatFlags
 } from 'typescript';
 import { isDynamicallyAdded } from './plugin-utils';
 
@@ -105,22 +105,21 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
 export function getMainCommentAndExamplesOfNode(
   node: Node,
   sourceFile: SourceFile,
-  needExamples?: boolean
+  includeExamples?: boolean
 ): [string, string[]] {
   const sourceText = sourceFile.getFullText();
-
   const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/\/+.*|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
 
   const commentResult = [];
   const examplesResult = [];
-  const extractCommentsAndExamples = (comments?: CommentRange[]) =>
+  const introspectCommentsAndExamples = (comments?: CommentRange[]) =>
     comments?.forEach((comment) => {
       const commentSource = sourceText.substring(comment.pos, comment.end);
       const oneComment = commentSource.replace(replaceRegex, '').trim();
       if (oneComment) {
         commentResult.push(oneComment);
       }
-      if (needExamples) {
+      if (includeExamples) {
         const regexOfExample = /@example *['"]?([^ ]+?)['"]? *$/gim;
         let execResult: RegExpExecArray;
         while (
@@ -131,15 +130,19 @@ export function getMainCommentAndExamplesOfNode(
         }
       }
     });
-  extractCommentsAndExamples(
-    getLeadingCommentRanges(sourceText, node.getFullStart())
-  );
-  if (!commentResult.length) {
-    extractCommentsAndExamples(
-      getTrailingCommentRanges(sourceText, node.getFullStart())
-    );
-  }
 
+  const leadingCommentRanges = getLeadingCommentRanges(
+    sourceText,
+    node.getFullStart()
+  );
+  introspectCommentsAndExamples(leadingCommentRanges);
+  if (!commentResult.length) {
+    const trailingCommentRanges = getTrailingCommentRanges(
+      sourceText,
+      node.getFullStart()
+    );
+    introspectCommentsAndExamples(trailingCommentRanges);
+  }
   return [commentResult.join('\n'), examplesResult];
 }
 

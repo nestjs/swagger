@@ -32,7 +32,7 @@ var CreateCatDtoEs5 = /** @class */ (function () {
         this.age = 3;
     }
     CreateCatDtoEs5._OPENAPI_METADATA_FACTORY = function () {
-        return { name: { required: true, type: function () { return String; }, default: constants_1.CONSTANT_STRING }, status: { description: "status", required: true, type: function () { return Object; }, default: status_1.Status.ENABLED }, obj: { required: true, type: function () { return Object; }, default: constants_1.CONSTANT_OBJECT }, age: { required: true, type: function () { return Number; }, default: 3, minimum: constants_1.MIN_VAL, maximum: 10 } };
+        return { name: { required: true, type: function () { return String; }, default: constants_1.CONSTANT_STRING }, status: { required: true, type: function () { return Object; }, description: "status", default: status_1.Status.ENABLED }, obj: { required: true, type: function () { return Object; }, default: constants_1.CONSTANT_OBJECT }, age: { required: true, type: function () { return Number; }, default: 3, minimum: constants_1.MIN_VAL, maximum: 10 } };
     };
     __decorate([
         Min(constants_1.MIN_VAL),

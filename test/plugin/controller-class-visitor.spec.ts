@@ -20,7 +20,12 @@ describe('Controller methods', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [before({ controllerKeyOfComment: 'summary' }, fakeProgram)]
+        before: [
+          before(
+            { controllerKeyOfComment: 'summary', introspectComments: true },
+            fakeProgram
+          )
+        ]
       }
     });
     expect(result.outputText).toEqual(appControllerTextTranspiled);

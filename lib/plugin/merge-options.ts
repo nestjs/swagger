@@ -6,6 +6,7 @@ export interface PluginOptions {
   classValidatorShim?: boolean;
   dtoKeyOfComment?: string;
   controllerKeyOfComment?: string;
+  introspectComments?: boolean;
 }
 
 const defaultOptions: PluginOptions = {
@@ -13,7 +14,8 @@ const defaultOptions: PluginOptions = {
   controllerFileNameSuffix: ['.controller.ts'],
   classValidatorShim: true,
   dtoKeyOfComment: 'description',
-  controllerKeyOfComment: 'description'
+  controllerKeyOfComment: 'description',
+  introspectComments: false
 };
 
 export const mergePluginOptions = (

@@ -34,7 +34,7 @@ export abstract class Audit {
 export const createCatDtoTextAlt2Transpiled = `import { CreateDateColumn, UpdateDateColumn, VersionColumn } from 'typeorm';
 export class Audit {
     static _OPENAPI_METADATA_FACTORY() {
-        return { createdAt: { description: "test on createdAt", required: true, type: () => Object }, updatedAt: { required: true, type: () => Object }, version: { description: "test\\nversion", required: true, type: () => Object, example: "0.0.1" }, testVersion: { description: "testVersion", required: true, type: () => Object, examples: ["0.0.1", "0.0.2"] } };
+        return { createdAt: { required: true, type: () => Object, description: "test on createdAt" }, updatedAt: { required: true, type: () => Object }, version: { required: true, type: () => Object, description: "test\\nversion", example: "0.0.1" }, testVersion: { required: true, type: () => Object, description: "testVersion", examples: ["0.0.1", "0.0.2"] } };
     }
 }
 __decorate([
