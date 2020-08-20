@@ -123,13 +123,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     hostFilename = ''
   ): ts.ObjectLiteralExpression {
     const isRequired = !node.questionToken;
-
     let properties = [
       ...existingProperties,
       !hasPropertyKey('required', existingProperties) &&
         ts.createPropertyAssignment('required', ts.createLiteral(isRequired)),
-      this.createTypePropertyAssignment(
-        node,
+      ...this.createTypePropertyAssignments(
+        node.type,
         typeChecker,
         existingProperties,
         hostFilename
@@ -151,37 +150,96 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     return objectLiteral;
   }
 
-  createTypePropertyAssignment(
-    node: ts.PropertyDeclaration | ts.PropertySignature,
+  /**
+   * The function returns an array with 0, 1 or 2 PropertyAssignments.
+   * Possible keys:
+   * - 'type'
+   * - 'nullable'
+   */
+  private createTypePropertyAssignments(
+    node: ts.TypeNode,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string
-  ) {
+  ): ts.PropertyAssignment[] {
     const key = 'type';
     if (hasPropertyKey(key, existingProperties)) {
-      return undefined;
+      return [];
     }
-    const type = typeChecker.getTypeAtLocation(node);
-    if (!type) {
-      return undefined;
-    }
-    if (node.type && ts.isTypeLiteralNode(node.type)) {
-      const propertyAssignments = Array.from(node.type.members || []).map(
-        (member) => {
-          const literalExpr = this.createDecoratorObjectLiteralExpr(
-            member as ts.PropertySignature,
+    if (node) {
+      if (ts.isTypeLiteralNode(node)) {
+        const propertyAssignments = Array.from(node.members || []).map(
+          (member) => {
+            const literalExpr = this.createDecoratorObjectLiteralExpr(
+              member as ts.PropertySignature,
+              typeChecker,
+              existingProperties,
+              {},
+              hostFilename
+            );
+            return ts.createPropertyAssignment(
+              ts.createIdentifier(member.name.getText()),
+              literalExpr
+            );
+          }
+        );
+        return [
+          ts.createPropertyAssignment(
+            key,
+            ts.createArrowFunction(
+              undefined,
+              undefined,
+              [],
+              undefined,
+              undefined,
+              ts.createParen(ts.createObjectLiteral(propertyAssignments))
+            )
+          )
+        ];
+      } else if (ts.isUnionTypeNode(node)) {
+        const nullableType = node.types.find(
+          (type) => type.kind === ts.SyntaxKind.NullKeyword
+        );
+        const isNullable = !!nullableType;
+        const remainingTypes = node.types.filter(
+          (item) => item !== nullableType
+        );
+
+        // When we have more than 1 type left, we could use oneOf
+        if (remainingTypes.length === 1) {
+          const remainingTypesProperties = this.createTypePropertyAssignments(
+            remainingTypes[0],
             typeChecker,
             existingProperties,
-            {},
             hostFilename
           );
-          return ts.createPropertyAssignment(
-            ts.createIdentifier(member.name.getText()),
-            literalExpr
+
+          const resultArray = new Array<ts.PropertyAssignment>(
+            ...remainingTypesProperties
           );
+          if (isNullable) {
+            const nullablePropertyAssignment = ts.createPropertyAssignment(
+              'nullable',
+              ts.createTrue()
+            );
+            resultArray.push(nullablePropertyAssignment);
+          }
+          return resultArray;
         }
-      );
-      return ts.createPropertyAssignment(
+      }
+    }
+
+    const type = typeChecker.getTypeAtLocation(node);
+    if (!type) {
+      return [];
+    }
+    let typeReference = getTypeReferenceAsString(type, typeChecker);
+    if (!typeReference) {
+      return [];
+    }
+    typeReference = replaceImportPath(typeReference, hostFilename);
+    return [
+      ts.createPropertyAssignment(
         key,
         ts.createArrowFunction(
           undefined,
@@ -189,26 +247,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           [],
           undefined,
           undefined,
-          ts.createParen(ts.createObjectLiteral(propertyAssignments))
+          ts.createIdentifier(typeReference)
         )
-      );
-    }
-    let typeReference = getTypeReferenceAsString(type, typeChecker);
-    if (!typeReference) {
-      return undefined;
-    }
-    typeReference = replaceImportPath(typeReference, hostFilename);
-    return ts.createPropertyAssignment(
-      key,
-      ts.createArrowFunction(
-        undefined,
-        undefined,
-        [],
-        undefined,
-        undefined,
-        ts.createIdentifier(typeReference)
       )
-    );
+    ];
   }
 
   createEnumPropertyAssignment(
