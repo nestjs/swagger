@@ -204,9 +204,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         const remainingTypes = node.types.filter(
           (item) => item !== nullableType
         );
-        /**
-         * when we have more than 1 type left, we could use oneOf
-         */
+
+        // When we have more than 1 type left, we could use oneOf
         if (remainingTypes.length === 1) {
           const remainingTypesProperties = this.createTypePropertyAssignments(
             remainingTypes[0],
