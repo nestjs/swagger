@@ -25,6 +25,7 @@ import { PaginationQuery } from './dto/pagination-query.dto';
   description: 'Test',
   schema: { default: 'test' }
 })
+@ApiResponse({ status: 500, description: 'Internal server error' })
 @Controller('cats')
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}

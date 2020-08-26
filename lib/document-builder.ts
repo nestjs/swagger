@@ -1,10 +1,12 @@
 import { Logger } from '@nestjs/common';
-import { isString, isUndefined, negate, pickBy } from 'lodash';
+import { isString, isUndefined, negate, pickBy, omit } from 'lodash';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
+import { ApiResponseOptions } from './decorators/';
 import {
   ExternalDocumentationObject,
   SecurityRequirementObject,
+  ResponseObject,
   SecuritySchemeObject,
   ServerVariableObject,
   TagObject
@@ -179,6 +181,15 @@ export class DocumentBuilder {
       name: cookieName,
       ...options
     });
+    return this;
+  }
+
+  public addResponse(options: ApiResponseOptions): this {
+    this.document.components.responses = {
+      ...(this.document.components.responses || {}),
+      [options.status]: omit(options, 'status') as ResponseObject
+    };
+
     return this;
   }
 

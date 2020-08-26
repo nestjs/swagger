@@ -1,20 +1,17 @@
 import { HttpStatus, RequestMethod, Type } from '@nestjs/common';
 import { HTTP_CODE_METADATA, METHOD_METADATA } from '@nestjs/common/constants';
-import { isEmpty } from '@nestjs/common/utils/shared.utils';
-import { get, mapValues, omit } from 'lodash';
+import { get } from 'lodash';
 import { DECORATORS } from '../constants';
 import { ApiResponseMetadata } from '../decorators';
 import { SchemaObject } from '../interfaces/open-api-spec.interface';
-import { ResponseObjectFactory } from '../services/response-object-factory';
+import { mapResponsesToSwaggerResponses } from '../utils/map-responses-to-swagger-responses.util';
 import { mergeAndUniq } from '../utils/merge-and-uniq.util';
-
-const responseObjectFactory = new ResponseObjectFactory();
 
 export const exploreGlobalApiResponseMetadata = (
   schemas: SchemaObject[],
   metatype: Type<unknown>
 ) => {
-  const responses: ApiResponseMetadata[] = Reflect.getMetadata(
+  const responses: Record<string, ApiResponseMetadata> = Reflect.getMetadata(
     DECORATORS.API_RESPONSE,
     metatype
   );
@@ -67,20 +64,4 @@ const getStatusCode = (method: Function) => {
     default:
       return HttpStatus.OK;
   }
-};
-
-const omitParamType = (param: Record<string, any>) => omit(param, 'type');
-const mapResponsesToSwaggerResponses = (
-  responses: ApiResponseMetadata[],
-  schemas: SchemaObject[],
-  produces: string[] = ['application/json']
-) => {
-  produces = isEmpty(produces) ? ['application/json'] : produces;
-
-  const openApiResponses = mapValues(
-    responses,
-    (response: ApiResponseMetadata) =>
-      responseObjectFactory.create(response, produces, schemas)
-  );
-  return mapValues(openApiResponses, omitParamType);
 };

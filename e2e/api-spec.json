@@ -49,6 +49,11 @@
         "name": "connect.sid"
       }
     },
+    "responses": {
+      "502": {
+        "description": "Bad gateway"
+      }
+    },
     "schemas": {
       "ExtraModel": {
         "type": "object",
@@ -289,6 +294,12 @@
           },
           "403": {
             "description": "Forbidden."
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
           }
         },
         "tags": [
@@ -402,6 +413,12 @@
         "responses": {
           "200": {
             "description": ""
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
           }
         },
         "tags": [
@@ -455,6 +472,12 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
           }
         },
         "tags": [
@@ -600,6 +623,12 @@
         "responses": {
           "200": {
             "description": ""
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
           }
         },
         "tags": [
@@ -648,6 +677,12 @@
         "responses": {
           "201": {
             "description": ""
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
           }
         },
         "tags": [
@@ -706,6 +741,12 @@
           },
           "403": {
             "description": "Forbidden."
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
           }
         },
         "tags": [
@@ -743,6 +784,12 @@
         "responses": {
           "200": {
             "description": ""
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
           }
         },
         "tags": [
