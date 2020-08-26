@@ -26,6 +26,10 @@ describe('Validate OpenAPI schema', () => {
       .addApiKey()
       .addCookieAuth()
       .addSecurityRequirements('bearer')
+      .addResponse({
+        status: 502,
+        description: 'Bad gateway'
+      })
       .build();
 
     document = SwaggerModule.createDocument(app, options);

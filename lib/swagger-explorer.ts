@@ -14,12 +14,14 @@ import {
   isArray,
   isEmpty,
   mapValues,
+  merge,
   omit,
   omitBy,
   pick
 } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
+import { ApiResponseOptions } from './decorators/';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
 import {
   exploreApiExtraModelsMetadata,
@@ -44,6 +46,7 @@ import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolver
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface';
 import {
   OpenAPIObject,
+  ResponsesObject,
   SchemaObject
 } from './interfaces/open-api-spec.interface';
 import { MimetypeContentWrapper } from './services/mimetype-content-wrapper';
@@ -65,6 +68,7 @@ export class SwaggerExplorer {
     wrapper: InstanceWrapper<Controller>,
     modulePath?: string,
     globalPrefix?: string,
+    globalResponses?: ResponsesObject,
     operationIdFactory?: (controllerKey: string, methodKey: string) => string
   ) {
     if (operationIdFactory) {
@@ -92,7 +96,8 @@ export class SwaggerExplorer {
       instance,
       documentResolvers,
       modulePath,
-      globalPrefix
+      globalPrefix,
+      globalResponses
     );
   }
 
@@ -106,7 +111,8 @@ export class SwaggerExplorer {
     instance: object,
     documentResolvers: DenormalizedDocResolvers,
     modulePath?: string,
-    globalPrefix?: string
+    globalPrefix?: string,
+    globalResponses?: ResponsesObject
   ): DenormalizedDoc[] {
     let path = this.validateRoutePath(this.reflectControllerPath(metatype));
     if (modulePath) {
@@ -120,7 +126,12 @@ export class SwaggerExplorer {
 
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
-    const globalMetadata = this.exploreGlobalMetadata(metatype);
+    const globalMetadata = this.exploreGlobalMetadata(
+      // Responses is not a property of `OpenAPIObject`, but that's what's
+      // being returned (incorrect type) by this.exploreGlobalMetadata(...).
+      { responses: globalResponses } as Partial<OpenAPIObject>,
+      metatype
+    );
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);
 
@@ -183,6 +194,7 @@ export class SwaggerExplorer {
   }
 
   private exploreGlobalMetadata(
+    metadataBase: Partial<OpenAPIObject>,
     metatype: Type<unknown>
   ): Partial<OpenAPIObject> {
     const globalExplorers = [
@@ -201,8 +213,9 @@ export class SwaggerExplorer {
             chunks: (curr.chunks || []).concat(next)
           };
         }
-        return { ...curr, ...next };
-      }, {});
+
+        return merge({}, curr, next);
+      }, metadataBase);
 
     return globalMetadata;
   }
