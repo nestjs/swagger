@@ -1,3 +1,4 @@
+import {resolve} from 'path';
 import { INestApplication } from '@nestjs/common';
 import { loadPackage } from '@nestjs/common/utils/load-package.util';
 import {
@@ -55,7 +56,7 @@ export class SwaggerModule {
     app.use(finalPath, swaggerUi.serveFiles(document, options));
 
     httpAdapter.get(finalPath, (req, res) => res.send(swaggerHtml));
-    httpAdapter.get(finalPath + '-json', (req, res) => res.json(document));
+    httpAdapter.get(resolve(finalPath , 'openapi.json'), (req, res) => res.json(document));
   }
 
   private static setupFastify(
