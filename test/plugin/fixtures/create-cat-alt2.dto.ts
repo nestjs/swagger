@@ -6,6 +6,8 @@ export abstract class Audit {
   @CreateDateColumn()
   createdAt;
 
+  // commentedOutProperty: string;
+
   // test on updatedAt1
   // test on updatedAt2
   @UpdateDateColumn()
