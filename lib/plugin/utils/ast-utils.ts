@@ -128,7 +128,12 @@ export function getMainCommentAndExamplesOfNode(
           (execResult = regexOfExample.exec(commentSource)) &&
           execResult.length > 1
         ) {
-          examplesResult.push(execResult[1]);
+          const example = execResult[1];
+          try {
+            examplesResult.push(JSON.parse(example));
+          } catch {
+            examplesResult.push(example);
+          }
         }
       }
     });

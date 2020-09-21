@@ -30,13 +30,28 @@ export abstract class Audit {
    * @memberof Audit
    */
   testVersion;
+
+  /**
+   * testBoolean
+   *  
+   * @example true
+   */
+  testBoolean: boolean;
+
+  /**
+   * testNumber
+   *  
+   * @example 1.0
+   * @example 5
+   */
+  testNumber: number;
 }
 `;
 
 export const createCatDtoTextAlt2Transpiled = `import { CreateDateColumn, UpdateDateColumn, VersionColumn } from 'typeorm';
 export class Audit {
     static _OPENAPI_METADATA_FACTORY() {
-        return { createdAt: { required: true, type: () => Object, description: "test on createdAt" }, updatedAt: { required: true, type: () => Object }, version: { required: true, type: () => Object, description: "test\\nversion", example: "0.0.1" }, testVersion: { required: true, type: () => Object, description: "testVersion", examples: ["0.0.1", "0.0.2"] } };
+        return { createdAt: { required: true, type: () => Object, description: "test on createdAt" }, updatedAt: { required: true, type: () => Object }, version: { required: true, type: () => Object, description: "test\\nversion", example: "0.0.1" }, testVersion: { required: true, type: () => Object, description: "testVersion", examples: ["0.0.1", "0.0.2"] }, testBoolean: { required: true, type: () => Boolean, description: "testBoolean", example: true }, testNumber: { required: true, type: () => Number, description: "testNumber", examples: [1, 5] } };
     }
 }
 __decorate([
