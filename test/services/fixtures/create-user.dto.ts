@@ -36,6 +36,7 @@ export class CreateUserDto {
 
   @ApiProperty({
     description: 'Profile',
+    nullable: true,
     type: () => CreateProfileDto
   })
   profile: CreateProfileDto;
