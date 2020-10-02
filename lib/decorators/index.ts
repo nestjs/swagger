@@ -23,3 +23,4 @@ export * from './api-response.decorator';
 export * from './api-security.decorator';
 export * from './api-use-tags.decorator';
 export * from './api-extension.decorator';
+export * from './api-schema.decorator';
