@@ -32,7 +32,7 @@
     "@nestjs/platform-express": "7.4.4",
     "@nestjs/platform-fastify": "7.4.4",
     "@types/jest": "26.0.14",
-    "@types/lodash": "4.14.161",
+    "@types/lodash": "4.14.162",
     "@types/node": "11.15.0",
     "@typescript-eslint/eslint-plugin": "4.4.0",
     "@typescript-eslint/parser": "4.4.0",
