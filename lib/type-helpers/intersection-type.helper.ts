@@ -7,6 +7,7 @@ import { DECORATORS } from '../constants';
 import { ApiProperty } from '../decorators';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
 import { clonePluginMetadataFactory } from './mapped-types.utils';
+import { inheritPropertyInitializers } from '@nestjs/mapped-types/dist/type-helpers.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
@@ -21,7 +22,12 @@ export function IntersectionType<A, B>(
     classBRef.prototype
   );
 
-  abstract class IntersectionTypeClass {}
+  abstract class IntersectionTypeClass {
+    constructor() {
+      inheritPropertyInitializers(this, classARef);
+      inheritPropertyInitializers(this, classBRef);
+    }
+  }
   inheritValidationMetadata(classARef, IntersectionTypeClass);
   inheritTransformationMetadata(classARef, IntersectionTypeClass);
   inheritValidationMetadata(classBRef, IntersectionTypeClass);
