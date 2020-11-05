@@ -1,13 +1,13 @@
 import { Type } from '@nestjs/common';
 import {
   inheritTransformationMetadata,
-  inheritValidationMetadata
+  inheritValidationMetadata,
+  inheritPropertyInitializers
 } from '@nestjs/mapped-types';
 import { DECORATORS } from '../constants';
 import { ApiProperty } from '../decorators';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
 import { clonePluginMetadataFactory } from './mapped-types.utils';
-import { inheritPropertyInitializers } from '@nestjs/mapped-types/dist/type-helpers.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
