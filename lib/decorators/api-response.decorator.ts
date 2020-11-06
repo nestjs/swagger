@@ -101,6 +101,12 @@ export const ApiMovedPermanentlyResponse = (options: ApiResponseOptions = {}) =>
     status: HttpStatus.MOVED_PERMANENTLY
   });
 
+export const ApiFoundResponse = (options: ApiResponseOptions = {}) =>
+  ApiResponse({
+    ...options,
+    status: HttpStatus.FOUND
+  });
+
 export const ApiBadRequestResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
     ...options,
