@@ -32,7 +32,8 @@ export class SwaggerScanner {
       deepScanRoutes,
       include: includedModules = [],
       extraModels = [],
-      ignoreGlobalPrefix = false
+      ignoreGlobalPrefix = false,
+      operationIdFactory
     } = options;
 
     const container: NestContainer = (app as any).container;
@@ -64,7 +65,12 @@ export class SwaggerScanner {
           ? Reflect.getMetadata(MODULE_PATH, metatype)
           : undefined;
 
-        return this.scanModuleRoutes(allRoutes, path, globalPrefix);
+        return this.scanModuleRoutes(
+          allRoutes,
+          path,
+          globalPrefix,
+          operationIdFactory
+        );
       }
     );
 
@@ -85,10 +91,16 @@ export class SwaggerScanner {
   public scanModuleRoutes(
     routes: Map<string, InstanceWrapper>,
     modulePath?: string,
-    globalPrefix?: string
+    globalPrefix?: string,
+    operationIdFactory?: (controllerKey: string, methodKey: string) => string
   ): Array<Omit<OpenAPIObject, 'openapi' | 'info'> & Record<'root', any>> {
     const denormalizedArray = [...routes.values()].map((ctrl) =>
-      this.explorer.exploreController(ctrl, modulePath, globalPrefix)
+      this.explorer.exploreController(
+        ctrl,
+        modulePath,
+        globalPrefix,
+        operationIdFactory
+      )
     );
     return flatten(denormalizedArray) as any;
   }
