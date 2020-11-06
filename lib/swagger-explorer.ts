@@ -56,13 +56,8 @@ export class SwaggerExplorer {
   private readonly metadataScanner = new MetadataScanner();
   private readonly schemas: SchemaObject[] = [];
   private readonly schemaRefsStack: string[] = [];
-  private operationIdFactory = (controllerKey: string, methodKey: string) => {
-    if (controllerKey) {
-      return `${controllerKey}_${methodKey}`;
-    } else {
-      return methodKey;
-    }
-  };
+  private operationIdFactory = (controllerKey: string, methodKey: string) =>
+    controllerKey ? `${controllerKey}_${methodKey}` : methodKey;
 
   constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
 
