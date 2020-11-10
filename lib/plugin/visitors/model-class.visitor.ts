@@ -227,7 +227,9 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         ];
       } else if (ts.isUnionTypeNode(node)) {
         const nullableType = node.types.find(
-          (type) => type.kind === ts.SyntaxKind.NullKeyword
+          (type) =>
+            type.kind === ts.SyntaxKind.NullKeyword ||
+            (ts.SyntaxKind.LiteralType && type.getText() === 'null')
         );
         const isNullable = !!nullableType;
         const remainingTypes = node.types.filter(
