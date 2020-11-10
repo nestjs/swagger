@@ -55,7 +55,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const nodeArray = node.decorators || ts.createNodeArray();
     const { pos, end } = nodeArray;
 
-    node.decorators = Object.assign(
+    (node as any).decorators = Object.assign(
       [
         ...this.createApiOperationDecorator(
           node,
@@ -130,7 +130,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         [ts.createObjectLiteral(compact(properties))]
       );
       if (apiOperationDecorator) {
-        (apiOperationDecorator.expression as ts.CallExpression).arguments = apiOperationDecoratorArguments;
+        ((apiOperationDecorator.expression as ts.CallExpression) as any).arguments = apiOperationDecoratorArguments;
       } else {
         return [
           ts.createDecorator(

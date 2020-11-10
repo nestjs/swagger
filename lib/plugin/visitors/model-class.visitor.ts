@@ -104,10 +104,9 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       undefined,
       ts.createBlock([ts.createReturn(returnValue)], true)
     );
-    (classMutableNode as ts.ClassDeclaration).members = ts.createNodeArray([
-      ...(classMutableNode as ts.ClassDeclaration).members,
-      method
-    ]);
+    ((classMutableNode as ts.ClassDeclaration) as any).members = ts.createNodeArray(
+      [...(classMutableNode as ts.ClassDeclaration).members, method]
+    );
     return classMutableNode;
   }
 
