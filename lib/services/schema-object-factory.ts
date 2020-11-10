@@ -365,7 +365,8 @@ export class SchemaObjectFactory {
       return {
         name: metadata.name || key,
         required: metadata.required,
-        allOf: [{ $ref }, { ...validMetadataObject }]
+        ...validMetadataObject,
+        allOf: [{ $ref }]
       } as SchemaObjectMetadata;
     }
     return {
