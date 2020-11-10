@@ -132,12 +132,11 @@ describe('SchemaObjectFactory', () => {
             }
           },
           profile: {
+            description: 'Profile',
+            nullable: true,
             allOf: [
               {
                 $ref: '#/components/schemas/CreateProfileDto'
-              },
-              {
-                description: 'Profile'
               }
             ]
           },
