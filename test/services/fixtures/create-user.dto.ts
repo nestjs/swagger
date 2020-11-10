@@ -40,9 +40,7 @@ export class CreateUserDto {
   })
   profile: CreateProfileDto;
 
-  @ApiProperty({
-    type: [String]
-  })
+  @ApiProperty()
   tags: string[];
 
   @ApiProperty({
@@ -84,4 +82,10 @@ export class CreateUserDto {
 
   @ApiProperty()
   createdAt: Date;
+
+  static _OPENAPI_METADATA_FACTORY() {
+    return {
+      tags: { type: () => [String] }
+    };
+  }
 }

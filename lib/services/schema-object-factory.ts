@@ -94,9 +94,14 @@ export class SchemaObjectFactory {
       return this.createEnumParam(param, schemas, schemaRefsStack);
     }
     if (this.isLazyTypeFunc(param.type)) {
+      const [type, isArray] = getTypeIsArrayTuple(
+        (param.type as Function)(),
+        undefined
+      );
       return {
         ...param,
-        type: (param.type as Function)()
+        type,
+        isArray
       };
     }
     return param;
