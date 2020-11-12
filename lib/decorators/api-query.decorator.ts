@@ -2,6 +2,7 @@ import { Type } from '@nestjs/common';
 import { isNil, omit } from 'lodash';
 import {
   ParameterObject,
+  ReferenceObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
@@ -23,7 +24,7 @@ interface ApiQueryMetadata extends ParameterOptions {
 }
 
 interface ApiQuerySchemaHost extends ParameterOptions {
-  schema: SchemaObject;
+  schema: SchemaObject | ReferenceObject;
 }
 
 export type ApiQueryOptions = ApiQueryMetadata | ApiQuerySchemaHost;
