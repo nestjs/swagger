@@ -17,6 +17,7 @@ export class PaginationQuery {
     default: 0
   })
   page: number;
+
   @ApiProperty({
     name: '_sortBy'
   })
@@ -37,6 +38,9 @@ export class PaginationQuery {
     isArray: true
   })
   enumArr: LettersEnum;
+
+  @ApiProperty()
+  beforeDate: Date;
 
   static _OPENAPI_METADATA_FACTORY() {
     return {

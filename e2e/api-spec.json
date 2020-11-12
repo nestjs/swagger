@@ -126,12 +126,10 @@
             }
           },
           "tag": {
+            "description": "tag",
             "allOf": [
               {
                 "$ref": "#/components/schemas/TagDto"
-              },
-              {
-                "description": "tag"
               }
             ]
           }
@@ -355,6 +353,15 @@
               "items": {
                 "$ref": "#/components/schemas/LettersEnum"
               }
+            }
+          },
+          {
+            "name": "beforeDate",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
             }
           }
         ],
