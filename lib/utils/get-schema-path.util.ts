@@ -1,4 +1,4 @@
-import { isString } from 'util';
+import { isString } from '@nestjs/common/utils/shared.utils';
 
 export function getSchemaPath(model: string | Function): string {
   const modelName = isString(model) ? model : model && model.name;

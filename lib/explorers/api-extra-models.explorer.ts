@@ -3,7 +3,7 @@ import { DECORATORS } from '../constants';
 
 export const exploreGlobalApiExtraModelsMetadata = (
   metatype: Type<unknown>
-) => {
+): Function[] => {
   const extraModels = Reflect.getMetadata(
     DECORATORS.API_EXTRA_MODELS,
     metatype

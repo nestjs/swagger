@@ -5,6 +5,7 @@ import {
   ApiExtension,
   ApiHeader,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiSecurity,
   ApiTags
@@ -54,6 +55,10 @@ export class CatsController {
 
   @Get()
   findAll(@Query() paginationQuery: PaginationQuery) {}
+
+  @ApiQuery({ type: PaginationQuery })
+  @Get('explicit-query')
+  findAllWithExplicitQuery(paginationQuery: PaginationQuery) {}
 
   @Get('bulk')
   findAllBulk(@Query() paginationQuery: PaginationQuery[]) {}

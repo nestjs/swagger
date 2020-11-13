@@ -1,6 +1,7 @@
 import { Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils';
 import {
+  flatten,
   includes,
   isFunction,
   isString,
@@ -14,6 +15,7 @@ import { getTypeIsArrayTuple } from '../decorators/helpers';
 import { exploreGlobalApiExtraModelsMetadata } from '../explorers/api-extra-models.explorer';
 import {
   BaseParameterObject,
+  ParameterObject,
   ReferenceObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
@@ -43,15 +45,21 @@ export class SchemaObjectFactory {
     schemas: SchemaObject[],
     schemaRefsStack: string[] = []
   ): Array<ParamWithTypeMetadata | BaseParameterObject> {
-    return parameters.map((param) => {
-      if (!isBodyParameter(param)) {
-        return this.createQueryOrParamSchema(param, schemas, schemaRefsStack);
+    const parameterObjects = parameters.map((param) => {
+      if (this.isLazyTypeFunc(param.type)) {
+        [param.type, param.isArray] = getTypeIsArrayTuple(
+          (param.type as Function)(),
+          undefined
+        ) as [Type<any>, boolean];
       }
       if (this.isPrimitiveType(param.type)) {
         return param;
       }
       if (this.isArrayCtor(param.type)) {
         return this.mapArrayCtorParam(param);
+      }
+      if (!isBodyParameter(param)) {
+        return this.createQueryOrParamSchema(param, schemas, schemaRefsStack);
       }
 
       const modelName = this.exploreModelSchema(
@@ -83,6 +91,7 @@ export class SchemaObjectFactory {
         schema
       };
     });
+    return flatten(parameterObjects);
   }
 
   createQueryOrParamSchema(
@@ -93,12 +102,7 @@ export class SchemaObjectFactory {
     if (param.enumName) {
       return this.createEnumParam(param, schemas, schemaRefsStack);
     }
-    if (this.isLazyTypeFunc(param.type)) {
-      [param.type, param.isArray] = getTypeIsArrayTuple(
-        (param.type as Function)(),
-        undefined
-      ) as [Type<any>, boolean];
-    }
+
     if (isDateCtor(param.type as Function)) {
       return {
         format: 'date-time',
@@ -106,20 +110,37 @@ export class SchemaObjectFactory {
         type: 'string'
       };
     }
+    if (isFunction(param.type)) {
+      const propertiesWithType = this.extractPropertiesFromType(
+        param.type,
+        schemas,
+        schemaRefsStack
+      );
+      if (!propertiesWithType) {
+        return param;
+      }
+      return propertiesWithType.map(
+        (property: ParameterObject & ParamWithTypeMetadata) => {
+          const parameterObject = {
+            ...(omit(property, 'enumName') as ParameterObject),
+            in: 'query',
+            required: property.required ?? true
+          };
+          return parameterObject;
+        }
+      ) as ParameterObject[];
+    }
     return param;
   }
 
-  exploreModelSchema(
-    type: Type<unknown> | Function,
+  extractPropertiesFromType(
+    type: Type<unknown>,
     schemas: SchemaObject[],
-    schemaRefsStack: string[] = []
+    schemaRefsStack: string[]
   ) {
-    if (this.isLazyTypeFunc(type as Function)) {
-      type = (type as Function)();
-    }
     const { prototype } = type;
     if (!prototype) {
-      return '';
+      return;
     }
     const extraModels = exploreGlobalApiExtraModelsMetadata(
       type as Type<unknown>
@@ -144,15 +165,34 @@ export class SchemaObjectFactory {
       if (schemaCombinators.some((key) => key in property)) {
         delete (property as SchemaObjectMetadata).type;
       }
-      return property;
+      return property as ParameterObject;
     });
+    return propertiesWithType;
+  }
+
+  exploreModelSchema(
+    type: Type<unknown> | Function,
+    schemas: SchemaObject[],
+    schemaRefsStack: string[] = []
+  ) {
+    if (this.isLazyTypeFunc(type as Function)) {
+      type = (type as Function)();
+    }
+    const propertiesWithType = this.extractPropertiesFromType(
+      type as Type<unknown>,
+      schemas,
+      schemaRefsStack
+    );
+    if (!propertiesWithType) {
+      return '';
+    }
     const typeDefinition: SchemaObject = {
       type: 'object',
       properties: mapValues(keyBy(propertiesWithType, 'name'), (property) =>
         omit(property, ['name', 'isArray', 'required', 'enumName'])
       ) as Record<string, SchemaObject | ReferenceObject>
     };
-    const typeDefinitionRequiredFields = (propertiesWithType as SchemaObjectMetadata[])
+    const typeDefinitionRequiredFields = propertiesWithType
       .filter((property) => property.required != false)
       .map((property) => property.name);
 
@@ -171,7 +211,7 @@ export class SchemaObjectFactory {
     schemas: SchemaObject[],
     schemaRefsStack: string[] = [],
     metadata?: SchemaObjectMetadata
-  ): SchemaObjectMetadata | ReferenceObject {
+  ): SchemaObjectMetadata | ReferenceObject | ParameterObject {
     if (!metadata) {
       metadata =
         Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||

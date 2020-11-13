@@ -14,9 +14,10 @@ import {
 } from '../utils/enum.utils';
 import { createParamDecorator, getTypeIsArrayTuple } from './helpers';
 
-type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
+type ParameterOptions = Omit<ParameterObject, 'in' | 'schema' | 'name'>;
 
 interface ApiQueryMetadata extends ParameterOptions {
+  name?: string;
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   enum?: SwaggerEnumType;
@@ -24,6 +25,7 @@ interface ApiQueryMetadata extends ParameterOptions {
 }
 
 interface ApiQuerySchemaHost extends ParameterOptions {
+  name?: string;
   schema: SchemaObject | ReferenceObject;
 }
 

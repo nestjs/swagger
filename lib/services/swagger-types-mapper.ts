@@ -2,6 +2,7 @@ import { isFunction, isUndefined, omit, omitBy } from 'lodash';
 import { ApiPropertyOptions } from '../decorators';
 import {
   BaseParameterObject,
+  ReferenceObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
@@ -28,11 +29,12 @@ export class SwaggerTypesMapper {
         isUndefined
       );
 
-      const keysToRemove: Array<keyof ApiPropertyOptions> = [
+      const keysToRemove: Array<keyof ApiPropertyOptions | '$ref'> = [
         'type',
         'isArray',
         'enum',
         'items',
+        '$ref',
         ...this.getSchemaOptionsKeys()
       ];
       if (this.isEnumArrayType(paramWithTypeMetadata)) {
@@ -53,8 +55,9 @@ export class SwaggerTypesMapper {
             ...this.getSchemaOptions(param),
             ...((param as BaseParameterObject).schema || {}),
             enum: paramWithTypeMetadata.enum,
-            type: paramWithTypeMetadata.type
-          } as Partial<SchemaObject>,
+            type: paramWithTypeMetadata.type,
+            $ref: (paramWithTypeMetadata as ReferenceObject).$ref
+          },
           isUndefined
         )
       };
@@ -63,14 +66,14 @@ export class SwaggerTypesMapper {
 
   mapTypeToOpenAPIType(type: string | Function): string {
     if (!(type && (type as string).charAt)) {
-      return '';
+      return;
     }
     return (type as string).charAt(0).toLowerCase() + (type as string).slice(1);
   }
 
   mapEnumArrayType(
     param: Record<string, any>,
-    keysToRemove: Array<keyof ApiPropertyOptions>
+    keysToRemove: Array<keyof ApiPropertyOptions | '$ref'>
   ) {
     return {
       ...omit(param, keysToRemove),
@@ -83,17 +86,19 @@ export class SwaggerTypesMapper {
   }
 
   mapArrayType(
-    param: ParamWithTypeMetadata,
-    keysToRemove: Array<keyof ApiPropertyOptions>
+    param: (ParamWithTypeMetadata & SchemaObject) | BaseParameterObject,
+    keysToRemove: Array<keyof ApiPropertyOptions | '$ref'>
   ) {
-    const items = omitBy(
-      {
-        ...((param as BaseParameterObject).schema || {}),
-        enum: (param as ParamWithTypeMetadata).enum,
-        type: this.mapTypeToOpenAPIType((param as ParamWithTypeMetadata).type)
-      },
-      isUndefined
-    );
+    const items =
+      (param as SchemaObject).items ||
+      omitBy(
+        {
+          ...((param as BaseParameterObject).schema || {}),
+          enum: (param as ParamWithTypeMetadata).enum,
+          type: this.mapTypeToOpenAPIType((param as ParamWithTypeMetadata).type)
+        },
+        isUndefined
+      );
     return {
       ...omit(param, keysToRemove),
       schema: {

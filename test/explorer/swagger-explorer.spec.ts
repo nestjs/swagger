@@ -14,12 +14,12 @@ import {
   ApiProperty,
   ApiQuery
 } from '../../lib/decorators';
+import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
-import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 
 describe('SwaggerExplorer', () => {
   const schemaObjectFactory = new SchemaObjectFactory(
@@ -37,6 +37,12 @@ describe('SwaggerExplorer', () => {
 
     class CreateFoo {}
 
+    enum LettersEnum {
+      A = 'A',
+      B = 'B',
+      C = 'C'
+    }
+
     class ListEntitiesDto {
       @ApiProperty({ minimum: 0 })
       page: number;
@@ -46,6 +52,19 @@ describe('SwaggerExplorer', () => {
 
       @ApiProperty({ type: [String], minItems: 3 })
       sortBy: string[];
+
+      @ApiProperty({
+        enum: LettersEnum,
+        enumName: 'LettersEnum'
+      })
+      enum: LettersEnum;
+
+      @ApiProperty({
+        enum: LettersEnum,
+        enumName: 'LettersEnum',
+        isArray: true
+      })
+      enumArr: LettersEnum;
     }
 
     @Controller('')
@@ -131,7 +150,7 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root.method).toEqual('post');
       expect(routes[0].root.path).toEqual('/path/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
-      expect(routes[0].root.parameters.length).toEqual(3);
+      expect(routes[0].root.parameters.length).toEqual(5);
       expect(routes[0].root.parameters).toEqual([
         {
           in: 'query',
@@ -158,6 +177,25 @@ describe('SwaggerExplorer', () => {
             minItems: 3,
             items: {
               type: 'string'
+            },
+            type: 'array'
+          }
+        },
+        {
+          in: 'query',
+          name: 'enum',
+          required: true,
+          schema: {
+            $ref: '#/components/schemas/LettersEnum'
+          }
+        },
+        {
+          in: 'query',
+          name: 'enumArr',
+          required: true,
+          schema: {
+            items: {
+              $ref: '#/components/schemas/LettersEnum'
             },
             type: 'array'
           }
