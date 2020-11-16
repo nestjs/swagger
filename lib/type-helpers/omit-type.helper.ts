@@ -1,5 +1,6 @@
 import { Type } from '@nestjs/common';
 import {
+  inheritPropertyInitializers,
   inheritTransformationMetadata,
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
@@ -19,10 +20,14 @@ export function OmitType<T, K extends keyof T>(
     .getModelProperties(classRef.prototype)
     .filter((item) => !keys.includes(item as K));
 
-  abstract class OmitTypeClass {}
-
   const isInheritedPredicate = (propertyKey: string) =>
     !keys.includes(propertyKey as K);
+  abstract class OmitTypeClass {
+    constructor() {
+      inheritPropertyInitializers(this, classRef, isInheritedPredicate);
+    }
+  }
+
   inheritValidationMetadata(classRef, OmitTypeClass, isInheritedPredicate);
   inheritTransformationMetadata(classRef, OmitTypeClass, isInheritedPredicate);
 
