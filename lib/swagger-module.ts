@@ -63,6 +63,15 @@ export class SwaggerModule {
     httpServer: any,
     document: OpenAPIObject
   ) {
+    // Workaround for older versions of the @nestjs/platform-fastify package
+    // where "isParserRegistered" getter is not defined.
+    const hasParserGetterDefined = (Object.getPrototypeOf(
+      httpServer
+    ) as Object).hasOwnProperty('isParserRegistered');
+    if (hasParserGetterDefined && !httpServer.isParserRegistered) {
+      httpServer.registerParserMiddleware();
+    }
+
     httpServer.register(async (httpServer: any) => {
       httpServer.register(
         loadPackage('fastify-swagger', 'SwaggerModule', () =>
