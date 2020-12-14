@@ -61,7 +61,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
           node,
           nodeArray,
           options,
-          sourceFile
+          sourceFile,
+          typeChecker
         ),
         ...nodeArray,
         ts.createDecorator(
@@ -88,7 +89,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     node: ts.MethodDeclaration,
     nodeArray: ts.NodeArray<ts.Decorator>,
     options: PluginOptions,
-    sourceFile: ts.SourceFile
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker
   ) {
     if (!options.introspectComments) {
       return [];
@@ -113,7 +115,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     ) {
       const [extractedComments] = getMainCommentAndExamplesOfNode(
         node,
-        sourceFile
+        sourceFile,
+        typeChecker
       );
       if (!extractedComments) {
         // Node does not have any comments

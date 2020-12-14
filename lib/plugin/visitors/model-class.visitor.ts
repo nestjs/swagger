@@ -158,6 +158,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       ),
       ...this.createDescriptionAndExamplePropertyAssigments(
         node,
+        typeChecker,
         existingProperties,
         options,
         sourceFile
@@ -437,6 +438,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
   createDescriptionAndExamplePropertyAssigments(
     node: ts.PropertyDeclaration | ts.PropertySignature,
+    typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<
       ts.PropertyAssignment
     > = ts.createNodeArray(),
@@ -450,6 +452,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const [comments, examples] = getMainCommentAndExamplesOfNode(
       node,
       sourceFile,
+      typeChecker,
       true
     );
 

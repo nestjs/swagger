@@ -105,6 +105,7 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
 export function getMainCommentAndExamplesOfNode(
   node: Node,
   sourceFile: SourceFile,
+  typeChecker: TypeChecker,
   includeExamples?: boolean
 ): [string, string[]] {
   const sourceText = sourceFile.getFullText();
@@ -129,10 +130,15 @@ export function getMainCommentAndExamplesOfNode(
           execResult.length > 1
         ) {
           const example = execResult[1];
-          try {
-            examplesResult.push(JSON.parse(example));
-          } catch {
+          const type = typeChecker.getTypeAtLocation(node);
+          if (type && isString(type)) {
             examplesResult.push(example);
+          } else {
+            try {
+              examplesResult.push(JSON.parse(example));
+            } catch {
+              examplesResult.push(example);
+            }
           }
         }
       }
