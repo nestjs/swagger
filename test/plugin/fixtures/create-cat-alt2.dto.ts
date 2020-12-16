@@ -16,7 +16,8 @@ export abstract class Audit {
   /**
    * test
    * version 
-   * @example '123'
+   * @example 'version 123'
+   * @example ignore this
    * @memberof Audit
    */
   @VersionColumn()
@@ -51,7 +52,7 @@ export abstract class Audit {
 export const createCatDtoTextAlt2Transpiled = `import { CreateDateColumn, UpdateDateColumn, VersionColumn } from 'typeorm';
 export class Audit {
     static _OPENAPI_METADATA_FACTORY() {
-        return { createdAt: { required: true, type: () => Object, description: "test on createdAt" }, updatedAt: { required: true, type: () => Object }, version: { required: true, type: () => String, description: "test\\nversion", example: "123" }, testVersion: { required: true, type: () => Object, description: "testVersion", examples: ["0.0.1", "0.0.2"] }, testBoolean: { required: true, type: () => Boolean, description: "testBoolean", example: true }, testNumber: { required: true, type: () => Number, description: "testNumber", examples: [1, 5] } };
+        return { createdAt: { required: true, type: () => Object, description: "test on createdAt" }, updatedAt: { required: true, type: () => Object }, version: { required: true, type: () => String, description: "test\\nversion", example: "version 123" }, testVersion: { required: true, type: () => Object, description: "testVersion", examples: ["0.0.1", "0.0.2"] }, testBoolean: { required: true, type: () => Boolean, description: "testBoolean", example: true }, testNumber: { required: true, type: () => Number, description: "testNumber", examples: [1, 5] } };
     }
 }
 __decorate([

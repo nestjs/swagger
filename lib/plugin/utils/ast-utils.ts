@@ -123,13 +123,16 @@ export function getMainCommentAndExamplesOfNode(
         commentResult.push(oneComment);
       }
       if (includeExamples) {
-        const regexOfExample = /@example *['"]?([^ ]+?)['"]? *$/gim;
+        const regexOfExample = /@example *((['"]?(?<exampleWithoutSpace>[^ ]+?)['"]?)|(['"](?<exampleWithSpaceAndQuotes>.+?)['"])) *$/gim;
         let execResult: RegExpExecArray;
         while (
           (execResult = regexOfExample.exec(commentSource)) &&
           execResult.length > 1
         ) {
-          const example = execResult[1];
+          const example =
+            execResult.groups?.exampleWithSpaceAndQuotes ??
+            execResult.groups?.exampleWithoutSpace;
+
           const type = typeChecker.getTypeAtLocation(node);
           if (type && isString(type)) {
             examplesResult.push(example);
