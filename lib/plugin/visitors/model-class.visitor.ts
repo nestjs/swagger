@@ -473,17 +473,25 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       if (examples.length === 1) {
         const examplePropertyAssignment = ts.createPropertyAssignment(
           'example',
-          ts.createLiteral(examples[0])
+          this.createLiteralFromAnyValue(examples[0])
         );
         propertyAssignments.push(examplePropertyAssignment);
       } else {
         const examplesPropertyAssignment = ts.createPropertyAssignment(
           'examples',
-          ts.createArrayLiteral(examples.map((e) => ts.createLiteral(e)))
+          this.createLiteralFromAnyValue(examples)
         );
         propertyAssignments.push(examplesPropertyAssignment);
       }
     }
     return propertyAssignments;
+  }
+
+  private createLiteralFromAnyValue(item: any) {
+    return Array.isArray(item)
+      ? ts.createArrayLiteral(
+          item.map((item) => this.createLiteralFromAnyValue(item))
+        )
+      : ts.createLiteral(item);
   }
 }
