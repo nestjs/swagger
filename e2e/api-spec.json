@@ -363,6 +363,15 @@
               "format": "date-time",
               "type": "string"
             }
+          },
+          {
+            "name": "filter",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "additionalProperties": true,
+              "type": "object"
+            }
           }
         ],
         "responses": {
@@ -506,6 +515,15 @@
             "schema": {
               "format": "date-time",
               "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "additionalProperties": true,
+              "type": "object"
             }
           }
         ],
