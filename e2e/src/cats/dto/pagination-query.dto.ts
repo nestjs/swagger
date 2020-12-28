@@ -42,6 +42,12 @@ export class PaginationQuery {
   @ApiProperty()
   beforeDate: Date;
 
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: true
+  })
+  filter: Record<string, any>;
+
   static _OPENAPI_METADATA_FACTORY() {
     return {
       sortBy: { type: () => [String] }
