@@ -1,5 +1,7 @@
 import { ApiProperty } from '../../lib/decorators';
+import { SchemaObject } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
+import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { CreateUserDto } from './fixtures/create-user.dto';
@@ -233,6 +235,84 @@ describe('SchemaObjectFactory', () => {
         type: 'object',
         properties: { name: { type: 'string', minLength: 1 } }
       });
+    });
+
+    it('should create arrays of objects', () => {
+      class ObjectDto {
+        @ApiProperty()
+        field: string;
+      }
+
+      class TestDto {
+        @ApiProperty()
+        arrayOfStrings: string[];
+      }
+
+      class Test2Dto {
+        @ApiProperty({
+          isArray: true,
+          type: ObjectDto
+        })
+        arrayOfObjects: ObjectDto[];
+      }
+
+      const schemas = [];
+      schemaObjectFactory.exploreModelSchema(TestDto, schemas);
+      schemaObjectFactory.exploreModelSchema(Test2Dto, schemas);
+
+      expect(schemas[0][TestDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          arrayOfStrings: {
+            type: 'array',
+            items: {
+              type: 'string'
+            }
+          }
+        },
+        required: ['arrayOfStrings']
+      });
+      expect(schemas[2][Test2Dto.name]).toEqual({
+        type: 'object',
+        properties: {
+          arrayOfObjects: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/ObjectDto'
+            }
+          }
+        },
+        required: ['arrayOfObjects']
+      });
+    });
+  });
+
+  describe('createFromModel', () => {
+    it('should create arrays of objects', () => {
+      class ObjectDto {
+        @ApiProperty()
+        field: string;
+      }
+
+      class TestDto {
+        @ApiProperty()
+        arrayOfStrings: string[];
+      }
+
+      class Test2Dto {
+        @ApiProperty({})
+        arrayOfObjects: ObjectDto[];
+      }
+
+      const property = ApiProperty({
+        isArray: true,
+        type: ObjectDto
+      });
+
+      const parameters: ParamWithTypeMetadata[] = [];
+
+      const schemas: SchemaObject[] = [];
+      const result = schemaObjectFactory.createFromModel(parameters, schemas);
     });
   });
 });
