@@ -43,7 +43,7 @@
     "eslint-plugin-import": "2.22.1",
     "express": "4.17.1",
     "fastify-swagger": "3.5.0",
-    "husky": "4.3.6",
+    "husky": "4.3.7",
     "jest": "26.6.3",
     "lint-staged": "10.5.3",
     "prettier": "2.2.1",
