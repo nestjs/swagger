@@ -5,6 +5,8 @@ class Cat {}
 
 @Controller('cats')
 export class AppController {
+  onApplicationBootstrap() {}
+
   /**
    * create a Cat
    *
@@ -44,6 +46,7 @@ const swagger_1 = require("@nestjs/swagger");
 class Cat {
 }
 let AppController = class AppController {
+    onApplicationBootstrap() { }
     /**
      * create a Cat
      *

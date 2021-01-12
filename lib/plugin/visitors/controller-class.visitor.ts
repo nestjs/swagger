@@ -52,7 +52,10 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     sourceFile: ts.SourceFile
   ): ts.MethodDeclaration {
     const node = ts.getMutableClone(compilerNode);
-    const nodeArray = node.decorators || ts.createNodeArray();
+    if (!node.decorators) {
+      return node;
+    }
+    const nodeArray = node.decorators;
     const { pos, end } = nodeArray;
 
     (node as any).decorators = Object.assign(
@@ -152,9 +155,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   createDecoratorObjectLiteralExpr(
     node: ts.MethodDeclaration,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.NodeArray<
-      ts.PropertyAssignment
-    > = ts.createNodeArray(),
+    existingProperties: ts.NodeArray<ts.PropertyAssignment> = ts.createNodeArray(),
     hostFilename: string
   ): ts.ObjectLiteralExpression {
     const properties = [
