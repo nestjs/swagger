@@ -1,6 +1,6 @@
 export interface SwaggerCustomOptions {
   explorer?: boolean;
-  swaggerOptions?: any;
+  swaggerOptions?: Record<string, any>;
   customCss?: string;
   customCssUrl?: string;
   customJs?: string;
