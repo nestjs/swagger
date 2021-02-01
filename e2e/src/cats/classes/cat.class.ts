@@ -53,4 +53,7 @@ export class Cat {
     isArray: true
   })
   enumArr: LettersEnum;
+
+  @ApiProperty({ type: [String], link: () => Cat })
+  kittenIds?: string[];
 }

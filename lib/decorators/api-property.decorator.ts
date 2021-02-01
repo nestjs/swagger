@@ -1,3 +1,4 @@
+import { Type } from '@nestjs/common';
 import { DECORATORS } from '../constants';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
 import { getEnumType, getEnumValues } from '../utils/enum.utils';
@@ -8,6 +9,16 @@ export interface ApiPropertyOptions
   name?: string;
   enum?: any[] | Record<string, any>;
   enumName?: string;
+  /**
+   * Lazy function returning the type for which the decorated property
+   * can be used as an id
+   *
+   * Use together with @ApiDefaultGetter on the getter route of the type
+   * to generate OpenAPI link objects
+   *
+   * @see [Swagger link objects](https://swagger.io/docs/specification/links/)
+   */
+  link?: () => Type<unknown> | Function;
 }
 
 const isEnumArray = (obj: ApiPropertyOptions): boolean =>

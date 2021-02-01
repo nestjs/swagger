@@ -216,8 +216,10 @@ export class SchemaObjectFactory {
   ): SchemaObjectMetadata | ReferenceObject | ParameterObject {
     if (!metadata) {
       metadata =
-        Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ||
-        {};
+        omit(
+          Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key),
+          'link'
+        ) || {};
     }
     if (this.isLazyTypeFunc(metadata.type as Function)) {
       metadata.type = (metadata.type as Function)();
