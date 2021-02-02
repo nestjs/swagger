@@ -3,7 +3,7 @@ import { MODULE_PATH } from '@nestjs/common/constants';
 import { NestContainer } from '@nestjs/core/injector/container';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { Module } from '@nestjs/core/injector/module';
-import { extend, flatten, isEmpty, reduce } from 'lodash';
+import { flatten, isEmpty } from 'lodash';
 import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
 import {
   ReferenceObject,
@@ -80,10 +80,7 @@ export class SwaggerScanner {
     return {
       ...this.transfomer.normalizePaths(flatten(denormalizedPaths)),
       components: {
-        schemas: reduce(this.explorer.getSchemas(), extend) as Record<
-          string,
-          SchemaObject | ReferenceObject
-        >
+        schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }
     };
   }
@@ -117,7 +114,10 @@ export class SwaggerScanner {
     );
   }
 
-  public addExtraModels(schemas: SchemaObject[], extraModels: Function[]) {
+  public addExtraModels(
+    schemas: Record<string, SchemaObject>,
+    extraModels: Function[]
+  ) {
     extraModels.forEach((item) => {
       this.schemaObjectFactory.exploreModelSchema(item, schemas);
     });
