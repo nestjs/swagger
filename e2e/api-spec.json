@@ -291,6 +291,12 @@
       },
       "get": {
         "operationId": "CatsController_findAll",
+        "x-codeSamples": [
+          {
+            "lang": "JavaScript",
+            "source": "console.log('Hello World');"
+          }
+        ],
         "parameters": [
           {
             "name": "header",
