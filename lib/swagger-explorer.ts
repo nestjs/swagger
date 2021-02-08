@@ -21,6 +21,7 @@ import {
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
+import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer';
 import {
   exploreApiExtraModelsMetadata,
   exploreGlobalApiExtraModelsMetadata
@@ -134,9 +135,21 @@ export class SwaggerExplorer {
         prototype,
         targetCallback
       );
+
       if (excludeEndpoint && excludeEndpoint.disable) {
         return;
       }
+
+      const excludeController = exploreApiExcludeControllerMetadata(
+        instance,
+        prototype,
+        targetCallback
+      );
+
+      if (excludeController && excludeController.disable) {
+        return;
+      }
+
       const ctrlExtraModels = exploreApiExtraModelsMetadata(
         instance,
         prototype,
