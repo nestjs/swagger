@@ -57,7 +57,17 @@
   "peerDependencies": {
     "@nestjs/common": "^6.8.0 || ^7.0.0",
     "@nestjs/core": "^6.8.0 || ^7.0.0",
-    "reflect-metadata": "^0.1.12"
+    "fastify-swagger": "*",
+    "reflect-metadata": "^0.1.12",
+    "swagger-ui-express": "*"
+  },
+  "peerDependenciesMeta": {
+    "fastify-swagger": {
+      "optional": true
+    },
+    "swagger-ui-express": {
+      "optional": true
+    }
   },
   "lint-staged": {
     "*.ts": [
