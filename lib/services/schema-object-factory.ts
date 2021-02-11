@@ -110,6 +110,15 @@ export class SchemaObjectFactory {
         type: 'string'
       };
     }
+
+    // Path parameters are always of type string.
+    if (param.in === 'path') {
+      return {
+        ...param,
+        type: 'string'
+      };
+    }
+
     if (isFunction(param.type)) {
       const propertiesWithType = this.extractPropertiesFromType(
         param.type,

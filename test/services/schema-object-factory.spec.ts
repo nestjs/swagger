@@ -1,5 +1,6 @@
 import { ApiProperty } from '../../lib/decorators';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
+import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { CreateUserDto } from './fixtures/create-user.dto';
@@ -234,5 +235,27 @@ describe('SchemaObjectFactory', () => {
         properties: { name: { type: 'string', minLength: 1 } }
       });
     });
+  });
+
+  describe("createFromModel", () => {
+    it("should return path parameters with a non-primitive type as parameter with string type", () => {
+      class Test {}
+
+      const testParameter: ParamWithTypeMetadata = {
+        name: "test",
+        type: Test,
+        in: "path",
+        required: true
+      }
+
+      const result = schemaObjectFactory.createFromModel([testParameter], [], []);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toStrictEqual({
+        name: "test",
+        type: "string",
+        in: "path",
+        required: true
+      });
+    })
   });
 });
