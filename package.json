@@ -27,10 +27,10 @@
   "devDependencies": {
     "@commitlint/cli": "11.0.0",
     "@commitlint/config-angular": "11.0.0",
-    "@nestjs/common": "7.6.11",
-    "@nestjs/core": "7.6.11",
-    "@nestjs/platform-express": "7.6.11",
-    "@nestjs/platform-fastify": "7.6.11",
+    "@nestjs/common": "7.6.12",
+    "@nestjs/core": "7.6.12",
+    "@nestjs/platform-express": "7.6.12",
+    "@nestjs/platform-fastify": "7.6.12",
     "@types/jest": "26.0.20",
     "@types/lodash": "4.14.168",
     "@types/node": "11.15.0",
@@ -51,8 +51,8 @@
     "release-it": "14.3.0",
     "swagger-parser": "10.0.2",
     "swagger-ui-express": "4.1.6",
-    "ts-jest": "26.5.0",
-    "typescript": "4.1.3"
+    "ts-jest": "26.5.1",
+    "typescript": "4.1.5"
   },
   "peerDependencies": {
     "@nestjs/common": "^6.8.0 || ^7.0.0",
