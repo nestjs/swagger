@@ -30,7 +30,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     options: PluginOptions
   ) {
     const typeChecker = program.getTypeChecker();
-    sourceFile = this.updateImports(sourceFile);
+    sourceFile = this.updateImports(sourceFile, ctx.factory);
 
     const propertyNodeVisitorFactory = (metadata: ClassMetadata) => (
       node: ts.Node
@@ -137,9 +137,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   createDecoratorObjectLiteralExpr(
     node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.NodeArray<
-      ts.PropertyAssignment
-    > = ts.createNodeArray(),
+    existingProperties: ts.NodeArray<ts.PropertyAssignment> = ts.createNodeArray(),
     options: PluginOptions = {},
     hostFilename = '',
     sourceFile?: ts.SourceFile
@@ -439,9 +437,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   createDescriptionAndExamplePropertyAssigments(
     node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.NodeArray<
-      ts.PropertyAssignment
-    > = ts.createNodeArray(),
+    existingProperties: ts.NodeArray<ts.PropertyAssignment> = ts.createNodeArray(),
     options: PluginOptions = {},
     sourceFile?: ts.SourceFile
   ): ts.PropertyAssignment[] {
