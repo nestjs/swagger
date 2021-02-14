@@ -910,7 +910,7 @@ describe('SwaggerExplorer', () => {
         enumName: 'QueryEnum',
         isArray: true
       })
-      findBar(): Promise<Foo> {
+      findBar(@Query('objectId') objectId: ParamEnum): Promise<Foo> {
         return Promise.resolve(null);
       }
     }
