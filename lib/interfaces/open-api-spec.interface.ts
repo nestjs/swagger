@@ -202,7 +202,7 @@ export interface SchemaObject {
   xml?: XmlObject;
   externalDocs?: ExternalDocumentationObject;
   example?: any;
-  examples?: any[];
+  examples?: any[] | object;
   deprecated?: boolean;
   type?: string;
   allOf?: (SchemaObject | ReferenceObject)[];
