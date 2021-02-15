@@ -4,8 +4,9 @@ import { ApiOperation, ApiResponse } from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { OPENAPI_NAMESPACE } from '../plugin-constants';
 import {
+  docNodeToString,
   getDecoratorArguments,
-  getMainCommentAndExamplesOfNode
+  getMainCommentAndExamplesOfNode, getNodeDocs
 } from '../utils/ast-utils';
 import {
   getDecoratorOrUndefinedByNames,
@@ -116,25 +117,46 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       !apiOperationExprProperties ||
       !hasPropertyKey(keyToGenerate, apiOperationExprProperties)
     ) {
-      const [extractedComments] = getMainCommentAndExamplesOfNode(
-        node,
-        sourceFile,
-        typeChecker
-      );
-      if (!extractedComments) {
-        // Node does not have any comments
-        return [];
+      const properties = [];
+
+      if (keyToGenerate) {
+        const [extractedComments] = getMainCommentAndExamplesOfNode(
+          node,
+          sourceFile,
+          typeChecker
+        );
+
+        if (!extractedComments) {
+          // Node does not have any comments
+          return [];
+        }
+
+        properties.push(ts.createPropertyAssignment(keyToGenerate, ts.createLiteral(extractedComments)));
+      } else {
+        const docs = getNodeDocs(node);
+
+        if (!docs) {
+          return [];
+        }
+
+        const summary = docNodeToString(docs.summarySection);
+        if (summary && (!apiOperationExprProperties || !hasPropertyKey("summary", apiOperationExprProperties))) {
+          properties.push(ts.createPropertyAssignment("summary", ts.createLiteral(summary)));
+        }
+
+        const remarks = docNodeToString(docs.remarksBlock.content);
+        if (remarks && (!apiOperationExprProperties || !hasPropertyKey("description", apiOperationExprProperties))) {
+          properties.push(ts.createPropertyAssignment("description", ts.createLiteral(remarks)));
+        }
       }
-      const properties = [
-        ts.createPropertyAssignment(
-          keyToGenerate,
-          ts.createLiteral(extractedComments)
-        ),
-        ...(apiOperationExprProperties ?? ts.createNodeArray())
-      ];
+
       const apiOperationDecoratorArguments: ts.NodeArray<ts.Expression> = ts.createNodeArray(
-        [ts.createObjectLiteral(compact(properties))]
+        [ts.createObjectLiteral(compact([
+          ...properties,
+          ...(apiOperationExprProperties ?? ts.createNodeArray())
+        ]))]
       );
+
       if (apiOperationDecorator) {
         ((apiOperationDecorator.expression as ts.CallExpression) as any).arguments = apiOperationDecoratorArguments;
       } else {
