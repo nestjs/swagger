@@ -4,6 +4,10 @@ import {
   appControllerText,
   appControllerTextTranspiled
 } from './fixtures/app.controller';
+import {
+  enhancedCommentsControllerText,
+  enhancedCommentsControllerTextTranspiled
+} from './fixtures/enhanced-comments.controller';
 
 const compilerOptions: ts.CompilerOptions = {
   module: ts.ModuleKind.CommonJS,
@@ -40,4 +44,14 @@ describe('Controller methods', () => {
 
     expect(result.outputText).toEqual(appControllerTextTranspiled);
   });
+
+  it('Should generate summary and description if no controllerKeyOfComments', () => {
+    const result = transpileModule(
+      'enhanced-comments.controller.ts',
+      enhancedCommentsControllerText,
+      compilerOptions,
+      { controllerKeyOfComment: null }
+    );
+    expect(result.outputText).toEqual(enhancedCommentsControllerTextTranspiled);
+  })
 });
