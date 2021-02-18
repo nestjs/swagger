@@ -353,6 +353,8 @@ export class SwaggerExplorer {
       ...omit(requestBody, keysToRemove),
       ...this.mimetypeContentWrapper.wrap(consumes, pick(requestBody, 'schema'))
     };
+    if (requestBody.name)
+      document.root["x-codegen-request-body-name"] = requestBody.name;
     return document;
   }
 

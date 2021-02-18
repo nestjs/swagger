@@ -901,6 +901,63 @@ describe('SwaggerExplorer', () => {
       ]);
     });
   });
+  describe('when body name is used', () => {
+
+    it('should properly define x-codegen-request-body-name extension', () => {
+
+      class Foo {}
+
+      @Controller('')
+      class FooController {
+        @Post('foos')
+        @ApiBody({
+          name: 'myBodyName',
+          type: Foo
+        })
+        create(): Promise<Foo> {
+          return Promise.resolve({});
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path'
+      );
+
+      expect(routes[0].root["x-codegen-request-body-name"]).toEqual("myBodyName");
+    });
+
+    it('should use default when body name is empty', () => {
+
+      class Foo {}
+
+      @Controller('')
+      class FooController {
+        @Post('foos')
+        @ApiBody({
+          type: Foo
+        })
+        create(): Promise<Foo> {
+          return Promise.resolve({});
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path'
+      );
+
+      expect(routes[0].root["x-codegen-request-body-name"]).toEqual("Foo");
+    });
+  });
 
   describe('when headers are defined', () => {
     class Foo {}
