@@ -19,6 +19,7 @@ interface ApiBodyMetadata extends RequestBodyOptions {
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   enum?: SwaggerEnumType;
+  name?: string;
 }
 
 interface ApiBodySchemaHost extends RequestBodyOptions {
