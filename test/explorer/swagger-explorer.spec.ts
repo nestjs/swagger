@@ -790,7 +790,7 @@ describe('SwaggerExplorer', () => {
         enum: ParamEnum
       })
       @ApiQuery({ name: 'order', enum: QueryEnum })
-      @ApiQuery({ name: 'page', enum: ['d', 'e', 'f'], isArray: true })
+      @ApiQuery({ name: 'page', enum: ['d', 'e', 'f'] })
       find(): Promise<Foo[]> {
         return Promise.resolve([]);
       }
@@ -832,11 +832,8 @@ describe('SwaggerExplorer', () => {
           name: 'page',
           required: true,
           schema: {
-            type: 'array',
-            items: {
-              type: 'string',
-              enum: ['d', 'e', 'f']
-            }
+            enum: ['d', 'e', 'f'],
+            type: 'string'
           }
         },
         {
