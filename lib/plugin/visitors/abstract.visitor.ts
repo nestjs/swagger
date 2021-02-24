@@ -6,10 +6,11 @@ export class AbstractFileVisitor {
     sourceFile: ts.SourceFile,
     factory: ts.NodeFactory | undefined
   ): ts.SourceFile {
+    const [major, minor] = ts.versionMajorMinor?.split('.').map((x) => +x);
     if (!factory) {
       // support TS v4.2+
       const importEqualsDeclaration =
-        ts.createImportEqualsDeclaration.length === 5
+        major == 4 && minor >= 2
           ? (ts.createImportEqualsDeclaration as any)(
               undefined,
               undefined,
@@ -34,7 +35,7 @@ export class AbstractFileVisitor {
     }
     // support TS v4.2+
     const importEqualsDeclaration =
-      factory.createImportEqualsDeclaration.length === 5
+      major == 4 && minor >= 2
         ? (factory.createImportEqualsDeclaration as any)(
             undefined,
             undefined,
