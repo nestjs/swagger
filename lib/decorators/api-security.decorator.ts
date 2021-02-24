@@ -1,12 +1,19 @@
+import { isString } from 'lodash';
 import { DECORATORS } from '../constants';
 import { SecurityRequirementObject } from '../interfaces/open-api-spec.interface';
 import { extendMetadata } from '../utils/extend-metadata.util';
 
 export function ApiSecurity(
-  name: string,
+  name: string | SecurityRequirementObject,
   requirements: string[] = []
 ): ClassDecorator & MethodDecorator {
-  let metadata: SecurityRequirementObject[] = [{ [name]: requirements }];
+  let metadata: SecurityRequirementObject[];
+
+  if (isString(name)) {
+    metadata = [{ [name]: requirements }];
+  } else {
+    metadata = [name];
+  }
 
   return (
     target: object,

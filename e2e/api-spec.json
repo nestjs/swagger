@@ -33,6 +33,16 @@
         "in": "header",
         "name": "api_key"
       },
+      "key1": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "key1"
+      },
+      "key2": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "key2"
+      },
       "cookie": {
         "type": "apiKey",
         "in": "cookie",
@@ -229,6 +239,10 @@
   "security": [
     {
       "bearer": []
+    },
+    {
+      "basic": [],
+      "cookie": []
     }
   ],
   "paths": {
@@ -281,6 +295,10 @@
           "create cats"
         ],
         "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
           {
             "bearer": []
           },
@@ -384,6 +402,10 @@
         ],
         "security": [
           {
+            "key2": [],
+            "key1": []
+          },
+          {
             "bearer": []
           },
           {
@@ -432,6 +454,10 @@
           "cats"
         ],
         "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
           {
             "bearer": []
           },
@@ -537,6 +563,10 @@
         ],
         "security": [
           {
+            "key2": [],
+            "key1": []
+          },
+          {
             "bearer": []
           },
           {
@@ -569,6 +599,10 @@
           "cats"
         ],
         "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
           {
             "bearer": []
           },
@@ -613,6 +647,10 @@
           "cats"
         ],
         "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
           {
             "bearer": []
           },
@@ -668,6 +706,10 @@
         ],
         "security": [
           {
+            "key2": [],
+            "key1": []
+          },
+          {
             "bearer": []
           },
           {
@@ -700,6 +742,10 @@
           "cats"
         ],
         "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
           {
             "bearer": []
           },
