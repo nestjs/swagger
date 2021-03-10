@@ -36,7 +36,7 @@
     "@types/node": "11.15.48",
     "@typescript-eslint/eslint-plugin": "4.17.0",
     "@typescript-eslint/parser": "4.17.0",
-    "class-transformer": "0.3.2",
+    "class-transformer": "0.4.0",
     "class-validator": "0.13.1",
     "eslint": "7.21.0",
     "eslint-config-prettier": "8.1.0",
