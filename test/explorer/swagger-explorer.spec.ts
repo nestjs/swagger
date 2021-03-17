@@ -6,6 +6,8 @@ import {
   ApiConsumes,
   ApiCreatedResponse,
   ApiDefaultResponse,
+  ApiExcludeController,
+  ApiExcludeEndpoint,
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
@@ -968,6 +970,43 @@ describe('SwaggerExplorer', () => {
             type: 'string'
           }
         }
+      ]);
+    });
+  });
+
+
+  describe('when a controller is excluded', () => {
+    class Foo {}
+
+    @ApiExcludeController(true)
+    @Controller('')
+    class FooController {
+      @Get('foos/:objectId')
+      find(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+
+      @Post('foos')
+      create(): Promise<any> {
+        return Promise.resolve();
+      }
+    }
+
+    it('should correctly define controller exclusion', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      console.log(explorer);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path'
+      );
+
+      expect(true).toEqual([
+        {
+          disable: true
+        } 
       ]);
     });
   });
