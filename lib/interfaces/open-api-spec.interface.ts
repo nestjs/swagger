@@ -212,6 +212,7 @@ export interface SchemaObject {
   items?: SchemaObject | ReferenceObject;
   properties?: Record<string, SchemaObject | ReferenceObject>;
   additionalProperties?: SchemaObject | ReferenceObject | boolean;
+  patternProperties?: SchemaObject | ReferenceObject | any;
   description?: string;
   format?: string;
   default?: any;
