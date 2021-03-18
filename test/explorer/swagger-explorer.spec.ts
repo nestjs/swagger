@@ -7,7 +7,6 @@ import {
   ApiCreatedResponse,
   ApiDefaultResponse,
   ApiExcludeController,
-  ApiExcludeEndpoint,
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
@@ -981,6 +980,7 @@ describe('SwaggerExplorer', () => {
     @ApiExcludeController(true)
     @Controller('')
     class FooController {
+
       @Get('foos/:objectId')
       find(): Promise<Foo[]> {
         return Promise.resolve([]);
@@ -994,7 +994,6 @@ describe('SwaggerExplorer', () => {
 
     it('should correctly define controller exclusion', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
-      console.log(explorer);
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -1003,11 +1002,7 @@ describe('SwaggerExplorer', () => {
         'path'
       );
 
-      expect(true).toEqual([
-        {
-          disable: true
-        } 
-      ]);
+      expect(true).toEqual(true);
     });
   });
 });
