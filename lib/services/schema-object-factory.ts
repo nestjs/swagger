@@ -433,12 +433,14 @@ export class SchemaObjectFactory {
       'minLength',
       'pattern'
     ];
-    const moved = pick(metadata, keysToMove);
+    const movedProperties = pick(metadata, keysToMove);
     const schemaHost = {
       ...omit(metadata, [...keysToRemove, ...keysToMove]),
       name: metadata.name || key,
       type: 'array',
-      items: isString(type) ? { type, ...moved } : { ...type, ...moved }
+      items: isString(type)
+        ? { type, ...movedProperties }
+        : { ...type, ...movedProperties }
     };
     schemaHost.items = omitBy(schemaHost.items, isUndefined);
     return schemaHost as unknown;
