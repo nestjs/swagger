@@ -843,7 +843,6 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root.parameters).toEqual([
         {
           in: 'query',
-          isArray: true,
           name: 'page',
           required: true,
           schema: {
