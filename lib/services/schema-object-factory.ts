@@ -8,7 +8,8 @@ import {
   keyBy,
   mapValues,
   omit,
-  omitBy
+  omitBy,
+  pick
 } from 'lodash';
 import { DECORATORS } from '../constants';
 import { getTypeIsArrayTuple } from '../decorators/helpers';
@@ -424,15 +425,22 @@ export class SchemaObjectFactory {
     type: string | Record<string, any>
   ): SchemaObjectMetadata {
     const keysToRemove = ['type', 'enum'];
+    const keysToMove = [
+      'format',
+      'maximum',
+      'maxLength',
+      'minimum',
+      'minLength',
+      'pattern'
+    ];
+    const movedProperties = pick(metadata, keysToMove);
     const schemaHost = {
-      ...omit(metadata, keysToRemove),
+      ...omit(metadata, [...keysToRemove, ...keysToMove]),
       name: metadata.name || key,
       type: 'array',
       items: isString(type)
-        ? {
-            type
-          }
-        : { ...type }
+        ? { type, ...movedProperties }
+        : { ...type, ...movedProperties }
     };
     schemaHost.items = omitBy(schemaHost.items, isUndefined);
     return schemaHost as unknown;
