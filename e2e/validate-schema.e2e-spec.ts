@@ -24,8 +24,11 @@ describe('Validate OpenAPI schema', () => {
       .addBearerAuth()
       .addOAuth2()
       .addApiKey()
+      .addApiKey({ type: 'apiKey' }, 'key1')
+      .addApiKey({ type: 'apiKey' }, 'key2')
       .addCookieAuth()
       .addSecurityRequirements('bearer')
+      .addSecurityRequirements({ basic: [], cookie: [] })
       .build();
 
     document = SwaggerModule.createDocument(app, options);

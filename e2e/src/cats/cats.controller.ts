@@ -17,6 +17,7 @@ import { PaginationQuery } from './dto/pagination-query.dto';
 
 @ApiSecurity('basic')
 @ApiBearerAuth()
+@ApiSecurity({ key2: [], key1: [] })
 @ApiTags('cats')
 @ApiHeader({
   name: 'header',
