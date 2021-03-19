@@ -111,6 +111,8 @@ export function hasPropertyKey(
     .some((item) => item.name.getText() === key);
 }
 
+const NATIVE_NODEJS_LIBRARIES = 'stream';
+
 export function replaceImportPath(typeReference: string, fileName: string) {
   if (!typeReference.includes('import')) {
     return typeReference;
@@ -122,33 +124,37 @@ export function replaceImportPath(typeReference: string, fileName: string) {
   importPath = convertPath(importPath);
   importPath = importPath.slice(2, importPath.length - 1);
 
-  let relativePath = posix.relative(posix.dirname(fileName), importPath);
-  relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
+  if (NATIVE_NODEJS_LIBRARIES.includes(importPath)) {
+    return typeReference.replace('import', 'require');
+  } else {
+    let relativePath = posix.relative(posix.dirname(fileName), importPath);
+    relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
-  const nodeModulesText = 'node_modules';
-  const nodeModulePos = relativePath.indexOf(nodeModulesText);
-  if (nodeModulePos >= 0) {
-    relativePath = relativePath.slice(
-      nodeModulePos + nodeModulesText.length + 1 // slash
-    );
-
-    const typesText = '@types';
-    const typesPos = relativePath.indexOf(typesText);
-    if (typesPos >= 0) {
+    const nodeModulesText = 'node_modules';
+    const nodeModulePos = relativePath.indexOf(nodeModulesText);
+    if (nodeModulePos >= 0) {
       relativePath = relativePath.slice(
-        typesPos + typesText.length + 1 //slash
+        nodeModulePos + nodeModulesText.length + 1 // slash
       );
+
+      const typesText = '@types';
+      const typesPos = relativePath.indexOf(typesText);
+      if (typesPos >= 0) {
+        relativePath = relativePath.slice(
+          typesPos + typesText.length + 1 //slash
+        );
+      }
+
+      const indexText = '/index';
+      const indexPos = relativePath.indexOf(indexText);
+      if (indexPos >= 0) {
+        relativePath = relativePath.slice(0, indexPos);
+      }
     }
 
-    const indexText = '/index';
-    const indexPos = relativePath.indexOf(indexText);
-    if (indexPos >= 0) {
-      relativePath = relativePath.slice(0, indexPos);
-    }
+    typeReference = typeReference.replace(importPath, relativePath);
+    return typeReference.replace('import', 'require');
   }
-
-  typeReference = typeReference.replace(importPath, relativePath);
-  return typeReference.replace('import', 'require');
 }
 
 export function isDynamicallyAdded(identifier: ts.Node) {
