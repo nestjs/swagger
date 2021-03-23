@@ -1,6 +1,8 @@
 import { Type } from '@nestjs/common';
 import { omit } from 'lodash';
 import {
+  ExamplesObject,
+  ReferenceObject,
   RequestBodyObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
@@ -22,7 +24,8 @@ interface ApiBodyMetadata extends RequestBodyOptions {
 }
 
 interface ApiBodySchemaHost extends RequestBodyOptions {
-  schema: SchemaObject;
+  schema: SchemaObject | ReferenceObject;
+  examples?: ExamplesObject;
 }
 
 export type ApiBodyOptions = ApiBodyMetadata | ApiBodySchemaHost;
