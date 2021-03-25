@@ -122,7 +122,6 @@ export class SwaggerExplorer {
     const excludeController = exploreApiExcludeControllerMetadata(
       metatype
     );
-
     if(excludeController){
       return [];
     }
@@ -143,11 +142,9 @@ export class SwaggerExplorer {
         prototype,
         targetCallback
       );
-
       if (excludeEndpoint && excludeEndpoint.disable) {
         return;
       }
-
       const ctrlExtraModels = exploreApiExtraModelsMetadata(
         instance,
         prototype,
