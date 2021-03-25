@@ -977,7 +977,7 @@ describe('SwaggerExplorer', () => {
   describe('when a controller is excluded', () => {
     class Foo {}
 
-    @ApiExcludeController(true)
+    @ApiExcludeController()
     @Controller('')
     class FooController {
 
@@ -1002,7 +1002,7 @@ describe('SwaggerExplorer', () => {
         'path'
       );
 
-      expect(true).toEqual(true);
+      expect(routes).toHaveLength(0);
     });
   });
 });

@@ -119,6 +119,14 @@ export class SwaggerExplorer {
       path = validatePath(globalPrefix) + path;
     }
 
+    const excludeController = exploreApiExcludeControllerMetadata(
+      metatype
+    );
+
+    if(excludeController){
+      return [];
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     const globalMetadata = this.exploreGlobalMetadata(metatype);
@@ -137,16 +145,6 @@ export class SwaggerExplorer {
       );
 
       if (excludeEndpoint && excludeEndpoint.disable) {
-        return;
-      }
-
-      const excludeController = exploreApiExcludeControllerMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-
-      if (excludeController && excludeController.disable) {
         return;
       }
 
