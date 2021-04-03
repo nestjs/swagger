@@ -80,6 +80,14 @@ export function isNull(type: Type) {
   }
 }
 
+export function isUndefined(type: Type) {
+  if (type.isUnion()) {
+    return Boolean(type.types.find((t) => hasFlag(t, TypeFlags.Undefined)));
+  } else {
+    return hasFlag(type, TypeFlags.Undefined);
+  }
+}
+
 export function hasFlag(type: Type, flag: TypeFlags) {
   return (type.flags & flag) === flag;
 }

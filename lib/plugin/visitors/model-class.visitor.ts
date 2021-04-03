@@ -8,9 +8,9 @@ import {
   getDecoratorArguments,
   getMainCommentAndExamplesOfNode,
   getText,
-  hasFlag,
   isEnum,
-  isNull
+  isNull,
+  isUndefined
 } from '../utils/ast-utils';
 import {
   extractTypeArgumentIfArray,
@@ -147,7 +147,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   ): ts.ObjectLiteralExpression {
     const type = typeChecker.getTypeAtLocation(node);
     const isRequired = !node.questionToken;
-    const isNullable = !!node.questionToken || isNull(type);
+    const isNullable = !!node.questionToken || isNull(type) || isUndefined(type);
 
     let properties = [
       ...existingProperties,
