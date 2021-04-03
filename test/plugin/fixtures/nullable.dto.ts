@@ -9,7 +9,7 @@ export class NullableDto {
 
 export const nullableDtoTextTranspiled = `export class NullableDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { stringValue: { required: true, type: () => String, nullable: true }, stringArr: { required: true, type: () => [String], nullable: true } };
+        return { stringValue: { required: true, nullable: true, type: () => String }, stringArr: { required: true, nullable: true, type: () => [String] } };
     }
 }
 __decorate([
