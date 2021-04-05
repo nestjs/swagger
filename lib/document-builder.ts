@@ -7,6 +7,7 @@ import {
   ExternalDocumentationObject,
   SecurityRequirementObject,
   ResponseObject,
+  SecurityRequirementObject,
   SecuritySchemeObject,
   ServerVariableObject,
   TagObject
