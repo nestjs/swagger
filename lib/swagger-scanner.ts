@@ -3,7 +3,7 @@ import { MODULE_PATH } from '@nestjs/common/constants';
 import { NestContainer } from '@nestjs/core/injector/container';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { Module } from '@nestjs/core/injector/module';
-import { extend, flatten, isEmpty, reduce } from 'lodash';
+import { extend, flatten, reduce } from 'lodash';
 import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
 import {
   ReferenceObject,
@@ -31,6 +31,7 @@ export class SwaggerScanner {
     const {
       deepScanRoutes,
       include: includedModules = [],
+      exclude: excludedModules = [],
       extraModels = [],
       ignoreGlobalPrefix = false,
       operationIdFactory
@@ -39,7 +40,8 @@ export class SwaggerScanner {
     const container: NestContainer = (app as any).container;
     const modules: Module[] = this.getModules(
       container.getModules(),
-      includedModules
+      includedModules,
+      excludedModules
     );
     const globalPrefix = !ignoreGlobalPrefix
       ? stripLastSlash(this.getGlobalPrefix(app))
@@ -107,14 +109,22 @@ export class SwaggerScanner {
 
   public getModules(
     modulesContainer: Map<string, Module>,
-    include: Function[]
+    include: readonly Function[],
+    exclude: readonly Function[]
   ): Module[] {
-    if (!include || isEmpty(include)) {
-      return [...modulesContainer.values()];
+    const modules = [...modulesContainer.values()];
+    if (include.length === 0 && exclude.length === 0) {
+      return modules;
     }
-    return [...modulesContainer.values()].filter(({ metatype }) =>
-      include.some((item) => item === metatype)
-    );
+
+    if (include.length && exclude.length) {
+      throw new Error('Cannot specify both include and exclude together');
+    }
+
+    const isInclude = include.length > 0;
+    const set = new Set(isInclude ? include : exclude);
+
+    return modules.filter(({ metatype }) => set.has(metatype) === isInclude);
   }
 
   public addExtraModels(schemas: SchemaObject[], extraModels: Function[]) {
