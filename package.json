@@ -39,7 +39,7 @@
     "class-transformer": "0.4.0",
     "class-validator": "0.13.1",
     "eslint": "7.24.0",
-    "eslint-config-prettier": "8.1.0",
+    "eslint-config-prettier": "8.2.0",
     "eslint-plugin-import": "2.22.1",
     "express": "4.17.1",
     "fastify-swagger": "4.5.1",
