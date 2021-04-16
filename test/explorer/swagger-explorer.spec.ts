@@ -287,7 +287,7 @@ describe('SwaggerExplorer', () => {
       }
 
       @Get('foos/:objectId')
-      @ApiParam({ name: 'objectId', type: 'string' })
+      @ApiParam({ name: 'objectId', type: 'string', format: 'uuid' })
       @ApiQuery({ name: 'page', type: 'string' })
       @ApiOperation({ summary: 'List all Foos' })
       @ApiOkResponse({ type: [Foo] })
@@ -397,7 +397,8 @@ describe('SwaggerExplorer', () => {
           name: 'objectId',
           required: true,
           schema: {
-            type: 'string'
+            type: 'string',
+            format: 'uuid'
           }
         },
         {
