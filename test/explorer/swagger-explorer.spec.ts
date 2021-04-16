@@ -6,13 +6,15 @@ import {
   ApiConsumes,
   ApiCreatedResponse,
   ApiDefaultResponse,
+  ApiDescription,
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiProduces,
   ApiProperty,
-  ApiQuery
+  ApiQuery,
+  ApiSummary
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
@@ -629,9 +631,10 @@ describe('SwaggerExplorer', () => {
       })
       @ApiQuery({ name: 'page', type: String })
       @ApiOperation({
-        summary: 'List all Foos',
         operationId: 'FooController_find2'
       })
+      @ApiDescription('Returns Foo items')
+      @ApiSummary('Lists all Foos')
       @ApiBody({
         schema: {
           type: 'array',
@@ -712,6 +715,8 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
+      expect(routes[1].root.description).toEqual('Returns Foo items');
+      expect(routes[1].root.summary).toEqual('Lists all Foos');
       expect(routes[1].root.operationId).toEqual('FooController_find2');
       expect(routes[1].root.parameters.length).toEqual(2);
       expect(routes[1].root.parameters).toEqual([

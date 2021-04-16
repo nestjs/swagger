@@ -20,6 +20,7 @@ import {
 } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
+import { exploreApiDescriptionMetadata } from './explorers/api-description.explorer';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
 import {
   exploreApiExtraModelsMetadata,
@@ -36,6 +37,7 @@ import {
   exploreApiSecurityMetadata,
   exploreGlobalApiSecurityMetadata
 } from './explorers/api-security.explorer';
+import { exploreApiSummaryMetadata } from './explorers/api-summary.explorer';
 import {
   exploreApiTagsMetadata,
   exploreGlobalApiTagsMetadata
@@ -76,6 +78,8 @@ export class SwaggerExplorer {
       root: [
         this.exploreRoutePathAndMethod,
         exploreApiOperationMetadata,
+        exploreApiDescriptionMetadata,
+        exploreApiSummaryMetadata,
         exploreApiParametersMetadata.bind(
           null,
           this.schemas,
