@@ -9,7 +9,7 @@ export class CreateUserDto {
   login: string;
 
   @ApiProperty({
-    examples: ['test', 'test2']
+    example: 'password123'
   })
   password: string;
 
