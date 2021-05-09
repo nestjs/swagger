@@ -27,7 +27,9 @@ const defaultParamOptions: ApiParamOptions = {
   required: true
 };
 
-export function ApiParam(options: ApiParamOptions): MethodDecorator {
+export function ApiParam(
+  options: ApiParamOptions
+): MethodDecorator & ClassDecorator {
   const param: Record<string, any> = {
     name: isNil(options.name) ? defaultParamOptions.name : options.name,
     in: 'path',
@@ -48,5 +50,39 @@ export function ApiParam(options: ApiParamOptions): MethodDecorator {
     }
   }
 
-  return createParamDecorator(param, defaultParamOptions);
+  return (
+    target: object | Function,
+    key?: string | symbol,
+    descriptor?: TypedPropertyDescriptor<any>
+  ): any => {
+    if (descriptor) {
+      return createParamDecorator(param, defaultParamOptions)(
+        target,
+        key,
+        descriptor
+      );
+    }
+
+    if (typeof target === 'object') {
+      return target;
+    }
+
+    const propertyKeys = Object.getOwnPropertyNames(target.prototype);
+
+    for (const propertyKey of propertyKeys) {
+     
+      const descriptor = Object.getOwnPropertyDescriptor(
+        target.prototype,
+        propertyKey
+      );
+
+      if (descriptor) {
+        createParamDecorator(param, defaultParamOptions)(
+          target.prototype,
+          propertyKey,
+          descriptor
+        );
+      }
+    }
+  };
 }
