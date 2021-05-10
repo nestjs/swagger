@@ -11,9 +11,11 @@ describe('ApiParam', () => {
       public get(@Param('testId') testId: string): string {
         return testId;
       }
+
+      public noAPiMethod(): void {}
     }
 
-    it('should get ApiParam options from get method', () => {
+    it('should get ApiParam options from api method', () => {
       const controller = new TestAppController();
       expect(
         Reflect.hasMetadata(DECORATORS.API_PARAMETERS, controller.get)
@@ -21,6 +23,13 @@ describe('ApiParam', () => {
       expect(
         Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)
       ).toEqual([{ in: 'path', name: 'testId', required: true }]);
+    });
+
+    it('should not get ApiParam options from non api method', () => {
+      const controller = new TestAppController();
+      expect(
+        Reflect.hasMetadata(DECORATORS.API_PARAMETERS, controller.noAPiMethod)
+      ).toBeFalsy();
     });
   });
 
@@ -34,7 +43,7 @@ describe('ApiParam', () => {
       }
     }
 
-    it('should get ApiParam options from get method', () => {
+    it('should get ApiParam options from api method', () => {
       const controller = new TestAppController();
       expect(
         Reflect.hasMetadata(DECORATORS.API_PARAMETERS, controller.get)

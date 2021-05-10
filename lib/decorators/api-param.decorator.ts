@@ -1,4 +1,5 @@
 import { Type } from '@nestjs/common';
+import { METHOD_METADATA } from '@nestjs/common/constants';
 import { isConstructor } from '@nestjs/common/utils/shared.utils';
 import { isNil, omit } from 'lodash';
 import {
@@ -80,7 +81,16 @@ export function ApiParam(
         propertyKey
       );
 
-      if (descriptor) {
+      if (!descriptor) {
+        continue;
+      }
+
+      const isApiMethod = Reflect.hasMetadata(
+        METHOD_METADATA,
+        descriptor.value
+      );
+
+      if (isApiMethod) {
         createParamDecorator(param, defaultParamOptions)(
           target.prototype,
           propertyKey,
