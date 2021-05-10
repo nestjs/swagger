@@ -1,4 +1,5 @@
 import { Type } from '@nestjs/common';
+import { isConstructor } from '@nestjs/common/utils/shared.utils';
 import { isNil, omit } from 'lodash';
 import {
   ParameterObject,
@@ -70,7 +71,10 @@ export function ApiParam(
     const propertyKeys = Object.getOwnPropertyNames(target.prototype);
 
     for (const propertyKey of propertyKeys) {
-     
+      if (isConstructor(propertyKey)) {
+        continue;
+      }
+
       const descriptor = Object.getOwnPropertyDescriptor(
         target.prototype,
         propertyKey
