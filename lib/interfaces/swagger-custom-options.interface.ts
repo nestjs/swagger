@@ -8,6 +8,7 @@ export interface SwaggerCustomOptions {
   swaggerUrl?: string;
   customSiteTitle?: string;
   validatorUrl?: string;
+  uiConfig?: Record<string, any>;
   url?: string;
   urls?: Record<'url' | 'name', string>[];
 }
