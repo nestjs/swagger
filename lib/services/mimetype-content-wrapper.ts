@@ -5,11 +5,8 @@ export class MimetypeContentWrapper {
     mimetype: string[],
     obj: Record<string, any>
   ): Record<'content', ContentObject> {
-    const content = mimetype
-      .map((item) => ({
-        [item]: obj
-      }))
-      .reduce((a, b) => ({ ...a, ...b }), {});
+    const content = {};
+    mimetype.forEach((item) => (content[item] = obj));
     return { content };
   }
 }
