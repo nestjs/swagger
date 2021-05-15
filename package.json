@@ -40,7 +40,7 @@
     "class-validator": "0.13.1",
     "eslint": "7.26.0",
     "eslint-config-prettier": "8.3.0",
-    "eslint-plugin-import": "2.23.1",
+    "eslint-plugin-import": "2.23.2",
     "express": "4.17.1",
     "fastify-swagger": "4.7.0",
     "husky": "6.0.0",
