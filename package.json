@@ -33,7 +33,7 @@
     "@nestjs/platform-fastify": "7.6.17",
     "@types/jest": "26.0.23",
     "@types/lodash": "4.14.170",
-    "@types/node": "11.15.54",
+    "@types/node": "14.17.0",
     "@typescript-eslint/eslint-plugin": "4.24.0",
     "@typescript-eslint/parser": "4.24.0",
     "class-transformer": "0.4.0",
