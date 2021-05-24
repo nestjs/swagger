@@ -15,6 +15,7 @@ export class CreateCatDto {
   readonly breed: string;
 
   @ApiProperty({
+    format: 'uri',
     type: [String]
   })
   readonly tags?: string[];

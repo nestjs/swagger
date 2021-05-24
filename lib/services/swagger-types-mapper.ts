@@ -137,6 +137,7 @@ export class SwaggerTypesMapper {
 
   private getSchemaOptionsKeys(): Array<keyof SchemaObject> {
     return [
+      'patternProperties',
       'additionalProperties',
       'minimum',
       'maximum',
@@ -150,7 +151,7 @@ export class SwaggerTypesMapper {
       'title',
       'format',
       'pattern',
-      'default'
+      'default',
     ];
   }
 }

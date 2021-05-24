@@ -46,7 +46,8 @@ export class CreateUserDto {
 
   @ApiProperty({
     type: String,
-    isArray: true
+    isArray: true,
+    format: 'uri'
   })
   urls: string[];
 

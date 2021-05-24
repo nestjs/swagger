@@ -24,8 +24,11 @@ describe('Validate OpenAPI schema', () => {
       .addBearerAuth()
       .addOAuth2()
       .addApiKey()
+      .addApiKey({ type: 'apiKey' }, 'key1')
+      .addApiKey({ type: 'apiKey' }, 'key2')
       .addCookieAuth()
       .addSecurityRequirements('bearer')
+      .addSecurityRequirements({ basic: [], cookie: [] })
       .build();
 
     document = SwaggerModule.createDocument(app, options);
@@ -43,6 +46,9 @@ describe('Validate OpenAPI schema', () => {
         api.info.version
       );
       expect(api.info.title).toEqual('Cats example');
+      expect(api.paths['/api/cats']['get']['x-codeSamples'][0]['lang']).toEqual(
+        'JavaScript'
+      );
     } catch (err) {
       console.log(doc);
       expect(err).toBeUndefined();

@@ -202,7 +202,7 @@ export interface SchemaObject {
   xml?: XmlObject;
   externalDocs?: ExternalDocumentationObject;
   example?: any;
-  examples?: any[];
+  examples?: any[] | Record<string, any>;
   deprecated?: boolean;
   type?: string;
   allOf?: (SchemaObject | ReferenceObject)[];
@@ -212,6 +212,7 @@ export interface SchemaObject {
   items?: SchemaObject | ReferenceObject;
   properties?: Record<string, SchemaObject | ReferenceObject>;
   additionalProperties?: SchemaObject | ReferenceObject | boolean;
+  patternProperties?: SchemaObject | ReferenceObject | any;
   description?: string;
   format?: string;
   default?: any;

@@ -17,6 +17,7 @@ import { PaginationQuery } from './dto/pagination-query.dto';
 
 @ApiSecurity('basic')
 @ApiBearerAuth()
+@ApiSecurity({ key2: [], key1: [] })
 @ApiTags('cats')
 @ApiHeader({
   name: 'header',
@@ -54,6 +55,9 @@ export class CatsController {
   }
 
   @Get()
+  @ApiExtension('x-codeSamples', [
+    { lang: 'JavaScript', source: "console.log('Hello World');" }
+  ])
   findAll(@Query() paginationQuery: PaginationQuery) {}
 
   @ApiQuery({ type: PaginationQuery })

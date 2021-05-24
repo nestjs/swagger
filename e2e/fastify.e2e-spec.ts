@@ -27,8 +27,11 @@ describe('Fastify Swagger', () => {
       .addBearerAuth()
       .addOAuth2()
       .addApiKey()
+      .addApiKey({ type: 'apiKey' }, 'key1')
+      .addApiKey({ type: 'apiKey' }, 'key2')
       .addCookieAuth()
-      .addSecurityRequirements('bearer');
+      .addSecurityRequirements('bearer')
+      .addSecurityRequirements({ basic: [], cookie: [] });
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {

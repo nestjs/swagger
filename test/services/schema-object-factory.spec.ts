@@ -148,6 +148,7 @@ describe('SchemaObjectFactory', () => {
           },
           urls: {
             items: {
+              format: 'uri',
               type: 'string'
             },
             type: 'array'
