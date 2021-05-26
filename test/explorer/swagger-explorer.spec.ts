@@ -6,6 +6,7 @@ import {
   ApiConsumes,
   ApiCreatedResponse,
   ApiDefaultResponse,
+  ApiExtraModels,
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
@@ -969,6 +970,73 @@ describe('SwaggerExplorer', () => {
           }
         }
       ]);
+    });
+  });
+
+  describe('should include extra models', () => {
+    class ExtraModel {
+      @ApiProperty()
+      p1: string;
+    }
+
+    class ExtraModel2 {
+      @ApiProperty()
+      p2: string;
+    }
+
+    it('when multiple decorators is used on controller', () => {
+      @Controller()
+      @ApiExtraModels(ExtraModel)
+      @ApiExtraModels(ExtraModel2)
+      class FooController {
+        @Get()
+        find() {
+          return true;
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path'
+      );
+
+      const schemas = explorer.getSchemas();
+
+      expect(schemas).toHaveLength(2);
+      expect(schemas[0].ExtraModel2).toBeDefined();
+      expect(schemas[1].ExtraModel).toBeDefined();
+    });
+
+
+    it('when multiple decorators is used on controller`s method', () => {
+      @Controller()
+      class FooController {
+        @Get()
+        @ApiExtraModels(ExtraModel)
+        @ApiExtraModels(ExtraModel2)
+        find() {
+          return true;
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        'path'
+      );
+
+      const schemas = explorer.getSchemas();
+
+      expect(schemas).toHaveLength(2);
+      expect(schemas[0].ExtraModel2).toBeDefined();
+      expect(schemas[1].ExtraModel).toBeDefined();
     });
   });
 });

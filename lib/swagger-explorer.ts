@@ -54,7 +54,7 @@ import { mergeAndUniq } from './utils/merge-and-uniq.util';
 export class SwaggerExplorer {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
   private readonly metadataScanner = new MetadataScanner();
-  private readonly schemas: SchemaObject[] = [];
+  private readonly schemas: Record<string, SchemaObject>[] = [];
   private readonly schemaRefsStack: string[] = [];
   private operationIdFactory = (controllerKey: string, methodKey: string) =>
     controllerKey ? `${controllerKey}_${methodKey}` : methodKey;
@@ -96,7 +96,7 @@ export class SwaggerExplorer {
     );
   }
 
-  public getSchemas(): SchemaObject[] {
+  public getSchemas(): Record<string, SchemaObject>[] {
     return this.schemas;
   }
 
