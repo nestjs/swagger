@@ -231,6 +231,12 @@ export const ApiUnsupportedMediaTypeResponse = (
     status: HttpStatus.UNSUPPORTED_MEDIA_TYPE
   });
 
+export const ApiPaymentRequiredResponse = (options: ApiResponseOptions = {}) =>
+  ApiResponse({
+    ...options,
+    status: HttpStatus.PAYMENT_REQUIRED
+  });
+
 export const ApiDefaultResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
     ...options,
