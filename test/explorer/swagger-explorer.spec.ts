@@ -811,7 +811,10 @@ describe('SwaggerExplorer', () => {
         enumName: 'QueryEnum',
         isArray: true
       })
-      findBar(@Query('objectId') objectId: ParamEnum, @Query('order') order: QueryEnum): Promise<Foo> {
+      findBar(
+        @Query('objectId') objectId: ParamEnum,
+        @Query('order') order: QueryEnum
+      ): Promise<Foo> {
         return Promise.resolve(null);
       }
     }
@@ -828,19 +831,15 @@ describe('SwaggerExplorer', () => {
 
       expect(routes[0].root.parameters).toEqual([
         {
-          "in": "query",
-          "name": "page",
-          "required": true,
-          "schema": {
-            "items": {
-              "enum": [
-                "d",
-                "e",
-                "f"
-              ],
-              "type": "string"
+          in: 'query',
+          name: 'page',
+          required: true,
+          schema: {
+            items: {
+              enum: ['d', 'e', 'f'],
+              type: 'string'
             },
-            "type": "array"
+            type: 'array'
           }
         },
         {
