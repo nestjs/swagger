@@ -1,5 +1,15 @@
 import { Type } from '@nestjs/common';
-import { assign, find, intersection, isEmpty, isNil, map, omitBy, some, unionWith } from 'lodash';
+import {
+  assign,
+  find,
+  intersection,
+  isEmpty,
+  isNil,
+  map,
+  omitBy,
+  some,
+  unionWith
+} from 'lodash';
 import { DECORATORS } from '../constants';
 import { SchemaObject } from '../interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
@@ -58,7 +68,7 @@ export const exploreApiParametersMetadata = (
 
     properties = removeParamMetadataIfExplicitExists(
       properties,
-      explicitParameters,
+      explicitParameters
     );
 
     properties = map(properties, mergeImplicitAndExplicit);
@@ -94,20 +104,22 @@ function removeParamMetadataIfExplicitExists(
   properties: ParamWithTypeMetadata[],
   explicitParams: any[]
 ) {
-
   const reducer = (a, p) => {
     if (['query', 'path'].includes(p.in)) {
       a.push(p.name);
     }
     return a;
-  }
+  };
 
-  const reflectedParams = isEmpty(properties) ? [] : properties.reduce(reducer, []);
-  const explicitlyDefinedParams = isEmpty(explicitParams) ? [] : explicitParams.reduce(reducer, []);
+  const reflectedParams = isEmpty(properties)
+    ? []
+    : properties.reduce(reducer, []);
+  const explicitlyDefinedParams = isEmpty(explicitParams)
+    ? []
+    : explicitParams.reduce(reducer, []);
   const intersect = intersection(reflectedParams, explicitlyDefinedParams);
 
-  return omitBy(
-    properties,
-    (p) => intersect.includes(p.name),
+  return omitBy(properties, (p) =>
+    intersect.includes(p.name)
   ) as ParamWithTypeMetadata[];
 }
