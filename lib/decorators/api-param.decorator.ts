@@ -52,51 +52,5 @@ export function ApiParam(
     }
   }
 
-  return (
-    target: object | Function,
-    key?: string | symbol,
-    descriptor?: TypedPropertyDescriptor<any>
-  ): any => {
-    if (descriptor) {
-      return createParamDecorator(param, defaultParamOptions)(
-        target,
-        key,
-        descriptor
-      );
-    }
-
-    if (typeof target === 'object') {
-      return target;
-    }
-
-    const propertyKeys = Object.getOwnPropertyNames(target.prototype);
-
-    for (const propertyKey of propertyKeys) {
-      if (isConstructor(propertyKey)) {
-        continue;
-      }
-
-      const descriptor = Object.getOwnPropertyDescriptor(
-        target.prototype,
-        propertyKey
-      );
-
-      if (!descriptor) {
-        continue;
-      }
-
-      const isApiMethod = Reflect.hasMetadata(
-        METHOD_METADATA,
-        descriptor.value
-      );
-
-      if (isApiMethod) {
-        createParamDecorator(param, defaultParamOptions)(
-          target.prototype,
-          propertyKey,
-          descriptor
-        );
-      }
-    }
-  };
+  return createParamDecorator(param, defaultParamOptions);
 }
