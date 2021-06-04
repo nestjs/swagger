@@ -1,6 +1,4 @@
 import { Type } from '@nestjs/common';
-import { METHOD_METADATA } from '@nestjs/common/constants';
-import { isConstructor } from '@nestjs/common/utils/shared.utils';
 import { isNil, omit } from 'lodash';
 import {
   ParameterObject,
