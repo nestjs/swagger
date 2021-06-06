@@ -1,6 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import { loadPackage } from '@nestjs/common/utils/load-package.util';
 import {
+  ExpressSwaggerCustomOptions,
+  FastifySwaggerCustomOptions,
   OpenAPIObject,
   SwaggerCustomOptions,
   SwaggerDocumentOptions
@@ -35,16 +37,26 @@ export class SwaggerModule {
   ) {
     const httpAdapter = app.getHttpAdapter();
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
-      return this.setupFastify(path, httpAdapter, document, options);
+      return this.setupFastify(
+        path,
+        httpAdapter,
+        document,
+        options as FastifySwaggerCustomOptions
+      );
     }
-    return this.setupExpress(path, app, document, options);
+    return this.setupExpress(
+      path,
+      app,
+      document,
+      options as ExpressSwaggerCustomOptions
+    );
   }
 
   private static setupExpress(
     path: string,
     app: INestApplication,
     document: OpenAPIObject,
-    options?: SwaggerCustomOptions
+    options?: ExpressSwaggerCustomOptions
   ) {
     const httpAdapter = app.getHttpAdapter();
     const finalPath = validatePath(path);
@@ -62,7 +74,7 @@ export class SwaggerModule {
     path: string,
     httpServer: any,
     document: OpenAPIObject,
-    options?: SwaggerCustomOptions
+    options?: FastifySwaggerCustomOptions
   ) {
     // Workaround for older versions of the @nestjs/platform-fastify package
     // where "isParserRegistered" getter is not defined.
