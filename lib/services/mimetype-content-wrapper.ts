@@ -5,8 +5,10 @@ export class MimetypeContentWrapper {
     mimetype: string[],
     obj: Record<string, any>
   ): Record<'content', ContentObject> {
-    const content = {};
-    mimetype.forEach((item) => (content[item] = obj));
+    const content = mimetype.reduce(
+      (acc, item) => ({ ...acc, [item]: obj }),
+      {}
+    );
     return { content };
   }
 }
