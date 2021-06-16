@@ -263,19 +263,18 @@ export class SwaggerExplorer {
     if (methodMetadata.root && !methodMetadata.root.parameters) {
       methodMetadata.root.parameters = [];
     }
-    const deepMerge = (metadata: Record<string, any>) => (
-      value: Record<string, unknown>,
-      key: string
-    ) => {
-      if (!metadata[key]) {
-        return value;
-      }
-      const globalValue = metadata[key];
-      if (metadata.depth) {
-        return this.deepMergeMetadata(globalValue, value, metadata.depth);
-      }
-      return this.mergeValues(globalValue, value);
-    };
+    const deepMerge =
+      (metadata: Record<string, any>) =>
+      (value: Record<string, unknown>, key: string) => {
+        if (!metadata[key]) {
+          return value;
+        }
+        const globalValue = metadata[key];
+        if (metadata.depth) {
+          return this.deepMergeMetadata(globalValue, value, metadata.depth);
+        }
+        return this.mergeValues(globalValue, value);
+      };
 
     if (globalMetadata.chunks) {
       const { chunks } = globalMetadata;

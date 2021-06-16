@@ -34,9 +34,8 @@ export class ParametersMetadataMapper {
       const { prototype } = param.type;
 
       this.modelPropertiesAccessor.applyMetadataFactory(prototype);
-      const modelProperties = this.modelPropertiesAccessor.getModelProperties(
-        prototype
-      );
+      const modelProperties =
+        this.modelPropertiesAccessor.getModelProperties(prototype);
 
       return modelProperties.map((key) =>
         this.mergeImplicitWithExplicit(key, prototype, param)

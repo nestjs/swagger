@@ -42,9 +42,10 @@ export const exploreApiParametersMetadata = (
   if (noExplicitMetadata && isNil(parametersMetadata)) {
     return undefined;
   }
-  const reflectedParametersAsProperties = parametersMetadataMapper.transformModelToProperties(
-    parametersMetadata || {}
-  );
+  const reflectedParametersAsProperties =
+    parametersMetadataMapper.transformModelToProperties(
+      parametersMetadata || {}
+    );
 
   let properties = reflectedParametersAsProperties;
   if (!noExplicitMetadata) {
