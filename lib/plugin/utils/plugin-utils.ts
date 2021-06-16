@@ -10,7 +10,8 @@ import {
   isEnum,
   isInterface,
   isNumber,
-  isString
+  isString,
+  isStringLiteral
 } from './ast-utils';
 
 export function getDecoratorOrUndefinedByNames(
@@ -45,7 +46,7 @@ export function getTypeReferenceAsString(
   if (isNumber(type)) {
     return Number.name;
   }
-  if (isString(type)) {
+  if (isString(type) || isStringLiteral(type)) {
     return String.name;
   }
   if (isPromiseOrObservable(getText(type, typeChecker))) {

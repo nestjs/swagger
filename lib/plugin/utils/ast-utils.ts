@@ -39,6 +39,10 @@ export function isString(type: Type) {
   return hasFlag(type, TypeFlags.String);
 }
 
+export function isStringLiteral(type: Type) {
+  return hasFlag(type, TypeFlags.StringLiteral) && !type.isUnion();
+}
+
 export function isNumber(type: Type) {
   return hasFlag(type, TypeFlags.Number);
 }
@@ -110,7 +114,8 @@ export function getMainCommentAndExamplesOfNode(
 ): [string, string[]] {
   const sourceText = sourceFile.getFullText();
   // in case we decide to include "// comments"
-  const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/\/+.*|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
+  const replaceRegex =
+    /^ *\** *@.*$|^ *\/\*+ *|^ *\/\/+.*|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
   //const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
 
   const commentResult = [];
@@ -123,7 +128,8 @@ export function getMainCommentAndExamplesOfNode(
         commentResult.push(oneComment);
       }
       if (includeExamples) {
-        const regexOfExample = /@example *((['"](?<exampleAsString>.+?)['"])|(?<exampleAsBooleanOrNumber>[^ ]+?)|(?<exampleAsArray>(\[.+?\]))) *$/gim;
+        const regexOfExample =
+          /@example *((['"](?<exampleAsString>.+?)['"])|(?<exampleAsBooleanOrNumber>[^ ]+?)|(?<exampleAsArray>(\[.+?\]))) *$/gim;
         let execResult: RegExpExecArray;
         while (
           (execResult = regexOfExample.exec(commentSource)) &&

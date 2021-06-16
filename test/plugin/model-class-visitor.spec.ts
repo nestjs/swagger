@@ -25,6 +25,10 @@ import {
   nullableDtoText,
   nullableDtoTextTranspiled
 } from './fixtures/nullable.dto';
+import {
+  stringLiteralDtoText,
+  stringLiteralDtoTextTranspiled
+} from './fixtures/string-literal.dto';
 
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
@@ -194,5 +198,31 @@ describe('API model properties', () => {
     });
 
     expect(changedResult.outputText).toEqual(changedCatDtoTextTranspiled);
+  });
+
+  it('should support & understand string literals', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ESNext,
+      target: ts.ScriptTarget.ESNext,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      strict: true
+    };
+    const filename = 'string-literal.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(stringLiteralDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(stringLiteralDtoTextTranspiled);
   });
 });
