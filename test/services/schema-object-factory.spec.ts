@@ -102,7 +102,7 @@ describe('SchemaObjectFactory', () => {
           },
           password: {
             type: 'string',
-            examples: ['test', 'test2']
+            example: 'password123'
           },
           houses: {
             items: {

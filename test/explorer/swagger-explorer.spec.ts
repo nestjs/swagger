@@ -287,7 +287,7 @@ describe('SwaggerExplorer', () => {
       }
 
       @Get('foos/:objectId')
-      @ApiParam({ name: 'objectId', type: 'string' })
+      @ApiParam({ name: 'objectId', type: 'string', format: 'uuid' })
       @ApiQuery({ name: 'page', type: 'string' })
       @ApiOperation({ summary: 'List all Foos' })
       @ApiOkResponse({ type: [Foo] })
@@ -397,7 +397,8 @@ describe('SwaggerExplorer', () => {
           name: 'page',
           required: true,
           schema: {
-            type: 'string'
+            type: 'string',
+            format: 'uuid'
           }
         },
         {
@@ -797,6 +798,20 @@ describe('SwaggerExplorer', () => {
     }
 
     @Controller('')
+    class Foo2Controller {
+      @Get('foos/:objectId')
+      @ApiParam({
+        name: 'objectId',
+        enum: ParamEnum
+      })
+      @ApiQuery({ name: 'order', enum: QueryEnum })
+      @ApiQuery({ name: 'page', enum: ['d', 'e', 'f'] })
+      find(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    @Controller('')
     class BarController {
       @Get('bars/:objectId')
       @ApiParam({
@@ -836,10 +851,51 @@ describe('SwaggerExplorer', () => {
           required: true,
           schema: {
             items: {
-              enum: ['d', 'e', 'f'],
-              type: 'string'
+              type: 'string',
+              enum: ['d', 'e', 'f']
             },
             type: 'array'
+          }
+        },
+        {
+          in: 'query',
+          name: 'order',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['d', 'e', 'f']
+          }
+        },
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['a', 'b', 'c']
+          }
+        }
+      ]);
+    });
+
+    it('should properly define enum and not add isArray prop to params', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new Foo2Controller(),
+          metatype: Foo2Controller
+        } as InstanceWrapper<Foo2Controller>,
+        'path'
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          in: 'query',
+          name: 'page',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['d', 'e', 'f']
           }
         },
         {
