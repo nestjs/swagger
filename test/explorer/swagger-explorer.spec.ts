@@ -843,15 +843,14 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root.parameters).toEqual([
         {
           in: 'query',
-          isArray: true,
           name: 'page',
           required: true,
           schema: {
             items: {
               type: 'string',
-              enum: ['d', 'e', 'f'],
+              enum: ['d', 'e', 'f']
             },
-            type: "array"
+            type: 'array'
           }
         },
         {
@@ -892,7 +891,7 @@ describe('SwaggerExplorer', () => {
           required: true,
           schema: {
             type: 'string',
-            enum: ['d', 'e', 'f'],
+            enum: ['d', 'e', 'f']
           }
         },
         {
@@ -913,8 +912,8 @@ describe('SwaggerExplorer', () => {
             enum: ['a', 'b', 'c']
           }
         }
-      ])
-    })
+      ]);
+    });
 
     it('should properly define enum as schema with lazy function', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
