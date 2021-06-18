@@ -1,8 +1,18 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
+import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { DECORATORS } from '../../lib/constants';
 import { ApiQuery } from '../../lib/decorators';
+import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
+import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
+import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
+import { SwaggerExplorer } from '../../lib/swagger-explorer';
 
 describe('ApiQuery', () => {
+  const schemaObjectFactory = new SchemaObjectFactory(
+    new ModelPropertiesAccessor(),
+    new SwaggerTypesMapper()
+  );
+
   describe('class decorator', () => {
     @ApiQuery({ name: 'testId' })
     @Controller('test')
@@ -31,6 +41,26 @@ describe('ApiQuery', () => {
         Reflect.hasMetadata(DECORATORS.API_PARAMETERS, controller.noAPiMethod)
       ).toBeFalsy();
     });
+
+    it('should properly define query', ()=>{
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new TestAppController(),
+          metatype: TestAppController
+        } as InstanceWrapper<TestAppController>,
+        'path'
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          in: "query",
+          name: "testId",
+          required: true,
+          schema: { type: "string" }
+        }
+      ]);
+    });
   });
 
   describe('method decorator', () => {
@@ -51,6 +81,26 @@ describe('ApiQuery', () => {
       expect(
         Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)
       ).toEqual([{ in: 'query', name: 'testId', required: true }]);
+    });
+
+    it('should properly define query', ()=>{
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new TestAppController(),
+          metatype: TestAppController
+        } as InstanceWrapper<TestAppController>,
+        'path'
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          in: "query",
+          name: "testId",
+          required: true,
+          schema: { type: "string" }
+        }
+      ]);
     });
   });
 });
