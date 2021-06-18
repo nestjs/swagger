@@ -75,9 +75,9 @@ export class SwaggerExplorer {
 
   public exploreController(
     wrapper: InstanceWrapper<Controller>,
-    modulePath: string | undefined,
-    globalPrefix: string | undefined,
     applicationConfig: ApplicationConfig,
+    modulePath?: string | undefined,
+    globalPrefix?: string | undefined,
     operationIdFactory?: (controllerKey: string, methodKey: string) => string
   ) {
     this.routePathFactory = new RoutePathFactory(applicationConfig);
@@ -298,19 +298,18 @@ export class SwaggerExplorer {
     if (methodMetadata.root && !methodMetadata.root.parameters) {
       methodMetadata.root.parameters = [];
     }
-    const deepMerge = (metadata: Record<string, any>) => (
-      value: Record<string, unknown>,
-      key: string
-    ) => {
-      if (!metadata[key]) {
-        return value;
-      }
-      const globalValue = metadata[key];
-      if (metadata.depth) {
-        return this.deepMergeMetadata(globalValue, value, metadata.depth);
-      }
-      return this.mergeValues(globalValue, value);
-    };
+    const deepMerge =
+      (metadata: Record<string, any>) =>
+      (value: Record<string, unknown>, key: string) => {
+        if (!metadata[key]) {
+          return value;
+        }
+        const globalValue = metadata[key];
+        if (metadata.depth) {
+          return this.deepMergeMetadata(globalValue, value, metadata.depth);
+        }
+        return this.mergeValues(globalValue, value);
+      };
 
     if (globalMetadata.chunks) {
       const { chunks } = globalMetadata;
@@ -383,10 +382,13 @@ export class SwaggerExplorer {
     let consumes = mergeAndUniq(classConsumes, methodConsumes);
     consumes = isEmpty(consumes) ? ['application/json'] : consumes;
 
-    const keysToRemove = ['schema', 'in', 'name'];
+    const keysToRemove = ['schema', 'in', 'name', 'examples'];
     document.root.requestBody = {
       ...omit(requestBody, keysToRemove),
-      ...this.mimetypeContentWrapper.wrap(consumes, pick(requestBody, 'schema'))
+      ...this.mimetypeContentWrapper.wrap(
+        consumes,
+        pick(requestBody, ['schema', 'examples'])
+      )
     };
     return document;
   }

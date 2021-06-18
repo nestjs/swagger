@@ -111,8 +111,6 @@ export function hasPropertyKey(
     .some((item) => item.name.getText() === key);
 }
 
-const NATIVE_NODEJS_LIBRARIES = 'stream';
-
 export function replaceImportPath(typeReference: string, fileName: string) {
   if (!typeReference.includes('import')) {
     return typeReference;
@@ -124,9 +122,10 @@ export function replaceImportPath(typeReference: string, fileName: string) {
   importPath = convertPath(importPath);
   importPath = importPath.slice(2, importPath.length - 1);
 
-  if (NATIVE_NODEJS_LIBRARIES.includes(importPath)) {
+  try {
+    require.resolve(importPath)
     return typeReference.replace('import', 'require');
-  } else {
+  } catch (_error) {
     let relativePath = posix.relative(posix.dirname(fileName), importPath);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 

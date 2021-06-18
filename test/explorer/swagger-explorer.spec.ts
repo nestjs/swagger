@@ -110,9 +110,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         'modulePath',
-        'globalPrefix',
-        new ApplicationConfig()
+        'globalPrefix'
       );
       const operationPrefix = 'FooController_';
 
@@ -126,9 +126,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         'modulePath',
         'globalPrefix',
-        new ApplicationConfig(),
         methodKeyOperationIdFactory
       );
       const operationPrefix = '';
@@ -143,9 +143,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         'modulePath',
         'globalPrefix',
-        new ApplicationConfig(),
         controllerKeyMethodKeyOperationIdFactory
       );
       const operationPrefix = 'FooController.';
@@ -303,7 +303,7 @@ describe('SwaggerExplorer', () => {
       }
 
       @Get('foos/:objectId')
-      @ApiParam({ name: 'objectId', type: 'string' })
+      @ApiParam({ name: 'objectId', type: 'string', format: 'uuid' })
       @ApiQuery({ name: 'page', type: 'string' })
       @ApiOperation({ summary: 'List all Foos' })
       @ApiOkResponse({ type: [Foo] })
@@ -323,9 +323,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         undefined,
-        'globalPrefix',
-        new ApplicationConfig()
+        'globalPrefix'
       );
       const prefix = 'FooController_';
 
@@ -339,9 +339,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         undefined,
         'globalPrefix',
-        new ApplicationConfig(),
         methodKeyOperationIdFactory
       );
       const prefix = '';
@@ -356,9 +356,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         undefined,
         'globalPrefix',
-        new ApplicationConfig(),
         controllerKeyMethodKeyOperationIdFactory
       );
       const prefix = 'FooController.';
@@ -417,7 +417,8 @@ describe('SwaggerExplorer', () => {
           name: 'objectId',
           required: true,
           schema: {
-            type: 'string'
+            type: 'string',
+            format: 'uuid'
           }
         },
         {
@@ -495,9 +496,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         'modulePath',
-        undefined,
-        new ApplicationConfig()
+        undefined
       );
       const operationPrefix = 'FooController_';
 
@@ -511,9 +512,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         'modulePath',
         undefined,
-        new ApplicationConfig(),
         methodKeyOperationIdFactory
       );
       const operationPrefix = '';
@@ -528,9 +529,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         'modulePath',
         undefined,
-        new ApplicationConfig(),
         controllerKeyMethodKeyOperationIdFactory
       );
       const operationPrefix = 'FooController.';
@@ -684,9 +685,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        config,
         'modulePath',
-        'globalPrefix',
-        config
+        'globalPrefix'
       );
 
       validateRoutes(routes);
@@ -703,9 +704,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        config,
         'modulePath',
-        'globalPrefix',
-        config
+        'globalPrefix'
       );
 
       validateRoutes(routes);
@@ -836,6 +837,20 @@ describe('SwaggerExplorer', () => {
     }
 
     @Controller('')
+    class Foo2Controller {
+      @Get('foos/:objectId')
+      @ApiParam({
+        name: 'objectId',
+        enum: ParamEnum
+      })
+      @ApiQuery({ name: 'order', enum: QueryEnum })
+      @ApiQuery({ name: 'page', enum: ['d', 'e', 'f'] })
+      find(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    @Controller('')
     class BarController {
       @Get('bars/:objectId')
       @ApiParam({
@@ -866,9 +881,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        config,
         'modulePath',
-        'globalPrefix',
-        config
+        'globalPrefix'
       );
 
       expect(routes[0].root.path).toEqual(
@@ -880,11 +895,53 @@ describe('SwaggerExplorer', () => {
           name: 'page',
           required: true,
           schema: {
-            type: 'array',
             items: {
               type: 'string',
               enum: ['d', 'e', 'f']
-            }
+            },
+            type: 'array'
+          }
+        },
+        {
+          in: 'query',
+          name: 'order',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['d', 'e', 'f']
+          }
+        },
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['a', 'b', 'c']
+          }
+        }
+      ]);
+    });
+
+    it('should properly define enum and not add isArray prop to params', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new Foo2Controller(),
+          metatype: Foo2Controller
+        } as InstanceWrapper<Foo2Controller>,
+        new ApplicationConfig(),
+        'path'
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          in: 'query',
+          name: 'page',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['d', 'e', 'f']
           }
         },
         {
@@ -915,9 +972,9 @@ describe('SwaggerExplorer', () => {
           instance: new BarController(),
           metatype: BarController
         } as InstanceWrapper<BarController>,
+        new ApplicationConfig(),
         'modulePath',
-        'globalPrefix',
-        new ApplicationConfig()
+        'globalPrefix'
       );
 
       expect(routes[0].root.parameters).toEqual([
@@ -986,9 +1043,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         'modulePath',
-        'globalPrefix',
-        new ApplicationConfig()
+        'globalPrefix'
       );
 
       expect(routes[0].root.parameters).toEqual([

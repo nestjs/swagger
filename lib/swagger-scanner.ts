@@ -99,9 +99,9 @@ export class SwaggerScanner {
     const denormalizedArray = [...routes.values()].map((ctrl) =>
       this.explorer.exploreController(
         ctrl,
+        applicationConfig,
         modulePath,
         globalPrefix,
-        applicationConfig,
         operationIdFactory
       )
     );
