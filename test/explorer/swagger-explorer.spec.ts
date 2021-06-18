@@ -797,6 +797,20 @@ describe('SwaggerExplorer', () => {
     }
 
     @Controller('')
+    class Foo2Controller {
+      @Get('foos/:objectId')
+      @ApiParam({
+        name: 'objectId',
+        enum: ParamEnum
+      })
+      @ApiQuery({ name: 'order', enum: QueryEnum })
+      @ApiQuery({ name: 'page', enum: ['d', 'e', 'f'] })
+      find(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    @Controller('')
     class BarController {
       @Get('bars/:objectId')
       @ApiParam({
@@ -829,14 +843,15 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root.parameters).toEqual([
         {
           in: 'query',
+          isArray: true,
           name: 'page',
           required: true,
           schema: {
-            type: 'array',
             items: {
               type: 'string',
-              enum: ['d', 'e', 'f']
-            }
+              enum: ['d', 'e', 'f'],
+            },
+            type: "array"
           }
         },
         {
@@ -859,6 +874,47 @@ describe('SwaggerExplorer', () => {
         }
       ]);
     });
+
+    it('should properly define enum and not add isArray prop to params', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new Foo2Controller(),
+          metatype: Foo2Controller
+        } as InstanceWrapper<Foo2Controller>,
+        'path'
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          in: 'query',
+          name: 'page',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['d', 'e', 'f'],
+          }
+        },
+        {
+          in: 'query',
+          name: 'order',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['d', 'e', 'f']
+          }
+        },
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['a', 'b', 'c']
+          }
+        }
+      ])
+    })
 
     it('should properly define enum as schema with lazy function', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
