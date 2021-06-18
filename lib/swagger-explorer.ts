@@ -1,13 +1,24 @@
-import { RequestMethod } from '@nestjs/common';
-import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
-import { Controller, Type } from '@nestjs/common/interfaces';
+import { RequestMethod, VersioningType } from '@nestjs/common';
 import {
+  METHOD_METADATA,
+  PATH_METADATA,
+  VERSION_METADATA
+} from '@nestjs/common/constants';
+import {
+  Controller,
+  Type,
+  VersioningOptions,
+  VersionValue
+} from '@nestjs/common/interfaces';
+import {
+  addLeadingSlash,
   isString,
-  isUndefined,
-  validatePath
+  isUndefined
 } from '@nestjs/common/utils/shared.utils';
+import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
+import { RoutePathFactory } from '@nestjs/core/router/route-path-factory';
 import {
   get,
   head,
@@ -58,18 +69,22 @@ export class SwaggerExplorer {
   private readonly schemaRefsStack: string[] = [];
   private operationIdFactory = (controllerKey: string, methodKey: string) =>
     controllerKey ? `${controllerKey}_${methodKey}` : methodKey;
+  private routePathFactory?: RoutePathFactory;
 
   constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
 
   public exploreController(
     wrapper: InstanceWrapper<Controller>,
-    modulePath?: string,
-    globalPrefix?: string,
+    modulePath: string | undefined,
+    globalPrefix: string | undefined,
+    applicationConfig: ApplicationConfig,
     operationIdFactory?: (controllerKey: string, methodKey: string) => string
   ) {
+    this.routePathFactory = new RoutePathFactory(applicationConfig);
     if (operationIdFactory) {
       this.operationIdFactory = operationIdFactory;
     }
+
     const { instance, metatype } = wrapper;
     const prototype = Object.getPrototypeOf(instance);
     const documentResolvers: DenormalizedDocResolvers = {
@@ -91,6 +106,7 @@ export class SwaggerExplorer {
       prototype,
       instance,
       documentResolvers,
+      applicationConfig,
       modulePath,
       globalPrefix
     );
@@ -105,19 +121,10 @@ export class SwaggerExplorer {
     prototype: Type<unknown>,
     instance: object,
     documentResolvers: DenormalizedDocResolvers,
+    applicationConfig: ApplicationConfig,
     modulePath?: string,
     globalPrefix?: string
   ): DenormalizedDoc[] {
-    let path = this.validateRoutePath(this.reflectControllerPath(metatype));
-    if (modulePath) {
-      // re-validate the route after adding the module path,
-      // since maybe module path itself has url parameters segments.
-      path = this.validateRoutePath(modulePath + path);
-    }
-    if (globalPrefix) {
-      path = validatePath(globalPrefix) + path;
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     const globalMetadata = this.exploreGlobalMetadata(metatype);
@@ -151,7 +158,10 @@ export class SwaggerExplorer {
             instance,
             prototype,
             targetCallback,
-            path
+            metatype,
+            globalPrefix,
+            modulePath,
+            applicationConfig
           );
           if (!exploredMetadata) {
             return metadata;
@@ -211,17 +221,42 @@ export class SwaggerExplorer {
     instance: object,
     prototype: Type<unknown>,
     method: Function,
-    globalPath: string
+    metatype: Type<unknown>,
+    globalPrefix: string | undefined,
+    modulePath: string | undefined,
+    applicationConfig: ApplicationConfig
   ) {
-    const routePath = Reflect.getMetadata(PATH_METADATA, method);
-    if (isUndefined(routePath)) {
+    const methodPath = Reflect.getMetadata(PATH_METADATA, method);
+    if (isUndefined(methodPath)) {
       return undefined;
     }
     const requestMethod = Reflect.getMetadata(
       METHOD_METADATA,
       method
     ) as RequestMethod;
-    const fullPath = globalPath + this.validateRoutePath(routePath);
+
+    const methodVersion: VersionValue | undefined = Reflect.getMetadata(
+      VERSION_METADATA,
+      method
+    );
+    const controllerVersion = this.getVersionMetadata(
+      metatype,
+      applicationConfig.getVersioning()
+    );
+    const allRoutePaths = this.routePathFactory.create(
+      {
+        methodPath,
+        methodVersion,
+        modulePath,
+        globalPrefix,
+        controllerVersion,
+        ctrlPath: this.reflectControllerPath(metatype),
+        versioningOptions: applicationConfig.getVersioning()
+      },
+      requestMethod
+    );
+
+    const fullPath = this.validateRoutePath(head(allRoutePaths));
     const apiExtension = Reflect.getMetadata(DECORATORS.API_EXTENSION, method);
     return {
       method: RequestMethod[requestMethod].toLowerCase(),
@@ -253,7 +288,7 @@ export class SwaggerExplorer {
     for (const item of pathToRegexp.parse(path)) {
       pathWithParams += isString(item) ? item : `${item.prefix}{${item.name}}`;
     }
-    return pathWithParams === '/' ? '' : validatePath(pathWithParams);
+    return pathWithParams === '/' ? '' : addLeadingSlash(pathWithParams);
   }
 
   private mergeMetadata(
@@ -360,5 +395,14 @@ export class SwaggerExplorer {
     extraModels.forEach((item) =>
       this.schemaObjectFactory.exploreModelSchema(item, this.schemas)
     );
+  }
+
+  private getVersionMetadata(
+    metatype: Type<unknown> | Function,
+    versioningOptions: VersioningOptions | undefined
+  ): VersionValue | undefined {
+    return versioningOptions?.type === VersioningType.URI
+      ? Reflect.getMetadata(VERSION_METADATA, metatype)
+      : undefined;
   }
 }

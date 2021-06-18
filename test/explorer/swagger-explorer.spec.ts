@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Version,
+  VersioningType
+} from '@nestjs/common';
+import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import {
   ApiBadRequestResponse,
@@ -100,7 +110,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path'
+        'modulePath',
+        'globalPrefix',
+        new ApplicationConfig()
       );
       const operationPrefix = 'FooController_';
 
@@ -114,8 +126,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path',
-        undefined,
+        'modulePath',
+        'globalPrefix',
+        new ApplicationConfig(),
         methodKeyOperationIdFactory
       );
       const operationPrefix = '';
@@ -130,8 +143,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path',
-        undefined,
+        'modulePath',
+        'globalPrefix',
+        new ApplicationConfig(),
         controllerKeyMethodKeyOperationIdFactory
       );
       const operationPrefix = 'FooController.';
@@ -148,7 +162,7 @@ describe('SwaggerExplorer', () => {
       // POST
       expect(routes[0].root.operationId).toEqual(operationPrefix + 'create');
       expect(routes[0].root.method).toEqual('post');
-      expect(routes[0].root.path).toEqual('/path/foos');
+      expect(routes[0].root.path).toEqual('/globalPrefix/modulePath/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
       expect(routes[0].root.parameters.length).toEqual(5);
       expect(routes[0].root.parameters).toEqual([
@@ -228,7 +242,9 @@ describe('SwaggerExplorer', () => {
       // GET
       expect(routes[1].root.operationId).toEqual(operationPrefix + 'find');
       expect(routes[1].root.method).toEqual('get');
-      expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
+      expect(routes[1].root.path).toEqual(
+        '/globalPrefix/modulePath/foos/{objectId}'
+      );
       expect(routes[1].root.summary).toEqual('List all Foos');
       expect(routes[1].root.parameters.length).toEqual(2);
       expect(routes[1].root.parameters).toEqual([
@@ -307,7 +323,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path'
+        undefined,
+        'globalPrefix',
+        new ApplicationConfig()
       );
       const prefix = 'FooController_';
 
@@ -321,8 +339,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path',
         undefined,
+        'globalPrefix',
+        new ApplicationConfig(),
         methodKeyOperationIdFactory
       );
       const prefix = '';
@@ -337,8 +356,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path',
         undefined,
+        'globalPrefix',
+        new ApplicationConfig(),
         controllerKeyMethodKeyOperationIdFactory
       );
       const prefix = 'FooController.';
@@ -355,7 +375,7 @@ describe('SwaggerExplorer', () => {
       // POST
       expect(routes[0].root.operationId).toEqual(operationPrefix + 'create');
       expect(routes[0].root.method).toEqual('post');
-      expect(routes[0].root.path).toEqual('/path/foos');
+      expect(routes[0].root.path).toEqual('/globalPrefix/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
       expect(routes[0].root.parameters.length).toEqual(0);
       expect(routes[0].root.requestBody).toEqual({
@@ -388,7 +408,7 @@ describe('SwaggerExplorer', () => {
       // GET
       expect(routes[1].root.operationId).toEqual(operationPrefix + 'find');
       expect(routes[1].root.method).toEqual('get');
-      expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
+      expect(routes[1].root.path).toEqual('/globalPrefix/foos/{objectId}');
       expect(routes[1].root.summary).toEqual('List all Foos');
       expect(routes[1].root.parameters.length).toEqual(2);
       expect(routes[1].root.parameters).toEqual([
@@ -475,7 +495,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path'
+        'modulePath',
+        undefined,
+        new ApplicationConfig()
       );
       const operationPrefix = 'FooController_';
 
@@ -489,8 +511,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path',
+        'modulePath',
         undefined,
+        new ApplicationConfig(),
         methodKeyOperationIdFactory
       );
       const operationPrefix = '';
@@ -505,8 +528,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path',
+        'modulePath',
         undefined,
+        new ApplicationConfig(),
         controllerKeyMethodKeyOperationIdFactory
       );
       const operationPrefix = 'FooController.';
@@ -523,7 +547,7 @@ describe('SwaggerExplorer', () => {
       // POST
       expect(routes[0].root.operationId).toEqual(operationPrefix + 'create');
       expect(routes[0].root.method).toEqual('post');
-      expect(routes[0].root.path).toEqual('/path/foos');
+      expect(routes[0].root.path).toEqual('/modulePath/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
       expect(routes[0].root.parameters.length).toEqual(0);
       expect(routes[0].root.requestBody).toEqual({
@@ -553,7 +577,7 @@ describe('SwaggerExplorer', () => {
       // GET
       expect(routes[1].root.operationId).toEqual(operationPrefix + 'find');
       expect(routes[1].root.method).toEqual('get');
-      expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
+      expect(routes[1].root.path).toEqual('/modulePath/foos/{objectId}');
       expect(routes[1].root.summary).toEqual('List all Foos');
       expect(routes[1].root.parameters.length).toEqual(2);
       expect(routes[1].root.parameters).toEqual([
@@ -622,6 +646,7 @@ describe('SwaggerExplorer', () => {
         return Promise.resolve({});
       }
 
+      @Version('2')
       @Get('foos/:objectId')
       @ApiParam({
         name: 'objectId',
@@ -650,12 +675,18 @@ describe('SwaggerExplorer', () => {
 
     it('should merge implicit metadata with explicit options', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const config = new ApplicationConfig();
+      config.enableVersioning({
+        type: VersioningType.URI
+      });
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path'
+        'modulePath',
+        'globalPrefix',
+        config
       );
 
       validateRoutes(routes);
@@ -663,13 +694,18 @@ describe('SwaggerExplorer', () => {
 
     it('should merge implicit metadata with explicit options and use default operationIdFactory', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const config = new ApplicationConfig();
+      config.enableVersioning({
+        type: VersioningType.URI
+      });
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path',
-        undefined
+        'modulePath',
+        'globalPrefix',
+        config
       );
 
       validateRoutes(routes);
@@ -712,6 +748,9 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
+      expect(routes[1].root.path).toEqual(
+        '/globalPrefix/v2/modulePath/foos/{objectId}'
+      );
       expect(routes[1].root.operationId).toEqual('FooController_find2');
       expect(routes[1].root.parameters.length).toEqual(2);
       expect(routes[1].root.parameters).toEqual([
@@ -782,7 +821,7 @@ describe('SwaggerExplorer', () => {
 
     class Foo {}
 
-    @Controller('')
+    @Controller({ path: '', version: '3' })
     class FooController {
       @Get('foos/:objectId')
       @ApiParam({
@@ -818,14 +857,23 @@ describe('SwaggerExplorer', () => {
 
     it('should properly define enums', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const config = new ApplicationConfig();
+      config.enableVersioning({
+        type: VersioningType.URI
+      });
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path'
+        'modulePath',
+        'globalPrefix',
+        config
       );
 
+      expect(routes[0].root.path).toEqual(
+        '/globalPrefix/v3/modulePath/foos/{objectId}'
+      );
       expect(routes[0].root.parameters).toEqual([
         {
           in: 'query',
@@ -867,7 +915,9 @@ describe('SwaggerExplorer', () => {
           instance: new BarController(),
           metatype: BarController
         } as InstanceWrapper<BarController>,
-        'path'
+        'modulePath',
+        'globalPrefix',
+        new ApplicationConfig()
       );
 
       expect(routes[0].root.parameters).toEqual([
@@ -936,7 +986,9 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
-        'path'
+        'modulePath',
+        'globalPrefix',
+        new ApplicationConfig()
       );
 
       expect(routes[0].root.parameters).toEqual([
