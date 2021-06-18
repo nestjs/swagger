@@ -52,6 +52,28 @@ describe('Fastify Swagger', () => {
     }
   });
 
+  it('should pass uiConfig options to fastify-swagger', async () => {
+    const document1 = SwaggerModule.createDocument(app, builder.build());
+    const uiConfig = {
+      displayOperationId: true,
+      persistAuthorization: true
+    };
+    const options = { uiConfig };
+    SwaggerModule.setup('/swagger1', app, document1, options);
+
+    const instance = await app.getHttpAdapter().getInstance().ready();
+
+    instance.ready(async () => {
+      const response = await instance.inject({
+        method: 'GET',
+        url: '/swagger1/uiConfig'
+      });
+
+      expect(response.statusCode).toEqual(200);
+      expect(JSON.parse(response.body)).toEqual(uiConfig);
+    });
+  });
+
   it('should setup multiple routes', async () => {
     const document1 = SwaggerModule.createDocument(app, builder.build());
     SwaggerModule.setup('/swagger1', app, document1);
