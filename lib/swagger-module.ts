@@ -22,6 +22,7 @@ export class SwaggerModule {
     };
     return {
       openapi: '3.0.0',
+      paths: {},
       ...config,
       ...document
     };

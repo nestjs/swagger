@@ -1,251 +1,5 @@
 {
   "openapi": "3.0.0",
-  "info": {
-    "title": "Cats example",
-    "description": "The cats API description",
-    "version": "1.0",
-    "contact": {}
-  },
-  "tags": [
-    {
-      "name": "cats",
-      "description": ""
-    }
-  ],
-  "servers": [],
-  "components": {
-    "securitySchemes": {
-      "basic": {
-        "type": "http",
-        "scheme": "basic"
-      },
-      "bearer": {
-        "scheme": "bearer",
-        "bearerFormat": "JWT",
-        "type": "http"
-      },
-      "oauth2": {
-        "type": "oauth2",
-        "flows": {}
-      },
-      "api_key": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "api_key"
-      },
-      "key1": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "key1"
-      },
-      "key2": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "key2"
-      },
-      "cookie": {
-        "type": "apiKey",
-        "in": "cookie",
-        "name": "connect.sid"
-      }
-    },
-    "schemas": {
-      "ExtraModel": {
-        "type": "object",
-        "properties": {
-          "one": {
-            "type": "string"
-          },
-          "two": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "one",
-          "two"
-        ]
-      },
-      "LettersEnum": {
-        "type": "string",
-        "enum": [
-          "A",
-          "B",
-          "C"
-        ]
-      },
-      "TagDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "name"
-          }
-        },
-        "required": [
-          "name"
-        ]
-      },
-      "CreateCatDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "age": {
-            "type": "number",
-            "minimum": 1,
-            "maximum": 200
-          },
-          "_breed": {
-            "type": "string"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uri"
-            }
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "urls": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "options": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "isReadonly": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "enum": {
-            "$ref": "#/components/schemas/LettersEnum"
-          },
-          "enumArr": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LettersEnum"
-            }
-          },
-          "tag": {
-            "description": "tag",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TagDto"
-              }
-            ]
-          }
-        },
-        "required": [
-          "name",
-          "age",
-          "_breed",
-          "tags",
-          "createdAt",
-          "urls",
-          "options",
-          "enum",
-          "enumArr"
-        ]
-      },
-      "Cat": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "example": "Kitty",
-            "description": "The name of the Cat"
-          },
-          "age": {
-            "type": "number",
-            "example": 1,
-            "minimum": 0,
-            "description": "The age of the Cat"
-          },
-          "breed": {
-            "type": "string",
-            "example": "Maine Coon",
-            "description": "The breed of the Cat"
-          },
-          "_tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "urls": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "_options": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "isReadonly": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "enum": {
-            "type": "string",
-            "enum": [
-              "A",
-              "B",
-              "C"
-            ]
-          },
-          "enumArr": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "A",
-                "B",
-                "C"
-              ]
-            }
-          }
-        },
-        "required": [
-          "name",
-          "age",
-          "breed",
-          "_tags",
-          "createdAt",
-          "urls",
-          "_options",
-          "enum",
-          "enumArr"
-        ]
-      }
-    }
-  },
-  "security": [
-    {
-      "bearer": []
-    },
-    {
-      "basic": [],
-      "cookie": []
-    }
-  ],
   "paths": {
     "/api/cats": {
       "post": {
@@ -812,5 +566,251 @@
         ]
       }
     }
-  }
+  },
+  "info": {
+    "title": "Cats example",
+    "description": "The cats API description",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "cats",
+      "description": ""
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "basic": {
+        "type": "http",
+        "scheme": "basic"
+      },
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      },
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {}
+      },
+      "api_key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "api_key"
+      },
+      "key1": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "key1"
+      },
+      "key2": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "key2"
+      },
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "connect.sid"
+      }
+    },
+    "schemas": {
+      "ExtraModel": {
+        "type": "object",
+        "properties": {
+          "one": {
+            "type": "string"
+          },
+          "two": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "one",
+          "two"
+        ]
+      },
+      "LettersEnum": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      "TagDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "name"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreateCatDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "age": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "_breed": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "isReadonly": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "enum": {
+            "$ref": "#/components/schemas/LettersEnum"
+          },
+          "enumArr": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LettersEnum"
+            }
+          },
+          "tag": {
+            "description": "tag",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TagDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "age",
+          "_breed",
+          "tags",
+          "createdAt",
+          "urls",
+          "options",
+          "enum",
+          "enumArr"
+        ]
+      },
+      "Cat": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Kitty",
+            "description": "The name of the Cat"
+          },
+          "age": {
+            "type": "number",
+            "example": 1,
+            "minimum": 0,
+            "description": "The age of the Cat"
+          },
+          "breed": {
+            "type": "string",
+            "example": "Maine Coon",
+            "description": "The breed of the Cat"
+          },
+          "_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "_options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "isReadonly": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "enum": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ]
+          },
+          "enumArr": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "age",
+          "breed",
+          "_tags",
+          "createdAt",
+          "urls",
+          "_options",
+          "enum",
+          "enumArr"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "bearer": []
+    },
+    {
+      "basic": [],
+      "cookie": []
+    }
+  ]
 }
