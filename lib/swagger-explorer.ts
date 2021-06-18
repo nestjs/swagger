@@ -348,10 +348,13 @@ export class SwaggerExplorer {
     let consumes = mergeAndUniq(classConsumes, methodConsumes);
     consumes = isEmpty(consumes) ? ['application/json'] : consumes;
 
-    const keysToRemove = ['schema', 'in', 'name'];
+    const keysToRemove = ['schema', 'in', 'name', 'examples'];
     document.root.requestBody = {
       ...omit(requestBody, keysToRemove),
-      ...this.mimetypeContentWrapper.wrap(consumes, pick(requestBody, 'schema'))
+      ...this.mimetypeContentWrapper.wrap(
+        consumes,
+        pick(requestBody, ['schema', 'examples'])
+      )
     };
     return document;
   }
