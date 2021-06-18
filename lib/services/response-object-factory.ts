@@ -21,7 +21,7 @@ export class ResponseObjectFactory {
   create(
     response: ApiResponseMetadata,
     produces: string[],
-    schemas: SchemaObject[]
+    schemas: Record<string, SchemaObject>
   ) {
     const { type, isArray } = response as ApiResponseMetadata;
     response = omit(response, ['isArray']);
