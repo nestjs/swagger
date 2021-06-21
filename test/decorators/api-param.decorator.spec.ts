@@ -1,11 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { DECORATORS } from '../../lib/constants';
 import { ApiParam } from '../../lib/decorators';
-import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
-import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
-import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
-import { SwaggerExplorer } from '../../lib/swagger-explorer';
 
 describe('ApiParam', () => {
   describe('class decorator', () => {
