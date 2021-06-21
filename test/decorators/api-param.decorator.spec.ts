@@ -8,11 +8,6 @@ import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
 
 describe('ApiParam', () => {
-  const schemaObjectFactory = new SchemaObjectFactory(
-    new ModelPropertiesAccessor(),
-    new SwaggerTypesMapper()
-  );
-  
   describe('class decorator', () => {
     @ApiParam({ name: 'testId' })
     @Controller('tests/:testId')
@@ -41,26 +36,6 @@ describe('ApiParam', () => {
         Reflect.hasMetadata(DECORATORS.API_PARAMETERS, controller.noAPiMethod)
       ).toBeFalsy();
     });
-
-    it('should properly define path', ()=>{
-      const explorer = new SwaggerExplorer(schemaObjectFactory);
-      const routes = explorer.exploreController(
-        {
-          instance: new TestAppController(),
-          metatype: TestAppController
-        } as InstanceWrapper<TestAppController>,
-        'path'
-      );
-
-      expect(routes[0].root.parameters).toEqual([
-        {
-          in: "path",
-          name: "testId",
-          required: true,
-          schema: { type: "string" }
-        }
-      ]);
-    });
   });
 
   describe('method decorator', () => {
@@ -81,26 +56,6 @@ describe('ApiParam', () => {
       expect(
         Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)
       ).toEqual([{ in: 'path', name: 'testId', required: true }]);
-    });
-
-    it('should properly define path', ()=>{
-      const explorer = new SwaggerExplorer(schemaObjectFactory);
-      const routes = explorer.exploreController(
-        {
-          instance: new TestAppController(),
-          metatype: TestAppController
-        } as InstanceWrapper<TestAppController>,
-        'path'
-      );
-
-      expect(routes[0].root.parameters).toEqual([
-        {
-          in: "path",
-          name: "testId",
-          required: true,
-          schema: { type: "string" }
-        }
-      ]);
     });
   });
 });
