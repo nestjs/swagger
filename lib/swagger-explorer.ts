@@ -178,6 +178,8 @@ export class SwaggerExplorer {
         prototype,
         targetCallback
       );
+    }).filter((path) => {
+      return path.root !== undefined && path.root.path !== undefined;
     });
     return denormalizedPaths;
   }
