@@ -153,7 +153,7 @@ export class SwaggerTypesMapper {
       'title',
       'format',
       'pattern',
-      'default',
+      'default'
     ];
   }
 }

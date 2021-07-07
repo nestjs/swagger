@@ -149,9 +149,8 @@ export class SchemaObjectFactory {
     );
 
     this.modelPropertiesAccessor.applyMetadataFactory(prototype);
-    const modelProperties = this.modelPropertiesAccessor.getModelProperties(
-      prototype
-    );
+    const modelProperties =
+      this.modelPropertiesAccessor.getModelProperties(prototype);
     const propertiesWithType = modelProperties.map((key) => {
       const property = this.mergePropertyWithMetadata(
         key,

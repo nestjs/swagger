@@ -35,41 +35,41 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const typeChecker = program.getTypeChecker();
     sourceFile = this.updateImports(sourceFile, ctx.factory);
 
-    const propertyNodeVisitorFactory = (metadata: ClassMetadata) => (
-      node: ts.Node
-    ): ts.Node => {
-      if (ts.isPropertyDeclaration(node)) {
-        const decorators = node.decorators;
-        const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
-          [ApiHideProperty.name],
-          decorators
-        );
-        if (hidePropertyDecorator) {
-          return node;
-        }
-
-        const isPropertyStatic = (node.modifiers || []).some(
-          (modifier: ts.Modifier) =>
-            modifier.kind === ts.SyntaxKind.StaticKeyword
-        );
-        if (isPropertyStatic) {
-          return node;
-        }
-        try {
-          this.inspectPropertyDeclaration(
-            node,
-            typeChecker,
-            options,
-            sourceFile.fileName,
-            sourceFile,
-            metadata
+    const propertyNodeVisitorFactory =
+      (metadata: ClassMetadata) =>
+      (node: ts.Node): ts.Node => {
+        if (ts.isPropertyDeclaration(node)) {
+          const decorators = node.decorators;
+          const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
+            [ApiHideProperty.name],
+            decorators
           );
-        } catch (err) {
-          return node;
+          if (hidePropertyDecorator) {
+            return node;
+          }
+
+          const isPropertyStatic = (node.modifiers || []).some(
+            (modifier: ts.Modifier) =>
+              modifier.kind === ts.SyntaxKind.StaticKeyword
+          );
+          if (isPropertyStatic) {
+            return node;
+          }
+          try {
+            this.inspectPropertyDeclaration(
+              node,
+              typeChecker,
+              options,
+              sourceFile.fileName,
+              sourceFile,
+              metadata
+            );
+          } catch (err) {
+            return node;
+          }
         }
-      }
-      return node;
-    };
+        return node;
+      };
 
     const visitClassNode = (node: ts.Node): ts.Node => {
       if (ts.isClassDeclaration(node)) {
@@ -107,9 +107,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       undefined,
       ts.createBlock([ts.createReturn(returnValue)], true)
     );
-    ((classMutableNode as ts.ClassDeclaration) as any).members = ts.createNodeArray(
-      [...(classMutableNode as ts.ClassDeclaration).members, method]
-    );
+    (classMutableNode as ts.ClassDeclaration as any).members =
+      ts.createNodeArray([
+        ...(classMutableNode as ts.ClassDeclaration).members,
+        method
+      ]);
     return classMutableNode;
   }
 

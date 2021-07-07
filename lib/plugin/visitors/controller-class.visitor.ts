@@ -132,11 +132,12 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         ),
         ...(apiOperationExprProperties ?? ts.createNodeArray())
       ];
-      const apiOperationDecoratorArguments: ts.NodeArray<ts.Expression> = ts.createNodeArray(
-        [ts.createObjectLiteral(compact(properties))]
-      );
+      const apiOperationDecoratorArguments: ts.NodeArray<ts.Expression> =
+        ts.createNodeArray([ts.createObjectLiteral(compact(properties))]);
       if (apiOperationDecorator) {
-        ((apiOperationDecorator.expression as ts.CallExpression) as any).arguments = apiOperationDecoratorArguments;
+        (
+          apiOperationDecorator.expression as ts.CallExpression as any
+        ).arguments = apiOperationDecoratorArguments;
       } else {
         return [
           ts.createDecorator(
