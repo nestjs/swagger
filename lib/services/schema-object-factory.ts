@@ -2,6 +2,7 @@ import { Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils';
 import {
   flatten,
+  get,
   includes,
   isFunction,
   isString,
@@ -307,16 +308,18 @@ export class SchemaObjectFactory {
     if (!includes(schemaRefsStack, enumName)) {
       schemaRefsStack.push(enumName);
 
-      const _enum = param.enum
-        ? param.enum
-        : param.schema['items']
-        ? param.schema['items']['enum']
-        : param.schema['enum'];
+      const _enumType = param.schema?.['items'] || param.isArray
+        ? get(param, 'schema.items.type') || get(param, 'items.type')
+        : get(param, 'schema.type') || param.type
+
+      const _enumValues = param.schema?.['items'] || param.isArray
+        ? get(param, 'schema.items.enum') || get(param, 'items.enum')
+        : get(param, 'schema.enum') || param.enum
 
       schemas.push({
         [enumName]: {
-          type: 'string',
-          enum: _enum
+          type: _enumType,
+          enum: _enumValues
         }
       });
     }
