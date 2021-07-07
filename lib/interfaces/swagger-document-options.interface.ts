@@ -1,8 +1,13 @@
 export interface SwaggerDocumentOptions {
   /**
-   * List of modules to include in the specification
+   * List of modules to include in the specification. Cannot be used if `exclude` is specified
    */
   include?: Function[];
+
+  /**
+   * List of modules to exclude in the specification. Cannot be used if `include` is specified
+   */
+  exclude?: Function[];
 
   /**
    * Additional, extra models that should be inspected and included in the specification
