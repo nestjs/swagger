@@ -1,5 +1,6 @@
 import { isArray, isUndefined, negate, pickBy } from 'lodash';
 import { DECORATORS } from '../constants';
+import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 
 export function createMethodDecorator<T = any>(
   metakey: string,
@@ -58,10 +59,14 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
 
       Reflect.defineMetadata(metakey, metadataToSave, target, propertyKey);
     } else {
+      const type =
+        target?.constructor?.[METADATA_FACTORY_NAME]?.()[propertyKey]?.type ??
+        Reflect.getMetadata('design:type', target, propertyKey);
+
       Reflect.defineMetadata(
         metakey,
         {
-          type: Reflect.getMetadata('design:type', target, propertyKey),
+          type,
           ...pickBy(metadata, negate(isUndefined))
         },
         target,

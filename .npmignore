@@ -4,7 +4,7 @@ sample
 test
 e2e
 
-jest.json
+jest.config.json
 index.ts
 plugin.ts
 package-lock.json

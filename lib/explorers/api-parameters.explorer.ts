@@ -23,8 +23,7 @@ const schemaObjectFactory = new SchemaObjectFactory(
 );
 
 export const exploreApiParametersMetadata = (
-  schemas: SchemaObject[],
-  schemaRefsStack: [],
+  schemas: Record<string, SchemaObject>,
   instance: object,
   prototype: Type<unknown>,
   method: Function
@@ -42,9 +41,10 @@ export const exploreApiParametersMetadata = (
   if (noExplicitMetadata && isNil(parametersMetadata)) {
     return undefined;
   }
-  const reflectedParametersAsProperties = parametersMetadataMapper.transformModelToProperties(
-    parametersMetadata || {}
-  );
+  const reflectedParametersAsProperties =
+    parametersMetadataMapper.transformModelToProperties(
+      parametersMetadata || {}
+    );
 
   let properties = reflectedParametersAsProperties;
   if (!noExplicitMetadata) {
@@ -63,8 +63,7 @@ export const exploreApiParametersMetadata = (
 
   const paramsWithDefinitions = schemaObjectFactory.createFromModel(
     properties,
-    schemas,
-    schemaRefsStack
+    schemas
   );
   const parameters = swaggerTypesMapper.mapParamTypes(paramsWithDefinitions);
   return parameters ? { parameters } : undefined;

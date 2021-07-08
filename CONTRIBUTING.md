@@ -152,8 +152,7 @@ To ensure consistency throughout the source code, keep these rules in mind as yo
 // We're working on auto-documentation.
 * All public API methods **must be documented**. (Details TBC). -->
 * We follow [Google's JavaScript Style Guide][js-style-guide], but wrap all code at
-  **100 characters**. An automated formatter is available, see
-  [DEVELOPER.md](docs/DEVELOPER.md#clang-format).
+  **100 characters**. An automated formatter is available (`npm run format`).
 
 ## <a name="commit"></a> Commit Message Guidelines
 
@@ -186,7 +185,7 @@ Samples: (even more [samples](https://github.com/nestjs/nest/commits/master))
 docs(changelog) update change log to beta.5
 ```
 ```
-bugfix(@nestjs/core) need to depend on latest rxjs and zone.js
+fix(@nestjs/core) need to depend on latest rxjs and zone.js
 
 The version in our package.json gets copied to the one we publish, and users need the latest of these.
 ```
@@ -198,10 +197,11 @@ If the commit reverts a previous commit, it should begin with `revert: `, follow
 Must be one of the following:
 
 * **build**: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)
+* **chore**: Updating tasks etc; no production code change
 * **ci**: Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs)
 * **docs**: Documentation only changes
-* **feature**: A new feature
-* **bugfix**: A bug fix
+* **feat**: A new feature
+* **fix**: A bug fix
 * **perf**: A code change that improves performance
 * **refactor**: A code change that neither fixes a bug nor adds a feature
 * **style**: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)

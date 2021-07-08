@@ -2,6 +2,7 @@ import { Type } from '@nestjs/common';
 import { isNil, omit } from 'lodash';
 import {
   ParameterObject,
+  ReferenceObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
@@ -13,9 +14,10 @@ import {
 } from '../utils/enum.utils';
 import { createParamDecorator, getTypeIsArrayTuple } from './helpers';
 
-type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
+type ParameterOptions = Omit<ParameterObject, 'in' | 'schema' | 'name'>;
 
 interface ApiQueryMetadata extends ParameterOptions {
+  name?: string;
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   enum?: SwaggerEnumType;
@@ -23,7 +25,8 @@ interface ApiQueryMetadata extends ParameterOptions {
 }
 
 interface ApiQuerySchemaHost extends ParameterOptions {
-  schema: SchemaObject;
+  name?: string;
+  schema: SchemaObject | ReferenceObject;
 }
 
 export type ApiQueryOptions = ApiQueryMetadata | ApiQuerySchemaHost;
@@ -43,14 +46,17 @@ export function ApiQuery(options: ApiQueryOptions): MethodDecorator {
     name: isNil(options.name) ? defaultQueryOptions.name : options.name,
     in: 'query',
     ...omit(options, 'enum'),
-    type,
-    isArray
+    type
   };
 
   if (isEnumArray(options)) {
     addEnumArraySchema(param, options);
   } else if (isEnumDefined(options)) {
     addEnumSchema(param, options);
+  }
+
+  if (isArray) {
+    param.isArray = isArray;
   }
 
   return createParamDecorator(param, defaultQueryOptions);

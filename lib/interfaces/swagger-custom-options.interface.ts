@@ -1,6 +1,6 @@
-export interface SwaggerCustomOptions {
+export interface ExpressSwaggerCustomOptions {
   explorer?: boolean;
-  swaggerOptions?: any;
+  swaggerOptions?: Record<string, any>;
   customCss?: string;
   customCssUrl?: string;
   customJs?: string;
@@ -11,3 +11,11 @@ export interface SwaggerCustomOptions {
   url?: string;
   urls?: Record<'url' | 'name', string>[];
 }
+
+export interface FastifySwaggerCustomOptions {
+  uiConfig?: Record<string, any>;
+}
+
+export type SwaggerCustomOptions =
+  | FastifySwaggerCustomOptions
+  | ExpressSwaggerCustomOptions;

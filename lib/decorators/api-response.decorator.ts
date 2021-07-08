@@ -4,7 +4,8 @@ import { omit } from 'lodash';
 import { DECORATORS } from '../constants';
 import {
   ResponseObject,
-  SchemaObject
+  SchemaObject,
+  ReferenceObject
 } from '../interfaces/open-api-spec.interface';
 import { getTypeIsArrayTuple } from './helpers';
 
@@ -18,7 +19,7 @@ export interface ApiResponseMetadata
 
 export interface ApiResponseSchemaHost
   extends Omit<ResponseObject, 'description'> {
-  schema: SchemaObject;
+  schema: SchemaObject & Partial<ReferenceObject>;
   status?: number;
   description?: string;
 }
@@ -37,7 +38,9 @@ export function ApiResponse(
   (options as ApiResponseMetadata).isArray = isArray;
   options.description = options.description ? options.description : '';
 
-  const groupedMetadata = { [options.status]: omit(options, 'status') };
+  const groupedMetadata = {
+    [options.status || 'default']: omit(options, 'status')
+  };
   return (
     target: object,
     key?: string | symbol,
@@ -98,6 +101,12 @@ export const ApiMovedPermanentlyResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
     ...options,
     status: HttpStatus.MOVED_PERMANENTLY
+  });
+
+export const ApiFoundResponse = (options: ApiResponseOptions = {}) =>
+  ApiResponse({
+    ...options,
+    status: HttpStatus.FOUND
   });
 
 export const ApiBadRequestResponse = (options: ApiResponseOptions = {}) =>
@@ -178,6 +187,14 @@ export const ApiNotImplementedResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
     ...options,
     status: HttpStatus.NOT_IMPLEMENTED
+  });
+
+export const ApiPreconditionFailedResponse = (
+  options: ApiResponseOptions = {}
+) =>
+  ApiResponse({
+    ...options,
+    status: HttpStatus.PRECONDITION_FAILED
   });
 
 export const ApiPayloadTooLargeResponse = (options: ApiResponseOptions = {}) =>

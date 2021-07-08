@@ -19,8 +19,7 @@ export class PaginationQuery {
   page: number;
 
   @ApiProperty({
-    name: '_sortBy',
-    type: [String]
+    name: '_sortBy'
   })
   sortBy: string[];
 
@@ -39,4 +38,19 @@ export class PaginationQuery {
     isArray: true
   })
   enumArr: LettersEnum;
+
+  @ApiProperty()
+  beforeDate: Date;
+
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: true
+  })
+  filter: Record<string, any>;
+
+  static _OPENAPI_METADATA_FACTORY() {
+    return {
+      sortBy: { type: () => [String] }
+    };
+  }
 }

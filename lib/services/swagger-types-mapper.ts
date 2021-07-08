@@ -2,17 +2,28 @@ import { isFunction, isUndefined, omit, omitBy } from 'lodash';
 import { ApiPropertyOptions } from '../decorators';
 import {
   BaseParameterObject,
+  ReferenceObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 
 export class SwaggerTypesMapper {
+  private readonly keysToRemove: Array<keyof ApiPropertyOptions | '$ref'> = [
+    'type',
+    'isArray',
+    'enum',
+    'enumName',
+    'items',
+    '$ref',
+    ...this.getSchemaOptionsKeys()
+  ];
+
   mapParamTypes(
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
   ) {
     return parameters.map((param) => {
       if (this.hasSchemaDefinition(param as BaseParameterObject)) {
-        return this.omitParamType(param);
+        return this.omitParamKeys(param);
       }
       const { type } = param as ParamWithTypeMetadata;
       const typeName =
@@ -28,33 +39,27 @@ export class SwaggerTypesMapper {
         isUndefined
       );
 
-      const keysToRemove: Array<keyof ApiPropertyOptions> = [
-        'type',
-        'isArray',
-        'enum',
-        'items',
-        ...this.getSchemaOptionsKeys()
-      ];
       if (this.isEnumArrayType(paramWithTypeMetadata)) {
         return this.mapEnumArrayType(
           paramWithTypeMetadata as ParamWithTypeMetadata,
-          keysToRemove
+          this.keysToRemove
         );
       } else if (paramWithTypeMetadata.isArray) {
         return this.mapArrayType(
           paramWithTypeMetadata as ParamWithTypeMetadata,
-          keysToRemove
+          this.keysToRemove
         );
       }
       return {
-        ...omit(param, keysToRemove),
+        ...omit(param, this.keysToRemove),
         schema: omitBy(
           {
             ...this.getSchemaOptions(param),
             ...((param as BaseParameterObject).schema || {}),
             enum: paramWithTypeMetadata.enum,
-            type: paramWithTypeMetadata.type
-          } as Partial<SchemaObject>,
+            type: paramWithTypeMetadata.type,
+            $ref: (paramWithTypeMetadata as ReferenceObject).$ref
+          },
           isUndefined
         )
       };
@@ -63,14 +68,14 @@ export class SwaggerTypesMapper {
 
   mapTypeToOpenAPIType(type: string | Function): string {
     if (!(type && (type as string).charAt)) {
-      return '';
+      return;
     }
     return (type as string).charAt(0).toLowerCase() + (type as string).slice(1);
   }
 
   mapEnumArrayType(
     param: Record<string, any>,
-    keysToRemove: Array<keyof ApiPropertyOptions>
+    keysToRemove: Array<keyof ApiPropertyOptions | '$ref'>
   ) {
     return {
       ...omit(param, keysToRemove),
@@ -83,17 +88,19 @@ export class SwaggerTypesMapper {
   }
 
   mapArrayType(
-    param: ParamWithTypeMetadata,
-    keysToRemove: Array<keyof ApiPropertyOptions>
+    param: (ParamWithTypeMetadata & SchemaObject) | BaseParameterObject,
+    keysToRemove: Array<keyof ApiPropertyOptions | '$ref'>
   ) {
-    const items = omitBy(
-      {
-        ...((param as BaseParameterObject).schema || {}),
-        enum: (param as ParamWithTypeMetadata).enum,
-        type: this.mapTypeToOpenAPIType((param as ParamWithTypeMetadata).type)
-      },
-      isUndefined
-    );
+    const items =
+      (param as SchemaObject).items ||
+      omitBy(
+        {
+          ...((param as BaseParameterObject).schema || {}),
+          enum: (param as ParamWithTypeMetadata).enum,
+          type: this.mapTypeToOpenAPIType((param as ParamWithTypeMetadata).type)
+        },
+        isUndefined
+      );
     return {
       ...omit(param, keysToRemove),
       schema: {
@@ -126,18 +133,22 @@ export class SwaggerTypesMapper {
     return !!param.schema;
   }
 
-  private omitParamType(param: ParamWithTypeMetadata | BaseParameterObject) {
-    return omit(param, 'type');
+  private omitParamKeys(param: ParamWithTypeMetadata | BaseParameterObject) {
+    return omit(param, this.keysToRemove);
   }
 
   private getSchemaOptionsKeys(): Array<keyof SchemaObject> {
     return [
+      'patternProperties',
+      'additionalProperties',
       'minimum',
       'maximum',
       'maxProperties',
       'minItems',
       'minProperties',
       'maxItems',
+      'minLength',
+      'maxLength',
       'exclusiveMaximum',
       'exclusiveMinimum',
       'uniqueItems',

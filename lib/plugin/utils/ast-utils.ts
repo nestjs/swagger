@@ -1,17 +1,23 @@
 import {
   CallExpression,
+  CommentRange,
   Decorator,
+  getLeadingCommentRanges,
+  getTrailingCommentRanges,
   Identifier,
   LeftHandSideExpression,
   Node,
   ObjectFlags,
   ObjectType,
   PropertyAccessExpression,
+  SourceFile,
   SyntaxKind,
   Type,
   TypeChecker,
   TypeFlags,
-  TypeFormatFlags
+  TypeFormatFlags,
+  TypeNode,
+  UnionTypeNode
 } from 'typescript';
 import { isDynamicallyAdded } from './plugin-utils';
 
@@ -33,6 +39,10 @@ export function isBoolean(type: Type) {
 
 export function isString(type: Type) {
   return hasFlag(type, TypeFlags.String);
+}
+
+export function isStringLiteral(type: Type) {
+  return hasFlag(type, TypeFlags.StringLiteral) && !type.isUnion();
 }
 
 export function isNumber(type: Type) {
@@ -66,6 +76,22 @@ export function isEnumLiteral(type: Type) {
   return hasFlag(type, TypeFlags.EnumLiteral) && !type.isUnion();
 }
 
+export function isNull(type: Type) {
+  if (type.isUnion()) {
+    return Boolean(type.types.find((t) => hasFlag(t, TypeFlags.Null)));
+  } else {
+    return hasFlag(type, TypeFlags.Null);
+  }
+}
+
+export function isUndefined(type: Type) {
+  if (type.isUnion()) {
+    return Boolean(type.types.find((t) => hasFlag(t, TypeFlags.Undefined)));
+  } else {
+    return hasFlag(type, TypeFlags.Undefined);
+  }
+}
+
 export function hasFlag(type: Type, flag: TypeFlags) {
   return (type.flags & flag) === flag;
 }
@@ -96,6 +122,70 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
   if (enclosingNode && enclosingNode.kind === SyntaxKind.TypeAliasDeclaration)
     formatFlags |= TypeFormatFlags.InTypeAlias;
   return formatFlags;
+}
+
+export function getMainCommentAndExamplesOfNode(
+  node: Node,
+  sourceFile: SourceFile,
+  typeChecker: TypeChecker,
+  includeExamples?: boolean
+): [string, string[]] {
+  const sourceText = sourceFile.getFullText();
+  // in case we decide to include "// comments"
+  const replaceRegex =
+    /^ *\** *@.*$|^ *\/\*+ *|^ *\/\/+.*|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
+  //const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
+
+  const commentResult = [];
+  const examplesResult = [];
+  const introspectCommentsAndExamples = (comments?: CommentRange[]) =>
+    comments?.forEach((comment) => {
+      const commentSource = sourceText.substring(comment.pos, comment.end);
+      const oneComment = commentSource.replace(replaceRegex, '').trim();
+      if (oneComment) {
+        commentResult.push(oneComment);
+      }
+      if (includeExamples) {
+        const regexOfExample =
+          /@example *((['"](?<exampleAsString>.+?)['"])|(?<exampleAsBooleanOrNumber>[^ ]+?)|(?<exampleAsArray>(\[.+?\]))) *$/gim;
+        let execResult: RegExpExecArray;
+        while (
+          (execResult = regexOfExample.exec(commentSource)) &&
+          execResult.length > 1
+        ) {
+          const example =
+            execResult.groups?.exampleAsString ??
+            execResult.groups?.exampleAsBooleanOrNumber ??
+            (execResult.groups?.exampleAsArray &&
+              execResult.groups.exampleAsArray.replace(/'/g, '"'));
+
+          const type = typeChecker.getTypeAtLocation(node);
+          if (type && isString(type)) {
+            examplesResult.push(example);
+          } else {
+            try {
+              examplesResult.push(JSON.parse(example));
+            } catch {
+              examplesResult.push(example);
+            }
+          }
+        }
+      }
+    });
+
+  const leadingCommentRanges = getLeadingCommentRanges(
+    sourceText,
+    node.getFullStart()
+  );
+  introspectCommentsAndExamples(leadingCommentRanges);
+  if (!commentResult.length) {
+    const trailingCommentRanges = getTrailingCommentRanges(
+      sourceText,
+      node.getFullStart()
+    );
+    introspectCommentsAndExamples(trailingCommentRanges);
+  }
+  return [commentResult.join('\n'), examplesResult];
 }
 
 export function getDecoratorArguments(decorator: Decorator) {
@@ -133,4 +223,11 @@ function getNameFromExpression(expression: LeftHandSideExpression) {
     return (expression as PropertyAccessExpression).name;
   }
   return expression;
+}
+
+export function findNullableTypeFromUnion(typeNode: UnionTypeNode, typeChecker: TypeChecker) {
+  return typeNode.types.find(
+    (tNode: TypeNode) =>
+      hasFlag(typeChecker.getTypeAtLocation(tNode), TypeFlags.Null)
+  );
 }

@@ -5,11 +5,10 @@ export class MimetypeContentWrapper {
     mimetype: string[],
     obj: Record<string, any>
   ): Record<'content', ContentObject> {
-    const content = mimetype
-      .map((item) => ({
-        [item]: obj
-      }))
-      .reduce((a, b) => ({ ...a, ...b }), {});
+    const content = mimetype.reduce(
+      (acc, item) => ({ ...acc, [item]: obj }),
+      {}
+    );
     return { content };
   }
 }

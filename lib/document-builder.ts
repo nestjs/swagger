@@ -1,9 +1,10 @@
 import { Logger } from '@nestjs/common';
-import { isUndefined, negate, pickBy } from 'lodash';
+import { isString, isUndefined, negate, pickBy } from 'lodash';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {
   ExternalDocumentationObject,
+  SecurityRequirementObject,
   SecuritySchemeObject,
   ServerVariableObject,
   TagObject
@@ -91,11 +92,19 @@ export class DocumentBuilder {
   }
 
   public addSecurityRequirements(
-    name: string,
+    name: string | SecurityRequirementObject,
     requirements: string[] = []
   ): this {
+    let securityRequirement: SecurityRequirementObject;
+
+    if (isString(name)) {
+      securityRequirement = { [name]: requirements };
+    } else {
+      securityRequirement = name;
+    }
+
     this.document.security = (this.document.security || []).concat({
-      [name]: requirements
+      ...securityRequirement
     });
     return this;
   }
@@ -173,7 +182,7 @@ export class DocumentBuilder {
     return this;
   }
 
-  public build(): Omit<OpenAPIObject, 'components' | 'paths'> {
+  public build(): Omit<OpenAPIObject, 'paths'> {
     return this.document;
   }
 }

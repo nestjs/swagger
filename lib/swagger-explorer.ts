@@ -1,13 +1,24 @@
-import { RequestMethod } from '@nestjs/common';
-import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
-import { Controller, Type } from '@nestjs/common/interfaces';
+import { RequestMethod, VersioningType } from '@nestjs/common';
 import {
+  METHOD_METADATA,
+  PATH_METADATA,
+  VERSION_METADATA
+} from '@nestjs/common/constants';
+import {
+  Controller,
+  Type,
+  VersioningOptions,
+  VersionValue
+} from '@nestjs/common/interfaces';
+import {
+  addLeadingSlash,
   isString,
-  isUndefined,
-  validatePath
+  isUndefined
 } from '@nestjs/common/utils/shared.utils';
+import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
+import { RoutePathFactory } from '@nestjs/core/router/route-path-factory';
 import {
   get,
   head,
@@ -20,6 +31,7 @@ import {
 } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
+import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
 import {
   exploreApiExtraModelsMetadata,
@@ -54,27 +66,32 @@ import { mergeAndUniq } from './utils/merge-and-uniq.util';
 export class SwaggerExplorer {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
   private readonly metadataScanner = new MetadataScanner();
-  private readonly schemas: SchemaObject[] = [];
-  private readonly schemaRefsStack: string[] = [];
+  private readonly schemas: Record<string, SchemaObject> = {};
+  private operationIdFactory = (controllerKey: string, methodKey: string) =>
+    controllerKey ? `${controllerKey}_${methodKey}` : methodKey;
+  private routePathFactory?: RoutePathFactory;
 
   constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
 
   public exploreController(
     wrapper: InstanceWrapper<Controller>,
-    modulePath?: string,
-    globalPrefix?: string
+    applicationConfig: ApplicationConfig,
+    modulePath?: string | undefined,
+    globalPrefix?: string | undefined,
+    operationIdFactory?: (controllerKey: string, methodKey: string) => string
   ) {
+    this.routePathFactory = new RoutePathFactory(applicationConfig);
+    if (operationIdFactory) {
+      this.operationIdFactory = operationIdFactory;
+    }
+
     const { instance, metatype } = wrapper;
     const prototype = Object.getPrototypeOf(instance);
     const documentResolvers: DenormalizedDocResolvers = {
       root: [
         this.exploreRoutePathAndMethod,
         exploreApiOperationMetadata,
-        exploreApiParametersMetadata.bind(
-          null,
-          this.schemas,
-          this.schemaRefsStack
-        )
+        exploreApiParametersMetadata.bind(null, this.schemas)
       ],
       security: [exploreApiSecurityMetadata],
       tags: [exploreApiTagsMetadata],
@@ -85,12 +102,13 @@ export class SwaggerExplorer {
       prototype,
       instance,
       documentResolvers,
+      applicationConfig,
       modulePath,
       globalPrefix
     );
   }
 
-  public getSchemas(): SchemaObject[] {
+  public getSchemas(): Record<string, SchemaObject> {
     return this.schemas;
   }
 
@@ -99,80 +117,81 @@ export class SwaggerExplorer {
     prototype: Type<unknown>,
     instance: object,
     documentResolvers: DenormalizedDocResolvers,
+    applicationConfig: ApplicationConfig,
     modulePath?: string,
     globalPrefix?: string
   ): DenormalizedDoc[] {
-    let path = this.validateRoutePath(this.reflectControllerPath(metatype));
-    if (modulePath) {
-      // re-validate the route after adding the module path,
-      // since maybe module path itself has url parameters segments.
-      path = this.validateRoutePath(modulePath + path);
-    }
-    if (globalPrefix) {
-      path = validatePath(globalPrefix) + path;
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
+
+    const excludeController = exploreApiExcludeControllerMetadata(metatype);
+    if (excludeController) {
+      return [];
+    }
     const globalMetadata = this.exploreGlobalMetadata(metatype);
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);
 
-    const denormalizedPaths = this.metadataScanner.scanFromPrototype<
-      any,
-      DenormalizedDoc
-    >(instance, prototype, (name) => {
-      const targetCallback = prototype[name];
-      const excludeEndpoint = exploreApiExcludeEndpointMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-      if (excludeEndpoint && excludeEndpoint.disable) {
-        return;
-      }
-      const ctrlExtraModels = exploreApiExtraModelsMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-      this.registerExtraModels(ctrlExtraModels);
+    const denormalizedPaths = this.metadataScanner
+      .scanFromPrototype<any, DenormalizedDoc>(instance, prototype, (name) => {
+        const targetCallback = prototype[name];
+        const excludeEndpoint = exploreApiExcludeEndpointMetadata(
+          instance,
+          prototype,
+          targetCallback
+        );
+        if (excludeEndpoint && excludeEndpoint.disable) {
+          return;
+        }
+        const ctrlExtraModels = exploreApiExtraModelsMetadata(
+          instance,
+          prototype,
+          targetCallback
+        );
+        this.registerExtraModels(ctrlExtraModels);
 
-      const methodMetadata = mapValues(documentResolvers, (explorers: any[]) =>
-        explorers.reduce((metadata, fn) => {
-          const exploredMetadata = fn.call(
-            self,
-            instance,
-            prototype,
-            targetCallback,
-            path
-          );
-          if (!exploredMetadata) {
-            return metadata;
-          }
-          if (!isArray(exploredMetadata)) {
-            return { ...metadata, ...exploredMetadata };
-          }
-          return isArray(metadata)
-            ? [...metadata, ...exploredMetadata]
-            : exploredMetadata;
-        }, {})
-      );
-      const mergedMethodMetadata = this.mergeMetadata(
-        globalMetadata,
-        omitBy(methodMetadata, isEmpty)
-      );
+        const methodMetadata = mapValues(
+          documentResolvers,
+          (explorers: any[]) =>
+            explorers.reduce((metadata, fn) => {
+              const exploredMetadata = fn.call(
+                self,
+                instance,
+                prototype,
+                targetCallback,
+                metatype,
+                globalPrefix,
+                modulePath,
+                applicationConfig
+              );
+              if (!exploredMetadata) {
+                return metadata;
+              }
+              if (!isArray(exploredMetadata)) {
+                return { ...metadata, ...exploredMetadata };
+              }
+              return isArray(metadata)
+                ? [...metadata, ...exploredMetadata]
+                : exploredMetadata;
+            }, {})
+        );
+        const mergedMethodMetadata = this.mergeMetadata(
+          globalMetadata,
+          omitBy(methodMetadata, isEmpty)
+        );
 
-      return this.migrateOperationSchema(
-        {
-          responses: {},
-          ...omit(globalMetadata, 'chunks'),
-          ...mergedMethodMetadata
-        },
-        prototype,
-        targetCallback
-      );
-    });
+        return this.migrateOperationSchema(
+          {
+            responses: {},
+            ...omit(globalMetadata, 'chunks'),
+            ...mergedMethodMetadata
+          },
+          prototype,
+          targetCallback
+        );
+      })
+      .filter((path) => path.root?.path);
+
     return denormalizedPaths;
   }
 
@@ -205,17 +224,42 @@ export class SwaggerExplorer {
     instance: object,
     prototype: Type<unknown>,
     method: Function,
-    globalPath: string
+    metatype: Type<unknown>,
+    globalPrefix: string | undefined,
+    modulePath: string | undefined,
+    applicationConfig: ApplicationConfig
   ) {
-    const routePath = Reflect.getMetadata(PATH_METADATA, method);
-    if (isUndefined(routePath)) {
+    const methodPath = Reflect.getMetadata(PATH_METADATA, method);
+    if (isUndefined(methodPath)) {
       return undefined;
     }
     const requestMethod = Reflect.getMetadata(
       METHOD_METADATA,
       method
     ) as RequestMethod;
-    const fullPath = globalPath + this.validateRoutePath(routePath);
+
+    const methodVersion: VersionValue | undefined = Reflect.getMetadata(
+      VERSION_METADATA,
+      method
+    );
+    const controllerVersion = this.getVersionMetadata(
+      metatype,
+      applicationConfig.getVersioning()
+    );
+    const allRoutePaths = this.routePathFactory.create(
+      {
+        methodPath,
+        methodVersion,
+        modulePath,
+        globalPrefix,
+        controllerVersion,
+        ctrlPath: this.reflectControllerPath(metatype),
+        versioningOptions: applicationConfig.getVersioning()
+      },
+      requestMethod
+    );
+
+    const fullPath = this.validateRoutePath(head(allRoutePaths));
     const apiExtension = Reflect.getMetadata(DECORATORS.API_EXTENSION, method);
     return {
       method: RequestMethod[requestMethod].toLowerCase(),
@@ -226,10 +270,10 @@ export class SwaggerExplorer {
   }
 
   private getOperationId(instance: object, method: Function): string {
-    if (instance.constructor) {
-      return `${instance.constructor.name}_${method.name}`;
-    }
-    return method.name;
+    return this.operationIdFactory(
+      instance.constructor?.name || '',
+      method.name
+    );
   }
 
   private reflectControllerPath(metatype: Type<unknown>): string {
@@ -247,7 +291,7 @@ export class SwaggerExplorer {
     for (const item of pathToRegexp.parse(path)) {
       pathWithParams += isString(item) ? item : `${item.prefix}{${item.name}}`;
     }
-    return pathWithParams === '/' ? '' : validatePath(pathWithParams);
+    return pathWithParams === '/' ? '' : addLeadingSlash(pathWithParams);
   }
 
   private mergeMetadata(
@@ -257,19 +301,18 @@ export class SwaggerExplorer {
     if (methodMetadata.root && !methodMetadata.root.parameters) {
       methodMetadata.root.parameters = [];
     }
-    const deepMerge = (metadata: Record<string, any>) => (
-      value: Record<string, unknown>,
-      key: string
-    ) => {
-      if (!metadata[key]) {
-        return value;
-      }
-      const globalValue = metadata[key];
-      if (metadata.depth) {
-        return this.deepMergeMetadata(globalValue, value, metadata.depth);
-      }
-      return this.mergeValues(globalValue, value);
-    };
+    const deepMerge =
+      (metadata: Record<string, any>) =>
+      (value: Record<string, unknown>, key: string) => {
+        if (!metadata[key]) {
+          return value;
+        }
+        const globalValue = metadata[key];
+        if (metadata.depth) {
+          return this.deepMergeMetadata(globalValue, value, metadata.depth);
+        }
+        return this.mergeValues(globalValue, value);
+      };
 
     if (globalMetadata.chunks) {
       const { chunks } = globalMetadata;
@@ -342,10 +385,13 @@ export class SwaggerExplorer {
     let consumes = mergeAndUniq(classConsumes, methodConsumes);
     consumes = isEmpty(consumes) ? ['application/json'] : consumes;
 
-    const keysToRemove = ['schema', 'in', 'name'];
+    const keysToRemove = ['schema', 'in', 'name', 'examples'];
     document.root.requestBody = {
       ...omit(requestBody, keysToRemove),
-      ...this.mimetypeContentWrapper.wrap(consumes, pick(requestBody, 'schema'))
+      ...this.mimetypeContentWrapper.wrap(
+        consumes,
+        pick(requestBody, ['schema', 'examples'])
+      )
     };
     return document;
   }
@@ -354,5 +400,14 @@ export class SwaggerExplorer {
     extraModels.forEach((item) =>
       this.schemaObjectFactory.exploreModelSchema(item, this.schemas)
     );
+  }
+
+  private getVersionMetadata(
+    metatype: Type<unknown> | Function,
+    versioningOptions: VersioningOptions | undefined
+  ): VersionValue | undefined {
+    return versioningOptions?.type === VersioningType.URI
+      ? Reflect.getMetadata(VERSION_METADATA, metatype)
+      : undefined;
   }
 }

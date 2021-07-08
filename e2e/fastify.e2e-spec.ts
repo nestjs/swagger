@@ -27,8 +27,11 @@ describe('Fastify Swagger', () => {
       .addBearerAuth()
       .addOAuth2()
       .addApiKey()
+      .addApiKey({ type: 'apiKey' }, 'key1')
+      .addApiKey({ type: 'apiKey' }, 'key2')
       .addCookieAuth()
-      .addSecurityRequirements('bearer');
+      .addSecurityRequirements('bearer')
+      .addSecurityRequirements({ basic: [], cookie: [] });
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {
@@ -47,6 +50,28 @@ describe('Fastify Swagger', () => {
       console.log(doc);
       expect(err).toBeUndefined();
     }
+  });
+
+  it('should pass uiConfig options to fastify-swagger', async () => {
+    const document1 = SwaggerModule.createDocument(app, builder.build());
+    const uiConfig = {
+      displayOperationId: true,
+      persistAuthorization: true
+    };
+    const options = { uiConfig };
+    SwaggerModule.setup('/swagger1', app, document1, options);
+
+    const instance = await app.getHttpAdapter().getInstance().ready();
+
+    instance.ready(async () => {
+      const response = await instance.inject({
+        method: 'GET',
+        url: '/swagger1/uiConfig'
+      });
+
+      expect(response.statusCode).toEqual(200);
+      expect(JSON.parse(response.body)).toEqual(uiConfig);
+    });
   });
 
   it('should setup multiple routes', async () => {

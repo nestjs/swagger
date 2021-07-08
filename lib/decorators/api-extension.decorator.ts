@@ -1,5 +1,6 @@
 import { DECORATORS } from '../constants';
 import { createMixedDecorator } from './helpers';
+import { clone } from 'lodash';
 
 export function ApiExtension(extensionKey: string, extensionProperties: any) {
   if (!extensionKey.startsWith('x-')) {
@@ -9,10 +10,7 @@ export function ApiExtension(extensionKey: string, extensionProperties: any) {
   }
 
   const extensionObject = {
-    [extensionKey]:
-      typeof extensionProperties !== 'string'
-        ? { ...extensionProperties }
-        : extensionProperties
+    [extensionKey]: clone(extensionProperties)
   };
 
   return createMixedDecorator(DECORATORS.API_EXTENSION, extensionObject);

@@ -9,7 +9,7 @@ export class CreateUserDto {
   login: string;
 
   @ApiProperty({
-    examples: ['test', 'test2']
+    example: 'password123'
   })
   password: string;
 
@@ -36,18 +36,18 @@ export class CreateUserDto {
 
   @ApiProperty({
     description: 'Profile',
+    nullable: true,
     type: () => CreateProfileDto
   })
   profile: CreateProfileDto;
 
-  @ApiProperty({
-    type: [String]
-  })
+  @ApiProperty()
   tags: string[];
 
   @ApiProperty({
     type: String,
-    isArray: true
+    isArray: true,
+    format: 'uri'
   })
   urls: string[];
 
@@ -84,4 +84,10 @@ export class CreateUserDto {
 
   @ApiProperty()
   createdAt: Date;
+
+  static _OPENAPI_METADATA_FACTORY() {
+    return {
+      tags: { type: () => [String] }
+    };
+  }
 }

@@ -1,5 +1,5 @@
 import { head } from 'lodash';
-import { dirname, posix } from 'path';
+import { isAbsolute, posix } from 'path';
 import * as ts from 'typescript';
 import {
   getDecoratorName,
@@ -10,7 +10,8 @@ import {
   isEnum,
   isInterface,
   isNumber,
-  isString
+  isString,
+  isStringLiteral
 } from './ast-utils';
 
 export function getDecoratorOrUndefinedByNames(
@@ -45,7 +46,7 @@ export function getTypeReferenceAsString(
   if (isNumber(type)) {
     return Number.name;
   }
-  if (isString(type)) {
+  if (isString(type) || isStringLiteral(type)) {
     return String.name;
   }
   if (isPromiseOrObservable(getText(type, typeChecker))) {
@@ -119,35 +120,44 @@ export function replaceImportPath(typeReference: string, fileName: string) {
   if (!importPath) {
     return undefined;
   }
+  importPath = convertPath(importPath);
   importPath = importPath.slice(2, importPath.length - 1);
 
-  let relativePath = posix.relative(dirname(fileName), importPath);
-  relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
+  try {
+    if (isAbsolute(importPath)) {
+      throw {};
+    }
+    require.resolve(importPath);
+    return typeReference.replace('import', 'require');
+  } catch (_error) {
+    let relativePath = posix.relative(posix.dirname(fileName), importPath);
+    relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
-  const nodeModulesText = 'node_modules';
-  const nodeModulePos = relativePath.indexOf(nodeModulesText);
-  if (nodeModulePos >= 0) {
-    relativePath = relativePath.slice(
-      nodeModulePos + nodeModulesText.length + 1 // slash
-    );
-
-    const typesText = '@types';
-    const typesPos = relativePath.indexOf(typesText);
-    if (typesPos >= 0) {
+    const nodeModulesText = 'node_modules';
+    const nodeModulePos = relativePath.indexOf(nodeModulesText);
+    if (nodeModulePos >= 0) {
       relativePath = relativePath.slice(
-        typesPos + typesText.length + 1 //slash
+        nodeModulePos + nodeModulesText.length + 1 // slash
       );
+
+      const typesText = '@types';
+      const typesPos = relativePath.indexOf(typesText);
+      if (typesPos >= 0) {
+        relativePath = relativePath.slice(
+          typesPos + typesText.length + 1 //slash
+        );
+      }
+
+      const indexText = '/index';
+      const indexPos = relativePath.indexOf(indexText);
+      if (indexPos >= 0) {
+        relativePath = relativePath.slice(0, indexPos);
+      }
     }
 
-    const indexText = '/index';
-    const indexPos = relativePath.indexOf(indexText);
-    if (indexPos >= 0) {
-      relativePath = relativePath.slice(0, indexPos);
-    }
+    typeReference = typeReference.replace(importPath, relativePath);
+    return typeReference.replace('import', 'require');
   }
-
-  typeReference = typeReference.replace(importPath, relativePath);
-  return typeReference.replace('import', 'require');
 }
 
 export function isDynamicallyAdded(identifier: ts.Node) {
@@ -251,4 +261,15 @@ export function extractTypeArgumentIfArray(type: ts.Type) {
  */
 function isOptionalBoolean(text: string) {
   return typeof text === 'string' && text === 'boolean | undefined';
+}
+
+/**
+ * Converts Windows specific file paths to posix
+ * @param windowsPath
+ */
+function convertPath(windowsPath: string) {
+  return windowsPath
+    .replace(/^\\\\\?\\/, '')
+    .replace(/\\/g, '/')
+    .replace(/\/\/+/g, '/');
 }

@@ -18,4 +18,11 @@ export interface SwaggerDocumentOptions {
    * If `true`, swagger will also load routes from the modules imported by `include` modules
    */
   deepScanRoutes?: boolean;
+
+  /**
+   * Custom operationIdFactory that will be used to generate the `operationId`
+   * based on the `controllerKey` and `methodKey`
+   * @default () => controllerKey_methodKey
+   */
+  operationIdFactory?: (controllerKey: string, methodKey: string) => string;
 }
