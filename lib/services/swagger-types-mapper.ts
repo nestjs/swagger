@@ -16,7 +16,7 @@ export class SwaggerTypesMapper {
     'items',
     '$ref',
     ...this.getSchemaOptionsKeys()
-  ]
+  ];
 
   mapParamTypes(
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
