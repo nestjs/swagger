@@ -16,7 +16,7 @@ export class SwaggerTypesMapper {
     'items',
     '$ref',
     ...this.getSchemaOptionsKeys()
-  ]
+  ];
 
   mapParamTypes(
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
@@ -147,6 +147,8 @@ export class SwaggerTypesMapper {
       'minItems',
       'minProperties',
       'maxItems',
+      'minLength',
+      'maxLength',
       'exclusiveMaximum',
       'exclusiveMinimum',
       'uniqueItems',
