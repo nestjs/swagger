@@ -8,6 +8,7 @@ import {
   SwaggerDocumentOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
+import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { validatePath } from './utils/validate-path.util';
 
 export class SwaggerModule {
@@ -18,14 +19,13 @@ export class SwaggerModule {
   ): OpenAPIObject {
     const swaggerScanner = new SwaggerScanner();
     const document = swaggerScanner.scanApplication(app, options);
-    document.components = {
-      ...(config.components || {}),
-      ...document.components,
-      schemas: {
-        ...((config.components || {}).schemas || {}),
-        ...((document.components || {}).schemas || {})
-      }
-    };
+
+    document.components = assignTwoLevelsDeep(
+      {},
+      config.components,
+      document.components
+    );
+
     return {
       openapi: '3.0.0',
       paths: {},
