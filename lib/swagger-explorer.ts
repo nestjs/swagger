@@ -126,66 +126,66 @@ export class SwaggerExplorer {
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);
 
-    const denormalizedPaths = this.metadataScanner.scanFromPrototype<
-      any,
-      DenormalizedDoc
-    >(instance, prototype, (name) => {
-      const targetCallback = prototype[name];
-      const excludeEndpoint = exploreApiExcludeEndpointMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-      if (excludeEndpoint && excludeEndpoint.disable) {
-        return;
-      }
-      const ctrlExtraModels = exploreApiExtraModelsMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-      this.registerExtraModels(ctrlExtraModels);
+    const denormalizedPaths = this.metadataScanner
+      .scanFromPrototype<any, DenormalizedDoc>(instance, prototype, (name) => {
+        const targetCallback = prototype[name];
+        const excludeEndpoint = exploreApiExcludeEndpointMetadata(
+          instance,
+          prototype,
+          targetCallback
+        );
+        if (excludeEndpoint && excludeEndpoint.disable) {
+          return;
+        }
+        const ctrlExtraModels = exploreApiExtraModelsMetadata(
+          instance,
+          prototype,
+          targetCallback
+        );
+        this.registerExtraModels(ctrlExtraModels);
 
-      const methodMetadata = mapValues(documentResolvers, (explorers: any[]) =>
-        explorers.reduce((metadata, fn) => {
-          const exploredMetadata = fn.call(
-            self,
-            instance,
-            prototype,
-            targetCallback,
-            metatype,
-            globalPrefix,
-            modulePath,
-            applicationConfig
-          );
-          if (!exploredMetadata) {
-            return metadata;
-          }
-          if (!isArray(exploredMetadata)) {
-            return { ...metadata, ...exploredMetadata };
-          }
-          return isArray(metadata)
-            ? [...metadata, ...exploredMetadata]
-            : exploredMetadata;
-        }, {})
-      );
-      const mergedMethodMetadata = this.mergeMetadata(
-        globalMetadata,
-        omitBy(methodMetadata, isEmpty)
-      );
+        const methodMetadata = mapValues(
+          documentResolvers,
+          (explorers: any[]) =>
+            explorers.reduce((metadata, fn) => {
+              const exploredMetadata = fn.call(
+                self,
+                instance,
+                prototype,
+                targetCallback,
+                metatype,
+                globalPrefix,
+                modulePath,
+                applicationConfig
+              );
+              if (!exploredMetadata) {
+                return metadata;
+              }
+              if (!isArray(exploredMetadata)) {
+                return { ...metadata, ...exploredMetadata };
+              }
+              return isArray(metadata)
+                ? [...metadata, ...exploredMetadata]
+                : exploredMetadata;
+            }, {})
+        );
+        const mergedMethodMetadata = this.mergeMetadata(
+          globalMetadata,
+          omitBy(methodMetadata, isEmpty)
+        );
 
-      return this.migrateOperationSchema(
-        {
-          responses: {},
-          ...omit(globalMetadata, 'chunks'),
-          ...mergedMethodMetadata
-        },
-        prototype,
-        targetCallback
-      );
-    }).filter((path) => {
-      return path.root !== undefined && path.root.path !== undefined;
-    });
+        return this.migrateOperationSchema(
+          {
+            responses: {},
+            ...omit(globalMetadata, 'chunks'),
+            ...mergedMethodMetadata
+          },
+          prototype,
+          targetCallback
+        );
+      })
+      .filter((path) => path.root?.path);
+
     return denormalizedPaths;
   }
 
