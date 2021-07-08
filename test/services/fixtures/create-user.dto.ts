@@ -85,6 +85,9 @@ export class CreateUserDto {
   @ApiProperty()
   createdAt: Date;
 
+  @ApiProperty({type: [String], format: 'uuid'})
+  formatArray: string[];
+
   static _OPENAPI_METADATA_FACTORY() {
     return {
       tags: { type: () => [String] }
