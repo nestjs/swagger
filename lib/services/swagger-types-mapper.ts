@@ -147,6 +147,8 @@ export class SwaggerTypesMapper {
       'minItems',
       'minProperties',
       'maxItems',
+      'minLength',
+      'maxLength',
       'exclusiveMaximum',
       'exclusiveMinimum',
       'uniqueItems',
