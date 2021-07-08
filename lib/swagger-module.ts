@@ -20,7 +20,11 @@ export class SwaggerModule {
     const document = swaggerScanner.scanApplication(app, options);
     document.components = {
       ...(config.components || {}),
-      ...document.components
+      ...document.components,
+      schemas: {
+        ...((config.components || {}).schemas || {}),
+        ...((document.components || {}).schemas || {})
+      }
     };
     return {
       openapi: '3.0.0',
