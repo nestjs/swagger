@@ -31,6 +31,7 @@ import {
 } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
+import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
 import {
   exploreApiExtraModelsMetadata,
@@ -122,6 +123,11 @@ export class SwaggerExplorer {
   ): DenormalizedDoc[] {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
+
+    const excludeController = exploreApiExcludeControllerMetadata(metatype);
+    if (excludeController) {
+      return [];
+    }
     const globalMetadata = this.exploreGlobalMetadata(metatype);
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);

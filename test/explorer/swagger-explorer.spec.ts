@@ -16,6 +16,7 @@ import {
   ApiConsumes,
   ApiCreatedResponse,
   ApiDefaultResponse,
+  ApiExcludeController,
   ApiExtraModels,
   ApiHeader,
   ApiOkResponse,
@@ -1145,6 +1146,37 @@ describe('SwaggerExplorer', () => {
 
       expect(schemas.ExtraModel2).toBeDefined();
       expect(schemas.ExtraModel).toBeDefined();
+    });
+  });
+  describe('when a controller is excluded', () => {
+    class Foo {}
+
+    @ApiExcludeController()
+    @Controller('')
+    class FooController {
+      @Get('foos/:objectId')
+      find(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+
+      @Post('foos')
+      create(): Promise<any> {
+        return Promise.resolve();
+      }
+    }
+
+    it('should correctly define controller exclusion', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        'path'
+      );
+
+      expect(routes).toHaveLength(0);
     });
   });
 });
