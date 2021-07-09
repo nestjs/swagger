@@ -44,6 +44,14 @@ export class CreateUserDto {
   @ApiProperty()
   tags: string[];
 
+  @ApiProperty()
+  twoDimensionPrimitives: string[][];
+
+  @ApiProperty({
+    type: () => [[CreateProfileDto]]
+  })
+  twoDimensionModels: CreateProfileDto[][];
+
   @ApiProperty({
     type: String,
     isArray: true,
@@ -87,7 +95,8 @@ export class CreateUserDto {
 
   static _OPENAPI_METADATA_FACTORY() {
     return {
-      tags: { type: () => [String] }
+      tags: { type: () => [String] },
+      twoDimensionPrimitives: { type: () => [[String]] }
     };
   }
 }
