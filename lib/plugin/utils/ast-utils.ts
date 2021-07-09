@@ -231,7 +231,7 @@ export function createPrimitiveLiteral(factory: ts.NodeFactory, item: unknown) {
 
   switch (typeOfItem) {
     case 'boolean':
-      return this.createBooleanLiteral(factory, item as boolean);
+      return createBooleanLiteral(factory, item as boolean);
     case 'number':
       return factory.createNumericLiteral(item as number);
     case 'string':
