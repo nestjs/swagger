@@ -14,6 +14,10 @@ interface Node {
     id: number;
 }
 
+class OtherNode {
+    id: number;
+}
+
 export class CreateCatDto {
   name: string;
   @Min(0)
@@ -34,6 +38,9 @@ export class CreateCatDto {
   nodes: Node[];
   optionalBoolean?: boolean;
   date: Date;
+  
+  twoDimensionPrimitives: string[][];
+  twoDimensionNodes: OtherNode[][];
 
   @ApiHideProperty()
   hidden: number;
@@ -52,13 +59,18 @@ var OneValueEnum;
 (function (OneValueEnum) {
     OneValueEnum[OneValueEnum[\"ONE\"] = 0] = \"ONE\";
 })(OneValueEnum || (OneValueEnum = {}));
+class OtherNode {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { id: { required: true, type: () => Number } };
+    }
+}
 export class CreateCatDto {
     constructor() {
         this.age = 3;
         this.status = Status.ENABLED;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, statusArr: { required: false, enum: Status, isArray: true }, oneValueEnum: { required: false, enum: OneValueEnum }, oneValueEnumArr: { required: false, enum: OneValueEnum }, breed: { required: false, type: () => String, title: "this is breed im comment" }, nodes: { required: true, type: () => [Object] }, optionalBoolean: { required: false, type: () => Boolean }, date: { required: true, type: () => Date } };
+        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, statusArr: { required: false, enum: Status, isArray: true }, oneValueEnum: { required: false, enum: OneValueEnum }, oneValueEnumArr: { required: false, enum: OneValueEnum }, breed: { required: false, type: () => String, title: "this is breed im comment" }, nodes: { required: true, type: () => [Object] }, optionalBoolean: { required: false, type: () => Boolean }, date: { required: true, type: () => Date }, twoDimensionPrimitives: { required: true, type: () => [[String]] }, twoDimensionNodes: { required: true, type: () => [[OtherNode]] } };
     }
 }
 __decorate([
