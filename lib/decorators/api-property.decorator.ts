@@ -46,6 +46,16 @@ export function createApiPropertyDecorator(
     options.type = getEnumType(enumValues);
   }
 
+  if (Array.isArray(options.type)) {
+    options.type = 'array';
+    options.items = {
+      type: 'array',
+      items: {
+        type: options.type[0]
+      }
+    }
+  }
+
   return createPropertyDecorator(
     DECORATORS.API_MODEL_PROPERTIES,
     options,
