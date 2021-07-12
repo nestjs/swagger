@@ -70,6 +70,14 @@ export class SwaggerExplorer {
   private operationIdFactory = (controllerKey: string, methodKey: string) =>
     controllerKey ? `${controllerKey}_${methodKey}` : methodKey;
   private routePathFactory?: RoutePathFactory;
+  private linkNameFactory = (
+    controllerKey: string,
+    methodKey: string,
+    fieldKey: string
+  ) =>
+    controllerKey
+      ? `${controllerKey}_${methodKey}_from_${fieldKey}`
+      : `${methodKey}_from_${fieldKey}`;
 
   constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
 
@@ -78,13 +86,21 @@ export class SwaggerExplorer {
     applicationConfig: ApplicationConfig,
     modulePath?: string | undefined,
     globalPrefix?: string | undefined,
-    operationIdFactory?: (controllerKey: string, methodKey: string) => string
+    operationIdFactory?: (controllerKey: string, methodKey: string) => string,
+    linkNameFactory?: (
+      controllerKey: string,
+      methodKey: string,
+      fieldKey: string
+    ) => string
   ) {
     this.routePathFactory = new RoutePathFactory(applicationConfig);
     if (operationIdFactory) {
       this.operationIdFactory = operationIdFactory;
     }
 
+    if (linkNameFactory) {
+      this.linkNameFactory = linkNameFactory;
+    }
     const { instance, metatype } = wrapper;
     const prototype = Object.getPrototypeOf(instance);
     const documentResolvers: DenormalizedDocResolvers = {
@@ -95,7 +111,12 @@ export class SwaggerExplorer {
       ],
       security: [exploreApiSecurityMetadata],
       tags: [exploreApiTagsMetadata],
-      responses: [exploreApiResponseMetadata.bind(null, this.schemas)]
+      responses: [
+        exploreApiResponseMetadata.bind(null, this.schemas, {
+          operationId: this.operationIdFactory,
+          linkName: this.linkNameFactory
+        })
+      ]
     };
     return this.generateDenormalizedDocument(
       metatype as Type<unknown>,

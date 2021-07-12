@@ -5,14 +5,18 @@ import { get, mapValues, omit } from 'lodash';
 import { DECORATORS } from '../constants';
 import { ApiResponseMetadata } from '../decorators';
 import { SchemaObject } from '../interfaces/open-api-spec.interface';
-import { ResponseObjectFactory } from '../services/response-object-factory';
+import {
+  FactoriesNeededByResponseFactory,
+  ResponseObjectFactory
+} from '../services/response-object-factory';
 import { mergeAndUniq } from '../utils/merge-and-uniq.util';
 
 const responseObjectFactory = new ResponseObjectFactory();
 
 export const exploreGlobalApiResponseMetadata = (
   schemas: Record<string, SchemaObject>,
-  metatype: Type<unknown>
+  metatype: Type<unknown>,
+  factories: FactoriesNeededByResponseFactory
 ) => {
   const responses: ApiResponseMetadata[] = Reflect.getMetadata(
     DECORATORS.API_RESPONSE,
@@ -21,13 +25,19 @@ export const exploreGlobalApiResponseMetadata = (
   const produces = Reflect.getMetadata(DECORATORS.API_PRODUCES, metatype);
   return responses
     ? {
-        responses: mapResponsesToSwaggerResponses(responses, schemas, produces)
+        responses: mapResponsesToSwaggerResponses(
+          responses,
+          schemas,
+          produces,
+          factories
+        )
       }
     : undefined;
 };
 
 export const exploreApiResponseMetadata = (
   schemas: Record<string, SchemaObject>,
+  factories: FactoriesNeededByResponseFactory,
   instance: object,
   prototype: Type<unknown>,
   method: Function
@@ -43,7 +53,12 @@ export const exploreApiResponseMetadata = (
       get(classProduces, 'produces'),
       methodProduces
     );
-    return mapResponsesToSwaggerResponses(responses, schemas, produces);
+    return mapResponsesToSwaggerResponses(
+      responses,
+      schemas,
+      produces,
+      factories
+    );
   }
   const status = getStatusCode(method);
   if (status) {
@@ -73,14 +88,15 @@ const omitParamType = (param: Record<string, any>) => omit(param, 'type');
 const mapResponsesToSwaggerResponses = (
   responses: ApiResponseMetadata[],
   schemas: Record<string, SchemaObject>,
-  produces: string[] = ['application/json']
+  produces: string[] = ['application/json'],
+  factories: FactoriesNeededByResponseFactory
 ) => {
   produces = isEmpty(produces) ? ['application/json'] : produces;
 
   const openApiResponses = mapValues(
     responses,
     (response: ApiResponseMetadata) =>
-      responseObjectFactory.create(response, produces, schemas)
+      responseObjectFactory.create(response, produces, schemas, factories)
   );
   return mapValues(openApiResponses, omitParamType);
 };
