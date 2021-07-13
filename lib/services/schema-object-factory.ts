@@ -473,6 +473,7 @@ export class SchemaObjectFactory {
         key,
         Object,
         schemas,
+        [],
         propertyCompilerMetadata
       );
       const keysToRemove = ['isArray', 'name'];
