@@ -101,6 +101,7 @@
             "required": true,
             "in": "query",
             "schema": {
+              "nullable": true,
               "type": "array",
               "items": {
                 "type": "string"
@@ -262,6 +263,7 @@
             "in": "query",
             "required": true,
             "schema": {
+              "nullable": true,
               "type": "array",
               "items": {
                 "type": "string"

@@ -15,9 +15,7 @@ import {
   Type,
   TypeChecker,
   TypeFlags,
-  TypeFormatFlags,
-  TypeNode,
-  UnionTypeNode
+  TypeFormatFlags
 } from 'typescript';
 import { isDynamicallyAdded } from './plugin-utils';
 
@@ -74,22 +72,6 @@ export function isEnum(type: Type) {
 
 export function isEnumLiteral(type: Type) {
   return hasFlag(type, TypeFlags.EnumLiteral) && !type.isUnion();
-}
-
-export function isNull(type: Type) {
-  if (type.isUnion()) {
-    return Boolean(type.types.find((t) => hasFlag(t, TypeFlags.Null)));
-  } else {
-    return hasFlag(type, TypeFlags.Null);
-  }
-}
-
-export function isUndefined(type: Type) {
-  if (type.isUnion()) {
-    return Boolean(type.types.find((t) => hasFlag(t, TypeFlags.Undefined)));
-  } else {
-    return hasFlag(type, TypeFlags.Undefined);
-  }
 }
 
 export function hasFlag(type: Type, flag: TypeFlags) {
@@ -223,11 +205,4 @@ function getNameFromExpression(expression: LeftHandSideExpression) {
     return (expression as PropertyAccessExpression).name;
   }
   return expression;
-}
-
-export function findNullableTypeFromUnion(typeNode: UnionTypeNode, typeChecker: TypeChecker) {
-  return typeNode.types.find(
-    (tNode: TypeNode) =>
-      hasFlag(typeChecker.getTypeAtLocation(tNode), TypeFlags.Null)
-  );
 }

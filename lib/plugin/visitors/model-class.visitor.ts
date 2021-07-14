@@ -4,13 +4,10 @@ import { ApiHideProperty } from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { METADATA_FACTORY_NAME } from '../plugin-constants';
 import {
-  findNullableTypeFromUnion,
   getDecoratorArguments,
   getMainCommentAndExamplesOfNode,
   getText,
-  isEnum,
-  isNull,
-  isUndefined
+  isEnum
 } from '../utils/ast-utils';
 import {
   extractTypeArgumentIfArray,
@@ -147,17 +144,13 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     hostFilename = '',
     sourceFile?: ts.SourceFile
   ): ts.ObjectLiteralExpression {
-    const type = typeChecker.getTypeAtLocation(node);
     const isRequired = !node.questionToken;
-    const isNullable = !!node.questionToken || isNull(type) || isUndefined(type);
 
     let properties = [
       ...existingProperties,
       !hasPropertyKey('required', existingProperties) &&
         ts.createPropertyAssignment('required', ts.createLiteral(isRequired)),
-      !hasPropertyKey('nullable', existingProperties) && isNullable &&
-        ts.createPropertyAssignment('nullable', ts.createLiteral(isNullable)),
-      this.createTypePropertyAssignment(
+      ...this.createTypePropertyAssignments(
         node.type,
         typeChecker,
         existingProperties,
@@ -187,15 +180,21 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     return objectLiteral;
   }
 
-  private createTypePropertyAssignment(
+  /**
+   * The function returns an array with 0, 1 or 2 PropertyAssignments.
+   * Possible keys:
+   * - 'type'
+   * - 'nullable'
+   */
+  private createTypePropertyAssignments(
     node: ts.TypeNode,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string
-  ): ts.PropertyAssignment {
+  ): ts.PropertyAssignment[] {
     const key = 'type';
     if (hasPropertyKey(key, existingProperties)) {
-      return undefined;
+      return [];
     }
     if (node) {
       if (ts.isTypeLiteralNode(node)) {
@@ -214,55 +213,76 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             );
           }
         );
-        return ts.createPropertyAssignment(
-          key,
-          ts.createArrowFunction(
-            undefined,
-            undefined,
-            [],
-            undefined,
-            undefined,
-            ts.createParen(ts.createObjectLiteral(propertyAssignments))
+        return [
+          ts.createPropertyAssignment(
+            key,
+            ts.createArrowFunction(
+              undefined,
+              undefined,
+              [],
+              undefined,
+              undefined,
+              ts.createParen(ts.createObjectLiteral(propertyAssignments))
+            )
           )
-        );
+        ];
       } else if (ts.isUnionTypeNode(node)) {
-        const nullableType = findNullableTypeFromUnion(node, typeChecker);
+        const nullableType = node.types.find(
+          (type) =>
+            type.kind === ts.SyntaxKind.NullKeyword ||
+            (ts.SyntaxKind.LiteralType && type.getText() === 'null')
+        );
+        const isNullable = !!nullableType;
         const remainingTypes = node.types.filter(
           (item) => item !== nullableType
         );
 
         // When we have more than 1 type left, we could use oneOf
         if (remainingTypes.length === 1) {
-          return this.createTypePropertyAssignment(
+          const remainingTypesProperties = this.createTypePropertyAssignments(
             remainingTypes[0],
             typeChecker,
             existingProperties,
             hostFilename
           );
+
+          const resultArray = new Array<ts.PropertyAssignment>(
+            ...remainingTypesProperties
+          );
+          if (isNullable) {
+            const nullablePropertyAssignment = ts.createPropertyAssignment(
+              'nullable',
+              ts.createTrue()
+            );
+            resultArray.push(nullablePropertyAssignment);
+          }
+          return resultArray;
         }
       }
     }
 
     const type = typeChecker.getTypeAtLocation(node);
     if (!type) {
-      return undefined;
+      return [];
     }
     let typeReference = getTypeReferenceAsString(type, typeChecker);
     if (!typeReference) {
-      return undefined;
+      return [];
     }
     typeReference = replaceImportPath(typeReference, hostFilename);
-    return ts.createPropertyAssignment(
-      key,
-      ts.createArrowFunction(
-        undefined,
-        undefined,
-        [],
-        undefined,
-        undefined,
-        ts.createIdentifier(typeReference)
+    return [
+      ts.createPropertyAssignment(
+        key,
+        ts.createArrowFunction(
+          undefined,
+          undefined,
+          [],
+          undefined,
+          undefined,
+          ts.createIdentifier(typeReference)
+        )
       )
-    );
+    ];
   }
 
   createEnumPropertyAssignment(
