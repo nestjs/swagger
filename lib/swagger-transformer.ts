@@ -18,9 +18,9 @@ export class SwaggerTransformer {
         ({ root }: Record<'root', any>) => root.method
       );
       return mapValues(keyByMethod, (route: any) => {
-        return {
-          ...omit(route.root, ['method', 'path']),
-          ...omit(route, 'root')
+        return {	
+          ...omit(route, 'root'),
+          ...omit(route.root, ['method', 'path'])
         };
       });
     });
