@@ -6,7 +6,12 @@ export class MimetypeContentWrapper {
     obj: Record<string, any>
   ): Record<'content', ContentObject> {
     const content = mimetype.reduce(
-      (acc, item) => ({ ...acc, [item]: obj }),
+      (acc, item) => {
+        if (obj.examples === undefined) {
+          delete obj.examples;
+        }
+        return { ...acc, [item]: obj };
+      },
       {}
     );
     return { content };

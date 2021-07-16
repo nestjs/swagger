@@ -11,6 +11,8 @@ export class ResponseObjectMapper {
     name: string,
     produces: string[]
   ) {
+    const examples = response.examples;
+    delete response.examples;
     return {
       ...response,
       ...this.mimetypeContentWrapper.wrap(produces, {
@@ -19,18 +21,22 @@ export class ResponseObjectMapper {
           items: {
             $ref: getSchemaPath(name)
           }
-        }
+        },
+        examples
       })
     };
   }
 
   toRefObject(response: Record<string, any>, name: string, produces: string[]) {
+    const examples = response.examples;
+    delete response.examples;
     return {
       ...response,
       ...this.mimetypeContentWrapper.wrap(produces, {
         schema: {
           $ref: getSchemaPath(name)
-        }
+        },
+        examples
       })
     };
   }

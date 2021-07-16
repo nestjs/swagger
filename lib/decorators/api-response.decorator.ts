@@ -8,12 +8,18 @@ import {
 } from '../interfaces/open-api-spec.interface';
 import { getTypeIsArrayTuple } from './helpers';
 
+export interface ApiResponseExmaples {
+  summary: string;
+  value: unknown;
+}
+
 export interface ApiResponseMetadata
   extends Omit<ResponseObject, 'description'> {
   status?: number | 'default' | '1XX' | '2XX' | '3XX' | '4XX' | '5XX';
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   description?: string;
+  examples?: { [key: string]: ApiResponseExmaples };
 }
 
 export interface ApiResponseSchemaHost
