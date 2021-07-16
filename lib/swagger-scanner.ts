@@ -50,7 +50,7 @@ export class SwaggerScanner {
 
     const denormalizedPaths = modules.map(
       ({ routes, metatype, relatedModules }) => {
-        let allRoutes = new Map(routes);
+        let result = [];
 
         if (deepScanRoutes) {
           // only load submodules routes if asked
@@ -59,18 +59,31 @@ export class SwaggerScanner {
 
           Array.from(relatedModules.values())
             .filter(isGlobal as any)
-            .map(({ routes: relatedModuleRoutes }) => relatedModuleRoutes)
-            .forEach((relatedModuleRoutes) => {
-              allRoutes = new Map([...allRoutes, ...relatedModuleRoutes]);
+            .forEach(({ metatype, routes }) => {
+              const modulePath = this.getModulePathMetadata(
+                container,
+                metatype
+              );
+              result = result.concat(
+                this.scanModuleRoutes(
+                  routes,
+                  modulePath,
+                  globalPrefix,
+                  internalConfigRef,
+                  operationIdFactory
+                )
+              );
             });
         }
         const modulePath = this.getModulePathMetadata(container, metatype);
-        return this.scanModuleRoutes(
-          allRoutes,
-          modulePath,
-          globalPrefix,
-          internalConfigRef,
-          operationIdFactory
+        return result.concat(
+          this.scanModuleRoutes(
+            routes,
+            modulePath,
+            globalPrefix,
+            internalConfigRef,
+            operationIdFactory
+          )
         );
       }
     );
