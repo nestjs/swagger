@@ -34,7 +34,8 @@ export class SwaggerScanner {
       include: includedModules = [],
       extraModels = [],
       ignoreGlobalPrefix = false,
-      operationIdFactory
+      operationIdFactory,
+      linkNameFactory
     } = options;
 
     const container = (app as any).container as NestContainer;
@@ -70,7 +71,8 @@ export class SwaggerScanner {
           modulePath,
           globalPrefix,
           internalConfigRef,
-          operationIdFactory
+          operationIdFactory,
+          linkNameFactory
         );
       }
     );
@@ -91,7 +93,12 @@ export class SwaggerScanner {
     modulePath: string | undefined,
     globalPrefix: string | undefined,
     applicationConfig: ApplicationConfig,
-    operationIdFactory?: (controllerKey: string, methodKey: string) => string
+    operationIdFactory?: (controllerKey: string, methodKey: string) => string,
+    linkNameFactory?: (
+      controllerKey: string,
+      methodKey: string,
+      fieldKey: string
+    ) => string
   ): Array<Omit<OpenAPIObject, 'openapi' | 'info'> & Record<'root', any>> {
     const denormalizedArray = [...routes.values()].map((ctrl) =>
       this.explorer.exploreController(
@@ -99,7 +106,8 @@ export class SwaggerScanner {
         applicationConfig,
         modulePath,
         globalPrefix,
-        operationIdFactory
+        operationIdFactory,
+        linkNameFactory
       )
     );
     return flatten(denormalizedArray) as any;
