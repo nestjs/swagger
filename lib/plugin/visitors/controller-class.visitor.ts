@@ -5,6 +5,7 @@ import { PluginOptions } from '../merge-options';
 import { OPENAPI_NAMESPACE } from '../plugin-constants';
 import {
   getDecoratorArguments,
+  getDecoratorName,
   getMainCommentAndExamplesOfNode
 } from '../utils/ast-utils';
 import {
@@ -57,18 +58,28 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       return compilerNode;
     }
 
+    const apiOperationDecoratorsArray = this.createApiOperationDecorator(
+      factory,
+      compilerNode,
+      compilerNode.decorators,
+      options,
+      sourceFile,
+      typeChecker
+    );
+    const removeExistingApiOperationDecorator =
+      apiOperationDecoratorsArray.length > 0;
+
+    const existingDecorators = removeExistingApiOperationDecorator
+      ? compilerNode.decorators.filter(
+          (item) => getDecoratorName(item) !== ApiOperation.name
+        )
+      : compilerNode.decorators;
+
     return factory.updateMethodDeclaration(
       compilerNode,
       [
-        ...this.createApiOperationDecorator(
-          factory,
-          compilerNode,
-          compilerNode.decorators,
-          options,
-          sourceFile,
-          typeChecker
-        ),
-        ...compilerNode.decorators,
+        ...apiOperationDecoratorsArray,
+        ...existingDecorators,
         factory.createDecorator(
           factory.createCallExpression(
             factory.createIdentifier(
@@ -147,17 +158,31 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         factory.createNodeArray([
           factory.createObjectLiteralExpression(compact(properties))
         ]);
-      return [
-        factory.createDecorator(
-          factory.createCallExpression(
-            factory.createIdentifier(
-              `${OPENAPI_NAMESPACE}.${ApiOperation.name}`
-            ),
-            undefined,
-            apiOperationDecoratorArguments
+      if (apiOperationDecorator) {
+        const expr =
+          apiOperationDecorator.expression as any as ts.CallExpression;
+        const updatedCallExpr = factory.updateCallExpression(
+          expr,
+          expr.expression,
+          undefined,
+          apiOperationDecoratorArguments
+        );
+        return [
+          factory.updateDecorator(apiOperationDecorator, updatedCallExpr)
+        ];
+      } else {
+        return [
+          factory.createDecorator(
+            factory.createCallExpression(
+              factory.createIdentifier(
+                `${OPENAPI_NAMESPACE}.${ApiOperation.name}`
+              ),
+              undefined,
+              apiOperationDecoratorArguments
+            )
           )
-        )
-      ];
+        ];
+      }
     }
     return [];
   }
