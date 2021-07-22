@@ -1,3 +1,4 @@
+import * as ts from 'typescript';
 import {
   CallExpression,
   CommentRange,
@@ -15,7 +16,9 @@ import {
   Type,
   TypeChecker,
   TypeFlags,
-  TypeFormatFlags
+  TypeFormatFlags,
+  TypeNode,
+  UnionTypeNode
 } from 'typescript';
 import { isDynamicallyAdded } from './plugin-utils';
 
@@ -205,4 +208,33 @@ function getNameFromExpression(expression: LeftHandSideExpression) {
     return (expression as PropertyAccessExpression).name;
   }
   return expression;
+}
+
+export function findNullableTypeFromUnion(
+  typeNode: UnionTypeNode,
+  typeChecker: TypeChecker
+) {
+  return typeNode.types.find((tNode: TypeNode) =>
+    hasFlag(typeChecker.getTypeAtLocation(tNode), TypeFlags.Null)
+  );
+}
+
+export function createBooleanLiteral(
+  factory: ts.NodeFactory,
+  flag: boolean
+): ts.BooleanLiteral {
+  return flag ? factory.createTrue() : factory.createFalse();
+}
+
+export function createPrimitiveLiteral(factory: ts.NodeFactory, item: unknown) {
+  const typeOfItem = typeof item;
+
+  switch (typeOfItem) {
+    case 'boolean':
+      return createBooleanLiteral(factory, item as boolean);
+    case 'number':
+      return factory.createNumericLiteral(item as number);
+    case 'string':
+      return factory.createStringLiteral(item as string);
+  }
 }
