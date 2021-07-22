@@ -148,9 +148,12 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
           factory.createObjectLiteralExpression(compact(properties))
         ]);
       if (apiOperationDecorator) {
-        (
-          apiOperationDecorator.expression as ts.CallExpression as any
-        ).arguments = apiOperationDecoratorArguments;
+        factory.updateCallExpression(
+          apiOperationDecorator.expression as ts.CallExpression,
+          undefined,
+          undefined,
+          apiOperationDecoratorArguments
+        );
       } else {
         return [
           factory.createDecorator(
