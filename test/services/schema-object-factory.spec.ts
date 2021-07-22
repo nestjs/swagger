@@ -144,6 +144,24 @@ describe('SchemaObjectFactory', () => {
             },
             type: 'array'
           },
+          twoDimensionPrimitives: {
+            items: {
+              type: 'array',
+              items: {
+                type: 'string'
+              }
+            },
+            type: 'array'
+          },
+          twoDimensionModels: {
+            items: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/CreateProfileDto'
+              }
+            },
+            type: 'array'
+          },
           urls: {
             items: {
               format: 'uri',
@@ -181,6 +199,8 @@ describe('SchemaObjectFactory', () => {
           'password',
           'profile',
           'tags',
+          'twoDimensionPrimitives',
+          'twoDimensionModels',
           'urls',
           'luckyNumbers',
           'options',
