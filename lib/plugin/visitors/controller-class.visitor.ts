@@ -147,26 +147,17 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         factory.createNodeArray([
           factory.createObjectLiteralExpression(compact(properties))
         ]);
-      if (apiOperationDecorator) {
-        factory.updateCallExpression(
-          apiOperationDecorator.expression as ts.CallExpression,
-          undefined,
-          undefined,
-          apiOperationDecoratorArguments
-        );
-      } else {
-        return [
-          factory.createDecorator(
-            factory.createCallExpression(
-              factory.createIdentifier(
-                `${OPENAPI_NAMESPACE}.${ApiOperation.name}`
-              ),
-              undefined,
-              apiOperationDecoratorArguments
-            )
+      return [
+        factory.createDecorator(
+          factory.createCallExpression(
+            factory.createIdentifier(
+              `${OPENAPI_NAMESPACE}.${ApiOperation.name}`
+            ),
+            undefined,
+            apiOperationDecoratorArguments
           )
-        ];
-      }
+        )
+      ];
     }
     return [];
   }
