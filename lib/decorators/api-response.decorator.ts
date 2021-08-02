@@ -9,6 +9,8 @@ import {
 } from '../interfaces/open-api-spec.interface';
 import { getTypeIsArrayTuple } from './helpers';
 
+import * as ErrorResponseDtos from '../types/error-responses.dto';
+
 export interface ApiResponseMetadata
   extends Omit<ResponseObject, 'description'> {
   status?: number | 'default';
@@ -117,18 +119,21 @@ export const ApiBadRequestResponse = (options: ApiResponseOptions = {}) =>
 
 export const ApiUnauthorizedResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.UnauthorizedResponseDto,
     ...options,
     status: HttpStatus.UNAUTHORIZED
   });
 
 export const ApiTooManyRequestsResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.TooManyRequestsResponseDto,
     ...options,
     status: HttpStatus.TOO_MANY_REQUESTS
   });
 
 export const ApiNotFoundResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.NotFoundResponseDto,
     ...options,
     status: HttpStatus.NOT_FOUND
   });
@@ -137,54 +142,63 @@ export const ApiInternalServerErrorResponse = (
   options: ApiResponseOptions = {}
 ) =>
   ApiResponse({
+    type: ErrorResponseDtos.InternalServerErrorResponseDto,
     ...options,
     status: HttpStatus.INTERNAL_SERVER_ERROR
   });
 
 export const ApiBadGatewayResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.BadGatewayResponseDto,
     ...options,
     status: HttpStatus.BAD_GATEWAY
   });
 
 export const ApiConflictResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.ConflictResponseDto,
     ...options,
     status: HttpStatus.CONFLICT
   });
 
 export const ApiForbiddenResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.ForbiddenResponseDto,
     ...options,
     status: HttpStatus.FORBIDDEN
   });
 
 export const ApiGatewayTimeoutResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.GatewayTimeoutResponseDto,
     ...options,
     status: HttpStatus.GATEWAY_TIMEOUT
   });
 
 export const ApiGoneResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.GoneResponseDto,
     ...options,
     status: HttpStatus.GONE
   });
 
 export const ApiMethodNotAllowedResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.MethodNotAllowedResponseDto,
     ...options,
     status: HttpStatus.METHOD_NOT_ALLOWED
   });
 
 export const ApiNotAcceptableResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.NotAcceptableResponseDto,
     ...options,
     status: HttpStatus.NOT_ACCEPTABLE
   });
 
 export const ApiNotImplementedResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.NotImplementedResponseDto,
     ...options,
     status: HttpStatus.NOT_IMPLEMENTED
   });
@@ -193,18 +207,21 @@ export const ApiPreconditionFailedResponse = (
   options: ApiResponseOptions = {}
 ) =>
   ApiResponse({
+    type: ErrorResponseDtos.PreconditionFailedResponseDto,
     ...options,
     status: HttpStatus.PRECONDITION_FAILED
   });
 
 export const ApiPayloadTooLargeResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.PayloadTooLargeResponseDto,
     ...options,
     status: HttpStatus.PAYLOAD_TOO_LARGE
   });
 
 export const ApiRequestTimeoutResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
+    type: ErrorResponseDtos.RequestTimeoutResponseDto,
     ...options,
     status: HttpStatus.REQUEST_TIMEOUT
   });
@@ -213,6 +230,7 @@ export const ApiServiceUnavailableResponse = (
   options: ApiResponseOptions = {}
 ) =>
   ApiResponse({
+    type: ErrorResponseDtos.ServiceUnavailableResponseDto,
     ...options,
     status: HttpStatus.SERVICE_UNAVAILABLE
   });
@@ -221,6 +239,7 @@ export const ApiUnprocessableEntityResponse = (
   options: ApiResponseOptions = {}
 ) =>
   ApiResponse({
+    type: ErrorResponseDtos.UnprocessableEntityResponseDto,
     ...options,
     status: HttpStatus.UNPROCESSABLE_ENTITY
   });
@@ -229,6 +248,7 @@ export const ApiUnsupportedMediaTypeResponse = (
   options: ApiResponseOptions = {}
 ) =>
   ApiResponse({
+    type: ErrorResponseDtos.UnsupportedMediaTypeResponseDto,
     ...options,
     status: HttpStatus.UNSUPPORTED_MEDIA_TYPE
   });
