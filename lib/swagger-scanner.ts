@@ -15,6 +15,7 @@ import { SchemaObjectFactory } from './services/schema-object-factory';
 import { SwaggerTypesMapper } from './services/swagger-types-mapper';
 import { SwaggerExplorer } from './swagger-explorer';
 import { SwaggerTransformer } from './swagger-transformer';
+import { getGlobalPrefix } from './utils/get-global-prefix';
 import { stripLastSlash } from './utils/strip-last-slash.util';
 
 export class SwaggerScanner {
@@ -45,7 +46,7 @@ export class SwaggerScanner {
       includedModules
     );
     const globalPrefix = !ignoreGlobalPrefix
-      ? stripLastSlash(this.getGlobalPrefix(app))
+      ? stripLastSlash(getGlobalPrefix(app))
       : '';
 
     const denormalizedPaths = modules.map(
@@ -137,11 +138,6 @@ export class SwaggerScanner {
     extraModels.forEach((item) => {
       this.schemaObjectFactory.exploreModelSchema(item, schemas);
     });
-  }
-
-  private getGlobalPrefix(app: INestApplication): string {
-    const internalConfigRef = (app as any).config;
-    return (internalConfigRef && internalConfigRef.getGlobalPrefix()) || '';
   }
 
   private getModulePathMetadata(

@@ -9,6 +9,7 @@ import {
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
+import { getGlobalPrefix } from './utils/get-global-prefix';
 import { validatePath } from './utils/validate-path.util';
 
 export class SwaggerModule {
@@ -64,7 +65,8 @@ export class SwaggerModule {
     options?: ExpressSwaggerCustomOptions
   ) {
     const httpAdapter = app.getHttpAdapter();
-    const finalPath = validatePath(path);
+    const globalPrefix = getGlobalPrefix(app);
+    const finalPath = `${validatePath(globalPrefix)}${validatePath(path)}`;
     const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () =>
       require('swagger-ui-express')
     );
