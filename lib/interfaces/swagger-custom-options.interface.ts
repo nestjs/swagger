@@ -13,7 +13,28 @@ export interface ExpressSwaggerCustomOptions {
 }
 
 export interface FastifySwaggerCustomOptions {
-  uiConfig?: Record<string, any>;
+  uiConfig?: Partial<{
+    deepLinking: boolean;
+    displayOperationId: boolean;
+    defaultModelsExpandDepth: number;
+    defaultModelExpandDepth: number;
+    defaultModelRendering: string;
+    displayRequestDuration: boolean;
+    docExpansion: string;
+    filter: boolean | string;
+    maxDisplayedTags: number;
+    showExtensions: boolean;
+    showCommonExtensions: boolean;
+    useUnsafeMarkdown: boolean;
+    syntaxHighlight:
+      | {
+          activate?: boolean;
+          theme?: string;
+        }
+      | false;
+    tryItOutEnabled: boolean;
+    validatorUrl: string | null;
+  }>;
 }
 
 export type SwaggerCustomOptions =
