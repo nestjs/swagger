@@ -14,6 +14,9 @@ export interface ExpressSwaggerCustomOptions {
 
 export interface FastifySwaggerCustomOptions {
   uiConfig?: Record<string, any>;
+  initOAuth?: Record<string, any>;
+  staticCSP?: boolean | string | Record<string, string | string[]>;
+  transformStaticCSP?: (header: string) => string;
 }
 
 export type SwaggerCustomOptions =
