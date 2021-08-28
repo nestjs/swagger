@@ -86,7 +86,14 @@ export function createMixedDecorator<T = any>(
     descriptor?: TypedPropertyDescriptor<any>
   ): any => {
     if (descriptor) {
-      Reflect.defineMetadata(metakey, metadata, descriptor.value);
+      const responses = Reflect.getMetadata(metakey, descriptor.value) || {};
+      let metadatas;
+      if (Array.isArray(metadata)) {
+        metadatas = [...(responses.length ? responses : []), ...metadata];
+      } else {
+        metadatas = Object.assign(Object.assign({}, responses), metadata);
+      }
+      Reflect.defineMetadata(metakey, metadatas, descriptor.value);
       return descriptor;
     }
     Reflect.defineMetadata(metakey, metadata, target);

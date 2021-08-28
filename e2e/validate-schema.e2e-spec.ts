@@ -59,6 +59,9 @@ describe('Validate OpenAPI schema', () => {
       expect(api.paths['/api/cats']['get']['x-codeSamples'][0]['lang']).toEqual(
         'JavaScript'
       );
+      expect(api.paths['/api/cats']['get']['x-multiple']['test']).toEqual(
+        'test'
+      );
     } catch (err) {
       console.log(doc);
       expect(err).toBeUndefined();
