@@ -10,6 +10,8 @@ export interface ExpressSwaggerCustomOptions {
   validatorUrl?: string;
   url?: string;
   urls?: Record<'url' | 'name', string>[];
+  jsonSpecPath?: string;
+  swaggerUiLib?: string;
 }
 
 export interface FastifySwaggerCustomOptions {

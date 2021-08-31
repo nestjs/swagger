@@ -65,14 +65,19 @@ export class SwaggerModule {
   ) {
     const httpAdapter = app.getHttpAdapter();
     const finalPath = validatePath(path);
-    const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () =>
-      require('swagger-ui-express')
+    const {
+      jsonSpecPath = finalPath + '-json',
+      swaggerUiLib = 'swagger-ui-express', 
+      ...swaggerUiOptions
+    } = options;
+    const swaggerUi = loadPackage(swaggerUiLib, 'SwaggerModule', () =>
+      require(swaggerUiLib)
     );
-    const swaggerHtml = swaggerUi.generateHTML(document, options);
-    app.use(finalPath, swaggerUi.serveFiles(document, options));
+    const swaggerHtml = swaggerUi.generateHTML(document, swaggerUiOptions);
+    app.use(finalPath, swaggerUi.serveFiles(document, swaggerUiOptions));
 
     httpAdapter.get(finalPath, (req, res) => res.send(swaggerHtml));
-    httpAdapter.get(finalPath + '-json', (req, res) => res.json(document));
+    httpAdapter.get(jsonSpecPath, (req, res) => res.json(document));
   }
 
   private static setupFastify(
