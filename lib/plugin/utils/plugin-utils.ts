@@ -1,5 +1,5 @@
 import { head } from 'lodash';
-import { posix } from 'path';
+import { isAbsolute, posix } from 'path';
 import * as ts from 'typescript';
 import {
   getDecoratorName,
@@ -10,7 +10,8 @@ import {
   isEnum,
   isInterface,
   isNumber,
-  isString
+  isString,
+  isStringLiteral
 } from './ast-utils';
 
 export function getDecoratorOrUndefinedByNames(
@@ -45,7 +46,7 @@ export function getTypeReferenceAsString(
   if (isNumber(type)) {
     return Number.name;
   }
-  if (isString(type)) {
+  if (isString(type) || isStringLiteral(type)) {
     return String.name;
   }
   if (isPromiseOrObservable(getText(type, typeChecker))) {
@@ -123,7 +124,10 @@ export function replaceImportPath(typeReference: string, fileName: string) {
   importPath = importPath.slice(2, importPath.length - 1);
 
   try {
-    require.resolve(importPath)
+    if (isAbsolute(importPath)) {
+      throw {};
+    }
+    require.resolve(importPath);
     return typeReference.replace('import', 'require');
   } catch (_error) {
     let relativePath = posix.relative(posix.dirname(fileName), importPath);

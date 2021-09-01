@@ -1,9 +1,10 @@
 import { INestApplication, Type } from '@nestjs/common';
 import { MODULE_PATH } from '@nestjs/common/constants';
+import { ApplicationConfig } from '@nestjs/core';
 import { NestContainer } from '@nestjs/core/injector/container';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { Module } from '@nestjs/core/injector/module';
-import { extend, flatten, isEmpty, reduce } from 'lodash';
+import { InstanceToken, Module } from '@nestjs/core/injector/module';
+import { flatten, isEmpty } from 'lodash';
 import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
 import {
   ReferenceObject,
@@ -36,7 +37,9 @@ export class SwaggerScanner {
       operationIdFactory
     } = options;
 
-    const container: NestContainer = (app as any).container;
+    const container = (app as any).container as NestContainer;
+    const internalConfigRef = (app as any).config as ApplicationConfig;
+
     const modules: Module[] = this.getModules(
       container.getModules(),
       includedModules
@@ -47,7 +50,7 @@ export class SwaggerScanner {
 
     const denormalizedPaths = modules.map(
       ({ routes, metatype, relatedModules }) => {
-        let allRoutes = new Map(routes);
+        let result = [];
 
         if (deepScanRoutes) {
           // only load submodules routes if asked
@@ -56,20 +59,31 @@ export class SwaggerScanner {
 
           Array.from(relatedModules.values())
             .filter(isGlobal as any)
-            .map(({ routes: relatedModuleRoutes }) => relatedModuleRoutes)
-            .forEach((relatedModuleRoutes) => {
-              allRoutes = new Map([...allRoutes, ...relatedModuleRoutes]);
+            .forEach(({ metatype, routes }) => {
+              const modulePath = this.getModulePathMetadata(
+                container,
+                metatype
+              );
+              result = result.concat(
+                this.scanModuleRoutes(
+                  routes,
+                  modulePath,
+                  globalPrefix,
+                  internalConfigRef,
+                  operationIdFactory
+                )
+              );
             });
         }
-        const path = metatype
-          ? Reflect.getMetadata(MODULE_PATH, metatype)
-          : undefined;
-
-        return this.scanModuleRoutes(
-          allRoutes,
-          path,
-          globalPrefix,
-          operationIdFactory
+        const modulePath = this.getModulePathMetadata(container, metatype);
+        return result.concat(
+          this.scanModuleRoutes(
+            routes,
+            modulePath,
+            globalPrefix,
+            internalConfigRef,
+            operationIdFactory
+          )
         );
       }
     );
@@ -80,23 +94,22 @@ export class SwaggerScanner {
     return {
       ...this.transfomer.normalizePaths(flatten(denormalizedPaths)),
       components: {
-        schemas: reduce(this.explorer.getSchemas(), extend) as Record<
-          string,
-          SchemaObject | ReferenceObject
-        >
+        schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }
     };
   }
 
   public scanModuleRoutes(
-    routes: Map<string, InstanceWrapper>,
-    modulePath?: string,
-    globalPrefix?: string,
+    routes: Map<InstanceToken, InstanceWrapper>,
+    modulePath: string | undefined,
+    globalPrefix: string | undefined,
+    applicationConfig: ApplicationConfig,
     operationIdFactory?: (controllerKey: string, methodKey: string) => string
   ): Array<Omit<OpenAPIObject, 'openapi' | 'info'> & Record<'root', any>> {
     const denormalizedArray = [...routes.values()].map((ctrl) =>
       this.explorer.exploreController(
         ctrl,
+        applicationConfig,
         modulePath,
         globalPrefix,
         operationIdFactory
@@ -117,7 +130,10 @@ export class SwaggerScanner {
     );
   }
 
-  public addExtraModels(schemas: SchemaObject[], extraModels: Function[]) {
+  public addExtraModels(
+    schemas: Record<string, SchemaObject>,
+    extraModels: Function[]
+  ) {
     extraModels.forEach((item) => {
       this.schemaObjectFactory.exploreModelSchema(item, schemas);
     });
@@ -126,5 +142,17 @@ export class SwaggerScanner {
   private getGlobalPrefix(app: INestApplication): string {
     const internalConfigRef = (app as any).config;
     return (internalConfigRef && internalConfigRef.getGlobalPrefix()) || '';
+  }
+
+  private getModulePathMetadata(
+    container: NestContainer,
+    metatype: Type<unknown>
+  ): string | undefined {
+    const modulesContainer = container.getModules();
+    const modulePath = Reflect.getMetadata(
+      MODULE_PATH + modulesContainer.applicationId,
+      metatype
+    );
+    return modulePath ?? Reflect.getMetadata(MODULE_PATH, metatype);
   }
 }

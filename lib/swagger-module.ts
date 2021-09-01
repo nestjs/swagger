@@ -1,11 +1,14 @@
 import { INestApplication } from '@nestjs/common';
 import { loadPackage } from '@nestjs/common/utils/load-package.util';
 import {
+  ExpressSwaggerCustomOptions,
+  FastifySwaggerCustomOptions,
   OpenAPIObject,
   SwaggerCustomOptions,
   SwaggerDocumentOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
+import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { validatePath } from './utils/validate-path.util';
 
 export class SwaggerModule {
@@ -16,12 +19,16 @@ export class SwaggerModule {
   ): OpenAPIObject {
     const swaggerScanner = new SwaggerScanner();
     const document = swaggerScanner.scanApplication(app, options);
-    document.components = {
-      ...(config.components || {}),
-      ...document.components
-    };
+
+    document.components = assignTwoLevelsDeep(
+      {},
+      config.components,
+      document.components
+    );
+
     return {
       openapi: '3.0.0',
+      paths: {},
       ...config,
       ...document
     };
@@ -35,16 +42,26 @@ export class SwaggerModule {
   ) {
     const httpAdapter = app.getHttpAdapter();
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
-      return this.setupFastify(path, httpAdapter, document);
+      return this.setupFastify(
+        path,
+        httpAdapter,
+        document,
+        options as FastifySwaggerCustomOptions
+      );
     }
-    return this.setupExpress(path, app, document, options);
+    return this.setupExpress(
+      path,
+      app,
+      document,
+      options as ExpressSwaggerCustomOptions
+    );
   }
 
   private static setupExpress(
     path: string,
     app: INestApplication,
     document: OpenAPIObject,
-    options?: SwaggerCustomOptions
+    options?: ExpressSwaggerCustomOptions
   ) {
     const httpAdapter = app.getHttpAdapter();
     const finalPath = validatePath(path);
@@ -61,13 +78,14 @@ export class SwaggerModule {
   private static setupFastify(
     path: string,
     httpServer: any,
-    document: OpenAPIObject
+    document: OpenAPIObject,
+    options?: FastifySwaggerCustomOptions
   ) {
     // Workaround for older versions of the @nestjs/platform-fastify package
     // where "isParserRegistered" getter is not defined.
-    const hasParserGetterDefined = (Object.getPrototypeOf(
-      httpServer
-    ) as Object).hasOwnProperty('isParserRegistered');
+    const hasParserGetterDefined = (
+      Object.getPrototypeOf(httpServer) as Object
+    ).hasOwnProperty('isParserRegistered');
     if (hasParserGetterDefined && !httpServer.isParserRegistered) {
       httpServer.registerParserMiddleware();
     }
@@ -84,7 +102,8 @@ export class SwaggerModule {
           mode: 'static',
           specification: {
             document
-          }
+          },
+          uiConfig: (options || {}).uiConfig
         }
       );
     });

@@ -21,7 +21,7 @@ export class ResponseObjectFactory {
   create(
     response: ApiResponseMetadata,
     produces: string[],
-    schemas: SchemaObject[]
+    schemas: Record<string, SchemaObject>
   ) {
     const { type, isArray } = response as ApiResponseMetadata;
     response = omit(response, ['isArray']);
@@ -34,9 +34,8 @@ export class ResponseObjectFactory {
     if (isBuiltInType(type as Function)) {
       const typeName =
         type && isFunction(type) ? (type as Function).name : (type as string);
-      const swaggerType = this.swaggerTypesMapper.mapTypeToOpenAPIType(
-        typeName
-      );
+      const swaggerType =
+        this.swaggerTypesMapper.mapTypeToOpenAPIType(typeName);
 
       if (isArray) {
         const content = this.mimetypeContentWrapper.wrap(produces, {

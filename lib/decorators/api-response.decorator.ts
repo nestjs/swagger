@@ -38,7 +38,9 @@ export function ApiResponse(
   (options as ApiResponseMetadata).isArray = isArray;
   options.description = options.description ? options.description : '';
 
-  const groupedMetadata = { [options.status]: omit(options, 'status') };
+  const groupedMetadata = {
+    [options.status || 'default']: omit(options, 'status')
+  };
   return (
     target: object,
     key?: string | symbol,
