@@ -463,7 +463,6 @@ describe('SwaggerExplorer', () => {
           required: true,
           schema: {
             type: 'string',
-            format: 'uuid'
           }
         },
         {
@@ -640,6 +639,7 @@ describe('SwaggerExplorer', () => {
           name: 'objectId',
           required: true,
           schema: {
+            format: 'uuid',
             type: 'string'
           }
         }
