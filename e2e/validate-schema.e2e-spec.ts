@@ -116,4 +116,20 @@ describe('Validate OpenAPI schema', () => {
     expect(api.components.schemas).toHaveProperty('Person');
     expect(api.components.schemas).toHaveProperty('Cat');
   });
+
+  it('should consider explicit config over auto-detected schema', async () => {
+    const document = SwaggerModule.createDocument(app, options);
+    console.log('document.paths[\'/api/cats/download\'][\'responses\']', document.paths['/api/cats/download']['responses']);
+    expect(document.paths['/api/cats/download'].get.responses).toEqual({
+      '200': {
+        description: 'binary file for download',
+        content: {
+          'application/pdf': {
+            schema: { type: 'string', format: 'binary' }
+          },
+          'image/jpeg': { schema: { type: 'string', format: 'binary' } }
+        }
+      }
+    })
+  });
 });
