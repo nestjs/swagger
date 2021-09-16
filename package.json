@@ -46,7 +46,7 @@
     "husky": "7.0.2",
     "jest": "27.2.0",
     "lint-staged": "11.1.2",
-    "prettier": "2.4.0",
+    "prettier": "2.4.1",
     "reflect-metadata": "0.1.13",
     "release-it": "14.11.5",
     "swagger-parser": "10.0.3",
