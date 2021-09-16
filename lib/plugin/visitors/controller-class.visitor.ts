@@ -227,9 +227,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!typeReference) {
       return undefined;
     }
-    if (typeReference.includes('node_modules')) {
-      return undefined;
-    }
     typeReference = replaceImportPath(typeReference, hostFilename);
     return factory.createPropertyAssignment(
       'type',
