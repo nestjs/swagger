@@ -103,7 +103,10 @@ export class SwaggerModule {
           specification: {
             document
           },
-          uiConfig: (options || {}).uiConfig
+          uiConfig: options?.uiConfig,
+          initOAuth: options?.initOAuth,
+          staticCSP: options?.staticCSP,
+          transformStaticCSP: options?.transformStaticCSP
         }
       );
     });
