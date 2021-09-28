@@ -86,7 +86,7 @@ export function createMixedDecorator<T = any>(
     descriptor?: TypedPropertyDescriptor<any>
   ): any => {
     if (descriptor) {
-      let metadatas;
+      let metadatas: any;
       if (Array.isArray(metadata)) {
         const previousMetadata = Reflect.getMetadata(metakey, descriptor.value) || [];
         metadatas = [...previousMetadata, ...metadata];
