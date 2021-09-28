@@ -1,4 +1,8 @@
-export interface ExpressSwaggerCustomOptions {
+interface CommonSwaggerCustomOptions {
+  useGlobalPrefix?: boolean,
+}
+
+export interface ExpressSwaggerCustomOptions extends CommonSwaggerCustomOptions {
   explorer?: boolean;
   swaggerOptions?: Record<string, any>;
   customCss?: string;
@@ -12,7 +16,7 @@ export interface ExpressSwaggerCustomOptions {
   urls?: Record<'url' | 'name', string>[];
 }
 
-export interface FastifySwaggerCustomOptions {
+export interface FastifySwaggerCustomOptions extends CommonSwaggerCustomOptions {
   uiConfig?: Partial<{
     deepLinking: boolean;
     displayOperationId: boolean;
