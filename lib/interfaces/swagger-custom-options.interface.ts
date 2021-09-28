@@ -35,6 +35,9 @@ export interface FastifySwaggerCustomOptions {
     tryItOutEnabled: boolean;
     validatorUrl: string | null;
   }>;
+  initOAuth?: Record<string, any>;
+  staticCSP?: boolean | string | Record<string, string | string[]>;
+  transformStaticCSP?: (header: string) => string;
 }
 
 export type SwaggerCustomOptions =
