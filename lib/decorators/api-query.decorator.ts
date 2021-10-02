@@ -46,14 +46,17 @@ export function ApiQuery(options: ApiQueryOptions): MethodDecorator & ClassDecor
     name: isNil(options.name) ? defaultQueryOptions.name : options.name,
     in: 'query',
     ...omit(options, 'enum'),
-    type,
-    isArray
+    type
   };
 
   if (isEnumArray(options)) {
     addEnumArraySchema(param, options);
   } else if (isEnumDefined(options)) {
     addEnumSchema(param, options);
+  }
+
+  if (isArray) {
+    param.isArray = isArray;
   }
 
   return createParamDecorator(param, defaultQueryOptions);

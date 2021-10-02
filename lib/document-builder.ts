@@ -182,7 +182,7 @@ export class DocumentBuilder {
     return this;
   }
 
-  public build(): Omit<OpenAPIObject, 'components' | 'paths'> {
+  public build(): Omit<OpenAPIObject, 'paths'> {
     return this.document;
   }
 }

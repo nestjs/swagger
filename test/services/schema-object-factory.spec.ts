@@ -1,4 +1,5 @@
 import { ApiProperty } from '../../lib/decorators';
+import { SchemasObject } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
@@ -39,18 +40,18 @@ describe('SchemaObjectFactory', () => {
     }
 
     it('should explore enum', () => {
-      const schemas = [];
+      const schemas: Record<string, SchemasObject> = {};
       schemaObjectFactory.exploreModelSchema(Person, schemas);
 
-      expect(schemas).toHaveLength(2);
+      expect(Object.keys(schemas)).toHaveLength(2);
 
-      expect(schemas[0]['Role']).toBeDefined();
-      expect(schemas[0]['Role']).toEqual({
+      expect(schemas).toHaveProperty('Role');
+      expect(schemas.Role).toEqual({
         type: 'string',
         enum: ['admin', 'user']
       });
-      expect(schemas[1]['Person']).toBeDefined();
-      expect(schemas[1]['Person']).toEqual({
+      expect(schemas).toHaveProperty('Person');
+      expect(schemas.Person).toEqual({
         type: 'object',
         properties: {
           role: {
@@ -66,14 +67,11 @@ describe('SchemaObjectFactory', () => {
         required: ['role', 'roles']
       });
 
-      schemaObjectFactory.exploreModelSchema(CreatePersonDto, schemas, [
-        'Person',
-        'Role'
-      ]);
+      schemaObjectFactory.exploreModelSchema(CreatePersonDto, schemas);
 
-      expect(schemas).toHaveLength(3);
-      expect(schemas[2]['CreatePersonDto']).toBeDefined();
-      expect(schemas[2]['CreatePersonDto']).toEqual({
+      expect(Object.keys(schemas)).toHaveLength(3);
+      expect(schemas).toHaveProperty('CreatePersonDto');
+      expect(schemas.CreatePersonDto).toEqual({
         type: 'object',
         properties: {
           name: {
@@ -88,13 +86,13 @@ describe('SchemaObjectFactory', () => {
     });
 
     it('should create openapi schema', () => {
-      const schemas = [];
+      const schemas: Record<string, SchemasObject> = {};
       const schemaKey = schemaObjectFactory.exploreModelSchema(
         CreateUserDto,
         schemas
       );
 
-      expect(schemas[1][schemaKey]).toEqual({
+      expect(schemas[schemaKey]).toEqual({
         type: 'object',
         properties: {
           login: {
@@ -102,7 +100,7 @@ describe('SchemaObjectFactory', () => {
           },
           password: {
             type: 'string',
-            examples: ['test', 'test2']
+            example: 'password123'
           },
           houses: {
             items: {
@@ -146,6 +144,24 @@ describe('SchemaObjectFactory', () => {
             },
             type: 'array'
           },
+          twoDimensionPrimitives: {
+            items: {
+              type: 'array',
+              items: {
+                type: 'string'
+              }
+            },
+            type: 'array'
+          },
+          twoDimensionModels: {
+            items: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/CreateProfileDto'
+              }
+            },
+            type: 'array'
+          },
           urls: {
             items: {
               format: 'uri',
@@ -183,6 +199,8 @@ describe('SchemaObjectFactory', () => {
           'password',
           'profile',
           'tags',
+          'twoDimensionPrimitives',
+          'twoDimensionModels',
           'urls',
           'luckyNumbers',
           'options',
@@ -191,7 +209,7 @@ describe('SchemaObjectFactory', () => {
           'createdAt'
         ]
       });
-      expect(schemas[2]['CreateProfileDto']).toEqual({
+      expect(schemas['CreateProfileDto']).toEqual({
         type: 'object',
         properties: {
           firstname: {
@@ -219,18 +237,18 @@ describe('SchemaObjectFactory', () => {
         name: string;
       }
 
-      const schemas = [];
+      const schemas: Record<string, SchemasObject> = {};
 
       schemaObjectFactory.exploreModelSchema(CreatUserDto, schemas);
       schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
 
-      expect(schemas[0][CreatUserDto.name]).toEqual({
+      expect(schemas[CreatUserDto.name]).toEqual({
         type: 'object',
         properties: { name: { type: 'string', minLength: 0 } },
         required: ['name']
       });
 
-      expect(schemas[1][UpdateUserDto.name]).toEqual({
+      expect(schemas[UpdateUserDto.name]).toEqual({
         type: 'object',
         properties: { name: { type: 'string', minLength: 1 } }
       });

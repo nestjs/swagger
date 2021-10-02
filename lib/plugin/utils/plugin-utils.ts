@@ -1,5 +1,5 @@
 import { head } from 'lodash';
-import { posix } from 'path';
+import { isAbsolute, posix } from 'path';
 import * as ts from 'typescript';
 import {
   getDecoratorName,
@@ -10,7 +10,8 @@ import {
   isEnum,
   isInterface,
   isNumber,
-  isString
+  isString,
+  isStringLiteral
 } from './ast-utils';
 
 export function getDecoratorOrUndefinedByNames(
@@ -45,7 +46,7 @@ export function getTypeReferenceAsString(
   if (isNumber(type)) {
     return Number.name;
   }
-  if (isString(type)) {
+  if (isString(type) || isStringLiteral(type)) {
     return String.name;
   }
   if (isPromiseOrObservable(getText(type, typeChecker))) {
@@ -111,8 +112,6 @@ export function hasPropertyKey(
     .some((item) => item.name.getText() === key);
 }
 
-const NATIVE_NODEJS_LIBRARIES = 'stream';
-
 export function replaceImportPath(typeReference: string, fileName: string) {
   if (!typeReference.includes('import')) {
     return typeReference;
@@ -124,9 +123,13 @@ export function replaceImportPath(typeReference: string, fileName: string) {
   importPath = convertPath(importPath);
   importPath = importPath.slice(2, importPath.length - 1);
 
-  if (NATIVE_NODEJS_LIBRARIES.includes(importPath)) {
+  try {
+    if (isAbsolute(importPath)) {
+      throw {};
+    }
+    require.resolve(importPath);
     return typeReference.replace('import', 'require');
-  } else {
+  } catch (_error) {
     let relativePath = posix.relative(posix.dirname(fileName), importPath);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 

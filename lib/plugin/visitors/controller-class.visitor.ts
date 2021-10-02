@@ -5,6 +5,7 @@ import { PluginOptions } from '../merge-options';
 import { OPENAPI_NAMESPACE } from '../plugin-constants';
 import {
   getDecoratorArguments,
+  getDecoratorName,
   getMainCommentAndExamplesOfNode
 } from '../utils/ast-utils';
 import {
@@ -29,6 +30,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       if (ts.isMethodDeclaration(node)) {
         try {
           return this.addDecoratorToNode(
+            ctx.factory,
             node,
             typeChecker,
             options,
@@ -45,50 +47,70 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   }
 
   addDecoratorToNode(
+    factory: ts.NodeFactory,
     compilerNode: ts.MethodDeclaration,
     typeChecker: ts.TypeChecker,
     options: PluginOptions,
     hostFilename: string,
     sourceFile: ts.SourceFile
   ): ts.MethodDeclaration {
-    const node = ts.getMutableClone(compilerNode);
-    if (!node.decorators) {
-      return node;
+    if (!compilerNode.decorators) {
+      return compilerNode;
     }
-    const nodeArray = node.decorators;
-    const { pos, end } = nodeArray;
 
-    (node as any).decorators = Object.assign(
+    const apiOperationDecoratorsArray = this.createApiOperationDecorator(
+      factory,
+      compilerNode,
+      compilerNode.decorators,
+      options,
+      sourceFile,
+      typeChecker
+    );
+    const removeExistingApiOperationDecorator =
+      apiOperationDecoratorsArray.length > 0;
+
+    const existingDecorators = removeExistingApiOperationDecorator
+      ? compilerNode.decorators.filter(
+          (item) => getDecoratorName(item) !== ApiOperation.name
+        )
+      : compilerNode.decorators;
+
+    return factory.updateMethodDeclaration(
+      compilerNode,
       [
-        ...this.createApiOperationDecorator(
-          node,
-          nodeArray,
-          options,
-          sourceFile,
-          typeChecker
-        ),
-        ...nodeArray,
-        ts.createDecorator(
-          ts.createCall(
-            ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiResponse.name}`),
+        ...apiOperationDecoratorsArray,
+        ...existingDecorators,
+        factory.createDecorator(
+          factory.createCallExpression(
+            factory.createIdentifier(
+              `${OPENAPI_NAMESPACE}.${ApiResponse.name}`
+            ),
             undefined,
             [
               this.createDecoratorObjectLiteralExpr(
-                node,
+                factory,
+                compilerNode,
                 typeChecker,
-                ts.createNodeArray(),
+                factory.createNodeArray(),
                 hostFilename
               )
             ]
           )
         )
       ],
-      { pos, end }
+      compilerNode.modifiers,
+      compilerNode.asteriskToken,
+      compilerNode.name,
+      compilerNode.questionToken,
+      compilerNode.typeParameters,
+      compilerNode.parameters,
+      compilerNode.type,
+      compilerNode.body
     );
-    return node;
   }
 
   createApiOperationDecorator(
+    factory: ts.NodeFactory,
     node: ts.MethodDeclaration,
     nodeArray: ts.NodeArray<ts.Decorator>,
     options: PluginOptions,
@@ -126,22 +148,35 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         return [];
       }
       const properties = [
-        ts.createPropertyAssignment(
+        factory.createPropertyAssignment(
           keyToGenerate,
-          ts.createLiteral(extractedComments)
+          factory.createStringLiteral(extractedComments)
         ),
-        ...(apiOperationExprProperties ?? ts.createNodeArray())
+        ...(apiOperationExprProperties ?? factory.createNodeArray())
       ];
-      const apiOperationDecoratorArguments: ts.NodeArray<ts.Expression> = ts.createNodeArray(
-        [ts.createObjectLiteral(compact(properties))]
-      );
+      const apiOperationDecoratorArguments: ts.NodeArray<ts.Expression> =
+        factory.createNodeArray([
+          factory.createObjectLiteralExpression(compact(properties))
+        ]);
       if (apiOperationDecorator) {
-        ((apiOperationDecorator.expression as ts.CallExpression) as any).arguments = apiOperationDecoratorArguments;
+        const expr =
+          apiOperationDecorator.expression as any as ts.CallExpression;
+        const updatedCallExpr = factory.updateCallExpression(
+          expr,
+          expr.expression,
+          undefined,
+          apiOperationDecoratorArguments
+        );
+        return [
+          factory.updateDecorator(apiOperationDecorator, updatedCallExpr)
+        ];
       } else {
         return [
-          ts.createDecorator(
-            ts.createCall(
-              ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiOperation.name}`),
+          factory.createDecorator(
+            factory.createCallExpression(
+              factory.createIdentifier(
+                `${OPENAPI_NAMESPACE}.${ApiOperation.name}`
+              ),
               undefined,
               apiOperationDecoratorArguments
             )
@@ -153,25 +188,28 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   }
 
   createDecoratorObjectLiteralExpr(
+    factory: ts.NodeFactory,
     node: ts.MethodDeclaration,
     typeChecker: ts.TypeChecker,
-    existingProperties: ts.NodeArray<ts.PropertyAssignment> = ts.createNodeArray(),
+    existingProperties: ts.NodeArray<ts.PropertyAssignment> = factory.createNodeArray(),
     hostFilename: string
   ): ts.ObjectLiteralExpression {
     const properties = [
       ...existingProperties,
-      this.createStatusPropertyAssignment(node, existingProperties),
+      this.createStatusPropertyAssignment(factory, node, existingProperties),
       this.createTypePropertyAssignment(
+        factory,
         node,
         typeChecker,
         existingProperties,
         hostFilename
       )
     ];
-    return ts.createObjectLiteral(compact(properties));
+    return factory.createObjectLiteralExpression(compact(properties));
   }
 
   createTypePropertyAssignment(
+    factory: ts.NodeFactory,
     node: ts.MethodDeclaration,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
@@ -193,24 +231,25 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       return undefined;
     }
     typeReference = replaceImportPath(typeReference, hostFilename);
-    return ts.createPropertyAssignment(
+    return factory.createPropertyAssignment(
       'type',
-      ts.createIdentifier(typeReference)
+      factory.createIdentifier(typeReference)
     );
   }
 
   createStatusPropertyAssignment(
+    factory: ts.NodeFactory,
     node: ts.MethodDeclaration,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>
   ) {
     if (hasPropertyKey('status', existingProperties)) {
       return undefined;
     }
-    const statusNode = this.getStatusCodeIdentifier(node);
-    return ts.createPropertyAssignment('status', statusNode);
+    const statusNode = this.getStatusCodeIdentifier(factory, node);
+    return factory.createPropertyAssignment('status', statusNode);
   }
 
-  getStatusCodeIdentifier(node: ts.MethodDeclaration) {
+  getStatusCodeIdentifier(factory: ts.NodeFactory, node: ts.MethodDeclaration) {
     const decorators = node.decorators;
     const httpCodeDecorator = getDecoratorOrUndefinedByNames(
       ['HttpCode'],
@@ -224,8 +263,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     }
     const postDecorator = getDecoratorOrUndefinedByNames(['Post'], decorators);
     if (postDecorator) {
-      return ts.createIdentifier('201');
+      return factory.createIdentifier('201');
     }
-    return ts.createIdentifier('200');
+    return factory.createIdentifier('200');
   }
 }

@@ -12,6 +12,7 @@ type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
 
 interface ApiParamMetadata extends ParameterOptions {
   type?: Type<unknown> | Function | [Function] | string;
+  format?: string;
   enum?: SwaggerEnumType;
   enumName?: string;
 }

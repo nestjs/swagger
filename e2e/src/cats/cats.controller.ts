@@ -5,6 +5,7 @@ import {
   ApiExtension,
   ApiHeader,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiResponse,
   ApiSecurity,
@@ -13,7 +14,7 @@ import {
 import { CatsService } from './cats.service';
 import { Cat } from './classes/cat.class';
 import { CreateCatDto } from './dto/create-cat.dto';
-import { PaginationQuery } from './dto/pagination-query.dto';
+import { LettersEnum, PaginationQuery } from './dto/pagination-query.dto';
 
 @ApiSecurity('basic')
 @ApiBearerAuth()
@@ -87,4 +88,21 @@ export class CatsController {
 
   @Get('site*')
   getSite() {}
+
+  @Get('with-enum/:type')
+  @ApiParam({
+    name: 'type',
+    enum: LettersEnum,
+    enumName: 'Letter'
+  })
+  getWithEnumParam(@Param('type') type: LettersEnum) {}
+
+  @Get('with-random-query')
+  @ApiQuery({
+    name: 'type',
+    type: String,
+    minLength: 10,
+    maxLength: 100
+  } as any)
+  getWithRandomQuery(@Query('type') type: string) {}
 }
