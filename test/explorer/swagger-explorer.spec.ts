@@ -1205,6 +1205,7 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         'path'
       );
 
@@ -1264,6 +1265,7 @@ describe('SwaggerExplorer', () => {
           instance: new FooController(),
           metatype: FooController
         } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
         'path'
       );
 
