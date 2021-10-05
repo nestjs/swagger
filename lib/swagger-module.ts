@@ -77,7 +77,7 @@ export class SwaggerModule {
       jsonSpecPath = finalPath + '-json',
       swaggerUiLib,
       ...swaggerUiLibOptions
-    } = options;
+    } = options ?? {};
     const swaggerUi: SwaggerUiExpress =
       swaggerUiLib ??
       loadPackage('swagger-ui-express', 'SwaggerModule', () =>
