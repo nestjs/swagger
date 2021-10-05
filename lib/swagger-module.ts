@@ -7,7 +7,7 @@ import {
   SwaggerCustomOptions,
   SwaggerDocumentOptions
 } from './interfaces';
-import { SwaggerUiExpress } from './interfaces/swagger-ui-express-lib.interface';
+import { SwaggerUiExpress } from './interfaces/swagger-ui-express.interface';
 import { SwaggerScanner } from './swagger-scanner';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';

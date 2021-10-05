@@ -1,7 +1,7 @@
 import {
   SwaggerUiExpress,
   SwaggerUiExpressOptions
-} from './swagger-ui-express-lib.interface';
+} from './swagger-ui-express.interface';
 
 interface CommonSwaggerCustomOptions {
   useGlobalPrefix?: boolean;
