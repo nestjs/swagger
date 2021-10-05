@@ -7,6 +7,7 @@ import {
   SwaggerCustomOptions,
   SwaggerDocumentOptions
 } from './interfaces';
+import { ExpressSwaggerUiLib } from './interfaces/swagger-ui-express-lib.interface';
 import { SwaggerScanner } from './swagger-scanner';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { validatePath } from './utils/validate-path.util';
@@ -67,12 +68,14 @@ export class SwaggerModule {
     const finalPath = validatePath(path);
     const {
       jsonSpecPath = finalPath + '-json',
-      swaggerUiLib = 'swagger-ui-express', 
+      swaggerUiLib,
       ...swaggerUiOptions
     } = options;
-    const swaggerUi = loadPackage(swaggerUiLib, 'SwaggerModule', () =>
-      require(swaggerUiLib)
-    );
+    const swaggerUi: ExpressSwaggerUiLib =
+      swaggerUiLib ??
+      loadPackage('swagger-ui-express', 'SwaggerModule', () =>
+        require('swagger-ui-express')
+      );
     const swaggerHtml = swaggerUi.generateHTML(document, swaggerUiOptions);
     app.use(finalPath, swaggerUi.serveFiles(document, swaggerUiOptions));
 

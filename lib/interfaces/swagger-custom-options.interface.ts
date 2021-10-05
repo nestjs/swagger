@@ -1,17 +1,12 @@
-export interface ExpressSwaggerCustomOptions {
-  explorer?: boolean;
-  swaggerOptions?: Record<string, any>;
-  customCss?: string;
-  customCssUrl?: string;
-  customJs?: string;
-  customfavIcon?: string;
-  swaggerUrl?: string;
-  customSiteTitle?: string;
-  validatorUrl?: string;
-  url?: string;
-  urls?: Record<'url' | 'name', string>[];
+import {
+  ExpressSwaggerUiLib,
+  ExpressSwaggerUiLibOptions
+} from './swagger-ui-express-lib.interface';
+
+export interface ExpressSwaggerCustomOptions
+  extends ExpressSwaggerUiLibOptions {
   jsonSpecPath?: string;
-  swaggerUiLib?: string;
+  swaggerUiLib?: ExpressSwaggerUiLib;
 }
 
 export interface FastifySwaggerCustomOptions {
