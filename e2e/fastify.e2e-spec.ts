@@ -40,11 +40,7 @@ describe('Fastify Swagger', () => {
 
     try {
       let api = await SwaggerParser.validate(document as any);
-      console.log(
-        'API name: %s, Version: %s',
-        api.info.title,
-        api.info.version
-      );
+
       expect(api.info.title).toEqual('Cats example');
     } catch (err) {
       console.log(doc);
@@ -140,8 +136,12 @@ describe('Fastify Swagger', () => {
       });
 
       expect(response.statusCode).toEqual(200);
-      expect(response.headers['content-security-policy']).toContain(`script-src 'self' 'sha256`);
-      expect(response.headers['content-security-policy']).toContain(`style-src 'self' https: 'sha256`);
+      expect(response.headers['content-security-policy']).toContain(
+        `script-src 'self' 'sha256`
+      );
+      expect(response.headers['content-security-policy']).toContain(
+        `style-src 'self' https: 'sha256`
+      );
     });
   });
 
@@ -170,7 +170,7 @@ describe('Fastify Swagger', () => {
       staticCSP: `default-src 'self';`,
       transformStaticCSP: (header: string) => {
         checkParam(header);
-        return `default-src 'self'; script-src 'self';`
+        return `default-src 'self'; script-src 'self';`;
       }
     };
     SwaggerModule.setup('/swagger1', app, document1, options);
@@ -185,7 +185,9 @@ describe('Fastify Swagger', () => {
 
       expect(checkParam).toBeCalledWith(`default-src 'self';`);
       expect(response.statusCode).toEqual(200);
-      expect(response.headers['content-security-policy']).toEqual(`default-src 'self'; script-src 'self';`);
+      expect(response.headers['content-security-policy']).toEqual(
+        `default-src 'self'; script-src 'self';`
+      );
     });
   });
 });

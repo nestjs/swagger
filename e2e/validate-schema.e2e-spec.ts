@@ -50,11 +50,7 @@ describe('Validate OpenAPI schema', () => {
 
     try {
       let api = await SwaggerParser.validate(document as any);
-      console.log(
-        'API name: %s, Version: %s',
-        api.info.title,
-        api.info.version
-      );
+
       expect(api.info.title).toEqual('Cats example');
       expect(api.paths['/api/cats']['get']['x-codeSamples'][0]['lang']).toEqual(
         'JavaScript'
@@ -99,7 +95,7 @@ describe('Validate OpenAPI schema', () => {
     let api = (await SwaggerParser.validate(
       document as any
     )) as OpenAPIV3.Document;
-    console.log('API name: %s, Version: %s', api.info.title, api.info.version);
+
     expect(api.components.schemas).toHaveProperty('Person');
     expect(api.components.schemas).toHaveProperty('Cat');
   });
