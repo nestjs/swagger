@@ -1,6 +1,6 @@
 import {
-  ExpressSwaggerUiLib,
-  ExpressSwaggerUiLibOptions
+  SwaggerUiExpress,
+  SwaggerUiExpressOptions
 } from './swagger-ui-express-lib.interface';
 
 interface CommonSwaggerCustomOptions {
@@ -9,9 +9,9 @@ interface CommonSwaggerCustomOptions {
 
 export interface ExpressSwaggerCustomOptions
   extends CommonSwaggerCustomOptions,
-    ExpressSwaggerUiLibOptions {
+    SwaggerUiExpressOptions {
   jsonSpecPath?: string;
-  swaggerUiLib?: ExpressSwaggerUiLib;
+  swaggerUiLib?: SwaggerUiExpress;
 }
 
 export interface FastifySwaggerCustomOptions

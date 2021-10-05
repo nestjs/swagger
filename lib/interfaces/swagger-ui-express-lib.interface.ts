@@ -1,6 +1,6 @@
 import { OpenAPIObject } from './open-api-spec.interface';
 
-export interface ExpressSwaggerUiLibOptions {
+export interface SwaggerUiExpressOptions {
   explorer?: boolean;
   swaggerOptions?: Record<string, any>;
   customCss?: string;
@@ -14,14 +14,11 @@ export interface ExpressSwaggerUiLibOptions {
   urls?: Record<'url' | 'name', string>[];
 }
 
-export interface ExpressSwaggerUiLib {
+export interface SwaggerUiExpress {
   generateHTML(
     document: OpenAPIObject,
-    swaggerUiOptions: ExpressSwaggerUiLibOptions
+    options: SwaggerUiExpressOptions
   ): string;
 
-  serveFiles(
-    document: OpenAPIObject,
-    swaggerUiOptions: ExpressSwaggerUiLibOptions
-  ): any;
+  serveFiles(document: OpenAPIObject, options: SwaggerUiExpressOptions): any;
 }

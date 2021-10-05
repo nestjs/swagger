@@ -7,7 +7,7 @@ import {
   SwaggerCustomOptions,
   SwaggerDocumentOptions
 } from './interfaces';
-import { ExpressSwaggerUiLib } from './interfaces/swagger-ui-express-lib.interface';
+import { SwaggerUiExpress } from './interfaces/swagger-ui-express-lib.interface';
 import { SwaggerScanner } from './swagger-scanner';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
@@ -78,7 +78,7 @@ export class SwaggerModule {
       swaggerUiLib,
       ...swaggerUiLibOptions
     } = options;
-    const swaggerUi: ExpressSwaggerUiLib =
+    const swaggerUi: SwaggerUiExpress =
       swaggerUiLib ??
       loadPackage('swagger-ui-express', 'SwaggerModule', () =>
         require('swagger-ui-express')
