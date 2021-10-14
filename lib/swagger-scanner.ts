@@ -5,6 +5,7 @@ import { NestContainer } from '@nestjs/core/injector/container';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { InstanceToken, Module } from '@nestjs/core/injector/module';
 import { flatten, isEmpty } from 'lodash';
+import { ApiResponseOptions } from './decorators/';
 import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
 import {
   ReferenceObject,
@@ -80,6 +81,7 @@ export class SwaggerScanner {
                   modulePath,
                   globalPrefix,
                   internalConfigRef,
+                  transformResponsesToRefs(globalResponses),
                   operationIdFactory
                 )
               );

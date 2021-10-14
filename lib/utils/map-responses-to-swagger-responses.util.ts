@@ -9,7 +9,7 @@ const omitParamType = (param: Record<string, any>) => omit(param, 'type');
 
 export function mapResponsesToSwaggerResponses(
   responses: Record<string, ApiResponseMetadata>,
-  schemas: SchemaObject[],
+  schemas: Record<string, SchemaObject>,
   produces: string[] = ['application/json']
 ) {
   produces = isEmpty(produces) ? ['application/json'] : produces;

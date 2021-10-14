@@ -65,19 +65,3 @@ const getStatusCode = (method: Function) => {
       return HttpStatus.OK;
   }
 };
-
-const omitParamType = (param: Record<string, any>) => omit(param, 'type');
-const mapResponsesToSwaggerResponses = (
-  responses: ApiResponseMetadata[],
-  schemas: Record<string, SchemaObject>,
-  produces: string[] = ['application/json']
-) => {
-  produces = isEmpty(produces) ? ['application/json'] : produces;
-
-  const openApiResponses = mapValues(
-    responses,
-    (response: ApiResponseMetadata) =>
-      responseObjectFactory.create(response, produces, schemas)
-  );
-  return mapValues(openApiResponses, omitParamType);
-};
