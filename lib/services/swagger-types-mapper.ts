@@ -8,12 +8,22 @@ import {
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 
 export class SwaggerTypesMapper {
+  private readonly keysToRemove: Array<keyof ApiPropertyOptions | '$ref'> = [
+    'type',
+    'isArray',
+    'enum',
+    'enumName',
+    'items',
+    '$ref',
+    ...this.getSchemaOptionsKeys()
+  ];
+
   mapParamTypes(
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
   ) {
     return parameters.map((param) => {
       if (this.hasSchemaDefinition(param as BaseParameterObject)) {
-        return this.omitParamType(param);
+        return this.omitParamKeys(param);
       }
       const { type } = param as ParamWithTypeMetadata;
       const typeName =
@@ -29,27 +39,19 @@ export class SwaggerTypesMapper {
         isUndefined
       );
 
-      const keysToRemove: Array<keyof ApiPropertyOptions | '$ref'> = [
-        'type',
-        'isArray',
-        'enum',
-        'items',
-        '$ref',
-        ...this.getSchemaOptionsKeys()
-      ];
       if (this.isEnumArrayType(paramWithTypeMetadata)) {
         return this.mapEnumArrayType(
           paramWithTypeMetadata as ParamWithTypeMetadata,
-          keysToRemove
+          this.keysToRemove
         );
       } else if (paramWithTypeMetadata.isArray) {
         return this.mapArrayType(
           paramWithTypeMetadata as ParamWithTypeMetadata,
-          keysToRemove
+          this.keysToRemove
         );
       }
       return {
-        ...omit(param, keysToRemove),
+        ...omit(param, this.keysToRemove),
         schema: omitBy(
           {
             ...this.getSchemaOptions(param),
@@ -131,8 +133,8 @@ export class SwaggerTypesMapper {
     return !!param.schema;
   }
 
-  private omitParamType(param: ParamWithTypeMetadata | BaseParameterObject) {
-    return omit(param, 'type');
+  private omitParamKeys(param: ParamWithTypeMetadata | BaseParameterObject) {
+    return omit(param, this.keysToRemove);
   }
 
   private getSchemaOptionsKeys(): Array<keyof SchemaObject> {
@@ -145,13 +147,16 @@ export class SwaggerTypesMapper {
       'minItems',
       'minProperties',
       'maxItems',
+      'minLength',
+      'maxLength',
       'exclusiveMaximum',
       'exclusiveMinimum',
       'uniqueItems',
       'title',
       'format',
       'pattern',
-      'default',
+      'nullable',
+      'default'
     ];
   }
 }

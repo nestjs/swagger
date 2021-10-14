@@ -8,7 +8,7 @@ import { mapResponsesToSwaggerResponses } from '../utils/map-responses-to-swagge
 import { mergeAndUniq } from '../utils/merge-and-uniq.util';
 
 export const exploreGlobalApiResponseMetadata = (
-  schemas: SchemaObject[],
+  schemas: Record<string, SchemaObject>,
   metatype: Type<unknown>
 ) => {
   const responses: Record<string, ApiResponseMetadata> = Reflect.getMetadata(
@@ -24,7 +24,7 @@ export const exploreGlobalApiResponseMetadata = (
 };
 
 export const exploreApiResponseMetadata = (
-  schemas: SchemaObject[],
+  schemas: Record<string, SchemaObject>,
   instance: object,
   prototype: Type<unknown>,
   method: Function
@@ -64,4 +64,20 @@ const getStatusCode = (method: Function) => {
     default:
       return HttpStatus.OK;
   }
+};
+
+const omitParamType = (param: Record<string, any>) => omit(param, 'type');
+const mapResponsesToSwaggerResponses = (
+  responses: ApiResponseMetadata[],
+  schemas: Record<string, SchemaObject>,
+  produces: string[] = ['application/json']
+) => {
+  produces = isEmpty(produces) ? ['application/json'] : produces;
+
+  const openApiResponses = mapValues(
+    responses,
+    (response: ApiResponseMetadata) =>
+      responseObjectFactory.create(response, produces, schemas)
+  );
+  return mapValues(openApiResponses, omitParamType);
 };

@@ -1,3 +1,4 @@
+import * as ts from 'typescript';
 import {
   CallExpression,
   CommentRange,
@@ -15,7 +16,9 @@ import {
   Type,
   TypeChecker,
   TypeFlags,
-  TypeFormatFlags
+  TypeFormatFlags,
+  TypeNode,
+  UnionTypeNode
 } from 'typescript';
 import { isDynamicallyAdded } from './plugin-utils';
 
@@ -37,6 +40,10 @@ export function isBoolean(type: Type) {
 
 export function isString(type: Type) {
   return hasFlag(type, TypeFlags.String);
+}
+
+export function isStringLiteral(type: Type) {
+  return hasFlag(type, TypeFlags.StringLiteral) && !type.isUnion();
 }
 
 export function isNumber(type: Type) {
@@ -110,7 +117,8 @@ export function getMainCommentAndExamplesOfNode(
 ): [string, string[]] {
   const sourceText = sourceFile.getFullText();
   // in case we decide to include "// comments"
-  const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/\/+.*|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
+  const replaceRegex =
+    /^ *\** *@.*$|^ *\/\*+ *|^ *\/\/+.*|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
   //const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
 
   const commentResult = [];
@@ -123,7 +131,8 @@ export function getMainCommentAndExamplesOfNode(
         commentResult.push(oneComment);
       }
       if (includeExamples) {
-        const regexOfExample = /@example *((['"](?<exampleAsString>.+?)['"])|(?<exampleAsBooleanOrNumber>[^ ]+?)|(?<exampleAsArray>(\[.+?\]))) *$/gim;
+        const regexOfExample =
+          /@example *((['"](?<exampleAsString>.+?)['"])|(?<exampleAsBooleanOrNumber>[^ ]+?)|(?<exampleAsArray>(\[.+?\]))) *$/gim;
         let execResult: RegExpExecArray;
         while (
           (execResult = regexOfExample.exec(commentSource)) &&
@@ -199,4 +208,33 @@ function getNameFromExpression(expression: LeftHandSideExpression) {
     return (expression as PropertyAccessExpression).name;
   }
   return expression;
+}
+
+export function findNullableTypeFromUnion(
+  typeNode: UnionTypeNode,
+  typeChecker: TypeChecker
+) {
+  return typeNode.types.find((tNode: TypeNode) =>
+    hasFlag(typeChecker.getTypeAtLocation(tNode), TypeFlags.Null)
+  );
+}
+
+export function createBooleanLiteral(
+  factory: ts.NodeFactory,
+  flag: boolean
+): ts.BooleanLiteral {
+  return flag ? factory.createTrue() : factory.createFalse();
+}
+
+export function createPrimitiveLiteral(factory: ts.NodeFactory, item: unknown) {
+  const typeOfItem = typeof item;
+
+  switch (typeOfItem) {
+    case 'boolean':
+      return createBooleanLiteral(factory, item as boolean);
+    case 'number':
+      return factory.createNumericLiteral(item as number);
+    case 'string':
+      return factory.createStringLiteral(item as string);
+  }
 }
