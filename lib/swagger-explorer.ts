@@ -20,6 +20,7 @@ import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { RoutePathFactory } from '@nestjs/core/router/route-path-factory';
 import {
+  flatten,
   get,
   head,
   isArray,
@@ -132,54 +133,65 @@ export class SwaggerExplorer {
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);
 
-    const denormalizedPaths = this.metadataScanner
-      .scanFromPrototype<any, DenormalizedDoc>(instance, prototype, (name) => {
-        const targetCallback = prototype[name];
-        const excludeEndpoint = exploreApiExcludeEndpointMetadata(
-          instance,
-          prototype,
-          targetCallback
-        );
-        if (excludeEndpoint && excludeEndpoint.disable) {
-          return;
-        }
-        const ctrlExtraModels = exploreApiExtraModelsMetadata(
-          instance,
-          prototype,
-          targetCallback
-        );
-        this.registerExtraModels(ctrlExtraModels);
+    const denormalizedPaths = this.metadataScanner.scanFromPrototype<
+      any,
+      DenormalizedDoc[]
+    >(instance, prototype, (name) => {
+      const targetCallback = prototype[name];
+      const excludeEndpoint = exploreApiExcludeEndpointMetadata(
+        instance,
+        prototype,
+        targetCallback
+      );
+      if (excludeEndpoint && excludeEndpoint.disable) {
+        return;
+      }
+      const ctrlExtraModels = exploreApiExtraModelsMetadata(
+        instance,
+        prototype,
+        targetCallback
+      );
+      this.registerExtraModels(ctrlExtraModels);
 
-        const methodMetadata = mapValues(
-          documentResolvers,
-          (explorers: any[]) =>
-            explorers.reduce((metadata, fn) => {
-              const exploredMetadata = fn.call(
-                self,
-                instance,
-                prototype,
-                targetCallback,
-                metatype,
-                globalPrefix,
-                modulePath,
-                applicationConfig
-              );
-              if (!exploredMetadata) {
-                return metadata;
-              }
-              if (!isArray(exploredMetadata)) {
-                return { ...metadata, ...exploredMetadata };
-              }
-              return isArray(metadata)
-                ? [...metadata, ...exploredMetadata]
-                : exploredMetadata;
-            }, {})
-        );
+      const methodMetadata = mapValues(documentResolvers, (explorers: any[]) =>
+        explorers.reduce((metadata, fn) => {
+          const exploredMetadata = fn.call(
+            self,
+            instance,
+            prototype,
+            targetCallback,
+            metatype,
+            globalPrefix,
+            modulePath,
+            applicationConfig
+          );
+          if (!exploredMetadata) {
+            return metadata;
+          }
+          if (!isArray(exploredMetadata)) {
+            if (Array.isArray(metadata)) {
+              return metadata.map((item) => ({
+                ...item,
+                ...exploredMetadata
+              }));
+            }
+            return { ...metadata, ...exploredMetadata };
+          }
+          return isArray(metadata)
+            ? [...metadata, ...exploredMetadata]
+            : exploredMetadata;
+        }, {})
+      );
+
+      return methodMetadata.root.map((endpointMetadata: DenormalizedDoc) => {
+        endpointMetadata = {
+          ...methodMetadata,
+          root: endpointMetadata as any
+        };
         const mergedMethodMetadata = this.mergeMetadata(
           globalMetadata,
-          omitBy(methodMetadata, isEmpty)
+          omitBy(endpointMetadata, isEmpty)
         );
-
         return this.migrateOperationSchema(
           {
             responses: {},
@@ -189,10 +201,10 @@ export class SwaggerExplorer {
           prototype,
           targetCallback
         );
-      })
-      .filter((path) => path.root?.path);
+      });
+    });
 
-    return denormalizedPaths;
+    return flatten(denormalizedPaths).filter((path) => path.root?.path);
   }
 
   private exploreGlobalMetadata(
@@ -258,15 +270,19 @@ export class SwaggerExplorer {
       },
       requestMethod
     );
-
-    const fullPath = this.validateRoutePath(head(allRoutePaths));
-    const apiExtension = Reflect.getMetadata(DECORATORS.API_EXTENSION, method);
-    return {
-      method: RequestMethod[requestMethod].toLowerCase(),
-      path: fullPath === '' ? '/' : fullPath,
-      operationId: this.getOperationId(instance, method),
-      ...apiExtension
-    };
+    return allRoutePaths.map((routePath) => {
+      const fullPath = this.validateRoutePath(routePath);
+      const apiExtension = Reflect.getMetadata(
+        DECORATORS.API_EXTENSION,
+        method
+      );
+      return {
+        method: RequestMethod[requestMethod].toLowerCase(),
+        path: fullPath === '' ? '/' : fullPath,
+        operationId: this.getOperationId(instance, method),
+        ...apiExtension
+      };
+    });
   }
 
   private getOperationId(instance: object, method: Function): string {

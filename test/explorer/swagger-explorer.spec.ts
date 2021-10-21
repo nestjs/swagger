@@ -159,7 +159,7 @@ describe('SwaggerExplorer', () => {
       routes: DenormalizedDoc[],
       operationPrefix: string
     ) => {
-      expect(routes.length).toEqual(2);
+      expect(routes.length).toEqual(3);
 
       // POST
       expect(routes[0].root.operationId).toEqual(operationPrefix + 'create');
@@ -272,6 +272,48 @@ describe('SwaggerExplorer', () => {
       ).toEqual('');
       expect(
         (routes[1].responses['200'] as ResponseObject).content[
+          'application/json'
+        ]
+      ).toEqual({
+        schema: {
+          type: 'array',
+          items: {
+            $ref: '#/components/schemas/Foo'
+          }
+        }
+      });
+
+      // GET alias
+      expect(routes[2].root.operationId).toEqual(operationPrefix + 'find');
+      expect(routes[2].root.method).toEqual('get');
+      expect(routes[2].root.path).toEqual(
+        '/globalPrefix/modulePath/foo/{objectId}'
+      );
+      expect(routes[2].root.summary).toEqual('List all Foos');
+      expect(routes[2].root.parameters.length).toEqual(2);
+      expect(routes[2].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string'
+          }
+        },
+        {
+          in: 'query',
+          name: 'page',
+          required: true,
+          schema: {
+            type: 'string'
+          }
+        }
+      ]);
+      expect(
+        (routes[2].responses['200'] as ResponseObject).description
+      ).toEqual('');
+      expect(
+        (routes[2].responses['200'] as ResponseObject).content[
           'application/json'
         ]
       ).toEqual({
