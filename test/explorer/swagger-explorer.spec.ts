@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  Version,
-  VersioningType
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Version, VersioningType } from '@nestjs/common';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import {
@@ -45,9 +36,11 @@ describe('SwaggerExplorer', () => {
   ) => `${controllerKey}.${methodKey}`;
 
   describe('when module only uses metadata', () => {
-    class Foo {}
+    class Foo {
+    }
 
-    class CreateFoo {}
+    class CreateFoo {
+    }
 
     enum LettersEnum {
       A = 'A',
@@ -77,6 +70,9 @@ describe('SwaggerExplorer', () => {
         isArray: true
       })
       enumArr: LettersEnum;
+
+      @ApiProperty({ type: [String], format: 'uuid' })
+      formatArray: string[];
     }
 
     @Controller('')
@@ -166,7 +162,7 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root.method).toEqual('post');
       expect(routes[0].root.path).toEqual('/globalPrefix/modulePath/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
-      expect(routes[0].root.parameters.length).toEqual(5);
+      expect(routes[0].root.parameters.length).toEqual(6);
       expect(routes[0].root.parameters).toEqual([
         {
           in: 'query',
@@ -215,6 +211,18 @@ describe('SwaggerExplorer', () => {
             },
             type: 'array'
           }
+        },
+        {
+          in: 'query',
+          name: 'formatArray',
+          required: true,
+          schema: {
+            type: 'array',
+            items: {
+              type: 'string',
+              format: 'uuid'
+            }
+          }
         }
       ]);
       expect(routes[0].root.requestBody).toEqual({
@@ -234,7 +242,7 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[0].responses['201'] as ResponseObject).content[
           'application/json'
-        ]
+          ]
       ).toEqual({
         schema: {
           $ref: '#/components/schemas/Foo'
@@ -273,7 +281,7 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[1].responses['200'] as ResponseObject).content[
           'application/json'
-        ]
+          ]
       ).toEqual({
         schema: {
           type: 'array',
@@ -328,9 +336,11 @@ describe('SwaggerExplorer', () => {
   });
 
   describe('when explicit decorators and metadata are used', () => {
-    class Foo {}
+    class Foo {
+    }
 
-    class CreateFoo {}
+    class CreateFoo {
+    }
 
     @Controller('')
     @ApiBadRequestResponse({ description: 'Bad request' })
@@ -442,7 +452,7 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[0].responses['201'] as ResponseObject).content[
           'application/json'
-        ]
+          ]
       ).toEqual({
         schema: {
           $ref: '#/components/schemas/Foo'
@@ -480,7 +490,7 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[1].responses['200'] as ResponseObject).content[
           'application/json'
-        ]
+          ]
       ).toEqual({
         schema: {
           type: 'array',
@@ -492,7 +502,7 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[1].responses.default as ResponseObject).content[
           'application/json'
-        ]
+          ]
       ).toEqual({
         schema: {
           type: 'array',
@@ -504,9 +514,11 @@ describe('SwaggerExplorer', () => {
     };
   });
   describe('when only explicit decorators are used', () => {
-    class Foo {}
+    class Foo {
+    }
 
-    class CreateFoo {}
+    class CreateFoo {
+    }
 
     @Controller('')
     class FooController {
@@ -612,7 +624,7 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[0].responses['201'] as ResponseObject).content[
           'application/xml'
-        ]
+          ]
       ).toEqual({
         schema: {
           $ref: '#/components/schemas/Foo'
@@ -650,7 +662,7 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[1].responses['200'] as ResponseObject).content[
           'application/json'
-        ]
+          ]
       ).toEqual({
         schema: {
           type: 'array',
@@ -662,9 +674,11 @@ describe('SwaggerExplorer', () => {
     };
   });
   describe('when custom properties are passed', () => {
-    class Foo {}
+    class Foo {
+    }
 
-    class CreateFoo {}
+    class CreateFoo {
+    }
 
     @Controller('')
     class FooController {
@@ -781,7 +795,7 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[0].responses['201'] as ResponseObject).content[
           'application/json'
-        ]
+          ]
       ).toEqual({
         schema: {
           type: 'object',
@@ -840,7 +854,7 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[1].responses['200'] as ResponseObject).content[
           'application/json'
-        ]
+          ]
       ).toEqual({
         schema: {
           type: 'array',
@@ -864,7 +878,8 @@ describe('SwaggerExplorer', () => {
       F = 'f'
     }
 
-    class Foo {}
+    class Foo {
+    }
 
     @Controller({ path: '', version: '3' })
     class FooController {
@@ -1054,7 +1069,8 @@ describe('SwaggerExplorer', () => {
   });
 
   describe('when headers are defined', () => {
-    class Foo {}
+    class Foo {
+    }
 
     @ApiHeader({
       name: 'Authorization',
@@ -1191,7 +1207,8 @@ describe('SwaggerExplorer', () => {
     });
   });
   describe('when a controller is excluded', () => {
-    class Foo {}
+    class Foo {
+    }
 
     @ApiExcludeController()
     @Controller('')
