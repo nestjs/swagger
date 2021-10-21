@@ -183,16 +183,33 @@ export class SwaggerExplorer {
         }, {})
       );
 
-      return methodMetadata.root.map((endpointMetadata: DenormalizedDoc) => {
-        endpointMetadata = {
-          ...methodMetadata,
-          root: endpointMetadata as any
-        };
-        const mergedMethodMetadata = this.mergeMetadata(
-          globalMetadata,
-          omitBy(endpointMetadata, isEmpty)
-        );
-        return this.migrateOperationSchema(
+      if (Array.isArray(methodMetadata.root)) {
+        return methodMetadata.root.map((endpointMetadata: DenormalizedDoc) => {
+          endpointMetadata = {
+            ...methodMetadata,
+            root: endpointMetadata as any
+          };
+          const mergedMethodMetadata = this.mergeMetadata(
+            globalMetadata,
+            omitBy(endpointMetadata, isEmpty)
+          );
+          return this.migrateOperationSchema(
+            {
+              responses: {},
+              ...omit(globalMetadata, 'chunks'),
+              ...mergedMethodMetadata
+            },
+            prototype,
+            targetCallback
+          );
+        });
+      }
+      const mergedMethodMetadata = this.mergeMetadata(
+        globalMetadata,
+        omitBy(methodMetadata, isEmpty)
+      );
+      return [
+        this.migrateOperationSchema(
           {
             responses: {},
             ...omit(globalMetadata, 'chunks'),
@@ -200,8 +217,8 @@ export class SwaggerExplorer {
           },
           prototype,
           targetCallback
-        );
-      });
+        )
+      ];
     });
 
     return flatten(denormalizedPaths).filter((path) => path.root?.path);
