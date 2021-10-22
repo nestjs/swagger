@@ -52,6 +52,11 @@ describe('Fastify Swagger', () => {
     }
   });
 
+  it('should fix colons in url', async () => {
+    const document = SwaggerModule.createDocument(app, builder.build());
+    expect(document.paths['/fastify:colon:another/{prop}']).toBeDefined();
+  });
+
   it('should pass uiConfig options to fastify-swagger', async () => {
     const document1 = SwaggerModule.createDocument(app, builder.build());
     const uiConfig = {

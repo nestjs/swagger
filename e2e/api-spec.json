@@ -67,6 +67,50 @@
         }
       }
     },
+    "/api/v1/express:colon:another/{prop}": {
+      "get": {
+        "operationId": "AppController_withColonExpress",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v2/express:colon:another/{prop}": {
+      "get": {
+        "operationId": "AppController_withColonExpress",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/fastify:{colon}:{another}/{prop}": {
+      "get": {
+        "operationId": "AppController_withColonFastify",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v2/fastify:{colon}:{another}/{prop}": {
+      "get": {
+        "operationId": "AppController_withColonFastify",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/cats": {
       "post": {
         "operationId": "CatsController_create",
