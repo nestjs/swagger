@@ -439,8 +439,11 @@ export class SwaggerExplorer {
     metatype: Type<unknown> | Function,
     versioningOptions: VersioningOptions | undefined
   ): VersionValue | undefined {
-    return versioningOptions?.type === VersioningType.URI
-      ? Reflect.getMetadata(VERSION_METADATA, metatype)
-      : undefined;
+    if (versioningOptions?.type === VersioningType.URI) {
+      return (
+        Reflect.getMetadata(VERSION_METADATA, metatype) ??
+        versioningOptions.defaultVersion
+      );
+    }
   }
 }
