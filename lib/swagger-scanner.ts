@@ -19,7 +19,7 @@ import { getGlobalPrefix } from './utils/get-global-prefix';
 import { stripLastSlash } from './utils/strip-last-slash.util';
 
 export class SwaggerScanner {
-  private readonly transfomer = new SwaggerTransformer();
+  private readonly transformer = new SwaggerTransformer();
   private readonly schemaObjectFactory = new SchemaObjectFactory(
     new ModelPropertiesAccessor(),
     new SwaggerTypesMapper()
@@ -93,7 +93,7 @@ export class SwaggerScanner {
     this.addExtraModels(schemas, extraModels);
 
     return {
-      ...this.transfomer.normalizePaths(flatten(denormalizedPaths)),
+      ...this.transformer.normalizePaths(flatten(denormalizedPaths)),
       components: {
         schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }
