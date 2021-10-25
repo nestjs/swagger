@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
+import type { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
 import * as SwaggerParser from 'swagger-parser';
 import {
@@ -12,7 +13,6 @@ import {
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
-import type { OpenAPIV3 } from 'openapi-types';
 
 describe('Validate OpenAPI schema', () => {
   let app: INestApplication;
@@ -23,6 +23,7 @@ describe('Validate OpenAPI schema', () => {
       logger: false
     });
     app.setGlobalPrefix('api/');
+    app.enableVersioning();
 
     options = new DocumentBuilder()
       .setTitle('Cats example')
