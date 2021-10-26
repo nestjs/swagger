@@ -1341,6 +1341,7 @@ describe('SwaggerExplorer', () => {
         }
       ]);
     });
+  });
 
   describe('when defaultVersion is defined', () => {
     let explorer: SwaggerExplorer;
