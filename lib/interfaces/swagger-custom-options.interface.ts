@@ -25,6 +25,7 @@ export interface FastifySwaggerCustomOptions
     displayRequestDuration: boolean;
     docExpansion: string;
     filter: boolean | string;
+    layout: string;
     maxDisplayedTags: number;
     showExtensions: boolean;
     showCommonExtensions: boolean;
