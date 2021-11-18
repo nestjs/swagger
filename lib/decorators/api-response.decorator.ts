@@ -1,5 +1,4 @@
-import { Type } from '@nestjs/common';
-import { HttpStatus } from '@nestjs/common/enums/http-status.enum';
+import { HttpStatus, Type } from '@nestjs/common';
 import { omit } from 'lodash';
 import { DECORATORS } from '../constants';
 import {
