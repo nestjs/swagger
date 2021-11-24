@@ -2,6 +2,10 @@ interface CommonSwaggerCustomOptions {
   useGlobalPrefix?: boolean,
 }
 
+/**
+ * Check out all available `swagger-ui` options here:
+ * {@link https://github.com/swagger-api/swagger-ui/blob/master/docs/usage/configuration.md}
+ */
 export interface SwaggerConfigurationOptions {
 
     /**
