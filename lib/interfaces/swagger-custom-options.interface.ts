@@ -23,6 +23,7 @@ export interface ExpressSwaggerCustomOptions extends CommonSwaggerCustomOptions 
    * @memberof ExpressSwaggerCustomOptions
    */
   swaggerOptions?: Record<string, any> & Partial<ExpressSwaggerOptions>;
+  explorer?: boolean;
   customCss?: string;
   customCssUrl?: string;
   customJs?: string;
