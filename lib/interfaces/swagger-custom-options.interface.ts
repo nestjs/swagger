@@ -1,3 +1,4 @@
+import { FastifySwaggerInitOAuthOptions, FastifySwaggerUiConfigOptions } from "fastify-swagger";
 import { SwaggerUIOptions } from "./express-swagger-ui-custom-options.interface";
 
 interface CommonSwaggerCustomOptions {
@@ -36,31 +37,10 @@ export interface ExpressSwaggerCustomOptions extends CommonSwaggerCustomOptions 
 }
 
 export interface FastifySwaggerCustomOptions extends CommonSwaggerCustomOptions {
-  uiConfig?: Partial<{
-    deepLinking: boolean;
-    displayOperationId: boolean;
-    defaultModelsExpandDepth: number;
-    defaultModelExpandDepth: number;
-    defaultModelRendering: string;
-    displayRequestDuration: boolean;
-    docExpansion: string;
-    filter: boolean | string;
-    layout: string;
-    maxDisplayedTags: number;
-    showExtensions: boolean;
-    showCommonExtensions: boolean;
-    useUnsafeMarkdown: boolean;
-    syntaxHighlight:
-      | {
-          activate?: boolean;
-          theme?: string;
-        }
-      | false;
-    tryItOutEnabled: boolean;
-    validatorUrl: string | null;
+  uiConfig?: FastifySwaggerUiConfigOptions & Partial<{
     persistAuthorization: boolean;
   }>;
-  initOAuth?: Record<string, any>;
+  initOAuth?: FastifySwaggerInitOAuthOptions;
   staticCSP?: boolean | string | Record<string, string | string[]>;
   transformStaticCSP?: (header: string) => string;
 }
