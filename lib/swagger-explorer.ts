@@ -15,9 +15,8 @@ import {
   isString,
   isUndefined
 } from '@nestjs/common/utils/shared.utils';
-import { ApplicationConfig } from '@nestjs/core';
+import { ApplicationConfig, MetadataScanner } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { MetadataScanner } from '@nestjs/core/metadata-scanner';
 import { RoutePathFactory } from '@nestjs/core/router/route-path-factory';
 import {
   flatten,
