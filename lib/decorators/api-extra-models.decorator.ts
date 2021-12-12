@@ -7,7 +7,9 @@ export function ApiExtraModels(...models: Function[]) {
     descriptor?: TypedPropertyDescriptor<any>
   ): any => {
     if (descriptor) {
-      const extraModels = Reflect.getMetadata(DECORATORS.API_EXTRA_MODELS, descriptor.value) || [];
+      const extraModels =
+        Reflect.getMetadata(DECORATORS.API_EXTRA_MODELS, descriptor.value) ||
+        [];
       Reflect.defineMetadata(
         DECORATORS.API_EXTRA_MODELS,
         [...extraModels, ...models],
@@ -16,7 +18,8 @@ export function ApiExtraModels(...models: Function[]) {
       return descriptor;
     }
 
-    const extraModels = Reflect.getMetadata(DECORATORS.API_EXTRA_MODELS, target) || [];
+    const extraModels =
+      Reflect.getMetadata(DECORATORS.API_EXTRA_MODELS, target) || [];
     Reflect.defineMetadata(
       DECORATORS.API_EXTRA_MODELS,
       [...extraModels, ...models],

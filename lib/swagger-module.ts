@@ -44,9 +44,9 @@ export class SwaggerModule {
     const httpAdapter = app.getHttpAdapter();
     const globalPrefix = getGlobalPrefix(app);
     const finalPath = validatePath(
-      (options?.useGlobalPrefix && globalPrefix && !globalPrefix.match(/^(\/?)$/))
-      ? `${globalPrefix}${validatePath(path)}`
-      : path
+      options?.useGlobalPrefix && globalPrefix && !globalPrefix.match(/^(\/?)$/)
+        ? `${globalPrefix}${validatePath(path)}`
+        : path
     );
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
       return this.setupFastify(
