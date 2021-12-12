@@ -109,7 +109,10 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
   return formatFlags;
 }
 
-export function getMainCommentOfNode(node: Node, sourceFile: SourceFile): string{
+export function getMainCommentOfNode(
+  node: Node,
+  sourceFile: SourceFile
+): string {
   const sourceText = sourceFile.getFullText();
   // in case we decide to include "// comments"
   const replaceRegex =
@@ -141,21 +144,32 @@ export function getMainCommentOfNode(node: Node, sourceFile: SourceFile): string
   return commentResult.join('\n');
 }
 
-export function getTsDocTagsOfNode(node: Node, sourceFile: SourceFile, typeChecker: TypeChecker) {
+export function getTsDocTagsOfNode(
+  node: Node,
+  sourceFile: SourceFile,
+  typeChecker: TypeChecker
+) {
   const sourceText = sourceFile.getFullText();
 
-  const tagDefinitions: { [key: string]: { regex: RegExp, hasProperties: boolean, repeatable: boolean } } = {
+  const tagDefinitions: {
+    [key: string]: {
+      regex: RegExp;
+      hasProperties: boolean;
+      repeatable: boolean;
+    };
+  } = {
     example: {
-      regex: /@example *((['"](?<string>.+?)['"])|(?<booleanOrNumber>[^ ]+?)|(?<array>(\[.+?\]))) *$/gim,
+      regex:
+        /@example *((['"](?<string>.+?)['"])|(?<booleanOrNumber>[^ ]+?)|(?<array>(\[.+?\]))) *$/gim,
       hasProperties: true,
-      repeatable: true,
+      repeatable: true
     },
     deprecated: {
       regex: /@deprecated */gim,
       hasProperties: false,
-      repeatable: false,
-    },
-  }
+      repeatable: false
+    }
+  };
 
   const tagResults: any = {};
   const introspectTsDocTags = (comments?: CommentRange[]) =>
@@ -186,7 +200,7 @@ export function getTsDocTagsOfNode(node: Node, sourceFile: SourceFile, typeCheck
             value = docValue;
             if (!type || !isString(type)) {
               try {
-                value = JSON.parse(value)
+                value = JSON.parse(value);
               } catch {}
             }
           } else {
@@ -276,7 +290,10 @@ export function createPrimitiveLiteral(factory: ts.NodeFactory, item: unknown) {
   }
 }
 
-export function createLiteralFromAnyValue(factory: ts.NodeFactory, item: unknown) {
+export function createLiteralFromAnyValue(
+  factory: ts.NodeFactory,
+  item: unknown
+) {
   return Array.isArray(item)
     ? factory.createArrayLiteralExpression(
         item.map((item) => createLiteralFromAnyValue(factory, item))

@@ -145,7 +145,10 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       ...(apiOperationExprProperties ?? factory.createNodeArray())
     ];
 
-    const hasDeprecatedKey = hasPropertyKey('deprecated', factory.createNodeArray(apiOperationExprProperties));
+    const hasDeprecatedKey = hasPropertyKey(
+      'deprecated',
+      factory.createNodeArray(apiOperationExprProperties)
+    );
     if (!hasDeprecatedKey && tags.deprecated) {
       const deprecatedPropertyAssignment = factory.createPropertyAssignment(
         'deprecated',
@@ -159,17 +162,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         factory.createObjectLiteralExpression(compact(properties))
       ]);
     if (apiOperationDecorator) {
-      const expr =
-        apiOperationDecorator.expression as any as ts.CallExpression;
+      const expr = apiOperationDecorator.expression as any as ts.CallExpression;
       const updatedCallExpr = factory.updateCallExpression(
         expr,
         expr.expression,
         undefined,
         apiOperationDecoratorArguments
       );
-      return [
-        factory.updateDecorator(apiOperationDecorator, updatedCallExpr)
-      ];
+      return [factory.updateDecorator(apiOperationDecorator, updatedCallExpr)];
     } else {
       return [
         factory.createDecorator(
