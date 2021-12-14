@@ -1,7 +1,7 @@
 import { SwaggerUIOptions } from "./swagger-ui-options.interface";
 
 interface CommonSwaggerCustomOptions {
-  useGlobalPrefix?: boolean,
+  useGlobalPrefix?: boolean;
 }
 
 export interface ExpressSwaggerOptions {
@@ -35,7 +35,8 @@ export interface ExpressSwaggerCustomOptions extends CommonSwaggerCustomOptions 
   urls?: Record<'url' | 'name', string>[];
 }
 
-export interface FastifySwaggerCustomOptions extends CommonSwaggerCustomOptions {
+export interface FastifySwaggerCustomOptions
+  extends CommonSwaggerCustomOptions {
   uiConfig?: Partial<{
     deepLinking: boolean
     displayOperationId: boolean
