@@ -13,7 +13,6 @@ import {
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
-import type { OpenAPIV3 } from 'openapi-types';
 import { CatsController } from "./src/cats/cats.controller";
 
 describe('Validate OpenAPI schema', () => {
