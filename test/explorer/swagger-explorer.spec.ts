@@ -415,20 +415,20 @@ describe('SwaggerExplorer', () => {
       expect(routes[1].root.parameters.length).toEqual(2);
       expect(routes[1].root.parameters).toEqual([
         {
+          in: 'query',
+          name: 'page',
+          required: true,
+          schema: {
+            type: 'string'
+          }
+        },
+        {
           in: 'path',
           name: 'objectId',
           required: true,
           schema: {
             type: 'string',
             format: 'uuid'
-          }
-        },
-        {
-          in: 'query',
-          name: 'page',
-          required: true,
-          schema: {
-            type: 'string'
           }
         }
       ]);
@@ -867,7 +867,7 @@ describe('SwaggerExplorer', () => {
         enumName: 'QueryEnum',
         isArray: true
       })
-      findBar(): Promise<Foo> {
+      findBar(@Query('order') order: QueryEnum, @Query('page') page: QueryEnum): Promise<Foo> {
         return Promise.resolve(null);
       }
     }
