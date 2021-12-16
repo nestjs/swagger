@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
+import type { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
 import * as SwaggerParser from 'swagger-parser';
 import {
@@ -24,6 +25,7 @@ describe('Validate OpenAPI schema', () => {
       logger: false
     });
     app.setGlobalPrefix('api/');
+    app.enableVersioning();
 
     options = new DocumentBuilder()
       .setTitle('Cats example')

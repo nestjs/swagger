@@ -9,6 +9,7 @@ import {
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
+import { getGlobalPrefix } from './utils/get-global-prefix';
 import { validatePath } from './utils/validate-path.util';
 
 export class SwaggerModule {
@@ -41,16 +42,22 @@ export class SwaggerModule {
     options?: SwaggerCustomOptions
   ) {
     const httpAdapter = app.getHttpAdapter();
+    const globalPrefix = getGlobalPrefix(app);
+    const finalPath = validatePath(
+      options?.useGlobalPrefix && globalPrefix && !globalPrefix.match(/^(\/?)$/)
+        ? `${globalPrefix}${validatePath(path)}`
+        : path
+    );
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
       return this.setupFastify(
-        path,
+        finalPath,
         httpAdapter,
         document,
         options as FastifySwaggerCustomOptions
       );
     }
     return this.setupExpress(
-      path,
+      finalPath,
       app,
       document,
       options as ExpressSwaggerCustomOptions
@@ -64,15 +71,14 @@ export class SwaggerModule {
     options?: ExpressSwaggerCustomOptions
   ) {
     const httpAdapter = app.getHttpAdapter();
-    const finalPath = validatePath(path);
     const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () =>
       require('swagger-ui-express')
     );
     const swaggerHtml = swaggerUi.generateHTML(document, options);
-    app.use(finalPath, swaggerUi.serveFiles(document, options));
+    app.use(path, swaggerUi.serveFiles(document, options));
 
-    httpAdapter.get(finalPath, (req, res) => res.send(swaggerHtml));
-    httpAdapter.get(finalPath + '-json', (req, res) => res.json(document));
+    httpAdapter.get(path, (req, res) => res.send(swaggerHtml));
+    httpAdapter.get(path + '-json', (req, res) => res.json(document));
   }
 
   private static setupFastify(
@@ -103,7 +109,10 @@ export class SwaggerModule {
           specification: {
             document
           },
-          uiConfig: (options || {}).uiConfig
+          uiConfig: options?.uiConfig,
+          initOAuth: options?.initOAuth,
+          staticCSP: options?.staticCSP,
+          transformStaticCSP: options?.transformStaticCSP
         }
       );
     });

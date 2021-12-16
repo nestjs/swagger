@@ -53,7 +53,7 @@ export function createApiPropertyDecorator(
       items: {
         type: options.type[0]
       }
-    }
+    };
   }
 
   return createPropertyDecorator(
