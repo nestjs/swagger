@@ -13,6 +13,7 @@ import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
 import type { OpenAPIV3 } from 'openapi-types';
+import {CatsController} from "./src/cats/cats.controller";
 
 describe('Validate OpenAPI schema', () => {
   let app: INestApplication;
@@ -40,6 +41,8 @@ describe('Validate OpenAPI schema', () => {
       .addSecurityRequirements('bearer')
       .addSecurityRequirements({ basic: [], cookie: [] })
       .build();
+
+    Reflect.deleteMetadata("swagger/apiParameters", CatsController.prototype.getWithEnumParam);
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {
