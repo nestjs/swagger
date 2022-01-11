@@ -93,6 +93,9 @@ export class CreateUserDto {
   @ApiProperty()
   createdAt: Date;
 
+  @ApiProperty()
+  amount: bigint;
+
   static _OPENAPI_METADATA_FACTORY() {
     return {
       tags: { type: () => [String] },

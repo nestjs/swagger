@@ -50,6 +50,10 @@ export function isNumber(type: Type) {
   return hasFlag(type, TypeFlags.Number);
 }
 
+export function isBigInt(type: Type) {
+  return hasFlag(type, TypeFlags.BigInt);
+}
+
 export function isInterface(type: Type) {
   return hasObjectFlag(type, ObjectFlags.Interface);
 }
