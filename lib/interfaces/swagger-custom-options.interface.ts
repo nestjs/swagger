@@ -42,6 +42,8 @@ export interface FastifySwaggerCustomOptions
     tryItOutEnabled: boolean;
     validatorUrl: string | null;
     persistAuthorization: boolean;
+    tagsSorter: string;
+    operationsSorter: string;
   }>;
   initOAuth?: Record<string, any>;
   staticCSP?: boolean | string | Record<string, string | string[]>;
