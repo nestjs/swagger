@@ -406,6 +406,13 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     );
     this.addPropertyByValidationDecorator(
       factory,
+      'IsIn',
+      'enum',
+      decorators,
+      assignments
+    );
+    this.addPropertyByValidationDecorator(
+      factory,
       'Min',
       'minimum',
       decorators,
