@@ -1,5 +1,5 @@
 export const createCatDtoText = `
-import { IsInt, IsString } from 'class-validator';
+import { IsInt, IsString, IsPositive, IsNegative, Length, Matches } from 'class-validator';
 
 enum Status {
     ENABLED,
@@ -19,10 +19,20 @@ class OtherNode {
 }
 
 export class CreateCatDto {
+  @Matches(/^[+]?abc$/)
+  pattern: string;
   name: string;
   @Min(0)
   @Max(10)
   age: number = 3;
+  @IsPositive()
+  positive: number = 5;
+  @IsNegative()
+  negative: number = -1;
+  @Length(2)
+  lengthMin: string;
+  @Length(3, 5)
+  lengthMinMax: string;
   tags: string[];
   status: Status = Status.ENABLED;
   status2?: Status;
@@ -49,7 +59,7 @@ export class CreateCatDto {
 }
 `;
 
-export const createCatDtoTextTranspiled = `import { IsString } from 'class-validator';
+export const createCatDtoTextTranspiled = `import { IsString, IsPositive, IsNegative, Length, Matches } from 'class-validator';
 var Status;
 (function (Status) {
     Status[Status[\"ENABLED\"] = 0] = \"ENABLED\";
@@ -67,16 +77,33 @@ class OtherNode {
 export class CreateCatDto {
     constructor() {
         this.age = 3;
+        this.positive = 5;
+        this.negative = -1;
         this.status = Status.ENABLED;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, statusArr: { required: false, enum: Status, isArray: true }, oneValueEnum: { required: false, enum: OneValueEnum }, oneValueEnumArr: { required: false, enum: OneValueEnum }, breed: { required: false, type: () => String, title: "this is breed im comment" }, nodes: { required: true, type: () => [Object] }, optionalBoolean: { required: false, type: () => Boolean }, date: { required: true, type: () => Date }, twoDimensionPrimitives: { required: true, type: () => [[String]] }, twoDimensionNodes: { required: true, type: () => [[OtherNode]] } };
+        return { pattern: { required: true, type: () => String, pattern: /^[+]?abc$/ }, name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, positive: { required: true, type: () => Number, default: 5, minimum: 1 }, negative: { required: true, type: () => Number, default: -1, maximum: -1 }, lengthMin: { required: true, type: () => String, minLength: 2 }, lengthMinMax: { required: true, type: () => String, minLength: 3, maxLength: 5 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, statusArr: { required: false, enum: Status, isArray: true }, oneValueEnum: { required: false, enum: OneValueEnum }, oneValueEnumArr: { required: false, enum: OneValueEnum }, breed: { required: false, type: () => String, title: "this is breed im comment" }, nodes: { required: true, type: () => [Object] }, optionalBoolean: { required: false, type: () => Boolean }, date: { required: true, type: () => Date }, twoDimensionPrimitives: { required: true, type: () => [[String]] }, twoDimensionNodes: { required: true, type: () => [[OtherNode]] } };
     }
 }
+__decorate([
+    Matches(/^[+]?abc$/)
+], CreateCatDto.prototype, \"pattern\", void 0);
 __decorate([
     Min(0),
     Max(10)
 ], CreateCatDto.prototype, \"age\", void 0);
+__decorate([
+    IsPositive()
+], CreateCatDto.prototype, \"positive\", void 0);
+__decorate([
+    IsNegative()
+], CreateCatDto.prototype, \"negative\", void 0);
+__decorate([
+    Length(2)
+], CreateCatDto.prototype, \"lengthMin\", void 0);
+__decorate([
+    Length(3, 5)
+], CreateCatDto.prototype, \"lengthMinMax\", void 0);
 __decorate([
     ApiProperty({ description: "this is breed", type: String }),
     IsString()
