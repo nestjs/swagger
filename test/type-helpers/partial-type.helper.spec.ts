@@ -1,6 +1,6 @@
 import { Type } from '@nestjs/common';
 import { Expose, Transform } from 'class-transformer';
-import { IsString, validate } from 'class-validator';
+import {IsString, validate, ValidateIf} from 'class-validator';
 import { DECORATORS } from '../../lib/constants';
 import { ApiProperty } from '../../lib/decorators';
 import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
@@ -33,6 +33,7 @@ describe('PartialType', () => {
   }
 
   class UpdateUserDto extends PartialType(CreateUserDto) {}
+  class UpdateUserNotNullableDto extends PartialType(CreateUserDto, ValidateIf((obj, value) => typeof value !== 'undefined')) {}
 
   let modelPropertiesAccessor: ModelPropertiesAccessor;
 
@@ -45,6 +46,24 @@ describe('PartialType', () => {
       const updateDto = new UpdateUserDto();
       const validationErrors = await validate(updateDto);
       expect(validationErrors).toHaveLength(0);
+    });
+
+    it('should apply custom decorators to properties reflected by the plugin', async () => {
+      let updateDto = new UpdateUserNotNullableDto();
+      let validationErrors = await validate(updateDto);
+      expect(validationErrors).toHaveLength(0);
+
+      updateDto = new UpdateUserNotNullableDto();
+      updateDto.firstName = null;
+      validationErrors = await validate(updateDto);
+      expect(validationErrors).toHaveLength(1);
+      expect(validationErrors).toMatchObject([
+        {
+          constraints: {
+            "isString": "firstName must be a string",
+          },
+        },
+      ]);
     });
   });
   describe('OpenAPI metadata', () => {

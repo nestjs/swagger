@@ -14,7 +14,7 @@ import { clonePluginMetadataFactory } from './mapped-types.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
-export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
+export function PartialType<T>(classRef: Type<T>, decorator?: PropertyDecorator): Type<Partial<T>> {
   const fields = modelPropertiesAccessor.getModelProperties(classRef.prototype);
 
   abstract class PartialTypeClass {
@@ -45,15 +45,23 @@ export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
       required: false
     });
     decoratorFactory(PartialTypeClass.prototype, key);
-    applyIsOptionalDecorator(PartialTypeClass, key);
+    applyDecorator(key);
   });
 
   if (PartialTypeClass[METADATA_FACTORY_NAME]) {
     const pluginFields = Object.keys(PartialTypeClass[METADATA_FACTORY_NAME]());
     pluginFields.forEach((key) =>
-      applyIsOptionalDecorator(PartialTypeClass, key)
+      applyDecorator(key)
     );
   }
 
   return PartialTypeClass as Type<Partial<T>>;
+
+  function applyDecorator(key: string) {
+    if (decorator) {
+      decorator(PartialTypeClass.prototype, key);
+    } else {
+      applyIsOptionalDecorator(PartialTypeClass, key);
+    }
+  }
 }
