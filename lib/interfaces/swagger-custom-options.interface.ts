@@ -48,6 +48,10 @@ export interface FastifySwaggerCustomOptions
   initOAuth?: Record<string, any>;
   staticCSP?: boolean | string | Record<string, string | string[]>;
   transformStaticCSP?: (header: string) => string;
+  uiHooks?: {
+    onRequest?: Function;
+    preHandler?: Function;
+  };
 }
 
 export type SwaggerCustomOptions =
