@@ -122,7 +122,7 @@ export function getMainCommentAndExamplesOfNode(
   const sourceText = sourceFile.getFullText();
   // in case we decide to include "// comments"
   const replaceRegex =
-    /^ *\** *@.*$|^ *\/\*+ *|^ *\/\/+.*|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
+    /^\s*\** *@.*$|^\s*\/\*+ *|^\s*\/\/+.*|^\s*\/+ *|^\s*\*+ *| +$| *\**\/ *$/gim;
   //const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
 
   const commentResult = [];
