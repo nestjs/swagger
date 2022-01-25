@@ -10,6 +10,7 @@ import {
   isEnum,
   isInterface,
   isNumber,
+  isBigInt,
   isString,
   isStringLiteral
 } from './ast-utils';
@@ -45,6 +46,9 @@ export function getTypeReferenceAsString(
   }
   if (isNumber(type)) {
     return Number.name;
+  }
+  if (isBigInt(type)) {
+    return BigInt.name;
   }
   if (isString(type) || isStringLiteral(type)) {
     return String.name;

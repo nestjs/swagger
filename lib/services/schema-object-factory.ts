@@ -500,6 +500,14 @@ export class SchemaObjectFactory {
         name: metadata.name || key
       };
     }
+    if (this.isBigInt(trueType as Function)) {
+      return {
+        format: 'int64',
+        ...metadata,
+        type: 'integer',
+        name: metadata.name || key
+      };
+    }
     if (!isBuiltInType(trueType as Function)) {
       return this.createNotBuiltInTypeReference(
         key,
@@ -567,6 +575,10 @@ export class SchemaObjectFactory {
       }
     }
     return Object.getPrototypeOf(obj) === objPrototype;
+  }
+
+  private isBigInt(type: Function | Type<unknown> | string): boolean {
+    return type === BigInt;
   }
 
   private extractPropertyModifiers(
