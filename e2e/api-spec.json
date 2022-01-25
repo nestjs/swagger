@@ -130,6 +130,9 @@
       },
       "get": {
         "operationId": "CatsController_findAll",
+        "x-multiple": {
+          "test": "test"
+        },
         "x-codeSamples": [
           {
             "lang": "JavaScript",
@@ -226,7 +229,9 @@
           }
         },
         "tags": [
-          "cats"
+          "cats",
+          "tag2",
+          "tag1"
         ],
         "security": [
           {
