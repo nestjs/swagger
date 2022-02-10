@@ -42,7 +42,7 @@
     "eslint-config-prettier": "8.3.0",
     "eslint-plugin-import": "2.25.4",
     "express": "4.17.2",
-    "fastify-swagger": "4.14.0",
+    "fastify-swagger": "4.15.0",
     "husky": "7.0.4",
     "jest": "27.5.1",
     "lint-staged": "12.3.3",
