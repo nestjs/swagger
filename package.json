@@ -5,6 +5,8 @@
   "author": "Kamil Mysliwiec",
   "license": "MIT",
   "repository": "https://github.com/nestjs/swagger",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "format": "prettier \"lib/**/*.ts\" --write",
