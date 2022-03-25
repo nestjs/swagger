@@ -1232,7 +1232,7 @@ describe('SwaggerExplorer', () => {
       const METHOD_VERSION: VersionValue = '2';
       const CONTROLLER_MULTIPLE_VERSIONS: VersionValue = ['3', '4'];
 
-      @Controller({ path:'with-version', version: CONTROLLER_VERSION })
+      @Controller({ path: 'with-version', version: CONTROLLER_VERSION })
       class WithVersionController {
         @Get()
         foo(): void {}
@@ -1242,7 +1242,10 @@ describe('SwaggerExplorer', () => {
         bar(): void {}
       }
 
-      @Controller({ path:'with-multiple-version', version: CONTROLLER_MULTIPLE_VERSIONS })
+      @Controller({
+        path: 'with-multiple-version',
+        version: CONTROLLER_MULTIPLE_VERSIONS
+      })
       class WithMultipleVersionsController {
         @Get()
         foo(): void {}
@@ -1256,7 +1259,7 @@ describe('SwaggerExplorer', () => {
           type: VersioningType.URI,
           defaultVersion: 'THIS_SHOULD_NOT_APPEAR_ANYWHERE'
         });
-      })
+      });
 
       it('should use controller version defined', () => {
         const routes = explorer.exploreController(
@@ -1302,10 +1305,14 @@ describe('SwaggerExplorer', () => {
         );
 
         expect(routes[0].root.path).toEqual(
-          `/globalPrefix/v${CONTROLLER_MULTIPLE_VERSIONS[0]}/modulePath/with-multiple-version`
+          `/globalPrefix/v${
+            CONTROLLER_MULTIPLE_VERSIONS[0] as string
+          }/modulePath/with-multiple-version`
         );
         expect(routes[1].root.path).toEqual(
-          `/globalPrefix/v${CONTROLLER_MULTIPLE_VERSIONS[1]}/modulePath/with-multiple-version`
+          `/globalPrefix/v${
+            CONTROLLER_MULTIPLE_VERSIONS[1] as string
+          }/modulePath/with-multiple-version`
         );
       });
     });
@@ -1340,7 +1347,6 @@ describe('SwaggerExplorer', () => {
           `/globalPrefix/v${DEFAULT_VERSION}/modulePath/with-multiple-version`
         );
       });
-    })
-
+    });
   });
 });
