@@ -21,6 +21,7 @@ import {
   replaceImportPath
 } from '../utils/plugin-utils';
 import { AbstractFileVisitor } from './abstract.visitor';
+import { PropertyAssignment } from 'typescript';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
@@ -398,6 +399,20 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
     this.addPropertyByValidationDecorator(
       factory,
+      'Matches',
+      'pattern',
+      decorators,
+      assignments
+    );
+    this.addPropertyByValidationDecorator(
+      factory,
+      'IsIn',
+      'enum',
+      decorators,
+      assignments
+    );
+    this.addPropertyByValidationDecorator(
+      factory,
       'Min',
       'minimum',
       decorators,
@@ -424,6 +439,59 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       decorators,
       assignments
     );
+    this.addPropertiesByValidationDecorator(
+      factory,
+      'IsPositive',
+      decorators,
+      assignments,
+      () => {
+        return [
+          factory.createPropertyAssignment(
+            'minimum',
+            createPrimitiveLiteral(factory, 1)
+          )
+        ];
+      }
+    );
+    this.addPropertiesByValidationDecorator(
+      factory,
+      'IsNegative',
+      decorators,
+      assignments,
+      () => {
+        return [
+          factory.createPropertyAssignment(
+            'maximum',
+            createPrimitiveLiteral(factory, -1)
+          )
+        ];
+      }
+    );
+    this.addPropertiesByValidationDecorator(
+      factory,
+      'Length',
+      decorators,
+      assignments,
+      (decoratorRef: ts.Decorator) => {
+        const decoratorArguments = getDecoratorArguments(decoratorRef);
+
+        const result = [];
+        result.push(
+          factory.createPropertyAssignment(
+            'minLength',
+            head(decoratorArguments)
+          )
+        );
+
+        if (decoratorArguments.length > 1) {
+          result.push(
+            factory.createPropertyAssignment('maxLength', decoratorArguments[1])
+          );
+        }
+
+        return result;
+      }
+    );
 
     return assignments;
   }
@@ -435,17 +503,38 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     decorators: ts.NodeArray<ts.Decorator>,
     assignments: ts.PropertyAssignment[]
   ) {
-    const decoratorRef = getDecoratorOrUndefinedByNames(
+    this.addPropertiesByValidationDecorator(
+      factory,
+      decoratorName,
+      decorators,
+      assignments,
+      (decoratorRef: ts.Decorator) => {
+        const argument: ts.Expression = head(
+          getDecoratorArguments(decoratorRef)
+        );
+        if (argument) {
+          return [factory.createPropertyAssignment(propertyKey, argument)];
+        }
+        return [];
+      }
+    );
+  }
+
+  addPropertiesByValidationDecorator(
+    factory: ts.NodeFactory,
+    decoratorName: string,
+    decorators: ts.NodeArray<ts.Decorator>,
+    assignments: ts.PropertyAssignment[],
+    addPropertyAssignments: (decoratorRef: ts.Decorator) => PropertyAssignment[]
+  ) {
+    const decoratorRef: ts.Decorator = getDecoratorOrUndefinedByNames(
       [decoratorName],
       decorators
     );
     if (!decoratorRef) {
       return;
     }
-    const argument: ts.Expression = head(getDecoratorArguments(decoratorRef));
-    if (argument) {
-      assignments.push(factory.createPropertyAssignment(propertyKey, argument));
-    }
+    assignments.push(...addPropertyAssignments(decoratorRef));
   }
 
   addClassMetadata(
