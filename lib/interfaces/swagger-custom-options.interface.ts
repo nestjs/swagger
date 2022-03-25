@@ -44,6 +44,7 @@ export interface FastifySwaggerCustomOptions
     persistAuthorization: boolean;
     tagsSorter: string;
     operationsSorter: string;
+    queryConfigEnabled: boolean;
   }>;
   initOAuth?: Record<string, any>;
   staticCSP?: boolean | string | Record<string, string | string[]>;
