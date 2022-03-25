@@ -71,6 +71,11 @@ describe('Validate OpenAPI schema', () => {
     }
   });
 
+  it('should fix colons in url', async () => {
+    const document = SwaggerModule.createDocument(app, options);
+    expect(document.paths['/api/v1/express:colon:another/{prop}']).toBeDefined();
+  });
+
   it('should merge custom components passed via config', async () => {
     const components = {
       schemas: {
