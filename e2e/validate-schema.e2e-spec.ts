@@ -119,7 +119,6 @@ describe('Validate OpenAPI schema', () => {
 
   it('should consider explicit config over auto-detected schema', async () => {
     const document = SwaggerModule.createDocument(app, options);
-    console.log('document.paths[\'/api/cats/download\'][\'responses\']', document.paths['/api/cats/download']['responses']);
     expect(document.paths['/api/cats/download'].get.responses).toEqual({
       '200': {
         description: 'binary file for download',
