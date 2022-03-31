@@ -161,7 +161,7 @@ export class SchemaObjectFactory {
 
       const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
       if (schemaCombinators.some((key) => key in property)) {
-        delete (property as SchemaObjectMetadata).type;
+        (property as SchemaObjectMetadata).type = 'object';
       }
       return property as ParameterObject;
     });

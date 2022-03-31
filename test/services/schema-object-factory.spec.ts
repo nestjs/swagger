@@ -136,6 +136,7 @@ describe('SchemaObjectFactory', () => {
           profile: {
             description: 'Profile',
             nullable: true,
+            type: 'object',
             allOf: [
               {
                 $ref: '#/components/schemas/CreateProfileDto'
@@ -195,6 +196,7 @@ describe('SchemaObjectFactory', () => {
               { $ref: '#/components/schemas/Cat' },
               { $ref: '#/components/schemas/Dog' }
             ],
+            type: 'object',
             discriminator: { propertyName: 'pet_type' }
           }
         },
