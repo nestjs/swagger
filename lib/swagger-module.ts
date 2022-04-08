@@ -1,8 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { loadPackage } from '@nestjs/common/utils/load-package.util';
 import {
-  ExpressSwaggerCustomOptions,
-  FastifySwaggerCustomOptions,
   OpenAPIObject,
   SwaggerCustomOptions,
   SwaggerDocumentOptions
@@ -11,6 +8,10 @@ import { SwaggerScanner } from './swagger-scanner';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { validatePath } from './utils/validate-path.util';
+import * as jsyaml from 'js-yaml';
+import swaggerUi from './swagger-ui';
+import * as fs from 'fs';
+import * as pathNode from 'path';
 
 export class SwaggerModule {
   public static createDocument(
@@ -48,74 +49,68 @@ export class SwaggerModule {
         ? `${globalPrefix}${validatePath(path)}`
         : path
     );
-    if (httpAdapter && httpAdapter.getType() === 'fastify') {
-      return this.setupFastify(
-        finalPath,
-        httpAdapter,
-        document,
-        options as FastifySwaggerCustomOptions
-      );
-    }
-    return this.setupExpress(
-      finalPath,
-      app,
-      document,
-      options as ExpressSwaggerCustomOptions
-    );
-  }
 
-  private static setupExpress(
-    path: string,
-    app: INestApplication,
-    document: OpenAPIObject,
-    options?: ExpressSwaggerCustomOptions
-  ) {
-    const httpAdapter = app.getHttpAdapter();
-    const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () =>
-      require('swagger-ui-express')
-    );
-    const swaggerHtml = swaggerUi.generateHTML(document, options);
-    app.use(path, swaggerUi.serveFiles(document, options));
+    console.log(finalPath);
+    // httpAdapter.get('/test', (req, res) => {
+    //   return 'test OK!';
+    // });
 
-    httpAdapter.get(path, (req, res) => res.send(swaggerHtml));
-    httpAdapter.get(path + '-json', (req, res) => res.json(document));
-  }
+    const yamlDocument = jsyaml.dump(document);
+    const jsonDocument = JSON.stringify(document);
+    const html = swaggerUi.generateHTML(finalPath, document, options);
 
-  private static setupFastify(
-    path: string,
-    httpServer: any,
-    document: OpenAPIObject,
-    options?: FastifySwaggerCustomOptions
-  ) {
-    // Workaround for older versions of the @nestjs/platform-fastify package
-    // where "isParserRegistered" getter is not defined.
-    const hasParserGetterDefined = (
-      Object.getPrototypeOf(httpServer) as Object
-    ).hasOwnProperty('isParserRegistered');
-    if (hasParserGetterDefined && !httpServer.isParserRegistered) {
-      httpServer.registerParserMiddleware();
-    }
+    const swaggerUIBasePath = swaggerUi.getSwaggerUiAbsoluteFSPath();
+    const swaggerUIAssetsNames = [
+      'swagger-ui.css',
+      'swagger-ui-bundle.js',
+      'swagger-ui-standalone-preset.js'
+      // 'favicon-32x32.png',
+      // 'favicon-16x16.png'
+    ];
 
-    httpServer.register(async (httpServer: any) => {
-      httpServer.register(
-        loadPackage('fastify-swagger', 'SwaggerModule', () =>
-          require('fastify-swagger')
-        ),
-        {
-          swagger: document,
-          exposeRoute: true,
-          routePrefix: path,
-          mode: 'static',
-          specification: {
-            document
-          },
-          uiConfig: options?.uiConfig,
-          initOAuth: options?.initOAuth,
-          staticCSP: options?.staticCSP,
-          transformStaticCSP: options?.transformStaticCSP,
-          uiHooks: options?.uiHooks
-        }
-      );
+    const ext2type = {
+      js: 'application/javascript',
+      css: 'text/css'
+    };
+    /*
+     * in oder to avoid using static serving libraries (they are routing platform dependant)
+     * swaggerUI assets are served manually
+     */
+    swaggerUIAssetsNames.forEach((assetName) => {
+      const assetFullUrl = `${finalPath}/${assetName}`;
+      const [, assetExtension] = assetName.split('.');
+      const assetPath = pathNode.join(swaggerUIBasePath, assetName);
+
+      httpAdapter.get(assetFullUrl, async (req, res) => {
+        fs.readFile(assetPath, 'utf8', function (err, data) {
+          if (err) {
+            throw err;
+          }
+
+          res.type(ext2type[assetExtension]);
+          res.send(data);
+        });
+      });
+    });
+
+    httpAdapter.get(`${finalPath}/swagger-ui-init.js`, (req, res) => {
+      res.type('js');
+      res.send(swaggerUi.getInitJs(document, options));
+    });
+
+    httpAdapter.get(finalPath, (req, res) => {
+      res.type('html');
+      res.send(html);
+    });
+
+    httpAdapter.get(`${finalPath}-json`, (req, res) => {
+      res.type('json');
+      res.send(jsonDocument);
+    });
+
+    httpAdapter.get(`${finalPath}-yaml`, (req, res) => {
+      res.type('yaml');
+      res.send(yamlDocument);
     });
   }
 }
