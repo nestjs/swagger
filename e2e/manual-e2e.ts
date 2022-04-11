@@ -3,20 +3,25 @@ import 'source-map-support/register';
 import { NestFactory } from '@nestjs/core';
 import { ApplicationModule } from './src/app.module';
 import { DocumentBuilder, SwaggerModule } from '../lib';
-import { FastifyAdapter } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication
+} from '@nestjs/platform-fastify';
 import { INestApplication } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 
 const port = 4001;
-const host = '0.0.0.0';
+const host = 'localhost';
 const docRelPath = '/api-docs';
 
 async function bootstrap() {
-  const app = await NestFactory.create<INestApplication>(
+  const app = await NestFactory.create<NestFastifyApplication>(
     ApplicationModule,
     new FastifyAdapter()
     // new ExpressAdapter()
   );
+
+  app.setGlobalPrefix('/api/v1');
 
   const swaggerSettings = new DocumentBuilder()
     .setTitle('Cats example')
@@ -48,12 +53,21 @@ async function bootstrap() {
     }
   });
 
-  return app.listen(port, host);
+  SwaggerModule.setup('/swagger-docs', app, document, {
+    customSiteTitle: 'Demo API - Swagger UI',
+    swaggerOptions: {
+      persistAuthorization: true,
+      defaultModelsExpandDepth: -1
+    }
+  });
+
+  await app.listen(port, host);
+  const baseUrl = `http://${host}:${port}`;
+  const startMessage = `Server started at ${baseUrl}; SwaggerUI at ${
+    baseUrl + docRelPath
+  };`;
+
+  console.log(startMessage);
 }
 
-const baseUrl = `http://${host}:${port}`;
-const startMessage = `Server started at ${baseUrl}; AsyncApi at ${
-  baseUrl + docRelPath
-};`;
-
-bootstrap().then(() => console.log(startMessage));
+bootstrap();

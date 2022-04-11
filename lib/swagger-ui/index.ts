@@ -3,7 +3,6 @@ import * as swaggerUi from 'swagger-ui-dist';
 const favIconHtml =
   '<link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32" />' +
   '<link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16" />';
-let swaggerInit = '';
 
 const htmlTplString = `
 <!-- HTML for static distribution bundle build -->
@@ -190,42 +189,27 @@ const generateHTML = function (
   customfavIcon = customfavIcon || false;
   customSiteTitle = customSiteTitle || 'Swagger UI';
   _htmlTplString = _htmlTplString || htmlTplString;
-  _jsTplString = _jsTplString || jsTplString;
 
   const favIconString = customfavIcon
     ? '<link rel="icon" href="' + customfavIcon + '" />'
     : favIconHtml;
 
-  const htmlWithCustomCss = _htmlTplString
+  const finalHtml = _htmlTplString
     .toString()
     .replace('<% customCss %>', customCss)
-    .replaceAll('<% baseUrl %>', baseUrl);
+    .replace('<% favIconString %>', favIconString)
+    .replaceAll('<% baseUrl %>', baseUrl)
+    .replace(
+      '<% customJs %>',
+      customJs ? `<script src="${customJs}"></script>` : ''
+    )
+    .replace(
+      '<% customCssUrl %>',
+      customCssUrl ? `<link href="${customCssUrl}" rel="stylesheet">` : ''
+    )
+    .replace('<% title %>', customSiteTitle);
 
-  const htmlWithFavIcon = htmlWithCustomCss.replace(
-    '<% favIconString %>',
-    favIconString
-  );
-  const htmlWithCustomJs = htmlWithFavIcon.replace(
-    '<% customJs %>',
-    customJs ? `<script src="${customJs}"></script>` : ''
-  );
-  const htmlWithCustomCssUrl = htmlWithCustomJs.replace(
-    '<% customCssUrl %>',
-    customCssUrl ? `<link href="${customCssUrl}" rel="stylesheet">` : ''
-  );
-
-  const initOptions = {
-    swaggerDoc: swaggerDoc || undefined,
-    customOptions: options,
-    swaggerUrl: swaggerUrl || undefined,
-    swaggerUrls: swaggerUrls || undefined
-  };
-
-  swaggerInit = _jsTplString
-    .toString()
-    .replace('<% swaggerOptions %>', stringify(initOptions));
-
-  return htmlWithCustomCssUrl.replace('<% title %>', customSiteTitle);
+  return finalHtml;
 };
 
 const generateInit = (swaggerDoc, opts) => {

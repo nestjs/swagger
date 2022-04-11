@@ -10,8 +10,8 @@ import { getGlobalPrefix } from './utils/get-global-prefix';
 import { validatePath } from './utils/validate-path.util';
 import * as jsyaml from 'js-yaml';
 import swaggerUi from './swagger-ui';
-import * as fs from 'fs';
-import * as pathNode from 'path';
+import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 export class SwaggerModule {
   public static createDocument(
@@ -50,67 +50,54 @@ export class SwaggerModule {
         : path
     );
 
-    console.log(finalPath);
-    // httpAdapter.get('/test', (req, res) => {
-    //   return 'test OK!';
-    // });
-
     const yamlDocument = jsyaml.dump(document);
     const jsonDocument = JSON.stringify(document);
     const html = swaggerUi.generateHTML(finalPath, document, options);
 
-    const swaggerUIBasePath = swaggerUi.getSwaggerUiAbsoluteFSPath();
-    const swaggerUIAssetsNames = [
-      'swagger-ui.css',
-      'swagger-ui-bundle.js',
-      'swagger-ui-standalone-preset.js'
-      // 'favicon-32x32.png',
-      // 'favicon-16x16.png'
-    ];
-
-    const ext2type = {
-      js: 'application/javascript',
-      css: 'text/css'
-    };
-    /*
-     * in oder to avoid using static serving libraries (they are routing platform dependant)
-     * swaggerUI assets are served manually
-     */
-    swaggerUIAssetsNames.forEach((assetName) => {
-      const assetFullUrl = `${finalPath}/${assetName}`;
-      const [, assetExtension] = assetName.split('.');
-      const assetPath = pathNode.join(swaggerUIBasePath, assetName);
-
-      httpAdapter.get(assetFullUrl, async (req, res) => {
-        fs.readFile(assetPath, 'utf8', function (err, data) {
-          if (err) {
-            throw err;
-          }
-
-          res.type(ext2type[assetExtension]);
-          res.send(data);
-        });
-      });
-    });
+    const initJSFile = swaggerUi.getInitJs(document, options);
 
     httpAdapter.get(`${finalPath}/swagger-ui-init.js`, (req, res) => {
-      res.type('js');
-      res.send(swaggerUi.getInitJs(document, options));
+      res.type('application/javascript');
+      res.send(initJSFile);
     });
 
     httpAdapter.get(finalPath, (req, res) => {
-      res.type('html');
+      res.type('text/html');
+      res.send(html);
+    });
+
+    httpAdapter.get(finalPath + '/', (req, res) => {
+      res.type('text/html');
       res.send(html);
     });
 
     httpAdapter.get(`${finalPath}-json`, (req, res) => {
-      res.type('json');
+      res.type('text/json');
       res.send(jsonDocument);
     });
 
     httpAdapter.get(`${finalPath}-yaml`, (req, res) => {
-      res.type('yaml');
+      res.type('text/yaml');
       res.send(yamlDocument);
     });
+
+    // serve JS, CSS, etc
+    const swaggerUIBasePath = swaggerUi.getSwaggerUiAbsoluteFSPath();
+    if (httpAdapter && httpAdapter.getType() === 'fastify') {
+      const fastifyApp = app as NestFastifyApplication; // TODO: figure out cleaner solution
+      fastifyApp.useStaticAssets({
+        root: swaggerUIBasePath,
+        prefix: `${finalPath}/`,
+        decorateReply: false
+      });
+      // fastifyApp.useStaticAssets({
+      //   root: __dirname,
+      //   prefix: `${finalPath}/test/`,
+      //   decorateReply: false
+      // });
+    } else {
+      const expressApp = app as NestExpressApplication; // TODO: figure out cleaner solution
+      expressApp.useStaticAssets(swaggerUIBasePath, { prefix: finalPath });
+    }
   }
 }
