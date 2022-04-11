@@ -1,5 +1,4 @@
-import 'source-map-support/register';
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NestFactory } from '@nestjs/core';
 import { ApplicationModule } from './src/app.module';
 import { DocumentBuilder, SwaggerModule } from '../lib';
@@ -7,7 +6,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication
 } from '@nestjs/platform-fastify';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 
 const port = 4001;
@@ -67,7 +66,7 @@ async function bootstrap() {
     baseUrl + docRelPath
   };`;
 
-  console.log(startMessage);
+  Logger.log(startMessage);
 }
 
 bootstrap();

@@ -9,7 +9,11 @@ import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { validatePath } from './utils/validate-path.util';
 import * as jsyaml from 'js-yaml';
-import swaggerUi from './swagger-ui';
+import {
+  buildSwaggerHTML,
+  buildSwaggerInitJS,
+  swaggerAssetsAbsoluteFSPath
+} from './swagger-ui';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
@@ -36,29 +40,37 @@ export class SwaggerModule {
     };
   }
 
-  public static setup(
-    path: string,
+  private static serveStatic(finalPath: string, app: INestApplication) {
+    const httpAdapter = app.getHttpAdapter();
+
+    if (httpAdapter && httpAdapter.getType() === 'fastify') {
+      const fastifyApp = app as NestFastifyApplication; // TODO: figure out cleaner solution
+      fastifyApp.useStaticAssets({
+        root: swaggerAssetsAbsoluteFSPath,
+        prefix: `${finalPath}/`,
+        decorateReply: false
+      });
+    } else {
+      const expressApp = app as NestExpressApplication; // TODO: figure out cleaner solution
+      expressApp.useStaticAssets(swaggerAssetsAbsoluteFSPath, {
+        prefix: finalPath
+      });
+    }
+  }
+
+  private static serveDocuments(
+    finalPath: string,
     app: INestApplication,
-    document: OpenAPIObject,
-    options?: SwaggerCustomOptions
+    swaggerInitJS: string,
+    yamlDocument: string,
+    jsonDocument: string,
+    html: string
   ) {
     const httpAdapter = app.getHttpAdapter();
-    const globalPrefix = getGlobalPrefix(app);
-    const finalPath = validatePath(
-      options?.useGlobalPrefix && globalPrefix && !globalPrefix.match(/^(\/?)$/)
-        ? `${globalPrefix}${validatePath(path)}`
-        : path
-    );
-
-    const yamlDocument = jsyaml.dump(document);
-    const jsonDocument = JSON.stringify(document);
-    const html = swaggerUi.generateHTML(finalPath, document, options);
-
-    const initJSFile = swaggerUi.getInitJs(document, options);
 
     httpAdapter.get(`${finalPath}/swagger-ui-init.js`, (req, res) => {
       res.type('application/javascript');
-      res.send(initJSFile);
+      res.send(swaggerInitJS);
     });
 
     httpAdapter.get(finalPath, (req, res) => {
@@ -66,6 +78,7 @@ export class SwaggerModule {
       res.send(html);
     });
 
+    // fastify compatibility
     httpAdapter.get(finalPath + '/', (req, res) => {
       res.type('text/html');
       res.send(html);
@@ -80,24 +93,34 @@ export class SwaggerModule {
       res.type('text/yaml');
       res.send(yamlDocument);
     });
+  }
 
-    // serve JS, CSS, etc
-    const swaggerUIBasePath = swaggerUi.getSwaggerUiAbsoluteFSPath();
-    if (httpAdapter && httpAdapter.getType() === 'fastify') {
-      const fastifyApp = app as NestFastifyApplication; // TODO: figure out cleaner solution
-      fastifyApp.useStaticAssets({
-        root: swaggerUIBasePath,
-        prefix: `${finalPath}/`,
-        decorateReply: false
-      });
-      // fastifyApp.useStaticAssets({
-      //   root: __dirname,
-      //   prefix: `${finalPath}/test/`,
-      //   decorateReply: false
-      // });
-    } else {
-      const expressApp = app as NestExpressApplication; // TODO: figure out cleaner solution
-      expressApp.useStaticAssets(swaggerUIBasePath, { prefix: finalPath });
-    }
+  public static setup(
+    path: string,
+    app: INestApplication,
+    document: OpenAPIObject,
+    options?: SwaggerCustomOptions
+  ) {
+    const globalPrefix = getGlobalPrefix(app);
+    const finalPath = validatePath(
+      options?.useGlobalPrefix && globalPrefix && !globalPrefix.match(/^(\/?)$/)
+        ? `${globalPrefix}${validatePath(path)}`
+        : path
+    );
+
+    const yamlDocument = jsyaml.dump(document);
+    const jsonDocument = JSON.stringify(document);
+    const html = buildSwaggerHTML(finalPath, document, options);
+    const swaggerInitJS = buildSwaggerInitJS(document, options);
+
+    SwaggerModule.serveDocuments(
+      finalPath,
+      app,
+      swaggerInitJS,
+      yamlDocument,
+      jsonDocument,
+      html
+    );
+    SwaggerModule.serveStatic(finalPath, app);
   }
 }
