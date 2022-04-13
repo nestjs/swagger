@@ -1,11 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NestFactory } from '@nestjs/core';
 import { ApplicationModule } from './src/app.module';
 import { DocumentBuilder, SwaggerModule } from '../lib';
-import {
-  FastifyAdapter,
-  NestFastifyApplication
-} from '@nestjs/platform-fastify';
+import { FastifyAdapter } from '@nestjs/platform-fastify';
 import { INestApplication, Logger } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 
@@ -13,11 +9,14 @@ const port = 4001;
 const host = 'localhost';
 const docRelPath = '/api-docs';
 
+const USE_FASTIFY = false;
+
+const adapter = USE_FASTIFY ? new FastifyAdapter() : new ExpressAdapter();
+
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
+  const app = await NestFactory.create<INestApplication>(
     ApplicationModule,
-    new FastifyAdapter()
-    // new ExpressAdapter()
+    adapter
   );
 
   app.setGlobalPrefix('/api/v1');
@@ -45,7 +44,7 @@ async function bootstrap() {
   });
 
   SwaggerModule.setup(docRelPath, app, document, {
-    customSiteTitle: 'Demo API - Swagger UI',
+    customSiteTitle: 'Demo API - Swagger UI 1',
     swaggerOptions: {
       persistAuthorization: true,
       defaultModelsExpandDepth: -1
@@ -53,7 +52,7 @@ async function bootstrap() {
   });
 
   SwaggerModule.setup('/swagger-docs', app, document, {
-    customSiteTitle: 'Demo API - Swagger UI',
+    customSiteTitle: 'Demo API - Swagger UI 2',
     swaggerOptions: {
       persistAuthorization: true,
       defaultModelsExpandDepth: -1

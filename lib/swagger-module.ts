@@ -44,17 +44,16 @@ export class SwaggerModule {
     const httpAdapter = app.getHttpAdapter();
 
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
-      const fastifyApp = app as NestFastifyApplication; // TODO: figure out cleaner solution
-      fastifyApp.useStaticAssets({
+      (app as NestFastifyApplication).useStaticAssets({
         root: swaggerAssetsAbsoluteFSPath,
         prefix: `${finalPath}/`,
         decorateReply: false
       });
     } else {
-      const expressApp = app as NestExpressApplication; // TODO: figure out cleaner solution
-      expressApp.useStaticAssets(swaggerAssetsAbsoluteFSPath, {
-        prefix: finalPath
-      });
+      (app as NestExpressApplication).useStaticAssets(
+        swaggerAssetsAbsoluteFSPath,
+        { prefix: finalPath }
+      );
     }
   }
 

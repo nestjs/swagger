@@ -1,39 +1,46 @@
 import * as swaggerUi from 'swagger-ui-dist';
 import { favIconHtml, htmlTemplateString, jsTemplateString } from './constants';
-import { SwaggerCustomOptions } from '../interfaces';
+import { OpenAPIObject, SwaggerCustomOptions } from '../interfaces';
+import { buildJSInitOptions } from './helpers';
 
-const buildJSInitOptions = (obj) => {
-  const placeholder = '____FUNCTIONPLACEHOLDER____';
-  const fns = [];
-  let json = JSON.stringify(
-    obj,
-    function (key, value) {
-      if (typeof value === 'function') {
-        fns.push(value);
-        return placeholder;
-      }
-      return value;
-    },
-    2
-  );
-
-  json = json.replace(new RegExp('"' + placeholder + '"', 'g'), function (_) {
-    return fns.shift();
-  });
-
-  return `let options = ${json};`;
-};
-
-export const buildSwaggerHTML = function (
-  baseUrl,
-  swaggerDoc,
-  options: SwaggerCustomOptions
+/**
+ * Used to create swagger ui initialization js file (
+ */
+export function buildSwaggerInitJS(
+  swaggerDoc: OpenAPIObject,
+  customOptions: SwaggerCustomOptions = {}
 ) {
-  const customCss = options?.customCss ?? '';
-  const customJs = options?.customJs ?? '';
-  const customfavIcon = options?.customfavIcon ?? false;
-  const customSiteTitle = options?.customSiteTitle ?? 'Swagger UI';
-  const customCssUrl = options?.customCssUrl ?? '';
+  const { swaggerOptions, swaggerUrl } = customOptions;
+  const swaggerInitOptions = {
+    swaggerDoc,
+    swaggerUrl,
+    customOptions: swaggerOptions
+  };
+
+  const jsInitOptions = buildJSInitOptions(swaggerInitOptions);
+  return jsTemplateString.replace('<% swaggerOptions %>', jsInitOptions);
+}
+
+/**
+ * Stores absolute path to swagger-ui assets
+ */
+export const swaggerAssetsAbsoluteFSPath = swaggerUi.getAbsoluteFSPath();
+
+/**
+ * Used to build swagger-ui custom html
+ */
+export function buildSwaggerHTML(
+  baseUrl: string,
+  swaggerDoc: OpenAPIObject,
+  customOptions: SwaggerCustomOptions = {}
+) {
+  const {
+    customCss = '',
+    customJs = '',
+    customfavIcon = false,
+    customSiteTitle = 'Swagger UI',
+    customCssUrl = ''
+  } = customOptions;
 
   const favIconString = customfavIcon
     ? `<link rel="icon" href="${customfavIcon}" />`
@@ -52,21 +59,4 @@ export const buildSwaggerHTML = function (
       customCssUrl ? `<link href="${customCssUrl}" rel="stylesheet">` : ''
     )
     .replace('<% title %>', customSiteTitle);
-};
-
-export const buildSwaggerInitJS = (
-  swaggerDoc,
-  options: SwaggerCustomOptions = {}
-) => {
-  const initOptions = {
-    swaggerDoc: swaggerDoc ?? undefined,
-    customOptions: options.swaggerOptions ?? {},
-    swaggerUrl: options.swaggerUrl ?? {}
-  };
-
-  return jsTemplateString
-    .toString()
-    .replace('<% swaggerOptions %>', buildJSInitOptions(initOptions));
-};
-
-export const swaggerAssetsAbsoluteFSPath = swaggerUi.getAbsoluteFSPath();
+}
