@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import {
   OpenAPIObject,
-  SwaggerCustomOptions,
+  SwaggerCustomOptionsLegacy,
   SwaggerDocumentOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
@@ -16,6 +16,7 @@ import {
 } from './swagger-ui';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { processSwaggerOptions } from './utils/backward-compatilibity-layer';
 
 export class SwaggerModule {
   public static createDocument(
@@ -98,7 +99,7 @@ export class SwaggerModule {
     path: string,
     app: INestApplication,
     document: OpenAPIObject,
-    options?: SwaggerCustomOptions
+    options?: SwaggerCustomOptionsLegacy
   ) {
     const globalPrefix = getGlobalPrefix(app);
     const finalPath = validatePath(
@@ -107,10 +108,14 @@ export class SwaggerModule {
         : path
     );
 
+    // START: fastify backward compatibility layer
+    const { customOptions, extra } = processSwaggerOptions(options);
+    // END: fastify backward compatibility layer
+
     const yamlDocument = jsyaml.dump(document);
     const jsonDocument = JSON.stringify(document);
-    const html = buildSwaggerHTML(finalPath, document, options);
-    const swaggerInitJS = buildSwaggerInitJS(document, options);
+    const html = buildSwaggerHTML(finalPath, document, customOptions);
+    const swaggerInitJS = buildSwaggerInitJS(document, customOptions);
 
     SwaggerModule.serveDocuments(
       finalPath,

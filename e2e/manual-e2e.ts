@@ -53,7 +53,7 @@ async function bootstrap() {
 
   SwaggerModule.setup('/swagger-docs', app, document, {
     customSiteTitle: 'Demo API - Swagger UI 2',
-    swaggerOptions: {
+    uiConfig: {
       persistAuthorization: true,
       defaultModelsExpandDepth: -1
     }
