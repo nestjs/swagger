@@ -50,8 +50,8 @@ export interface FastifySwaggerCustomOptions
     queryConfigEnabled: boolean;
   }>;
   initOAuth?: Record<string, any>;
-  staticCSP?: boolean | string | Record<string, string | string[]>;
-  transformStaticCSP?: (header: string) => string;
+  staticCSP?: boolean | string | Record<string, string | string[]>; // not supported
+  transformStaticCSP?: (header: string) => string; // not supported
   uiHooks?: {
     onRequest?: Function;
     preHandler?: Function;

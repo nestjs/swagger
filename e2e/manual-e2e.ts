@@ -1,9 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { ApplicationModule } from './src/app.module';
 import { DocumentBuilder, SwaggerModule } from '../lib';
-import { FastifyAdapter } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication
+} from '@nestjs/platform-fastify';
 import { INestApplication, Logger } from '@nestjs/common';
-import { ExpressAdapter } from '@nestjs/platform-express';
+import {
+  ExpressAdapter,
+  NestExpressApplication
+} from '@nestjs/platform-express';
+import { join } from 'path';
 
 const port = 4001;
 const host = 'localhost';
@@ -12,6 +19,7 @@ const docRelPath = '/api-docs';
 const USE_FASTIFY = false;
 
 const adapter = USE_FASTIFY ? new FastifyAdapter() : new ExpressAdapter();
+const publicFolderPath = join(__dirname, '../../e2e', 'public');
 
 async function bootstrap() {
   const app = await NestFactory.create<INestApplication>(
@@ -48,7 +56,17 @@ async function bootstrap() {
     swaggerOptions: {
       persistAuthorization: true,
       defaultModelsExpandDepth: -1
-    }
+    },
+    customfavIcon: '/public/favicon.ico',
+    customCssUrl: '/public/theme.css', // to showcase that in new implementation u can use custom css with fastify
+    uiHooks: USE_FASTIFY
+      ? {
+          onRequest: (req: any, res: any, next: any) => {
+            console.log('FASTIFY HOOK POC 1');
+            next();
+          }
+        }
+      : undefined
   });
 
   SwaggerModule.setup('/swagger-docs', app, document, {
@@ -56,8 +74,26 @@ async function bootstrap() {
     uiConfig: {
       persistAuthorization: true,
       defaultModelsExpandDepth: -1
-    }
+    },
+    uiHooks: USE_FASTIFY
+      ? {
+          onRequest: (req: any, res: any, next: any) => {
+            console.log('FASTIFY HOOK POC 2');
+            next();
+          }
+        }
+      : undefined
   });
+
+  USE_FASTIFY
+    ? (app as NestFastifyApplication).useStaticAssets({
+        root: publicFolderPath,
+        prefix: `/public`,
+        decorateReply: false
+      })
+    : (app as NestExpressApplication).useStaticAssets(publicFolderPath, {
+        prefix: '/public'
+      });
 
   await app.listen(port, host);
   const baseUrl = `http://${host}:${port}`;

@@ -16,7 +16,11 @@ import {
 } from './swagger-ui';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { processSwaggerOptions } from './utils/backward-compatilibity-layer';
+import {
+  processSwaggerOptions,
+  serveDocumentsFastify
+} from './backward-compatilibity-layer';
+import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
 
 export class SwaggerModule {
   public static createDocument(
@@ -60,14 +64,12 @@ export class SwaggerModule {
 
   private static serveDocuments(
     finalPath: string,
-    app: INestApplication,
+    httpAdapter: HttpServer,
     swaggerInitJS: string,
     yamlDocument: string,
     jsonDocument: string,
     html: string
   ) {
-    const httpAdapter = app.getHttpAdapter();
-
     httpAdapter.get(`${finalPath}/swagger-ui-init.js`, (req, res) => {
       res.type('application/javascript');
       res.send(swaggerInitJS);
@@ -117,14 +119,33 @@ export class SwaggerModule {
     const html = buildSwaggerHTML(finalPath, document, customOptions);
     const swaggerInitJS = buildSwaggerInitJS(document, customOptions);
 
-    SwaggerModule.serveDocuments(
-      finalPath,
-      app,
-      swaggerInitJS,
-      yamlDocument,
-      jsonDocument,
-      html
-    );
+    const httpAdapter = app.getHttpAdapter();
+
+    // START: fastify backward compatibility layer
+    const IS_FASTIFY = httpAdapter && httpAdapter.getType() === 'fastify';
+
+    if (IS_FASTIFY) {
+      serveDocumentsFastify(
+        finalPath,
+        httpAdapter,
+        swaggerInitJS,
+        yamlDocument,
+        jsonDocument,
+        html,
+        extra
+      );
+    } else {
+      SwaggerModule.serveDocuments(
+        finalPath,
+        httpAdapter,
+        swaggerInitJS,
+        yamlDocument,
+        jsonDocument,
+        html
+      );
+    }
+    // END: fastify backward compatibility layer
+
     SwaggerModule.serveStatic(finalPath, app);
   }
 }

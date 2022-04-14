@@ -25,7 +25,7 @@ export function buildSwaggerInitJS(
  * Stores absolute path to swagger-ui assets
  */
 export const swaggerAssetsAbsoluteFSPath = swaggerUi.getAbsoluteFSPath();
-
+console.log(swaggerAssetsAbsoluteFSPath);
 /**
  * Used to build swagger-ui custom html
  */

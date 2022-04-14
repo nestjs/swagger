@@ -118,8 +118,8 @@ window.onload = function() {
   }
   let ui = SwaggerUIBundle(swaggerOptions)
 
-  if (customOptions.oauth) {
-    ui.initOAuth(customOptions.oauth)
+  if (customOptions.initOAuth) {
+    ui.initOAuth(customOptions.initOAuth)
   }
 
   if (customOptions.authAction) {
