@@ -55,7 +55,12 @@ async function bootstrap() {
     customSiteTitle: 'Demo API - Swagger UI 1',
     swaggerOptions: {
       persistAuthorization: true,
-      defaultModelsExpandDepth: -1
+      defaultModelsExpandDepth: -1,
+      syntaxHighlight: {
+        activate: true,
+        theme: 'tomorrow-night'
+      },
+      tryItOutEnabled: true
     },
     customfavIcon: '/public/favicon.ico',
     customCssUrl: '/public/theme.css', // to showcase that in new implementation u can use custom css with fastify

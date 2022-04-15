@@ -1,9 +1,12 @@
-interface _CommonSwaggerCustomOptions {
+interface LegacyCommonSwaggerCustomOptions {
   useGlobalPrefix?: boolean;
 }
 
+/**
+ * @deprecated use SwaggerCustomOptions interface
+ */
 export interface ExpressSwaggerCustomOptions
-  extends _CommonSwaggerCustomOptions {
+  extends LegacyCommonSwaggerCustomOptions {
   explorer?: boolean;
   swaggerOptions?: Record<string, any>;
   customCss?: string;
@@ -17,11 +20,11 @@ export interface ExpressSwaggerCustomOptions
   urls?: Record<'url' | 'name', string>[];
 }
 
-/*
- * @deprecated
+/**
+ * @deprecated use SwaggerCustomOptions interface
  */
 export interface FastifySwaggerCustomOptions
-  extends _CommonSwaggerCustomOptions {
+  extends LegacyCommonSwaggerCustomOptions {
   uiConfig?: Partial<{
     deepLinking: boolean;
     displayOperationId: boolean;
@@ -58,10 +61,12 @@ export interface FastifySwaggerCustomOptions
   };
 }
 
-/*
- * TODO: remove entire file when FastifySwaggerCustomOptions backward compatibility layer is no longer needed
- *       and use SwaggerCustomOptions in SwaggerModule.setup
+// TODO: remove entire file when FastifySwaggerCustomOptions backward compatibility layer is no longer needed
+//       and use SwaggerCustomOptions in SwaggerModule.setup
+
+/**
+ * @deprecated use SwaggerCustomOptions interface
  */
-export type SwaggerCustomOptionsLegacy =
+export type LegacySwaggerCustomOptions =
   | FastifySwaggerCustomOptions
   | ExpressSwaggerCustomOptions;

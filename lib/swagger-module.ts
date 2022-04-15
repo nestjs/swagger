@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import {
   OpenAPIObject,
-  SwaggerCustomOptionsLegacy,
+  LegacySwaggerCustomOptions,
   SwaggerDocumentOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
@@ -101,7 +101,7 @@ export class SwaggerModule {
     path: string,
     app: INestApplication,
     document: OpenAPIObject,
-    options?: SwaggerCustomOptionsLegacy
+    options?: LegacySwaggerCustomOptions
   ) {
     const globalPrefix = getGlobalPrefix(app);
     const finalPath = validatePath(
@@ -122,9 +122,9 @@ export class SwaggerModule {
     const httpAdapter = app.getHttpAdapter();
 
     // START: fastify backward compatibility layer
-    const IS_FASTIFY = httpAdapter && httpAdapter.getType() === 'fastify';
+    const isFastify = httpAdapter && httpAdapter.getType() === 'fastify';
 
-    if (IS_FASTIFY) {
+    if (isFastify) {
       serveDocumentsFastify(
         finalPath,
         httpAdapter,

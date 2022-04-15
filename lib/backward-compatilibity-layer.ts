@@ -1,7 +1,7 @@
 import {
   FastifySwaggerCustomOptions,
   SwaggerCustomOptions,
-  SwaggerCustomOptionsLegacy
+  LegacySwaggerCustomOptions
 } from './interfaces';
 import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
 
@@ -21,7 +21,7 @@ export interface ProcessSwaggerOptionsOutput {
 }
 
 export function processSwaggerOptions(
-  options: SwaggerCustomOptionsLegacy = {}
+  options: LegacySwaggerCustomOptions = {}
 ): ProcessSwaggerOptionsOutput {
   const unifiedOptions: SwaggerCustomOptions = options;
   const fastifyOptions: FastifySwaggerCustomOptions = options;

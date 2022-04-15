@@ -18,7 +18,7 @@
     "test:e2e": "jest --config e2e/jest-e2e.json",
     "prerelease": "npm run build",
     "release": "release-it",
-    "---execution---": "",
+    "---manual-tests---": "",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --watch --debug"
