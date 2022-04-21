@@ -92,6 +92,17 @@ export function serveDocumentsFastify(
     });
 
     fastifyApp.route({
+      url: finalPath + '/',
+      method: 'GET',
+      schema: { hide: true },
+      ...hooks,
+      handler: (req: any, reply: any) => {
+        reply.type('text/html');
+        reply.send(html);
+      }
+    });
+
+    fastifyApp.route({
       url: `${finalPath}/swagger-ui-init.js`,
       method: 'GET',
       schema: { hide: true },

@@ -16,7 +16,7 @@ const port = 4001;
 const host = 'localhost';
 const docRelPath = '/api-docs';
 
-const USE_FASTIFY = false;
+const USE_FASTIFY = true;
 
 const adapter = USE_FASTIFY ? new FastifyAdapter() : new ExpressAdapter();
 const publicFolderPath = join(__dirname, '../../e2e', 'public');
