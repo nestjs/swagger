@@ -860,9 +860,9 @@ describe('SwaggerExplorer', () => {
     }
 
     enum QueryEnum {
-      D = 'd',
-      E = 'e',
-      F = 'f'
+      D = 1,
+      E,
+      F = (() => 3)()
     }
 
     class Foo {}
@@ -952,8 +952,8 @@ describe('SwaggerExplorer', () => {
           name: 'order',
           required: true,
           schema: {
-            type: 'string',
-            enum: ['d', 'e', 'f']
+            type: 'number',
+            enum: [1, 2, 3]
           }
         },
         {
@@ -994,8 +994,8 @@ describe('SwaggerExplorer', () => {
           name: 'order',
           required: true,
           schema: {
-            type: 'string',
-            enum: ['d', 'e', 'f']
+            type: 'number',
+            enum: [1, 2, 3]
           }
         },
         {
