@@ -5,6 +5,7 @@
   "testRegex": ".spec.ts$",
   "verbose": true,
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": "ts-jest",
+    "\\.[jt]sx?$": "babel-jest"
   }
 }
