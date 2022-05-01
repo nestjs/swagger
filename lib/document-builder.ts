@@ -3,14 +3,15 @@ import { isString, isUndefined, negate, pickBy } from 'lodash';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {
+  ApiKeySchemeObject,
   ExternalDocumentationObject,
+  HttpSchemeObject,
+  OAuth2SchemeObject,
   SecurityRequirementObject,
   SecuritySchemeObject,
   ServerVariableObject,
   TagObject
 } from './interfaces/open-api-spec.interface';
-
-type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 
 export class DocumentBuilder {
   private readonly logger = new Logger(DocumentBuilder.name);
@@ -112,7 +113,7 @@ export class DocumentBuilder {
   }
 
   public addBearerAuth(
-    options: Optional<SecuritySchemeObject, 'type'> = {},
+    options: Partial<Omit<HttpSchemeObject, 'type'>> = {},
     name = 'bearer'
   ): this {
     this.addSecurity(name, {
@@ -125,7 +126,7 @@ export class DocumentBuilder {
   }
 
   public addOAuth2(
-    options: Optional<SecuritySchemeObject, 'type'> = {},
+    options: Partial<Omit<OAuth2SchemeObject, 'type'>> = {},
     name = 'oauth2'
   ): this {
     this.addSecurity(name, {
@@ -136,8 +137,20 @@ export class DocumentBuilder {
     return this;
   }
 
+  public addBasicAuth(
+    options: Partial<Omit<HttpSchemeObject, 'type'>> = {},
+    name = 'basic'
+  ): this {
+    this.addSecurity(name, {
+      type: 'http',
+      scheme: 'basic',
+      ...options
+    });
+    return this;
+  }
+
   public addApiKey(
-    options: Optional<SecuritySchemeObject, 'type'> = {},
+    options: Partial<Omit<ApiKeySchemeObject, 'type'>> = {},
     name = 'api_key'
   ): this {
     this.addSecurity(name, {
@@ -149,21 +162,9 @@ export class DocumentBuilder {
     return this;
   }
 
-  public addBasicAuth(
-    options: Optional<SecuritySchemeObject, 'type'> = {},
-    name = 'basic'
-  ): this {
-    this.addSecurity(name, {
-      type: 'http',
-      scheme: 'basic',
-      ...options
-    });
-    return this;
-  }
-
   public addCookieAuth(
     cookieName = 'connect.sid',
-    options: Optional<SecuritySchemeObject, 'type'> = {},
+    options: Partial<Omit<ApiKeySchemeObject, 'type'>> = {},
     securityName = 'cookie'
   ): this {
     this.addSecurity(securityName, {
