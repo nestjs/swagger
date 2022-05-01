@@ -10,6 +10,8 @@ import {
   TagObject
 } from './interfaces/open-api-spec.interface';
 
+type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+
 export class DocumentBuilder {
   private readonly logger = new Logger(DocumentBuilder.name);
   private readonly document: Omit<OpenAPIObject, 'paths'> = buildDocumentBase();
@@ -110,12 +112,11 @@ export class DocumentBuilder {
   }
 
   public addBearerAuth(
-    options: SecuritySchemeObject = {
-      type: 'http'
-    },
+    options: Optional<SecuritySchemeObject, 'type'> = {},
     name = 'bearer'
   ): this {
     this.addSecurity(name, {
+      type: 'http',
       scheme: 'bearer',
       bearerFormat: 'JWT',
       ...options
@@ -124,9 +125,7 @@ export class DocumentBuilder {
   }
 
   public addOAuth2(
-    options: SecuritySchemeObject = {
-      type: 'oauth2'
-    },
+    options: Optional<SecuritySchemeObject, 'type'> = {},
     name = 'oauth2'
   ): this {
     this.addSecurity(name, {
@@ -138,9 +137,7 @@ export class DocumentBuilder {
   }
 
   public addApiKey(
-    options: SecuritySchemeObject = {
-      type: 'apiKey'
-    },
+    options: Optional<SecuritySchemeObject, 'type'> = {},
     name = 'api_key'
   ): this {
     this.addSecurity(name, {
@@ -153,9 +150,7 @@ export class DocumentBuilder {
   }
 
   public addBasicAuth(
-    options: SecuritySchemeObject = {
-      type: 'http'
-    },
+    options: Optional<SecuritySchemeObject, 'type'> = {},
     name = 'basic'
   ): this {
     this.addSecurity(name, {
@@ -168,9 +163,7 @@ export class DocumentBuilder {
 
   public addCookieAuth(
     cookieName = 'connect.sid',
-    options: SecuritySchemeObject = {
-      type: 'apiKey'
-    },
+    options: Optional<SecuritySchemeObject, 'type'> = {},
     securityName = 'cookie'
   ): this {
     this.addSecurity(securityName, {
