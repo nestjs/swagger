@@ -48,7 +48,7 @@ export class SwaggerModule {
         ? `${globalPrefix}${validatePath(path)}`
         : path
     );
-    if (httpAdapter && httpAdapter.getType() === 'fastify') {
+    if (httpAdapter && httpAdapter.getType() === '@fastify') {
       return this.setupFastify(
         finalPath,
         httpAdapter,

@@ -57,7 +57,7 @@ describe('Fastify Swagger', () => {
     expect(document.paths['/fastify:colon:another/{prop}']).toBeDefined();
   });
 
-  it('should pass uiConfig options to fastify-swagger', async () => {
+  it('should pass uiConfig options to @fastify/swagger', async () => {
     const document1 = SwaggerModule.createDocument(app, builder.build());
     const uiConfig = {
       displayOperationId: true,
@@ -93,7 +93,7 @@ describe('Fastify Swagger', () => {
     ).resolves.toBeDefined();
   });
 
-  it('should pass initOAuth options to fastify-swagger', async () => {
+  it('should pass initOAuth options to @fastify/swagger', async () => {
     const document1 = SwaggerModule.createDocument(app, builder.build());
     const initOAuth = {
       scopes: ['openid', 'profile', 'email', 'offline_access']
@@ -114,7 +114,7 @@ describe('Fastify Swagger', () => {
     });
   });
 
-  it('should pass staticCSP = undefined options to fastify-swagger', async () => {
+  it('should pass staticCSP = undefined options to @fastify/swagger', async () => {
     const document1 = SwaggerModule.createDocument(app, builder.build());
     SwaggerModule.setup('swagger1', app, document1);
 
@@ -131,7 +131,7 @@ describe('Fastify Swagger', () => {
     });
   });
 
-  it('should pass staticCSP = true options to fastify-swagger', async () => {
+  it('should pass staticCSP = true options to @fastify/swagger', async () => {
     const document1 = SwaggerModule.createDocument(app, builder.build());
     const options = { staticCSP: true };
     SwaggerModule.setup('/swagger1', app, document1, options);
@@ -145,12 +145,16 @@ describe('Fastify Swagger', () => {
       });
 
       expect(response.statusCode).toEqual(200);
-      expect(response.headers['content-security-policy']).toContain(`script-src 'self' 'sha256`);
-      expect(response.headers['content-security-policy']).toContain(`style-src 'self' https: 'sha256`);
+      expect(response.headers['content-security-policy']).toContain(
+        `script-src 'self' 'sha256`
+      );
+      expect(response.headers['content-security-policy']).toContain(
+        `style-src 'self' https: 'sha256`
+      );
     });
   });
 
-  it('should pass staticCSP = false options to fastify-swagger', async () => {
+  it('should pass staticCSP = false options to @fastify/swagger', async () => {
     const document1 = SwaggerModule.createDocument(app, builder.build());
     const options = { staticCSP: false };
     SwaggerModule.setup('/swagger1', app, document1, options);
@@ -168,14 +172,14 @@ describe('Fastify Swagger', () => {
     });
   });
 
-  it('should pass transformStaticCSP = function options to fastify-swagger', async () => {
+  it('should pass transformStaticCSP = function options to @fastify/swagger', async () => {
     const document1 = SwaggerModule.createDocument(app, builder.build());
     const checkParam = jest.fn((param: string) => param);
     const options = {
       staticCSP: `default-src 'self';`,
       transformStaticCSP: (header: string) => {
         checkParam(header);
-        return `default-src 'self'; script-src 'self';`
+        return `default-src 'self'; script-src 'self';`;
       }
     };
     SwaggerModule.setup('/swagger1', app, document1, options);
@@ -190,7 +194,9 @@ describe('Fastify Swagger', () => {
 
       expect(checkParam).toBeCalledWith(`default-src 'self';`);
       expect(response.statusCode).toEqual(200);
-      expect(response.headers['content-security-policy']).toEqual(`default-src 'self'; script-src 'self';`);
+      expect(response.headers['content-security-policy']).toEqual(
+        `default-src 'self'; script-src 'self';`
+      );
     });
   });
 });
