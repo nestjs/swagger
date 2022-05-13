@@ -25,7 +25,7 @@
 ## Installation
 
 ```bash
-$ npm i --save @nestjs/swagger swagger-ui-express
+$ npm i --save @nestjs/swagger 
 ```
 
 ## Quick Start
