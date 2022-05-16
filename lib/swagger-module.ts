@@ -77,8 +77,8 @@ export class SwaggerModule {
     const swaggerHtml = swaggerUi.generateHTML(document, options);
     app.use(path, swaggerUi.serveFiles(document, options));
 
-    httpAdapter.get(path, (req, res) => res.send(swaggerHtml));
-    httpAdapter.get(path + '-json', (req, res) => res.json(document));
+    httpAdapter.get(path, (_, res) => res.send(swaggerHtml));
+    httpAdapter.get(path + '-json', (_, res) => res.json(document));
   }
 
   private static setupFastify(
@@ -98,8 +98,8 @@ export class SwaggerModule {
 
     httpServer.register(async (httpServer: any) => {
       httpServer.register(
-        loadPackage('fastify-swagger', 'SwaggerModule', () =>
-          require('fastify-swagger')
+        loadPackage('@fastify/swagger', 'SwaggerModule', () =>
+          require('@fastify/swagger')
         ),
         {
           swagger: document,
