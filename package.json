@@ -52,7 +52,7 @@
     "swagger-parser": "10.0.3",
     "swagger-ui-express": "4.3.0",
     "ts-jest": "28.0.0",
-    "typescript": "4.3.5"
+    "typescript": "4.6.4"
   },
   "peerDependencies": {
     "@nestjs/common": "^8.0.0",
