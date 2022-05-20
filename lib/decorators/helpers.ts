@@ -88,11 +88,13 @@ export function createMixedDecorator<T = any>(
     if (descriptor) {
       let metadatas: any;
       if (Array.isArray(metadata)) {
-        const previousMetadata = Reflect.getMetadata(metakey, descriptor.value) || [];
+        const previousMetadata =
+          Reflect.getMetadata(metakey, descriptor.value) || [];
         metadatas = [...previousMetadata, ...metadata];
       } else {
-        const previousMetadata = Reflect.getMetadata(metakey, descriptor.value) || {};
-        metadatas = {...previousMetadata, ...metadata};
+        const previousMetadata =
+          Reflect.getMetadata(metakey, descriptor.value) || {};
+        metadatas = { ...previousMetadata, ...metadata };
       }
       Reflect.defineMetadata(metakey, metadatas, descriptor.value);
       return descriptor;
@@ -140,5 +142,5 @@ export function getTypeIsArrayTuple(
   }
   const isInputArray = isArray(input);
   const type = isInputArray ? input[0] : input;
-  return [type, isInputArray];
+  return [type as Function, isInputArray];
 }
