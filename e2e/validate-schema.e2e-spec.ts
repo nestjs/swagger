@@ -1,7 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
-import type { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
 import * as SwaggerParser from 'swagger-parser';
 import {
@@ -73,7 +72,9 @@ describe('Validate OpenAPI schema', () => {
 
   it('should fix colons in url', async () => {
     const document = SwaggerModule.createDocument(app, options);
-    expect(document.paths['/api/v1/express:colon:another/{prop}']).toBeDefined();
+    expect(
+      document.paths['/api/v1/express:colon:another/{prop}']
+    ).toBeDefined();
   });
 
   it('should merge custom components passed via config', async () => {
@@ -107,9 +108,7 @@ describe('Validate OpenAPI schema', () => {
       }
     });
 
-    let api = (await SwaggerParser.validate(
-      document as any
-    )) as OpenAPIV3.Document;
+    let api = await SwaggerParser.validate(document as any);
     console.log('API name: %s, Version: %s', api.info.title, api.info.version);
     expect(api.components.schemas).toHaveProperty('Person');
     expect(api.components.schemas).toHaveProperty('Cat');
