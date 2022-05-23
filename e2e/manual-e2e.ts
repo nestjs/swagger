@@ -17,6 +17,7 @@ const host = 'localhost';
 const docRelPath = '/api-docs';
 
 const USE_FASTIFY = true;
+const ENABLE_BASIC_AUTH = true;
 
 const adapter = USE_FASTIFY ? new FastifyAdapter() : new ExpressAdapter();
 const publicFolderPath = join(__dirname, '../../e2e', 'public');
@@ -26,6 +27,48 @@ async function bootstrap() {
     ApplicationModule,
     adapter
   );
+  const httpAdapter = app.getHttpAdapter();
+
+  ENABLE_BASIC_AUTH &&
+    httpAdapter.use('/api-docs', (req, res, next) => {
+      function parse(input: string): { name: string; pass: string } {
+        const [, encodedPart] = input.split(' ');
+
+        const buff = Buffer.from(encodedPart, 'base64');
+        const text = buff.toString('ascii');
+        const [name, pass] = text.split(':');
+
+        return { name, pass };
+      }
+
+      function unauthorizedResponse(): void {
+        if (USE_FASTIFY) {
+          res.statusCode = 401;
+          res.setHeader('WWW-Authenticate', 'Basic');
+        } else {
+          res.status(401);
+          res.set('WWW-Authenticate', 'Basic');
+        }
+
+        next();
+      }
+
+      if (!req.headers.authorization) {
+        return unauthorizedResponse();
+      }
+
+      const credentials = parse(req.headers.authorization);
+
+      if (
+        !credentials ||
+        credentials?.name !== 'admin' ||
+        credentials?.pass !== 'admin'
+      ) {
+        return unauthorizedResponse();
+      }
+
+      next();
+    });
 
   app.setGlobalPrefix('/api/v1');
 
@@ -63,31 +106,15 @@ async function bootstrap() {
       tryItOutEnabled: true
     },
     customfavIcon: '/public/favicon.ico',
-    customCssUrl: '/public/theme.css', // to showcase that in new implementation u can use custom css with fastify
-    uiHooks: USE_FASTIFY
-      ? {
-          onRequest: (req: any, res: any, next: any) => {
-            console.log('FASTIFY HOOK POC 1');
-            next();
-          }
-        }
-      : undefined
+    customCssUrl: '/public/theme.css' // to showcase that in new implementation u can use custom css with fastify
   });
 
   SwaggerModule.setup('/swagger-docs', app, document, {
     customSiteTitle: 'Demo API - Swagger UI 2',
-    uiConfig: {
+    swaggerOptions: {
       persistAuthorization: true,
       defaultModelsExpandDepth: -1
-    },
-    uiHooks: USE_FASTIFY
-      ? {
-          onRequest: (req: any, res: any, next: any) => {
-            console.log('FASTIFY HOOK POC 2');
-            next();
-          }
-        }
-      : undefined
+    }
   });
 
   USE_FASTIFY

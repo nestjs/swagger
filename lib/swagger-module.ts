@@ -1,8 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import {
   OpenAPIObject,
-  LegacySwaggerCustomOptions,
-  SwaggerDocumentOptions
+  SwaggerDocumentOptions,
+  SwaggerCustomOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
@@ -16,10 +16,6 @@ import {
 } from './swagger-ui';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import {
-  processSwaggerOptions,
-  serveDocumentsFastify
-} from './backward-compatilibity-layer';
 import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
 
 export class SwaggerModule {
@@ -80,7 +76,7 @@ export class SwaggerModule {
       res.send(html);
     });
 
-    // fastify compatibility
+    // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
     httpAdapter.get(finalPath + '/', (req, res) => {
       res.type('text/html');
       res.send(html);
@@ -101,7 +97,7 @@ export class SwaggerModule {
     path: string,
     app: INestApplication,
     document: OpenAPIObject,
-    options?: LegacySwaggerCustomOptions
+    options?: SwaggerCustomOptions
   ) {
     const globalPrefix = getGlobalPrefix(app);
     const finalPath = validatePath(
@@ -110,41 +106,20 @@ export class SwaggerModule {
         : path
     );
 
-    // START: fastify backward compatibility layer
-    const { customOptions, extra } = processSwaggerOptions(options);
-    // END: fastify backward compatibility layer
-
     const yamlDocument = jsyaml.dump(document);
     const jsonDocument = JSON.stringify(document);
-    const html = buildSwaggerHTML(finalPath, document, customOptions);
-    const swaggerInitJS = buildSwaggerInitJS(document, customOptions);
-
+    const html = buildSwaggerHTML(finalPath, document, options);
+    const swaggerInitJS = buildSwaggerInitJS(document, options);
     const httpAdapter = app.getHttpAdapter();
 
-    // START: fastify backward compatibility layer
-    const isFastify = httpAdapter && httpAdapter.getType() === 'fastify';
-
-    if (isFastify) {
-      serveDocumentsFastify(
-        finalPath,
-        httpAdapter,
-        swaggerInitJS,
-        yamlDocument,
-        jsonDocument,
-        html,
-        extra
-      );
-    } else {
-      SwaggerModule.serveDocuments(
-        finalPath,
-        httpAdapter,
-        swaggerInitJS,
-        yamlDocument,
-        jsonDocument,
-        html
-      );
-    }
-    // END: fastify backward compatibility layer
+    SwaggerModule.serveDocuments(
+      finalPath,
+      httpAdapter,
+      swaggerInitJS,
+      yamlDocument,
+      jsonDocument,
+      html
+    );
 
     SwaggerModule.serveStatic(finalPath, app);
   }

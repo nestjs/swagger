@@ -62,11 +62,11 @@
   "peerDependencies": {
     "@nestjs/common": "^8.0.0",
     "@nestjs/core": "^8.0.0",
-    "fastify-static": "^4.6.1",
+    "@fastify/static": "^5.0.0",
     "reflect-metadata": "^0.1.12"
   },
   "peerDependenciesMeta": {
-    "fastify-static": {
+    "@fastify/static": {
       "optional": true
     }
   },

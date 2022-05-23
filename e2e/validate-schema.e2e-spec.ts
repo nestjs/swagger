@@ -12,6 +12,7 @@ import {
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
+import { OpenAPI } from 'openapi-types';
 
 describe('Validate OpenAPI schema', () => {
   let app: INestApplication;
