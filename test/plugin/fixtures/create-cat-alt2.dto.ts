@@ -73,7 +73,10 @@ export abstract class Audit {
 }
 `;
 
-export const createCatDtoTextAlt2Transpiled = `import { CreateDateColumn, UpdateDateColumn, VersionColumn } from 'typeorm';
+export const createCatDtoTextAlt2Transpiled = `import { createRequire as _createRequire } from "module";
+const __require = _createRequire(import.meta.url);
+const openapi = __require("@nestjs/swagger");
+import { CreateDateColumn, UpdateDateColumn, VersionColumn } from 'typeorm';
 export class Audit {
     static _OPENAPI_METADATA_FACTORY() {
         return { createdAt: { required: true, type: () => Object, description: "test on createdAt" }, updatedAt: { required: true, type: () => Object }, version: { required: true, type: () => String, description: "test\\nversion", example: "version 123" }, testVersion: { required: true, type: () => Object, description: "testVersion", examples: ["0.0.1", "0.0.2"] }, testVersionArray: { required: true, type: () => [String], description: "testVersionArray", example: ["0.0.1", "0.0.2"] }, testVersionArray2: { required: true, type: () => [String], description: "testVersionArray", example: ["version 123", "version 321"] }, testVersionArray3: { required: true, type: () => [Number], description: "testVersionArray", example: [123, 321] }, testBoolean: { required: true, type: () => Boolean, description: "testBoolean", example: true }, testNumber: { required: true, type: () => Number, description: "testNumber", examples: [1, 5] } };
