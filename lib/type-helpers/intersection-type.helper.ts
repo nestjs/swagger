@@ -1,8 +1,7 @@
 import { Type } from '@nestjs/common';
 import {
-  inheritTransformationMetadata,
-  inheritValidationMetadata,
-  inheritPropertyInitializers
+  MappedType,
+  IntersectionType as intersect
 } from '@nestjs/mapped-types';
 import { DECORATORS } from '../constants';
 import { ApiProperty } from '../decorators';
@@ -12,58 +11,88 @@ import { clonePluginMetadataFactory } from './mapped-types.utils';
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
 export function IntersectionType<A, B>(
-  classARef: Type<A>,
-  classBRef: Type<B>
-): Type<A & B> {
-  const fieldsOfA = modelPropertiesAccessor.getModelProperties(
-    classARef.prototype
-  );
-  const fieldsOfB = modelPropertiesAccessor.getModelProperties(
-    classBRef.prototype
-  );
+  target: Type<A>,
+  source: Type<B>
+): MappedType<A & B>;
 
-  abstract class IntersectionTypeClass {
-    constructor() {
-      inheritPropertyInitializers(this, classARef);
-      inheritPropertyInitializers(this, classBRef);
-    }
-  }
-  inheritValidationMetadata(classARef, IntersectionTypeClass);
-  inheritTransformationMetadata(classARef, IntersectionTypeClass);
-  inheritValidationMetadata(classBRef, IntersectionTypeClass);
-  inheritTransformationMetadata(classBRef, IntersectionTypeClass);
+export function IntersectionType<A, B, C>(
+  target: Type<A>,
+  sourceB: Type<B>,
+  sourceC: Type<C>
+): MappedType<A & B & C>;
 
-  clonePluginMetadataFactory(
-    IntersectionTypeClass as Type<unknown>,
-    classARef.prototype
-  );
-  clonePluginMetadataFactory(
-    IntersectionTypeClass as Type<unknown>,
-    classBRef.prototype
-  );
+export function IntersectionType<A, B, C, D>(
+  target: Type<A>,
+  sourceB: Type<B>,
+  sourceC: Type<C>,
+  sourceD: Type<D>
+): MappedType<A & B & C & D>;
 
-  fieldsOfA.forEach((propertyKey) => {
-    const metadata = Reflect.getMetadata(
-      DECORATORS.API_MODEL_PROPERTIES,
-      classARef.prototype,
-      propertyKey
+export function IntersectionType<A, B, C, D, E>(
+  target: Type<A>,
+  sourceB: Type<B>,
+  sourceC: Type<C>,
+  sourceD: Type<D>,
+  sourceE: Type<E>
+): MappedType<A & B & C & D & E>;
+
+export function IntersectionType<A, B, C, D, E, F>(
+  target: Type<A>,
+  sourceB: Type<B>,
+  sourceC: Type<C>,
+  sourceD: Type<D>,
+  sourceE: Type<E>,
+  sourceF: Type<F>
+): MappedType<A & B & C & D & E & F>;
+
+export function IntersectionType<A, B, C, D, E, F, G>(
+  target: Type<A>,
+  sourceB: Type<B>,
+  sourceC: Type<C>,
+  sourceD: Type<D>,
+  sourceE: Type<E>,
+  sourceF: Type<F>,
+  sourceG: Type<G>
+): MappedType<A & B & C & D & E & F & G>;
+
+export function IntersectionType<A, B, C, D, E, F, G, H>(
+  target: Type<A>,
+  sourceB: Type<B>,
+  sourceC: Type<C>,
+  sourceD: Type<D>,
+  sourceE: Type<E>,
+  sourceF: Type<F>,
+  sourceG: Type<G>,
+  sourceH: Type<H>
+): MappedType<A & B & C & D & E & F & G & H>;
+
+export function IntersectionType<A, T extends Type[]>(
+  target: Type<A>,
+  ...sources: T
+): MappedType<A> {
+  const classRefs = [target, ...sources];
+
+  const IntersectionClass: MappedType<A> = (intersect as any)(...classRefs);
+
+  classRefs.forEach((classRef) => {
+    clonePluginMetadataFactory(IntersectionClass, classRef.prototype);
+
+    const propertyKeys = modelPropertiesAccessor.getModelProperties(
+      classRef.prototype
     );
-    const decoratorFactory = ApiProperty(metadata);
-    decoratorFactory(IntersectionTypeClass.prototype, propertyKey);
+
+    propertyKeys.forEach((propertyKey) => {
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        classRef.prototype,
+        propertyKey
+      );
+
+      const decorator = ApiProperty(metadata);
+
+      decorator(IntersectionClass.prototype, propertyKey);
+    });
   });
 
-  fieldsOfB.forEach((propertyKey) => {
-    const metadata = Reflect.getMetadata(
-      DECORATORS.API_MODEL_PROPERTIES,
-      classBRef.prototype,
-      propertyKey
-    );
-    const decoratorFactory = ApiProperty(metadata);
-    decoratorFactory(IntersectionTypeClass.prototype, propertyKey);
-  });
-
-  Object.defineProperty(IntersectionTypeClass, 'name', {
-    value: `Intersection${classARef.name}${classBRef.name}`
-  });
-  return IntersectionTypeClass as Type<A & B>;
+  return IntersectionClass;
 }
