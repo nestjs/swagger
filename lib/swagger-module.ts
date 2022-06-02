@@ -98,8 +98,8 @@ export class SwaggerModule {
 
     httpServer.register(async (httpServer: any) => {
       httpServer.register(
-        loadPackage('fastify-swagger', 'SwaggerModule', () =>
-          require('fastify-swagger')
+        loadPackage('@fastify/swagger', 'SwaggerModule', () =>
+          require('@fastify/swagger')
         ),
         {
           swagger: document,

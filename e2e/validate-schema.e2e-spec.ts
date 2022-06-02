@@ -108,7 +108,7 @@ describe('Validate OpenAPI schema', () => {
       }
     });
 
-    let api = await SwaggerParser.validate(document as any);
+    let api = await SwaggerParser.validate(document as any) as any;
     console.log('API name: %s, Version: %s', api.info.title, api.info.version);
     expect(api.components.schemas).toHaveProperty('Person');
     expect(api.components.schemas).toHaveProperty('Cat');
