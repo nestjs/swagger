@@ -5,6 +5,7 @@ import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { InstanceToken, Module } from '@nestjs/core/injector/module';
 import { flatten, isEmpty } from 'lodash';
 import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
+import { ModuleRoute } from './interfaces/module-route.interface';
 import {
   ReferenceObject,
   SchemaObject
@@ -18,7 +19,7 @@ import { getGlobalPrefix } from './utils/get-global-prefix';
 import { stripLastSlash } from './utils/strip-last-slash.util';
 
 export class SwaggerScanner {
-  private readonly transfomer = new SwaggerTransformer();
+  private readonly transformer = new SwaggerTransformer();
   private readonly schemaObjectFactory = new SchemaObjectFactory(
     new ModelPropertiesAccessor(),
     new SwaggerTypesMapper()
@@ -50,7 +51,7 @@ export class SwaggerScanner {
 
     const denormalizedPaths = modules.map(
       ({ routes, metatype, relatedModules }) => {
-        let result = [];
+        let result: ModuleRoute[] = [];
 
         if (deepScanRoutes) {
           // only load submodules routes if asked
@@ -76,7 +77,7 @@ export class SwaggerScanner {
             });
         }
         const modulePath = this.getModulePathMetadata(container, metatype);
-        return result.concat(
+        result = result.concat(
           this.scanModuleRoutes(
             routes,
             modulePath,
@@ -85,6 +86,7 @@ export class SwaggerScanner {
             operationIdFactory
           )
         );
+        return this.transformer.unescapeColonsInPath(app, result);
       }
     );
 
@@ -92,7 +94,7 @@ export class SwaggerScanner {
     this.addExtraModels(schemas, extraModels);
 
     return {
-      ...this.transfomer.normalizePaths(flatten(denormalizedPaths)),
+      ...this.transformer.normalizePaths(flatten(denormalizedPaths)),
       components: {
         schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }
@@ -105,7 +107,7 @@ export class SwaggerScanner {
     globalPrefix: string | undefined,
     applicationConfig: ApplicationConfig,
     operationIdFactory?: (controllerKey: string, methodKey: string) => string
-  ): Array<Omit<OpenAPIObject, 'openapi' | 'info'> & Record<'root', any>> {
+  ): ModuleRoute[] {
     const denormalizedArray = [...routes.values()].map((ctrl) =>
       this.explorer.exploreController(
         ctrl,

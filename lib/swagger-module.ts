@@ -112,7 +112,8 @@ export class SwaggerModule {
           uiConfig: options?.uiConfig,
           initOAuth: options?.initOAuth,
           staticCSP: options?.staticCSP,
-          transformStaticCSP: options?.transformStaticCSP
+          transformStaticCSP: options?.transformStaticCSP,
+          uiHooks: options?.uiHooks
         }
       );
     });

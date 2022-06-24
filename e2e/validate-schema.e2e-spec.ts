@@ -1,7 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
-import type { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
 import * as SwaggerParser from 'swagger-parser';
 import {
@@ -63,10 +62,22 @@ describe('Validate OpenAPI schema', () => {
       expect(api.paths['/api/cats']['get']['x-codeSamples'][0]['lang']).toEqual(
         'JavaScript'
       );
+      expect(api.paths['/api/cats']['get']['x-multiple']['test']).toEqual(
+        'test'
+      );
+      expect(api.paths['/api/cats']['get']['tags']).toContain('tag1');
+      expect(api.paths['/api/cats']['get']['tags']).toContain('tag2');
     } catch (err) {
       console.log(doc);
       expect(err).toBeUndefined();
     }
+  });
+
+  it('should fix colons in url', async () => {
+    const document = SwaggerModule.createDocument(app, options);
+    expect(
+      document.paths['/api/v1/express:colon:another/{prop}']
+    ).toBeDefined();
   });
 
   it('should merge custom components passed via config', async () => {
@@ -100,9 +111,7 @@ describe('Validate OpenAPI schema', () => {
       }
     });
 
-    let api = (await SwaggerParser.validate(
-      document as any
-    )) as OpenAPIV3.Document;
+    let api = await SwaggerParser.validate(document as any);
     console.log('API name: %s, Version: %s', api.info.title, api.info.version);
     expect(api.components.schemas).toHaveProperty('Person');
     expect(api.components.schemas).toHaveProperty('Cat');

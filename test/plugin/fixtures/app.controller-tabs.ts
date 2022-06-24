@@ -1,43 +1,45 @@
-export const appControllerText = `import { Controller, Post, HttpStatus } from '@nestjs/common';
+// prettier-ignore
+export const appControllerWithTabsText = `import { Controller, Post, HttpStatus } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 
 class Cat {}
 
 @Controller('cats')
 export class AppController {
-  onApplicationBootstrap() {}
+	onApplicationBootstrap() {}
 
-  /**
-   * create a Cat
-   *
-   * @returns {Promise<Cat>}
-   * @memberof AppController
-   */
-  @Post()
-  async create(): Promise<Cat> {}
+	/**
+	 * create a Cat
+	 *
+	 * @returns {Promise<Cat>}
+	 * @memberof AppController
+	 */
+	@Post()
+	async create(): Promise<Cat> {}
 
-  /**
-   * find a Cat
-   */
-  @ApiOperation({})
-  @Get()
-  async findOne(): Promise<Cat> {}
+	/**
+	 * find a Cat
+	 */
+	@ApiOperation({})
+	@Get()
+	async findOne(): Promise<Cat> {}
 
-  /**
-   * find all Cats im comment
-   *
-   * @returns {Promise<Cat>}
-   * @memberof AppController
-   */
-  @ApiOperation({
-    description: 'find all Cats',
-  })
-  @Get()
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async findAll(): Promise<Cat[]> {}
+	/**
+	 * find all Cats im comment
+	 *
+	 * @returns {Promise<Cat>}
+	 * @memberof AppController
+	 */
+	@ApiOperation({
+	description: 'find all Cats',
+	})
+	@Get()
+	@HttpCode(HttpStatus.NO_CONTENT)
+	async findAll(): Promise<Cat[]> {}
 }`;
 
-export const appControllerTextTranspiled = `\"use strict\";
+// prettier-ignore
+export const appControllerWithTabsTextTranspiled = `\"use strict\";
 Object.defineProperty(exports, \"__esModule\", { value: true });
 exports.AppController = void 0;
 const openapi = require(\"@nestjs/swagger\");
