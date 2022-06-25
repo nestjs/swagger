@@ -92,7 +92,6 @@ function removeParamMetadataIfExplicitExists(
     properties: ParamWithTypeMetadata[],
     explicitParams: any[]
 ) {
-
   const reducer = (a, p) => {
     if (['query', 'path'].includes(p.in)) {
       a.push(p.name);
