@@ -77,12 +77,12 @@ function removeBodyMetadataIfExplicitExists(
   properties: ParamWithTypeMetadata[],
   explicitParams: any[]
 ) {
-  const isBodyReflected = some(properties, (p) => p.in === 'body');
-  const isBodyDefinedExplicitly = some(explicitParams, (p) => p.in === 'body');
+  const isBodyReflected = some(properties, (paramWithTypeMetadata) => paramWithTypeMetadata.in === 'body');
+  const isBodyDefinedExplicitly = some(explicitParams, (paramWithTypeMetadata) => paramWithTypeMetadata.in === 'body');
   if (isBodyReflected && isBodyDefinedExplicitly) {
     return omitBy(
       properties,
-      (p) => p.in === 'body'
+      (paramWithTypeMetadata) => paramWithTypeMetadata.in === 'body'
     ) as ParamWithTypeMetadata[];
   }
   return properties;
@@ -92,11 +92,11 @@ function removeParamMetadataIfExplicitExists(
     properties: ParamWithTypeMetadata[],
     explicitParams: any[]
 ) {
-  const reducer = (a, p) => {
-    if (['query', 'path'].includes(p.in)) {
-      a.push(p.name);
+  const reducer = (reflectedParams, paramWithTypeMetadata) => {
+    if (['query', 'path'].includes(paramWithTypeMetadata.in)) {
+      reflectedParams.push(paramWithTypeMetadata.name);
     }
-    return a;
+    return reflectedParams;
   }
 
   const reflectedParams = isEmpty(properties) ? [] : properties.reduce(reducer, []);
