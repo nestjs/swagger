@@ -105,6 +105,6 @@ function removeParamMetadataIfExplicitExists(
 
   return omitBy(
       properties,
-      (p) => intersect.includes(p.name),
+      (paramWithTypeMetadata) => intersect.includes(paramWithTypeMetadata.name),
   ) as ParamWithTypeMetadata[];
 }
