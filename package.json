@@ -53,7 +53,7 @@
     "husky": "8.0.1",
     "jest": "28.1.0",
     "lint-staged": "12.4.1",
-    "openapi-types": "11.0.1",
+    "openapi-types": "11.1.0",
     "prettier": "2.6.2",
     "reflect-metadata": "0.1.13",
     "release-it": "15.1.1",
