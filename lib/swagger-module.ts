@@ -77,10 +77,19 @@ export class SwaggerModule {
     });
 
     // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
-    httpAdapter.get(finalPath + '/', (req, res) => {
-      res.type('text/html');
-      res.send(html);
-    });
+    try {
+      httpAdapter.get(finalPath + '/', (req, res) => {
+        res.type('text/html');
+        res.send(html);
+      });
+    } catch (err) {
+      /**
+       if in Fastify adapter options we pass "ignoreTrailingSlash: true"
+       the declaration of the route finalPath/ will throw an error because of duplication:
+       Method '${method}' already declared for route '${path}' with constraints '${JSON.stringify(constraints)}.
+       To ignore that error, it's wrapped in try-catch
+       **/
+    }
 
     httpAdapter.get(`${finalPath}-json`, (req, res) => {
       res.type('application/json');
