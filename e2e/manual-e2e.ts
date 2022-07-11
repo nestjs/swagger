@@ -17,9 +17,13 @@ const host = 'localhost';
 const docRelPath = '/api-docs';
 
 const USE_FASTIFY = true;
-const ENABLE_BASIC_AUTH = true;
+const ENABLE_BASIC_AUTH = false;
 
-const adapter = USE_FASTIFY ? new FastifyAdapter() : new ExpressAdapter();
+const adapter = USE_FASTIFY
+  ? new FastifyAdapter({
+      ignoreTrailingSlash: false
+    })
+  : new ExpressAdapter();
 const publicFolderPath = join(__dirname, '../../e2e', 'public');
 
 async function bootstrap() {
@@ -30,7 +34,7 @@ async function bootstrap() {
   const httpAdapter = app.getHttpAdapter();
 
   ENABLE_BASIC_AUTH &&
-    httpAdapter.use('/api-docs', (req, res, next) => {
+    httpAdapter.use(docRelPath, (req, res, next) => {
       function parse(input: string): { name: string; pass: string } {
         const [, encodedPart] = input.split(' ');
 
@@ -109,13 +113,13 @@ async function bootstrap() {
     customCssUrl: '/public/theme.css' // to showcase that in new implementation u can use custom css with fastify
   });
 
-  SwaggerModule.setup('/swagger-docs', app, document, {
-    customSiteTitle: 'Demo API - Swagger UI 2',
-    swaggerOptions: {
-      persistAuthorization: true,
-      defaultModelsExpandDepth: -1
-    }
-  });
+  // SwaggerModule.setup('/swagger-docs', app, document, {
+  //   customSiteTitle: 'Demo API - Swagger UI 2',
+  //   swaggerOptions: {
+  //     persistAuthorization: true,
+  //     defaultModelsExpandDepth: -1
+  //   }
+  // });
 
   USE_FASTIFY
     ? (app as NestFastifyApplication).useStaticAssets({
