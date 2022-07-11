@@ -117,6 +117,16 @@ async function bootstrap() {
     }
   });
 
+  SwaggerModule.setup('/swagger-docs', app, document, {
+    customSiteTitle: 'Demo API - Swagger UI 3',
+    swaggerOptions: {
+      persistAuthorization: true,
+      defaultModelsExpandDepth: -1,
+      tagsSorter: (a, b) => a.localeCompare(b),
+      operationsSorter: (a, b) => a.get('id').localeCompare(b.get('id'))
+    }
+  });
+
   USE_FASTIFY
     ? (app as NestFastifyApplication).useStaticAssets({
         root: publicFolderPath,
