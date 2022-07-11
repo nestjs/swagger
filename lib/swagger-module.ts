@@ -1,22 +1,22 @@
 import { INestApplication } from '@nestjs/common';
+import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import * as jsyaml from 'js-yaml';
 import {
   OpenAPIObject,
-  SwaggerDocumentOptions,
-  SwaggerCustomOptions
+  SwaggerCustomOptions,
+  SwaggerDocumentOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
-import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
-import { getGlobalPrefix } from './utils/get-global-prefix';
-import { validatePath } from './utils/validate-path.util';
-import * as jsyaml from 'js-yaml';
 import {
   buildSwaggerHTML,
   buildSwaggerInitJS,
   swaggerAssetsAbsoluteFSPath
 } from './swagger-ui';
-import { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
+import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
+import { getGlobalPrefix } from './utils/get-global-prefix';
+import { validatePath } from './utils/validate-path.util';
 
 export class SwaggerModule {
   public static createDocument(
@@ -84,11 +84,11 @@ export class SwaggerModule {
       });
     } catch (err) {
       /**
-       if in Fastify adapter options we pass "ignoreTrailingSlash: true"
-       the declaration of the route finalPath/ will throw an error because of duplication:
-       Method '${method}' already declared for route '${path}' with constraints '${JSON.stringify(constraints)}.
-       To ignore that error, it's wrapped in try-catch
-       **/
+       * When Fastify adapter is being used with the "ignoreTrailingSlash" configuration option set to "true",
+       * declaration of the route "finalPath/" will throw an error because of the following conflict:
+       * Method '${method}' already declared for route '${path}' with constraints '${JSON.stringify(constraints)}.
+       * We can simply ignore that error here.
+       */
     }
 
     httpAdapter.get(`${finalPath}-json`, (req, res) => {
