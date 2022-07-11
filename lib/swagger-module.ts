@@ -83,7 +83,7 @@ export class SwaggerModule {
     });
 
     httpAdapter.get(`${finalPath}-json`, (req, res) => {
-      res.type('text/json');
+      res.type('application/json');
       res.send(jsonDocument);
     });
 

@@ -6,6 +6,7 @@ import {
   ExpressAdapter,
   NestExpressApplication
 } from '@nestjs/platform-express';
+import * as request from 'supertest';
 
 describe('Express Swagger', () => {
   let app: NestExpressApplication;
@@ -66,5 +67,33 @@ describe('Express Swagger', () => {
 
     await app.init();
     expect(app.getHttpAdapter().getInstance()).toBeDefined();
+    await app.close();
+  });
+
+  describe('served swagger ui', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument);
+
+      await app.init();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    test('content type of served json document', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-json`
+      );
+
+      expect(response.status).toEqual(200);
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
   });
 });

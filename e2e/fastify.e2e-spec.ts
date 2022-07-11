@@ -6,6 +6,7 @@ import {
 import * as SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
+import * as request from 'supertest';
 
 describe('Fastify Swagger', () => {
   let app: NestFastifyApplication;
@@ -69,5 +70,33 @@ describe('Fastify Swagger', () => {
     await expect(
       app.getHttpAdapter().getInstance().ready()
     ).resolves.toBeDefined();
+  });
+
+  describe('served swagger ui', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument);
+
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    test('content type of served json document', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-json`
+      );
+
+      expect(response.status).toEqual(200);
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
   });
 });
