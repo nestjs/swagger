@@ -113,16 +113,9 @@ async function bootstrap() {
     customCssUrl: '/public/theme.css' // to showcase that in new implementation u can use custom css with fastify
   });
 
-  // SwaggerModule.setup('/swagger-docs', app, document, {
-  //   customSiteTitle: 'Demo API - Swagger UI 2',
-  //   swaggerOptions: {
-  //     persistAuthorization: true,
-  //     defaultModelsExpandDepth: -1
-  //   }
-  // });
-
   SwaggerModule.setup('/swagger-docs', app, document, {
-    customSiteTitle: 'Demo API - Swagger UI 3',
+    customSiteTitle: 'Demo API - Swagger UI 2',
+    // reverseProxyPrefix: '/nodejs-apps/backend/cat-apis',
     swaggerOptions: {
       persistAuthorization: true,
       defaultModelsExpandDepth: -1,

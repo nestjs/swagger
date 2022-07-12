@@ -1,4 +1,5 @@
 export interface SwaggerCustomOptions {
+  reverseProxyPrefix?: string;
   useGlobalPrefix?: boolean;
   explorer?: boolean;
   swaggerOptions?: Record<string, any>;

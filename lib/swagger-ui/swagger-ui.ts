@@ -48,7 +48,10 @@ export function buildSwaggerHTML(
   return htmlTemplateString
     .replace('<% customCss %>', customCss)
     .replace('<% favIconString %>', favIconString)
-    .replace(/<% baseUrl %>/g, baseUrl)
+    .replace(
+      /<% baseUrl %>/g,
+      (customOptions.reverseProxyPrefix ?? '') + baseUrl
+    )
     .replace(
       '<% customJs %>',
       customJs ? `<script src="${customJs}"></script>` : ''
