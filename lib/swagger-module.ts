@@ -117,7 +117,7 @@ export class SwaggerModule {
 
     const yamlDocument = jsyaml.dump(document);
     const jsonDocument = JSON.stringify(document);
-    const html = buildSwaggerHTML(`.${finalPath}`, document, options);
+    const html = buildSwaggerHTML(finalPath, document, options);
     const swaggerInitJS = buildSwaggerInitJS(document, options);
     const httpAdapter = app.getHttpAdapter();
 
