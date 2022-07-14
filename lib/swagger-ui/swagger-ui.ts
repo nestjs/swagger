@@ -10,7 +10,7 @@ export function buildSwaggerInitJS(
   swaggerDoc: OpenAPIObject,
   customOptions: SwaggerCustomOptions = {}
 ) {
-  const { swaggerOptions, swaggerUrl } = customOptions;
+  const { swaggerOptions = {}, swaggerUrl } = customOptions;
   const swaggerInitOptions = {
     swaggerDoc,
     swaggerUrl,
