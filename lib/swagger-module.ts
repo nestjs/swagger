@@ -73,8 +73,8 @@ export class SwaggerModule {
     });
 
     /**
-     * covers assets fetched via rel path when swagger url ends with '/'
-     * https://github.com/nestjs/swagger/issues/1976
+     * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
+     * @see https://github.com/nestjs/swagger/issues/1976
      */
     httpAdapter.get(
       `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`,
@@ -148,8 +148,8 @@ export class SwaggerModule {
 
     SwaggerModule.serveStatic(finalPath, app);
     /**
-     * covers assets fetched via rel path when swagger url ends with '/'
-     * https://github.com/nestjs/swagger/issues/1976
+     * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
+     * @see https://github.com/nestjs/swagger/issues/1976
      */
     SwaggerModule.serveStatic(`${finalPath}/${urlLastSubdirectory}`, app);
   }
