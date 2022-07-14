@@ -115,7 +115,7 @@ export class SwaggerModule {
         : path
     );
 
-    const yamlDocument = jsyaml.dump(document);
+    const yamlDocument = jsyaml.dump(document, { skipInvalid: true });
     const jsonDocument = JSON.stringify(document);
     const html = buildSwaggerHTML(finalPath, document, options);
     const swaggerInitJS = buildSwaggerInitJS(document, options);
