@@ -60,6 +60,7 @@ export class SwaggerModule {
 
   private static serveDocuments(
     finalPath: string,
+    urlLastSubdirectory: string,
     httpAdapter: HttpServer,
     swaggerInitJS: string,
     yamlDocument: string,
@@ -70,6 +71,18 @@ export class SwaggerModule {
       res.type('application/javascript');
       res.send(swaggerInitJS);
     });
+
+    /**
+     * covers assets fetched via rel path when swagger url ends with '/'
+     * https://github.com/nestjs/swagger/issues/1976
+     */
+    httpAdapter.get(
+      `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`,
+      (req, res) => {
+        res.type('application/javascript');
+        res.send(swaggerInitJS);
+      }
+    );
 
     httpAdapter.get(finalPath, (req, res) => {
       res.type('text/html');
@@ -114,15 +127,18 @@ export class SwaggerModule {
         ? `${globalPrefix}${validatePath(path)}`
         : path
     );
+    const urlLastSubdirectory = finalPath.split('/').slice(-1).pop();
 
     const yamlDocument = jsyaml.dump(document, { skipInvalid: true });
     const jsonDocument = JSON.stringify(document);
-    const html = buildSwaggerHTML(finalPath, document, options);
+
+    const html = buildSwaggerHTML(urlLastSubdirectory, document, options);
     const swaggerInitJS = buildSwaggerInitJS(document, options);
     const httpAdapter = app.getHttpAdapter();
 
     SwaggerModule.serveDocuments(
       finalPath,
+      urlLastSubdirectory,
       httpAdapter,
       swaggerInitJS,
       yamlDocument,
@@ -131,5 +147,10 @@ export class SwaggerModule {
     );
 
     SwaggerModule.serveStatic(finalPath, app);
+    /**
+     * covers assets fetched via rel path when swagger url ends with '/'
+     * https://github.com/nestjs/swagger/issues/1976
+     */
+    SwaggerModule.serveStatic(`${finalPath}/${urlLastSubdirectory}`, app);
   }
 }
