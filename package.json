@@ -59,7 +59,7 @@
     "release-it": "15.1.2",
     "supertest": "6.2.4",
     "swagger-parser": "10.0.3",
-    "ts-jest": "28.0.5",
+    "ts-jest": "28.0.6",
     "typescript": "4.7.4"
   },
   "peerDependencies": {
