@@ -1,13 +1,19 @@
 import { INestApplication } from '@nestjs/common';
-import { loadPackage } from '@nestjs/common/utils/load-package.util';
+import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import * as jsyaml from 'js-yaml';
 import {
-  ExpressSwaggerCustomOptions,
-  FastifySwaggerCustomOptions,
   OpenAPIObject,
   SwaggerCustomOptions,
   SwaggerDocumentOptions
 } from './interfaces';
 import { SwaggerScanner } from './swagger-scanner';
+import {
+  buildSwaggerHTML,
+  buildSwaggerInitJS,
+  swaggerAssetsAbsoluteFSPath
+} from './swagger-ui';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { validatePath } from './utils/validate-path.util';
@@ -35,87 +41,116 @@ export class SwaggerModule {
     };
   }
 
+  private static serveStatic(finalPath: string, app: INestApplication) {
+    const httpAdapter = app.getHttpAdapter();
+
+    if (httpAdapter && httpAdapter.getType() === 'fastify') {
+      (app as NestFastifyApplication).useStaticAssets({
+        root: swaggerAssetsAbsoluteFSPath,
+        prefix: `${finalPath}/`,
+        decorateReply: false
+      });
+    } else {
+      (app as NestExpressApplication).useStaticAssets(
+        swaggerAssetsAbsoluteFSPath,
+        { prefix: finalPath }
+      );
+    }
+  }
+
+  private static serveDocuments(
+    finalPath: string,
+    urlLastSubdirectory: string,
+    httpAdapter: HttpServer,
+    swaggerInitJS: string,
+    yamlDocument: string,
+    jsonDocument: string,
+    html: string
+  ) {
+    httpAdapter.get(`${finalPath}/swagger-ui-init.js`, (req, res) => {
+      res.type('application/javascript');
+      res.send(swaggerInitJS);
+    });
+
+    /**
+     * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
+     * @see https://github.com/nestjs/swagger/issues/1976
+     */
+    httpAdapter.get(
+      `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`,
+      (req, res) => {
+        res.type('application/javascript');
+        res.send(swaggerInitJS);
+      }
+    );
+
+    httpAdapter.get(finalPath, (req, res) => {
+      res.type('text/html');
+      res.send(html);
+    });
+
+    // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
+    try {
+      httpAdapter.get(finalPath + '/', (req, res) => {
+        res.type('text/html');
+        res.send(html);
+      });
+    } catch (err) {
+      /**
+       * When Fastify adapter is being used with the "ignoreTrailingSlash" configuration option set to "true",
+       * declaration of the route "finalPath/" will throw an error because of the following conflict:
+       * Method '${method}' already declared for route '${path}' with constraints '${JSON.stringify(constraints)}.
+       * We can simply ignore that error here.
+       */
+    }
+
+    httpAdapter.get(`${finalPath}-json`, (req, res) => {
+      res.type('application/json');
+      res.send(jsonDocument);
+    });
+
+    httpAdapter.get(`${finalPath}-yaml`, (req, res) => {
+      res.type('text/yaml');
+      res.send(yamlDocument);
+    });
+  }
+
   public static setup(
     path: string,
     app: INestApplication,
     document: OpenAPIObject,
     options?: SwaggerCustomOptions
   ) {
-    const httpAdapter = app.getHttpAdapter();
     const globalPrefix = getGlobalPrefix(app);
     const finalPath = validatePath(
       options?.useGlobalPrefix && globalPrefix && !globalPrefix.match(/^(\/?)$/)
         ? `${globalPrefix}${validatePath(path)}`
         : path
     );
-    if (httpAdapter && httpAdapter.getType() === 'fastify') {
-      return this.setupFastify(
-        finalPath,
-        httpAdapter,
-        document,
-        options as FastifySwaggerCustomOptions
-      );
-    }
-    return this.setupExpress(
-      finalPath,
-      app,
-      document,
-      options as ExpressSwaggerCustomOptions
-    );
-  }
+    const urlLastSubdirectory = finalPath.split('/').slice(-1).pop();
 
-  private static setupExpress(
-    path: string,
-    app: INestApplication,
-    document: OpenAPIObject,
-    options?: ExpressSwaggerCustomOptions
-  ) {
+    const yamlDocument = jsyaml.dump(document, { skipInvalid: true });
+    const jsonDocument = JSON.stringify(document);
+
+    const html = buildSwaggerHTML(urlLastSubdirectory, document, options);
+    const swaggerInitJS = buildSwaggerInitJS(document, options);
     const httpAdapter = app.getHttpAdapter();
-    const swaggerUi = loadPackage('swagger-ui-express', 'SwaggerModule', () =>
-      require('swagger-ui-express')
+
+    SwaggerModule.serveDocuments(
+      finalPath,
+      urlLastSubdirectory,
+      httpAdapter,
+      swaggerInitJS,
+      yamlDocument,
+      jsonDocument,
+      html
     );
-    const swaggerHtml = swaggerUi.generateHTML(document, options);
-    app.use(path, swaggerUi.serveFiles(document, options));
 
-    httpAdapter.get(path, (req, res) => res.send(swaggerHtml));
-    httpAdapter.get(path + '-json', (req, res) => res.json(document));
-  }
-
-  private static setupFastify(
-    path: string,
-    httpServer: any,
-    document: OpenAPIObject,
-    options?: FastifySwaggerCustomOptions
-  ) {
-    // Workaround for older versions of the @nestjs/platform-fastify package
-    // where "isParserRegistered" getter is not defined.
-    const hasParserGetterDefined = (
-      Object.getPrototypeOf(httpServer) as Object
-    ).hasOwnProperty('isParserRegistered');
-    if (hasParserGetterDefined && !httpServer.isParserRegistered) {
-      httpServer.registerParserMiddleware();
-    }
-
-    httpServer.register(async (httpServer: any) => {
-      httpServer.register(
-        loadPackage('fastify-swagger', 'SwaggerModule', () =>
-          require('fastify-swagger')
-        ),
-        {
-          swagger: document,
-          exposeRoute: true,
-          routePrefix: path,
-          mode: 'static',
-          specification: {
-            document
-          },
-          uiConfig: options?.uiConfig,
-          initOAuth: options?.initOAuth,
-          staticCSP: options?.staticCSP,
-          transformStaticCSP: options?.transformStaticCSP,
-          uiHooks: options?.uiHooks
-        }
-      );
-    });
+    SwaggerModule.serveStatic(finalPath, app);
+    /**
+     * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
+     * @see https://github.com/nestjs/swagger/issues/1976
+     */
+    SwaggerModule.serveStatic(`${finalPath}/${urlLastSubdirectory}`, app);
   }
 }

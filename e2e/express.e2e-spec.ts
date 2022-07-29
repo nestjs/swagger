@@ -1,21 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import {
-  FastifyAdapter,
-  NestFastifyApplication
-} from '@nestjs/platform-fastify';
+  ExpressAdapter,
+  NestExpressApplication
+} from '@nestjs/platform-express';
 import * as request from 'supertest';
 import * as SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
 
-describe('Fastify Swagger', () => {
-  let app: NestFastifyApplication;
+describe('Express Swagger', () => {
+  let app: NestExpressApplication;
   let builder: DocumentBuilder;
 
   beforeEach(async () => {
-    app = await NestFactory.create<NestFastifyApplication>(
+    app = await NestFactory.create<NestExpressApplication>(
       ApplicationModule,
-      new FastifyAdapter(),
+      new ExpressAdapter(),
       { logger: false }
     );
 
@@ -55,7 +55,7 @@ describe('Fastify Swagger', () => {
 
   it('should fix colons in url', async () => {
     const document = SwaggerModule.createDocument(app, builder.build());
-    expect(document.paths['/fastify:colon:another/{prop}']).toBeDefined();
+    expect(document.paths['/express:colon:another/{prop}']).toBeDefined();
   });
 
   it('should setup multiple routes', async () => {
@@ -66,10 +66,8 @@ describe('Fastify Swagger', () => {
     SwaggerModule.setup('/swagger2', app, document2);
 
     await app.init();
-    // otherwise throws "FastifyError [FST_ERR_DEC_ALREADY_PRESENT]: FST_ERR_DEC_ALREADY_PRESENT: The decorator 'swagger' has already been added!"
-    await expect(
-      app.getHttpAdapter().getInstance().ready()
-    ).resolves.toBeDefined();
+    expect(app.getHttpAdapter().getInstance()).toBeDefined();
+    await app.close();
   });
 
   describe('served swagger ui', () => {
@@ -83,7 +81,6 @@ describe('Fastify Swagger', () => {
       SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument);
 
       await app.init();
-      await app.getHttpAdapter().getInstance().ready();
     });
 
     afterEach(async () => {
