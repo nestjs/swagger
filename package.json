@@ -33,7 +33,7 @@
   "devDependencies": {
     "@commitlint/cli": "17.0.3",
     "@commitlint/config-angular": "17.0.3",
-    "@fastify/static": "6.4.1",
+    "@fastify/static": "6.5.0",
     "@nestjs/common": "9.0.7",
     "@nestjs/core": "9.0.7",
     "@nestjs/platform-express": "9.0.7",
