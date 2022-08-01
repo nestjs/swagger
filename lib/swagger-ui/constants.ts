@@ -77,7 +77,7 @@ export const htmlTemplateString = `
 <% customCssUrl %>
 <style>
   <% customCss %>
-  .swagger-ui .topbar .download-url-wrapper { display: none }
+  <% explorerCss %>
 </style>
 </body>
 

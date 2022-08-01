@@ -38,15 +38,20 @@ export function buildSwaggerHTML(
     customJs = '',
     customfavIcon = false,
     customSiteTitle = 'Swagger UI',
-    customCssUrl = ''
+    customCssUrl = '',
+    explorer = false
   } = customOptions;
 
   const favIconString = customfavIcon
     ? `<link rel="icon" href="${customfavIcon}" />`
     : favIconHtml;
 
+  const explorerCss = explorer
+    ? ''
+    : '.swagger-ui .topbar .download-url-wrapper { display: none }';
   return htmlTemplateString
     .replace('<% customCss %>', customCss)
+    .replace('<% explorerCss %>', explorerCss)
     .replace('<% favIconString %>', favIconString)
     .replace(/<% baseUrl %>/g, baseUrl)
     .replace(
