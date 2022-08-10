@@ -20,7 +20,7 @@ export function buildSwaggerInitJS(
   return jsTemplateString.replace('<% swaggerOptions %>', jsInitOptions);
 }
 
-let swaggerAssetsAbsoluteFSPath;
+let swaggerAssetsAbsoluteFSPath: string | undefined;
 
 /**
  * Returns the absolute path to swagger-ui assets.
