@@ -1,4 +1,3 @@
-import * as swaggerUi from 'swagger-ui-dist';
 import { favIconHtml, htmlTemplateString, jsTemplateString } from './constants';
 import { OpenAPIObject, SwaggerCustomOptions } from '../interfaces';
 import { buildJSInitOptions } from './helpers';
@@ -21,10 +20,21 @@ export function buildSwaggerInitJS(
   return jsTemplateString.replace('<% swaggerOptions %>', jsInitOptions);
 }
 
+let swaggerAssetsAbsoluteFSPath;
+
 /**
- * Stores absolute path to swagger-ui assets
+ * Returns the absolute path to swagger-ui assets.
  */
-export const swaggerAssetsAbsoluteFSPath = swaggerUi.getAbsoluteFSPath();
+export function getSwaggerAssetsAbsoluteFSPath() {
+  if (!swaggerAssetsAbsoluteFSPath) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const swaggerUi = require('swagger-ui-dist');
+    swaggerAssetsAbsoluteFSPath = swaggerUi.getAbsoluteFSPath();
+  }
+
+  return swaggerAssetsAbsoluteFSPath;
+}
+
 /**
  * Used to build swagger-ui custom html
  */
