@@ -110,12 +110,12 @@ __decorate([
 ], AppController.prototype, \"create\", null);
 __decorate([
     openapi.ApiOperation({ summary: "create a test Cat", deprecated: true }),
-    common_1.Post(),
+    (0, common_1.Post)(),
     openapi.ApiResponse({ status: 201, type: Cat })
 ], AppController.prototype, \"testCreate\", null);
 __decorate([
-    swagger_1.ApiOperation({ summary: "create a test Cat, not actually deprecated", deprecated: false }),
-    common_1.Post(),
+    (0, swagger_1.ApiOperation)({ summary: "create a test Cat, not actually deprecated", deprecated: false }),
+    (0, common_1.Post)(),
     openapi.ApiResponse({ status: 201, type: Cat })
 ], AppController.prototype, \"testCreate2\", null);
 __decorate([
