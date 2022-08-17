@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "e2e",
+  "entryFile": "e2e/manual-e2e"
+}

@@ -50,6 +50,10 @@ export function isNumber(type: Type) {
   return hasFlag(type, TypeFlags.Number);
 }
 
+export function isBigInt(type: Type) {
+  return hasFlag(type, TypeFlags.BigInt);
+}
+
 export function isInterface(type: Type) {
   return hasObjectFlag(type, ObjectFlags.Interface);
 }
@@ -116,7 +120,7 @@ export function getMainCommentOfNode(
   const sourceText = sourceFile.getFullText();
   // in case we decide to include "// comments"
   const replaceRegex =
-    /^ *\** *@.*$|^ *\/\*+ *|^ *\/\/+.*|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
+    /^\s*\** *@.*$|^\s*\/\*+ *|^\s*\/\/+.*|^\s*\/+ *|^\s*\*+ *| +$| *\**\/ *$/gim;
   //const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
 
   const commentResult = [];

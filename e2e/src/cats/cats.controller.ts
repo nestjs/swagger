@@ -59,6 +59,9 @@ export class CatsController {
   @ApiExtension('x-codeSamples', [
     { lang: 'JavaScript', source: "console.log('Hello World');" }
   ])
+  @ApiExtension('x-multiple', { test: "test" })
+  @ApiTags("tag1")
+  @ApiTags("tag2")
   findAll(@Query() paginationQuery: PaginationQuery) {}
 
   @ApiQuery({ type: PaginationQuery })
