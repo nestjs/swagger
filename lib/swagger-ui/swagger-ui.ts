@@ -36,6 +36,7 @@ export function buildSwaggerHTML(
   const {
     customCss = '',
     customJs = '',
+    customJsStr = '',
     customfavIcon = false,
     customSiteTitle = 'Swagger UI',
     customCssUrl = '',
@@ -58,6 +59,8 @@ export function buildSwaggerHTML(
       '<% customJs %>',
       customJs ? `<script src="${customJs}"></script>` : ''
     )
+    .replace(
+      '<% customJsStr %>', customJsStr ? `<script> ${customJsStr} </script>` : '')
     .replace(
       '<% customCssUrl %>',
       customCssUrl ? `<link href="${customCssUrl}" rel="stylesheet">` : ''

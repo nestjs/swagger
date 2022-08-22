@@ -5,6 +5,7 @@ export interface SwaggerCustomOptions {
   customCss?: string;
   customCssUrl?: string;
   customJs?: string;
+  customJsStr?: string;
   customfavIcon?: string;
   swaggerUrl?: string;
   customSiteTitle?: string;
