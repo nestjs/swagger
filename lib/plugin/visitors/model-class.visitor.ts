@@ -399,13 +399,6 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
     this.addPropertyByValidationDecorator(
       factory,
-      'Matches',
-      'pattern',
-      decorators,
-      assignments
-    );
-    this.addPropertyByValidationDecorator(
-      factory,
       'IsIn',
       'enum',
       decorators,
@@ -490,6 +483,21 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         }
 
         return result;
+      }
+    );
+    this.addPropertiesByValidationDecorator(
+      factory,
+      'Matches',
+      decorators,
+      assignments,
+      (decoratorRef: ts.Decorator) => {
+        const decoratorArguments = getDecoratorArguments(decoratorRef);
+        return [
+          factory.createPropertyAssignment(
+            'pattern',
+            createPrimitiveLiteral(factory, head(decoratorArguments).text)
+          )
+        ];
       }
     );
 
