@@ -18,6 +18,7 @@ import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { validatePath } from './utils/validate-path.util';
 import { normalizeRelPath } from './utils/normalize-rel-path';
+import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
 
 export class SwaggerModule {
   public static createDocument(
@@ -118,20 +119,13 @@ export class SwaggerModule {
        * We can simply ignore that error here.
        */
     }
-    const jsonFinalPath = jsonDocumentUrl
-      ? jsonDocumentUrl
-      : `${finalPath}-json`;
 
-    httpAdapter.get(normalizeRelPath(jsonFinalPath), (req, res) => {
+    httpAdapter.get(normalizeRelPath(jsonDocumentUrl), (req, res) => {
       res.type('application/json');
       res.send(jsonDocument);
     });
 
-    const yamlFinalPath = yamlDocumentUrl
-      ? yamlDocumentUrl
-      : `${finalPath}-json`;
-
-    httpAdapter.get(normalizeRelPath(yamlFinalPath), (req, res) => {
+    httpAdapter.get(normalizeRelPath(yamlDocumentUrl), (req, res) => {
       res.type('text/yaml');
       res.send(yamlDocument);
     });
@@ -145,7 +139,7 @@ export class SwaggerModule {
   ) {
     const globalPrefix = getGlobalPrefix(app);
     const finalPath = validatePath(
-      options?.useGlobalPrefix && globalPrefix && !globalPrefix.match(/^(\/?)$/)
+      options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
         ? `${globalPrefix}${validatePath(path)}`
         : path
     );
@@ -154,21 +148,18 @@ export class SwaggerModule {
     const yamlDocument = jsyaml.dump(document, { skipInvalid: true });
     const jsonDocument = JSON.stringify(document);
 
-    let finalJSONDocumentPath = validatePath(options.jsonDocumentUrl);
-    let finalYAMLDocumentPath = validatePath(options.yamlDocumentUrl);
+    const validatedGlobalPrefix =
+      options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
+        ? globalPrefix
+        : '';
 
-    if (
-      options?.useGlobalPrefix &&
-      globalPrefix &&
-      !globalPrefix.match(/^(\/?)$/)
-    ) {
-      finalJSONDocumentPath = validatePath(
-        `${globalPrefix}${validatePath(options.jsonDocumentUrl)}`
-      );
-      finalYAMLDocumentPath = validatePath(
-        `${globalPrefix}${validatePath(options.yamlDocumentUrl)}`
-      );
-    }
+    const finalJSONDocumentPath = options?.jsonDocumentUrl
+      ? validatePath(`${validatedGlobalPrefix}${options.jsonDocumentUrl}`)
+      : `${finalPath}-json`;
+
+    const finalYAMLDocumentPath = options?.yamlDocumentUrl
+      ? validatePath(`${validatedGlobalPrefix}${options.yamlDocumentUrl}`)
+      : `${finalPath}-yaml`;
 
     const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
 
