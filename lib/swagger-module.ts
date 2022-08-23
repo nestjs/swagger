@@ -66,7 +66,9 @@ export class SwaggerModule {
     swaggerInitJS: string,
     yamlDocument: string,
     jsonDocument: string,
-    html: string
+    html: string,
+    jsonDocumentUrl: string,
+    yamlDocumentUrl: string
   ) {
     httpAdapter.get(
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
@@ -116,13 +118,20 @@ export class SwaggerModule {
        * We can simply ignore that error here.
        */
     }
+    const jsonFinalPath = jsonDocumentUrl
+      ? jsonDocumentUrl
+      : `${finalPath}-json`;
 
-    httpAdapter.get(normalizeRelPath(`${finalPath}-json`), (req, res) => {
+    httpAdapter.get(normalizeRelPath(jsonFinalPath), (req, res) => {
       res.type('application/json');
       res.send(jsonDocument);
     });
 
-    httpAdapter.get(normalizeRelPath(`${finalPath}-yaml`), (req, res) => {
+    const yamlFinalPath = yamlDocumentUrl
+      ? yamlDocumentUrl
+      : `${finalPath}-json`;
+
+    httpAdapter.get(normalizeRelPath(yamlFinalPath), (req, res) => {
       res.type('text/yaml');
       res.send(yamlDocument);
     });
@@ -145,6 +154,22 @@ export class SwaggerModule {
     const yamlDocument = jsyaml.dump(document, { skipInvalid: true });
     const jsonDocument = JSON.stringify(document);
 
+    let finalJSONDocumentPath = validatePath(options.jsonDocumentUrl);
+    let finalYAMLDocumentPath = validatePath(options.yamlDocumentUrl);
+
+    if (
+      options?.useGlobalPrefix &&
+      globalPrefix &&
+      !globalPrefix.match(/^(\/?)$/)
+    ) {
+      finalJSONDocumentPath = validatePath(
+        `${globalPrefix}${validatePath(options.jsonDocumentUrl)}`
+      );
+      finalYAMLDocumentPath = validatePath(
+        `${globalPrefix}${validatePath(options.yamlDocumentUrl)}`
+      );
+    }
+
     const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
 
     const html = buildSwaggerHTML(baseUrlForSwaggerUI, document, options);
@@ -158,7 +183,9 @@ export class SwaggerModule {
       swaggerInitJS,
       yamlDocument,
       jsonDocument,
-      html
+      html,
+      finalJSONDocumentPath,
+      finalYAMLDocumentPath
     );
 
     SwaggerModule.serveStatic(finalPath, app);
