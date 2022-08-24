@@ -150,15 +150,15 @@ export class SwaggerModule {
 
     const validatedGlobalPrefix =
       options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
-        ? globalPrefix
+        ? validatePath(globalPrefix)
         : '';
 
     const finalJSONDocumentPath = options?.jsonDocumentUrl
-      ? validatePath(`${validatedGlobalPrefix}${options.jsonDocumentUrl}`)
+      ? `${validatedGlobalPrefix}${validatePath(options.jsonDocumentUrl)}`
       : `${finalPath}-json`;
 
     const finalYAMLDocumentPath = options?.yamlDocumentUrl
-      ? validatePath(`${validatedGlobalPrefix}${options.yamlDocumentUrl}`)
+      ? `${validatedGlobalPrefix}${validatePath(options.yamlDocumentUrl)}`
       : `${finalPath}-yaml`;
 
     const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
