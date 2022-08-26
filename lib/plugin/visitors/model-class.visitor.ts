@@ -5,10 +5,12 @@ import { PluginOptions } from '../merge-options';
 import { METADATA_FACTORY_NAME } from '../plugin-constants';
 import {
   createBooleanLiteral,
+  createLiteralFromAnyValue,
   createPrimitiveLiteral,
   getDecoratorArguments,
-  getMainCommentAndExamplesOfNode,
+  getMainCommentOfNode,
   getText,
+  getTsDocTagsOfNode,
   isEnum
 } from '../utils/ast-utils';
 import {
@@ -178,7 +180,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         existingProperties,
         hostFilename
       ),
-      ...this.createDescriptionAndExamplePropertyAssigments(
+      ...this.createDescriptionAndTsDocTagPropertyAssigments(
         factory,
         node,
         typeChecker,
@@ -566,7 +568,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     metadata[propertyName] = objectLiteral;
   }
 
-  createDescriptionAndExamplePropertyAssigments(
+  createDescriptionAndTsDocTagPropertyAssigments(
     factory: ts.NodeFactory,
     node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
@@ -578,12 +580,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return [];
     }
     const propertyAssignments = [];
-    const [comments, examples] = getMainCommentAndExamplesOfNode(
-      node,
-      sourceFile,
-      typeChecker,
-      true
-    );
+    const comments = getMainCommentOfNode(node, sourceFile);
+    const tags = getTsDocTagsOfNode(node, sourceFile, typeChecker);
 
     const keyOfComment = options.dtoKeyOfComment;
     if (!hasPropertyKey(keyOfComment, existingProperties) && comments) {
@@ -597,30 +595,31 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const hasExampleOrExamplesKey =
       hasPropertyKey('example', existingProperties) ||
       hasPropertyKey('examples', existingProperties);
-
-    if (!hasExampleOrExamplesKey && examples.length) {
-      if (examples.length === 1) {
+    if (!hasExampleOrExamplesKey && tags.example?.length) {
+      if (tags.example.length === 1) {
         const examplePropertyAssignment = factory.createPropertyAssignment(
           'example',
-          this.createLiteralFromAnyValue(factory, examples[0])
+          createLiteralFromAnyValue(factory, tags.example[0])
         );
         propertyAssignments.push(examplePropertyAssignment);
       } else {
         const examplesPropertyAssignment = factory.createPropertyAssignment(
           'examples',
-          this.createLiteralFromAnyValue(factory, examples)
+          createLiteralFromAnyValue(factory, tags.example)
         );
         propertyAssignments.push(examplesPropertyAssignment);
       }
     }
-    return propertyAssignments;
-  }
 
-  private createLiteralFromAnyValue(factory: ts.NodeFactory, item: unknown) {
-    return Array.isArray(item)
-      ? factory.createArrayLiteralExpression(
-          item.map((item) => this.createLiteralFromAnyValue(factory, item))
-        )
-      : createPrimitiveLiteral(factory, item);
+    const hasDeprecatedKey = hasPropertyKey('deprecated', existingProperties);
+    if (!hasDeprecatedKey && tags.deprecated) {
+      const deprecatedPropertyAssignment = factory.createPropertyAssignment(
+        'deprecated',
+        createLiteralFromAnyValue(factory, tags.deprecated)
+      );
+      propertyAssignments.push(deprecatedPropertyAssignment);
+    }
+
+    return propertyAssignments;
   }
 }

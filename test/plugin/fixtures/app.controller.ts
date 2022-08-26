@@ -17,6 +17,27 @@ export class AppController {
   async create(): Promise<Cat> {}
 
   /**
+   * create a test Cat
+   *
+   * @deprecated Use create instead
+   * @returns {Promise<Cat>}
+   * @memberof AppController
+   */
+  @Post()
+  async testCreate(): Promise<Cat> {}
+
+  /**
+   * create a test Cat, not actually deprecated
+   *
+   * @deprecated
+   * @returns {Promise<Cat>}
+   * @memberof AppController
+   */
+  @ApiOperation({ deprecated: false })
+  @Post()
+  async testCreate2(): Promise<Cat> {}
+
+  /**
    * find a Cat
    */
   @ApiOperation({})
@@ -55,6 +76,22 @@ let AppController = class AppController {
      */
     async create() { }
     /**
+     * create a test Cat
+     *
+     * @deprecated Use create instead
+     * @returns {Promise<Cat>}
+     * @memberof AppController
+     */
+    async testCreate() { }
+    /**
+     * create a test Cat, not actually deprecated
+     *
+     * @deprecated
+     * @returns {Promise<Cat>}
+     * @memberof AppController
+     */
+    async testCreate2() { }
+    /**
      * find a Cat
      */
     async findOne() { }
@@ -71,6 +108,16 @@ __decorate([
     (0, common_1.Post)(),
     openapi.ApiResponse({ status: 201, type: Cat })
 ], AppController.prototype, \"create\", null);
+__decorate([
+    openapi.ApiOperation({ summary: "create a test Cat", deprecated: true }),
+    (0, common_1.Post)(),
+    openapi.ApiResponse({ status: 201, type: Cat })
+], AppController.prototype, \"testCreate\", null);
+__decorate([
+    (0, swagger_1.ApiOperation)({ summary: "create a test Cat, not actually deprecated", deprecated: false }),
+    (0, common_1.Post)(),
+    openapi.ApiResponse({ status: 201, type: Cat })
+], AppController.prototype, \"testCreate2\", null);
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: "find a Cat" }),
     Get(),
