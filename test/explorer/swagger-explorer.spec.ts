@@ -71,6 +71,13 @@ describe('SwaggerExplorer', () => {
         enumName: 'LettersEnum'
       })
       enum: LettersEnum;
+      
+      @ApiProperty({
+        enum: LettersEnum,
+        enumName: 'LettersEnum',
+        nullable: true
+      })
+      enumNullable: LettersEnum | null;
 
       @ApiProperty({
         enum: LettersEnum,
@@ -167,7 +174,7 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root.method).toEqual('post');
       expect(routes[0].root.path).toEqual('/globalPrefix/modulePath/foos');
       expect(routes[0].root.summary).toEqual('Create foo');
-      expect(routes[0].root.parameters.length).toEqual(5);
+      expect(routes[0].root.parameters.length).toEqual(6);
       expect(routes[0].root.parameters).toEqual([
         {
           in: 'query',
@@ -202,6 +209,15 @@ describe('SwaggerExplorer', () => {
           in: 'query',
           name: 'enum',
           required: true,
+          schema: {
+            $ref: '#/components/schemas/LettersEnum'
+          }
+        },
+        {
+          in: 'query',
+          name: 'enumNullable',
+          required: true,
+          nullable: true,
           schema: {
             $ref: '#/components/schemas/LettersEnum'
           }
