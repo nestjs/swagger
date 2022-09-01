@@ -11,7 +11,7 @@ export class SwaggerTransformer {
   ): Record<'paths', OpenAPIObject['paths']> {
     const roots = filter(denormalizedDoc, (r) => r.root);
     const groupedByPath = groupBy(roots, ({ root }: Record<'root', any>) =>
-      root.versionType !== VersioningType.URI &&
+      root.versionType === VersioningType.HEADER &&
       root.version &&
       root.version !== VERSION_NEUTRAL
         ? `${root.path} version:${root.version}`
@@ -24,7 +24,7 @@ export class SwaggerTransformer {
       );
       return mapValues(keyByMethod, (route: any) => {
         return {
-          ...omit(route.root, ['method', 'path']),
+          ...omit(route.root, ['method', 'path', 'versionType', 'version']),
           ...omit(route, 'root')
         };
       });
