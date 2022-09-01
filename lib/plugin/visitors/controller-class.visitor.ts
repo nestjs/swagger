@@ -18,6 +18,11 @@ import {
 } from '../utils/plugin-utils';
 import { AbstractFileVisitor } from './abstract.visitor';
 
+const [tsVersionMajor, tsVersionMinor] = ts.versionMajorMinor
+  ?.split('.')
+  .map((x) => +x);
+const isInUpdatedAstContext = tsVersionMinor >= 8 || tsVersionMajor > 4;
+
 export class ControllerClassVisitor extends AbstractFileVisitor {
   visit(
     sourceFile: ts.SourceFile,
@@ -26,7 +31,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     options: PluginOptions
   ) {
     const typeChecker = program.getTypeChecker();
-    sourceFile = this.updateImports(sourceFile, ctx.factory);
+    sourceFile = this.updateImports(sourceFile, ctx.factory, program);
 
     const visitNode = (node: ts.Node): ts.Node => {
       if (ts.isMethodDeclaration(node)) {
@@ -56,14 +61,18 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     hostFilename: string,
     sourceFile: ts.SourceFile
   ): ts.MethodDeclaration {
-    if (!compilerNode.decorators) {
+    // Support both >= v4.8 and v4.7 and lower
+    const decorators = (ts as any).canHaveDecorators
+      ? (ts as any).getDecorators(compilerNode)
+      : compilerNode.decorators;
+    if (!decorators) {
       return compilerNode;
     }
 
     const apiOperationDecoratorsArray = this.createApiOperationDecorator(
       factory,
       compilerNode,
-      compilerNode.decorators,
+      decorators,
       options,
       sourceFile,
       typeChecker
@@ -72,43 +81,60 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       apiOperationDecoratorsArray.length > 0;
 
     const existingDecorators = removeExistingApiOperationDecorator
-      ? compilerNode.decorators.filter(
+      ? decorators.filter(
           (item) => getDecoratorName(item) !== ApiOperation.name
         )
-      : compilerNode.decorators;
+      : decorators;
 
-    return factory.updateMethodDeclaration(
-      compilerNode,
-      [
-        ...apiOperationDecoratorsArray,
-        ...existingDecorators,
-        factory.createDecorator(
-          factory.createCallExpression(
-            factory.createIdentifier(
-              `${OPENAPI_NAMESPACE}.${ApiResponse.name}`
-            ),
-            undefined,
-            [
-              this.createDecoratorObjectLiteralExpr(
-                factory,
-                compilerNode,
-                typeChecker,
-                factory.createNodeArray(),
-                hostFilename
-              )
-            ]
-          )
+    // Support both >= v4.8 and v4.7 and lower
+    const modifiers = isInUpdatedAstContext
+      ? (ts as any).getModifiers(compilerNode)
+      : compilerNode.modifiers;
+
+    const updatedDecorators = [
+      ...apiOperationDecoratorsArray,
+      ...existingDecorators,
+      factory.createDecorator(
+        factory.createCallExpression(
+          factory.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiResponse.name}`),
+          undefined,
+          [
+            this.createDecoratorObjectLiteralExpr(
+              factory,
+              compilerNode,
+              typeChecker,
+              factory.createNodeArray(),
+              hostFilename
+            )
+          ]
         )
-      ],
-      compilerNode.modifiers,
-      compilerNode.asteriskToken,
-      compilerNode.name,
-      compilerNode.questionToken,
-      compilerNode.typeParameters,
-      compilerNode.parameters,
-      compilerNode.type,
-      compilerNode.body
-    );
+      )
+    ];
+
+    return isInUpdatedAstContext
+      ? (factory as any).updateMethodDeclaration(
+          compilerNode,
+          [...updatedDecorators, ...modifiers],
+          compilerNode.asteriskToken,
+          compilerNode.name,
+          compilerNode.questionToken,
+          compilerNode.typeParameters,
+          compilerNode.parameters,
+          compilerNode.type,
+          compilerNode.body
+        )
+      : factory.updateMethodDeclaration(
+          compilerNode,
+          updatedDecorators,
+          modifiers,
+          compilerNode.asteriskToken,
+          compilerNode.name,
+          compilerNode.questionToken,
+          compilerNode.typeParameters,
+          compilerNode.parameters,
+          compilerNode.type,
+          compilerNode.body
+        );
   }
 
   createApiOperationDecorator(
@@ -125,7 +151,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const keyToGenerate = options.controllerKeyOfComment;
     const apiOperationDecorator = getDecoratorOrUndefinedByNames(
       [ApiOperation.name],
-      nodeArray
+      nodeArray,
+      factory
     );
     const apiOperationExpr: ts.ObjectLiteralExpression | undefined =
       apiOperationDecorator &&
@@ -248,10 +275,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   }
 
   getStatusCodeIdentifier(factory: ts.NodeFactory, node: ts.MethodDeclaration) {
-    const decorators = node.decorators;
+    // Support both >= v4.8 and v4.7 and lower
+    const decorators = (ts as any).canHaveDecorators
+      ? (ts as any).getDecorators(node)
+      : node.decorators;
     const httpCodeDecorator = getDecoratorOrUndefinedByNames(
       ['HttpCode'],
-      decorators
+      decorators,
+      factory
     );
     if (httpCodeDecorator) {
       const argument = head(getDecoratorArguments(httpCodeDecorator));
@@ -259,7 +290,11 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         return argument;
       }
     }
-    const postDecorator = getDecoratorOrUndefinedByNames(['Post'], decorators);
+    const postDecorator = getDecoratorOrUndefinedByNames(
+      ['Post'],
+      decorators,
+      factory
+    );
     if (postDecorator) {
       return factory.createIdentifier('201');
     }

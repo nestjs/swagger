@@ -61,9 +61,7 @@ export class CreateCatDto {
 }
 `;
 
-export const createCatDtoTextTranspiled = `import { createRequire as _createRequire } from "module";
-const __require = _createRequire(import.meta.url);
-const openapi = __require("@nestjs/swagger");
+export const createCatDtoTextTranspiled = `import * as openapi from "@nestjs/swagger";
 import { IsString, IsPositive, IsNegative, Length, Matches, IsIn } from 'class-validator';
 var Status;
 (function (Status) {

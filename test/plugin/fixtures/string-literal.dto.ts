@@ -7,9 +7,7 @@ export class StringLiteralDto {
 }
 `;
 
-export const stringLiteralDtoTextTranspiled = `import { createRequire as _createRequire } from "module";
-const __require = _createRequire(import.meta.url);
-const openapi = __require("@nestjs/swagger");
+export const stringLiteralDtoTextTranspiled = `import * as openapi from "@nestjs/swagger";
 export class StringLiteralDto {
     static _OPENAPI_METADATA_FACTORY() {
         return { valueOne: { required: true, type: () => String }, valueTwo: { required: true, type: () => Object } };

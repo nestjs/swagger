@@ -33,7 +33,7 @@ import {
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
     const options: ts.CompilerOptions = {
-      module: ts.ModuleKind.ES2020,
+      module: ts.ModuleKind.ES2022,
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
