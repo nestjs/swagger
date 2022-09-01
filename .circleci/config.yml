@@ -16,6 +16,10 @@ aliases:
     run:
         name: Test
         command: npm run test -- --runInBand
+  - &run-unit-tests
+    run:
+        name: Test (TypeScript < v4.8)
+        command: npm i --no-save -D typescript@4.7.2 && npm run test -- --runInBand
   - &run-e2e-tests
     run:
         name: E2E test
