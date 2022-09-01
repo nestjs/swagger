@@ -115,65 +115,147 @@ export class DocumentBuilder {
   }
 
   public addBearerAuth(
-    options: Partial<Optional<HttpSchemeObject, 'type'>> = {},
-    name = 'bearer'
+    name?: string,
+    options?: Partial<Optional<HttpSchemeObject, 'type'>>
+  ): this;
+  /**
+   * @deprecated Use `addBearerAuth(name, options)` instead
+   */
+  public addBearerAuth(
+    options?: Partial<Optional<HttpSchemeObject, 'type'>>,
+    name?: string
+  ): this;
+  public addBearerAuth(
+    nameOrOptions:
+      | string
+      | Partial<Optional<HttpSchemeObject, 'type'>> = 'bearer',
+    optionsOrName: string | Partial<Optional<HttpSchemeObject, 'type'>> = {}
   ): this {
-    this.addSecurity(name, {
+    if (typeof nameOrOptions === 'object') {
+      [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
+    }
+    this.addSecurity(nameOrOptions as string, {
       type: 'http',
       scheme: 'bearer',
       bearerFormat: 'JWT',
-      ...options
+      ...(optionsOrName as any)
     });
     return this;
   }
 
   public addOAuth2(
-    options: Partial<Optional<OAuth2SchemeObject, 'type'>> = {},
-    name = 'oauth2'
+    name?: string,
+    options?: Partial<Optional<OAuth2SchemeObject, 'type'>>
+  ): this;
+  /**
+   * @deprecated Use `addOAuth2(name, options)` instead
+   */
+  public addOAuth2(
+    options?: Partial<Optional<OAuth2SchemeObject, 'type'>>,
+    name?: string
+  ): this;
+  public addOAuth2(
+    nameOrOptions:
+      | string
+      | Partial<Optional<OAuth2SchemeObject, 'type'>> = 'oauth2',
+    optionsOrName: string | Partial<Optional<OAuth2SchemeObject, 'type'>> = {}
   ): this {
-    this.addSecurity(name, {
+    if (typeof nameOrOptions === 'object') {
+      [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
+    }
+    this.addSecurity(nameOrOptions as string, {
       type: 'oauth2',
       flows: {},
-      ...options
+      ...(optionsOrName as any)
     });
     return this;
   }
 
   public addBasicAuth(
-    options: Partial<Optional<HttpSchemeObject, 'type'>> = {},
-    name = 'basic'
+    name?: string,
+    options?: Partial<Optional<HttpSchemeObject, 'type'>>
+  ): this;
+  /**
+   * @deprecated Use `addBasicAuth(name, options)` instead
+   */
+  public addBasicAuth(
+    options?: Partial<Optional<HttpSchemeObject, 'type'>>,
+    name?: string
+  ): this;
+  public addBasicAuth(
+    nameOrOptions:
+      | string
+      | Partial<Optional<HttpSchemeObject, 'type'>> = 'basic',
+    optionsOrName: string | Partial<Optional<HttpSchemeObject, 'type'>> = {}
   ): this {
-    this.addSecurity(name, {
+    if (typeof nameOrOptions === 'object') {
+      [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
+    }
+    this.addSecurity(nameOrOptions as string, {
       type: 'http',
       scheme: 'basic',
-      ...options
+      ...(optionsOrName as any)
     });
     return this;
   }
 
   public addApiKey(
-    options: Partial<Optional<ApiKeySchemeObject, 'type'>> = {},
-    name = 'api_key'
+    name?: string,
+    options?: Partial<Optional<ApiKeySchemeObject, 'type'>>
+  ): this;
+  /**
+   * @deprecated Use `addApiKey(name, options)` instead
+   */
+  public addApiKey(
+    options?: Partial<Optional<ApiKeySchemeObject, 'type'>>,
+    name?: string
+  ): this;
+  public addApiKey(
+    nameOrOptions:
+      | string
+      | Partial<Optional<ApiKeySchemeObject, 'type'>> = 'api_key',
+    optionsOrName: string | Partial<Optional<ApiKeySchemeObject, 'type'>> = {}
   ): this {
-    this.addSecurity(name, {
+    if (typeof nameOrOptions === 'object') {
+      [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
+    }
+    this.addSecurity(nameOrOptions as string, {
       type: 'apiKey',
       in: 'header',
-      name,
-      ...options
+      name: nameOrOptions,
+      ...(optionsOrName as any)
     });
     return this;
   }
 
   public addCookieAuth(
+    cookieName?: string,
+    name?: string,
+    options?: Partial<Optional<ApiKeySchemeObject, 'type'>>
+  ): this;
+  /**
+   * @deprecated Use `addCookieAuth(cookieName, name, options)` instead
+   */
+  public addCookieAuth(
+    cookieName: string,
+    options?: Partial<Optional<ApiKeySchemeObject, 'type'>>,
+    name?: string
+  ): this;
+  public addCookieAuth(
     cookieName = 'connect.sid',
-    options: Partial<Optional<ApiKeySchemeObject, 'type'>> = {},
-    securityName = 'cookie'
+    nameOrOptions:
+      | string
+      | Partial<Optional<ApiKeySchemeObject, 'type'>> = 'cookie',
+    optionsOrName: string | Partial<Optional<ApiKeySchemeObject, 'type'>> = {}
   ): this {
-    this.addSecurity(securityName, {
+    if (typeof nameOrOptions === 'object') {
+      [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
+    }
+    this.addSecurity(nameOrOptions as string, {
       type: 'apiKey',
       in: 'cookie',
       name: cookieName,
-      ...options
+      ...(optionsOrName as any)
     });
     return this;
   }

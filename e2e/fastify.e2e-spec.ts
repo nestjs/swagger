@@ -29,6 +29,7 @@ describe('Fastify Swagger', () => {
       .addApiKey()
       .addApiKey({ type: 'apiKey' }, 'key1')
       .addApiKey({}, 'key2')
+      .addApiKey('key3', { type: 'apiKey' })
       .addCookieAuth()
       .addSecurityRequirements('bearer')
       .addSecurityRequirements({ basic: [], cookie: [] });
