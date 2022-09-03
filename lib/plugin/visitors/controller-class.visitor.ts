@@ -87,9 +87,10 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       : decorators;
 
     // Support both >= v4.8 and v4.7 and lower
-    const modifiers = isInUpdatedAstContext
-      ? (ts as any).getModifiers(compilerNode)
-      : compilerNode.modifiers;
+    const modifiers =
+      (isInUpdatedAstContext
+        ? (ts as any).getModifiers(compilerNode)
+        : compilerNode.modifiers) ?? [];
 
     const updatedDecorators = [
       ...apiOperationDecoratorsArray,
