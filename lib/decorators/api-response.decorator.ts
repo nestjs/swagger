@@ -10,7 +10,7 @@ import { getTypeIsArrayTuple } from './helpers';
 
 export interface ApiResponseMetadata
   extends Omit<ResponseObject, 'description'> {
-  status?: number | 'default';
+  status?: number | 'default' | '1XX' | '2XX' | '3XX' | '4XX' | '5XX';
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   description?: string;
