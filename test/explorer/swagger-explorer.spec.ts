@@ -8,7 +8,7 @@ import {
   Version,
   VersioningType
 } from '@nestjs/common';
-import { VersionValue } from '@nestjs/common/interfaces';
+import { VersionValue, VERSION_NEUTRAL } from '@nestjs/common/interfaces';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import {
@@ -1346,6 +1346,81 @@ describe('SwaggerExplorer', () => {
         expect(routes[0].root.path).toEqual(
           `/globalPrefix/v${DEFAULT_VERSION}/modulePath/with-multiple-version`
         );
+      });
+    });
+  });
+
+  describe('when multiple version is defined', () => {
+    let explorer: SwaggerExplorer;
+    let config: ApplicationConfig;
+
+    describe('and controller versions are defined', () => {
+      const CONTROLLER_MULTIPLE_VERSIONS: VersionValue = ['2', VERSION_NEUTRAL];
+
+      class BarBodyDto {
+        name: string;
+      }
+      @Controller({
+        path: 'with-multiple-version',
+        version: CONTROLLER_MULTIPLE_VERSIONS
+      })
+      class WithMultipleVersionsController {
+        @Get()
+        foo(): void {}
+
+        @Post()
+        bar(@Body() body: BarBodyDto): BarBodyDto {
+          return body;
+        }
+      }
+
+      beforeAll(() => {
+        explorer = new SwaggerExplorer(schemaObjectFactory);
+
+        config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.URI,
+          defaultVersion: VERSION_NEUTRAL
+        });
+      });
+
+      it('should use multiple versions defined', () => {
+        const routes = explorer.exploreController(
+          {
+            instance: new WithMultipleVersionsController(),
+            metatype: WithMultipleVersionsController
+          } as InstanceWrapper<WithMultipleVersionsController>,
+          config,
+          'modulePath',
+          'globalPrefix'
+        );
+
+        expect(routes[0].root.path).toEqual(
+          `/globalPrefix/v${
+            CONTROLLER_MULTIPLE_VERSIONS[0] as string
+          }/modulePath/with-multiple-version`
+        );
+        expect(routes[1].root.path).toEqual(
+          `/globalPrefix/modulePath/with-multiple-version`
+        );
+      });
+
+      it('should have requestBody in each versions of post route', () => {
+        const routes = explorer.exploreController(
+          {
+            instance: new WithMultipleVersionsController(),
+            metatype: WithMultipleVersionsController
+          } as InstanceWrapper<WithMultipleVersionsController>,
+          config,
+          'modulePath',
+          'globalPrefix'
+        );
+        const postRoutes = routes.filter(
+          (route) => route.root?.method === 'post'
+        );
+
+        expect(postRoutes[0].root.requestBody).toBeDefined();
+        expect(postRoutes[1].root.requestBody).toBeDefined();
       });
     });
   });
