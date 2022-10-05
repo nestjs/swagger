@@ -1,4 +1,7 @@
-import { isFunction, isUndefined, omit, omitBy } from 'lodash';
+import isFunction from 'lodash/isFunction';
+import isUndefined from 'lodash/isUndefined';
+import omit from 'lodash/omit';
+import omitBy from 'lodash/omitBy';
 import { ApiPropertyOptions } from '../decorators';
 import {
   BaseParameterObject,

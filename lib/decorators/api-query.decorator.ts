@@ -1,5 +1,6 @@
 import { Type } from '@nestjs/common';
-import { isNil, omit } from 'lodash';
+import isNil from 'lodash/isNil';
+import omit from 'lodash/omit';
 import {
   ParameterObject,
   ReferenceObject,

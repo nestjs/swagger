@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { identity } from 'lodash';
+import identity from 'lodash/identity';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 
 export function clonePluginMetadataFactory(

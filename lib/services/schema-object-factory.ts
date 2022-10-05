@@ -1,15 +1,13 @@
 import { Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils';
-import {
-  flatten,
-  isFunction,
-  isString,
-  keyBy,
-  mapValues,
-  omit,
-  omitBy,
-  pick
-} from 'lodash';
+import flatten from 'lodash/flatten';
+import isFunction from 'lodash/isFunction';
+import isString from 'lodash/isString';
+import keyBy from 'lodash/keyBy';
+import mapValues from 'lodash/mapValues';
+import omit from 'lodash/omit';
+import omitBy from 'lodash/omitBy';
+import pick from 'lodash/pick';
 import { DECORATORS } from '../constants';
 import { getTypeIsArrayTuple } from '../decorators/helpers';
 import { exploreGlobalApiExtraModelsMetadata } from '../explorers/api-extra-models.explorer';

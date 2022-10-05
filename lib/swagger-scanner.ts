@@ -3,7 +3,8 @@ import { MODULE_PATH } from '@nestjs/common/constants';
 import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { InstanceToken, Module } from '@nestjs/core/injector/module';
-import { flatten, isEmpty } from 'lodash';
+import flatten from 'lodash/flatten';
+import isEmpty from 'lodash/isEmpty';
 import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
 import { ModuleRoute } from './interfaces/module-route.interface';
 import {

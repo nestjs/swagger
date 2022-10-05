@@ -4,7 +4,9 @@ import {
   ROUTE_ARGS_METADATA
 } from '@nestjs/common/constants';
 import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum';
-import { isEmpty, mapValues, omitBy } from 'lodash';
+import isEmpty from 'lodash/isEmpty';
+import mapValues from 'lodash/mapValues';
+import omitBy from 'lodash/omitBy';
 import { ParameterLocation } from '../interfaces/open-api-spec.interface';
 import { reverseObjectKeys } from '../utils/reverse-object-keys.util';
 

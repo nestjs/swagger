@@ -12,8 +12,9 @@
     "sourceMap": false,
     "outDir": "./dist",
     "rootDir": ".",
-    "skipLibCheck": true
-  },
+    "skipLibCheck": true,
+    "esModuleInterop": true
+    },
   "include": [
     "lib/**/*",
     "e2e/**/*"

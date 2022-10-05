@@ -1,5 +1,5 @@
 import { HttpStatus, Type } from '@nestjs/common';
-import { omit } from 'lodash';
+import omit from 'lodash/omit';
 import { DECORATORS } from '../constants';
 import {
   ResponseObject,

@@ -1,4 +1,7 @@
-import { isArray, isUndefined, negate, pickBy } from 'lodash';
+import isArray from 'lodash/isArray';
+import isUndefined from 'lodash/isUndefined';
+import negate from 'lodash/negate';
+import pickBy from 'lodash/pickBy';
 import { DECORATORS } from '../constants';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 

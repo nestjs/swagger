@@ -1,4 +1,5 @@
-import { compact, head } from 'lodash';
+import compact from 'lodash/compact';
+import head from 'lodash/head';
 import * as ts from 'typescript';
 import { ApiOperation, ApiResponse } from '../../decorators';
 import { PluginOptions } from '../merge-options';

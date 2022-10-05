@@ -1,4 +1,5 @@
-import { isFunction, omit } from 'lodash';
+import isFunction from 'lodash/isFunction';
+import omit from 'lodash/omit';
 import { ApiResponseMetadata, ApiResponseSchemaHost } from '../decorators';
 import { SchemaObject } from '../interfaces/open-api-spec.interface';
 import { isBuiltInType } from '../utils/is-built-in-type.util';

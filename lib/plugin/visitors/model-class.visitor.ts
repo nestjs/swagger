@@ -1,4 +1,6 @@
-import { compact, flatten, head } from 'lodash';
+import compact from 'lodash/compact';
+import flatten from 'lodash/flatten';
+import head from 'lodash/head';
 import * as ts from 'typescript';
 import { factory, PropertyAssignment } from 'typescript';
 import { ApiHideProperty } from '../../decorators';

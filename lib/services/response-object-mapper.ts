@@ -1,4 +1,4 @@
-import { omit } from 'lodash';
+import omit from 'lodash/omit';
 import { ApiResponseSchemaHost } from '../decorators';
 import { getSchemaPath } from '../utils';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper';

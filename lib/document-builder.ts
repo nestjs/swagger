@@ -1,5 +1,8 @@
 import { Logger } from '@nestjs/common';
-import { isString, isUndefined, negate, pickBy } from 'lodash';
+import isString from 'lodash/isString';
+import isUndefined from 'lodash/isUndefined';
+import negate from 'lodash/negate';
+import pickBy from 'lodash/pickBy';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {

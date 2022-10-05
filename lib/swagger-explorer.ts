@@ -18,17 +18,15 @@ import {
 import { ApplicationConfig, MetadataScanner } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { RoutePathFactory } from '@nestjs/core/router/route-path-factory';
-import {
-  flatten,
-  get,
-  head,
-  isArray,
-  isEmpty,
-  mapValues,
-  omit,
-  omitBy,
-  pick
-} from 'lodash';
+import flatten from 'lodash/flatten';
+import get from 'lodash/get';
+import head from 'lodash/head';
+import isArray from 'lodash/isArray';
+import isEmpty from 'lodash/isEmpty';
+import mapValues from 'lodash/mapValues';
+import omit from 'lodash/omit';
+import omitBy from 'lodash/omitBy';
+import pick from 'lodash/pick';
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
 import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer';

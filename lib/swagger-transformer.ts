@@ -1,5 +1,9 @@
 import { INestApplication } from '@nestjs/common';
-import { filter, groupBy, keyBy, mapValues, omit } from 'lodash';
+import filter from 'lodash/filter';
+import groupBy from 'lodash/groupBy';
+import keyBy from 'lodash/keyBy';
+import mapValues from 'lodash/mapValues';
+import omit from 'lodash/omit';
 import { OpenAPIObject } from './interfaces';
 import { ModuleRoute } from './interfaces/module-route.interface';
 
