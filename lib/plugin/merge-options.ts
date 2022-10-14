@@ -15,7 +15,7 @@ const defaultOptions: PluginOptions = {
   classValidatorShim: true,
   dtoKeyOfComment: 'description',
   controllerKeyOfComment: 'description',
-  introspectComments: false
+  introspectComments: true
 };
 
 export const mergePluginOptions = (
