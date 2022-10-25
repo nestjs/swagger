@@ -1,8 +1,8 @@
-import { SwaggerCustomOptions } from './swagger-custom-options.interface';
 import { OpenAPIObject } from './open-api-spec.interface';
+import { SwaggerUiOptions } from './swagger-ui-options.interface';
 
 export interface SwaggerUIInitOptions {
   swaggerDoc: OpenAPIObject;
-  customOptions: SwaggerCustomOptions;
+  customOptions: SwaggerUiOptions;
   swaggerUrl: string;
 }
