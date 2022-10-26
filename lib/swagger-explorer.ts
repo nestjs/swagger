@@ -27,7 +27,8 @@ import {
   mapValues,
   omit,
   omitBy,
-  pick
+  pick,
+  cloneDeep
 } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
@@ -184,10 +185,10 @@ export class SwaggerExplorer {
 
       if (Array.isArray(methodMetadata.root)) {
         return methodMetadata.root.map((endpointMetadata: DenormalizedDoc) => {
-          endpointMetadata = {
+          endpointMetadata = cloneDeep({
             ...methodMetadata,
             root: endpointMetadata as any
-          };
+          });
           const mergedMethodMetadata = this.mergeMetadata(
             globalMetadata,
             omitBy(endpointMetadata, isEmpty)
