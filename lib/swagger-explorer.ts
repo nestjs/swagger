@@ -1,4 +1,4 @@
-import { RequestMethod, VersioningType } from '@nestjs/common';
+import { RequestMethod } from '@nestjs/common';
 import {
   METHOD_METADATA,
   PATH_METADATA,
@@ -296,6 +296,8 @@ export class SwaggerExplorer {
         method: RequestMethod[requestMethod].toLowerCase(),
         path: fullPath === '' ? '/' : fullPath,
         operationId: this.getOperationId(instance, method),
+        version: methodVersion || controllerVersion,
+        versionType: applicationConfig.getVersioning(),
         ...apiExtension
       };
     });
@@ -438,7 +440,7 @@ export class SwaggerExplorer {
     metatype: Type<unknown> | Function,
     versioningOptions: VersioningOptions | undefined
   ): VersionValue | undefined {
-    if (versioningOptions?.type === VersioningType.URI) {
+    if (versioningOptions) {
       return (
         Reflect.getMetadata(VERSION_METADATA, metatype) ??
         versioningOptions.defaultVersion
