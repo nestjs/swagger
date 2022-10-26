@@ -1405,7 +1405,7 @@ describe('SwaggerExplorer', () => {
         );
       });
 
-      it('should have requestBody in each versions of post route', () => {
+      it('should have the requestBody in each version of POST route', () => {
         const routes = explorer.exploreController(
           {
             instance: new WithMultipleVersionsController(),
