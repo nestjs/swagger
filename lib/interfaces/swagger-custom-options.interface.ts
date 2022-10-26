@@ -1,7 +1,9 @@
+import { SwaggerUiOptions } from './swagger-ui-options.interface';
+
 export interface SwaggerCustomOptions {
   useGlobalPrefix?: boolean;
   explorer?: boolean;
-  swaggerOptions?: Record<string, any>;
+  swaggerOptions?: SwaggerUiOptions;
   customCss?: string;
   customCssUrl?: string;
   customJs?: string;
@@ -12,5 +14,4 @@ export interface SwaggerCustomOptions {
   validatorUrl?: string;
   url?: string;
   urls?: Record<'url' | 'name', string>[];
-  initOAuth?: Record<string, any>; // https://swagger.io/docs/open-source-tools/swagger-ui/usage/oauth2/
 }
