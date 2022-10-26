@@ -1384,7 +1384,7 @@ describe('SwaggerExplorer', () => {
         });
       });
 
-      it('should use multiple versions defined', () => {
+      it('should use multiple versions', () => {
         const routes = explorer.exploreController(
           {
             instance: new WithMultipleVersionsController(),
