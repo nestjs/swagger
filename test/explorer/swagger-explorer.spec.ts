@@ -1350,7 +1350,7 @@ describe('SwaggerExplorer', () => {
     });
   });
 
-  describe('when multiple version is defined', () => {
+  describe('when multiple versions are defined', () => {
     let explorer: SwaggerExplorer;
     let config: ApplicationConfig;
 
