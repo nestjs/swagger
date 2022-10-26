@@ -28,8 +28,7 @@ let swaggerAssetsAbsoluteFSPath: string | undefined;
 export function getSwaggerAssetsAbsoluteFSPath() {
   if (!swaggerAssetsAbsoluteFSPath) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const swaggerUi = require('swagger-ui-dist');
-    swaggerAssetsAbsoluteFSPath = swaggerUi.getAbsoluteFSPath();
+    swaggerAssetsAbsoluteFSPath = require('swagger-ui-dist/absolute-path.js')();
   }
 
   return swaggerAssetsAbsoluteFSPath;
