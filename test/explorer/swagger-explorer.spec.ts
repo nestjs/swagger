@@ -1,4 +1,5 @@
 import {
+  All,
   Body,
   Controller,
   Get,
@@ -1422,6 +1423,38 @@ describe('SwaggerExplorer', () => {
         expect(postRoutes[0].root.requestBody).toBeDefined();
         expect(postRoutes[1].root.requestBody).toBeDefined();
       });
+    });
+  });
+
+  describe('when @All(...) is used', () => {
+
+    @Controller('')
+    class AllController {
+
+      @All('*')
+      all(): Promise<void> {
+        return Promise.resolve();
+      }
+    }
+
+    it('should create route for every method', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new AllController(),
+          metatype: AllController
+        } as InstanceWrapper<AllController>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+
+      expect(routes.length).toEqual(7);
+      expect(['get', 'post', 'put', 'delete', 'patch', 'options', 'head'].every((method) => routes.find((route) => route.root.method === method))).toBe(true);
+      expect(routes.find((route) => route.root.method === 'all')).toBe(undefined);
+      // check if all routes are equal except for method
+      expect(routes.filter((v, i, a) => a.findIndex(v2 => ['path', 'operationId', 'parameter'].every(k => v2[k] === v[k])) === i).length).toEqual(1);
+      expect(routes[0].root).toEqual(expect.objectContaining({ path: '/globalPrefix/modulePath/*', operationId: 'AllController_all' }));
     });
   });
 });
