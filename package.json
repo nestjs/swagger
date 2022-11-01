@@ -38,7 +38,7 @@
     "@nestjs/core": "9.1.6",
     "@nestjs/platform-express": "9.1.6",
     "@nestjs/platform-fastify": "9.1.6",
-    "@types/jest": "29.2.0",
+    "@types/jest": "29.2.1",
     "@types/js-yaml": "4.0.5",
     "@types/lodash": "4.14.186",
     "@types/node": "18.11.8",
