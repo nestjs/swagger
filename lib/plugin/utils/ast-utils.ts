@@ -172,6 +172,11 @@ export function getTsDocTagsOfNode(
       regex: /@deprecated */gim,
       hasProperties: false,
       repeatable: false
+    },
+    name: {
+      regex: /@name *(?<string>.+?) *$/gim,
+      hasProperties: true,
+      repeatable: false
     }
   };
 
