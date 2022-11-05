@@ -38,8 +38,8 @@ function toExternalScriptTag(url: string) {
   return `<script src='${url}'></script>`;
 }
 
-function toInlineScriptTag(url: string) {
-  return `<script> ${url} </script>`;
+function toInlineScriptTag(jsCode: string) {
+  return `<script>${jsCode}</script>`;
 }
 
 function toExternalStylesheetTag(url: string) {
