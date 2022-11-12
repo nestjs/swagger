@@ -247,11 +247,9 @@ export class SchemaObjectFactory {
     const $ref = getSchemaPath(enumName);
 
     if (!(enumName in schemas)) {
-      const _enum = param.enum
-        ? param.enum
-        : param.schema['items']
-        ? param.schema['items']['enum']
-        : param.schema['enum'];
+      const _enum = param.isArray || param.items
+        ? param.items?.enum
+        : param.enum
 
       schemas[enumName] = {
         type: 'string',
