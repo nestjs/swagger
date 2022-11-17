@@ -12,11 +12,12 @@ import { SwaggerScanner } from './swagger-scanner';
 import {
   buildSwaggerHTML,
   buildSwaggerInitJS,
-  swaggerAssetsAbsoluteFSPath
+  getSwaggerAssetsAbsoluteFSPath
 } from './swagger-ui';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { validatePath } from './utils/validate-path.util';
+import { normalizeRelPath } from './utils/normalize-rel-path';
 
 export class SwaggerModule {
   public static createDocument(
@@ -43,11 +44,12 @@ export class SwaggerModule {
 
   private static serveStatic(finalPath: string, app: INestApplication) {
     const httpAdapter = app.getHttpAdapter();
+    const swaggerAssetsAbsoluteFSPath = getSwaggerAssetsAbsoluteFSPath();
 
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
       (app as NestFastifyApplication).useStaticAssets({
         root: swaggerAssetsAbsoluteFSPath,
-        prefix: `${finalPath}/`,
+        prefix: finalPath,
         decorateReply: false
       });
     } else {
@@ -67,22 +69,34 @@ export class SwaggerModule {
     jsonDocument: string,
     html: string
   ) {
-    httpAdapter.get(`${finalPath}/swagger-ui-init.js`, (req, res) => {
-      res.type('application/javascript');
-      res.send(swaggerInitJS);
-    });
-
-    /**
-     * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
-     * @see https://github.com/nestjs/swagger/issues/1976
-     */
     httpAdapter.get(
-      `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`,
+      normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
       (req, res) => {
         res.type('application/javascript');
         res.send(swaggerInitJS);
       }
     );
+
+    /**
+     * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
+     * @see https://github.com/nestjs/swagger/issues/1976
+     */
+    try {
+      httpAdapter.get(
+        normalizeRelPath(
+          `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
+        ),
+        (req, res) => {
+          res.type('application/javascript');
+          res.send(swaggerInitJS);
+        }
+      );
+    } catch (err) {
+      /**
+       * Error is expected when urlLastSubdirectory === ''
+       * in that case that route is going to be duplicating the one above
+       */
+    }
 
     httpAdapter.get(finalPath, (req, res) => {
       res.type('text/html');
@@ -91,7 +105,7 @@ export class SwaggerModule {
 
     // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
     try {
-      httpAdapter.get(finalPath + '/', (req, res) => {
+      httpAdapter.get(normalizeRelPath(`${finalPath}/`), (req, res) => {
         res.type('text/html');
         res.send(html);
       });
@@ -104,12 +118,12 @@ export class SwaggerModule {
        */
     }
 
-    httpAdapter.get(`${finalPath}-json`, (req, res) => {
+    httpAdapter.get(normalizeRelPath(`${finalPath}-json`), (req, res) => {
       res.type('application/json');
       res.send(jsonDocument);
     });
 
-    httpAdapter.get(`${finalPath}-yaml`, (req, res) => {
+    httpAdapter.get(normalizeRelPath(`${finalPath}-yaml`), (req, res) => {
       res.type('text/yaml');
       res.send(yamlDocument);
     });
@@ -132,7 +146,9 @@ export class SwaggerModule {
     const yamlDocument = jsyaml.dump(document, { skipInvalid: true });
     const jsonDocument = JSON.stringify(document);
 
-    const html = buildSwaggerHTML(urlLastSubdirectory, document, options);
+    const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
+
+    const html = buildSwaggerHTML(baseUrlForSwaggerUI, document, options);
     const swaggerInitJS = buildSwaggerInitJS(document, options);
     const httpAdapter = app.getHttpAdapter();
 
@@ -151,6 +167,13 @@ export class SwaggerModule {
      * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
      * @see https://github.com/nestjs/swagger/issues/1976
      */
-    SwaggerModule.serveStatic(`${finalPath}/${urlLastSubdirectory}`, app);
+    const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
+    /**
+     *  serveStaticSlashEndingPath === finalPath when path === '' || path === '/'
+     *  in that case we don't need to serve swagger assets on extra sub path
+     */
+    if (serveStaticSlashEndingPath !== finalPath) {
+      SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
+    }
   }
 }

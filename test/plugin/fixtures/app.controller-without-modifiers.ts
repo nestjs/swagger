@@ -1,4 +1,4 @@
-export const appControllerText = `import { Controller, Post, HttpStatus } from '@nestjs/common';
+export const appControllerWithoutModifiersText = `import { Controller, Post, HttpStatus } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 
 class Cat {}
@@ -14,7 +14,7 @@ export class AppController {
    * @memberof AppController
    */
   @Post()
-  async create(): Promise<Cat> {}
+  create(): Promise<Cat> {}
 
   /**
    * create a test Cat
@@ -24,7 +24,7 @@ export class AppController {
    * @memberof AppController
    */
   @Post()
-  async testCreate(): Promise<Cat> {}
+  testCreate(): Promise<Cat> {}
 
   /**
    * create a test Cat, not actually deprecated
@@ -35,14 +35,14 @@ export class AppController {
    */
   @ApiOperation({ deprecated: false })
   @Post()
-  async testCreate2(): Promise<Cat> {}
+  testCreate2(): Promise<Cat> {}
 
   /**
    * find a Cat
    */
   @ApiOperation({})
   @Get()
-  async findOne(): Promise<Cat> {}
+  findOne(): Promise<Cat> {}
 
   /**
    * find all Cats im comment
@@ -55,10 +55,10 @@ export class AppController {
   })
   @Get()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async findAll(): Promise<Cat[]> {}
+  findAll(): Promise<Cat[]> {}
 }`;
 
-export const appControllerTextTranspiled = `\"use strict\";
+export const appControllerWithoutModifiersTextTranspiled = `\"use strict\";
 Object.defineProperty(exports, \"__esModule\", { value: true });
 exports.AppController = void 0;
 const openapi = require(\"@nestjs/swagger\");
@@ -74,7 +74,7 @@ let AppController = class AppController {
      * @returns {Promise<Cat>}
      * @memberof AppController
      */
-    async create() { }
+    create() { }
     /**
      * create a test Cat
      *
@@ -82,7 +82,7 @@ let AppController = class AppController {
      * @returns {Promise<Cat>}
      * @memberof AppController
      */
-    async testCreate() { }
+    testCreate() { }
     /**
      * create a test Cat, not actually deprecated
      *
@@ -90,18 +90,18 @@ let AppController = class AppController {
      * @returns {Promise<Cat>}
      * @memberof AppController
      */
-    async testCreate2() { }
+    testCreate2() { }
     /**
      * find a Cat
      */
-    async findOne() { }
+    findOne() { }
     /**
      * find all Cats im comment
      *
      * @returns {Promise<Cat>}
      * @memberof AppController
      */
-    async findAll() { }
+    findAll() { }
 };
 __decorate([
     openapi.ApiOperation({ summary: "create a Cat" }),

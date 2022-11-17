@@ -1,14 +1,17 @@
 import { compact, flatten, head } from 'lodash';
 import * as ts from 'typescript';
+import { factory, PropertyAssignment } from 'typescript';
 import { ApiHideProperty } from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { METADATA_FACTORY_NAME } from '../plugin-constants';
 import {
   createBooleanLiteral,
+  createLiteralFromAnyValue,
   createPrimitiveLiteral,
   getDecoratorArguments,
-  getMainCommentAndExamplesOfNode,
+  getMainCommentOfNode,
   getText,
+  getTsDocTagsOfNode,
   isEnum
 } from '../utils/ast-utils';
 import {
@@ -21,9 +24,13 @@ import {
   replaceImportPath
 } from '../utils/plugin-utils';
 import { AbstractFileVisitor } from './abstract.visitor';
-import { PropertyAssignment } from 'typescript';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
+
+const [tsVersionMajor, tsVersionMinor] = ts.versionMajorMinor
+  ?.split('.')
+  .map((x) => +x);
+const isInUpdatedAstContext = tsVersionMinor >= 8 || tsVersionMajor > 4;
 
 export class ModelClassVisitor extends AbstractFileVisitor {
   visit(
@@ -33,16 +40,21 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     options: PluginOptions
   ) {
     const typeChecker = program.getTypeChecker();
-    sourceFile = this.updateImports(sourceFile, ctx.factory);
+    sourceFile = this.updateImports(sourceFile, ctx.factory, program);
 
     const propertyNodeVisitorFactory =
       (metadata: ClassMetadata) =>
       (node: ts.Node): ts.Node => {
         if (ts.isPropertyDeclaration(node)) {
-          const decorators = node.decorators;
+          // Support both >= v4.8 and v4.7 and lower
+          const decorators = (ts as any).canHaveDecorators
+            ? (ts as any).getDecorators(node)
+            : node.decorators;
+
           const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
             [ApiHideProperty.name],
-            decorators
+            decorators,
+            factory
           );
           if (hidePropertyDecorator) {
             return node;
@@ -104,27 +116,53 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         )
       )
     );
-    const method = factory.createMethodDeclaration(
-      undefined,
-      [factory.createModifier(ts.SyntaxKind.StaticKeyword)],
-      undefined,
-      factory.createIdentifier(METADATA_FACTORY_NAME),
-      undefined,
-      undefined,
-      [],
-      undefined,
-      factory.createBlock([factory.createReturnStatement(returnValue)], true)
-    );
+    const method = isInUpdatedAstContext
+      ? (factory as any).createMethodDeclaration(
+          [factory.createModifier(ts.SyntaxKind.StaticKeyword)],
+          undefined,
+          factory.createIdentifier(METADATA_FACTORY_NAME),
+          undefined,
+          undefined,
+          [],
+          undefined,
+          factory.createBlock(
+            [factory.createReturnStatement(returnValue)],
+            true
+          )
+        )
+      : factory.createMethodDeclaration(
+          undefined,
+          [factory.createModifier(ts.SyntaxKind.StaticKeyword)],
+          undefined,
+          factory.createIdentifier(METADATA_FACTORY_NAME),
+          undefined,
+          undefined,
+          [],
+          undefined,
+          factory.createBlock(
+            [factory.createReturnStatement(returnValue)],
+            true
+          )
+        );
 
-    return factory.updateClassDeclaration(
-      node,
-      node.decorators,
-      node.modifiers,
-      node.name,
-      node.typeParameters,
-      node.heritageClauses,
-      [...node.members, method]
-    );
+    return isInUpdatedAstContext
+      ? (factory as any).updateClassDeclaration(
+          node,
+          node.modifiers,
+          node.name,
+          node.typeParameters,
+          node.heritageClauses,
+          [...node.members, method]
+        )
+      : factory.updateClassDeclaration(
+          node,
+          node.decorators,
+          node.modifiers as any,
+          node.name,
+          node.typeParameters,
+          node.heritageClauses,
+          [...node.members, method]
+        );
   }
 
   inspectPropertyDeclaration(
@@ -178,7 +216,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         existingProperties,
         hostFilename
       ),
-      ...this.createDescriptionAndExamplePropertyAssigments(
+      ...this.createDescriptionAndTsDocTagPropertyAssigments(
         factory,
         node,
         typeChecker,
@@ -395,15 +433,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     node: ts.PropertyDeclaration | ts.PropertySignature
   ): ts.PropertyAssignment[] {
     const assignments = [];
-    const decorators = node.decorators;
+    // Support both >= v4.8 and v4.7 and lower
+    const decorators = (ts as any).canHaveDecorators
+      ? (ts as any).getDecorators(node)
+      : node.decorators;
 
-    this.addPropertyByValidationDecorator(
-      factory,
-      'Matches',
-      'pattern',
-      decorators,
-      assignments
-    );
     this.addPropertyByValidationDecorator(
       factory,
       'IsIn',
@@ -492,6 +526,21 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         return result;
       }
     );
+    this.addPropertiesByValidationDecorator(
+      factory,
+      'Matches',
+      decorators,
+      assignments,
+      (decoratorRef: ts.Decorator) => {
+        const decoratorArguments = getDecoratorArguments(decoratorRef);
+        return [
+          factory.createPropertyAssignment(
+            'pattern',
+            createPrimitiveLiteral(factory, head(decoratorArguments).text)
+          )
+        ];
+      }
+    );
 
     return assignments;
   }
@@ -529,7 +578,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   ) {
     const decoratorRef: ts.Decorator = getDecoratorOrUndefinedByNames(
       [decoratorName],
-      decorators
+      decorators,
+      factory
     );
     if (!decoratorRef) {
       return;
@@ -558,7 +608,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     metadata[propertyName] = objectLiteral;
   }
 
-  createDescriptionAndExamplePropertyAssigments(
+  createDescriptionAndTsDocTagPropertyAssigments(
     factory: ts.NodeFactory,
     node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
@@ -570,12 +620,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return [];
     }
     const propertyAssignments = [];
-    const [comments, examples] = getMainCommentAndExamplesOfNode(
-      node,
-      sourceFile,
-      typeChecker,
-      true
-    );
+    const comments = getMainCommentOfNode(node, sourceFile);
+    const tags = getTsDocTagsOfNode(node, sourceFile, typeChecker);
 
     const keyOfComment = options.dtoKeyOfComment;
     if (!hasPropertyKey(keyOfComment, existingProperties) && comments) {
@@ -589,30 +635,31 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const hasExampleOrExamplesKey =
       hasPropertyKey('example', existingProperties) ||
       hasPropertyKey('examples', existingProperties);
-
-    if (!hasExampleOrExamplesKey && examples.length) {
-      if (examples.length === 1) {
+    if (!hasExampleOrExamplesKey && tags.example?.length) {
+      if (tags.example.length === 1) {
         const examplePropertyAssignment = factory.createPropertyAssignment(
           'example',
-          this.createLiteralFromAnyValue(factory, examples[0])
+          createLiteralFromAnyValue(factory, tags.example[0])
         );
         propertyAssignments.push(examplePropertyAssignment);
       } else {
         const examplesPropertyAssignment = factory.createPropertyAssignment(
           'examples',
-          this.createLiteralFromAnyValue(factory, examples)
+          createLiteralFromAnyValue(factory, tags.example)
         );
         propertyAssignments.push(examplesPropertyAssignment);
       }
     }
-    return propertyAssignments;
-  }
 
-  private createLiteralFromAnyValue(factory: ts.NodeFactory, item: unknown) {
-    return Array.isArray(item)
-      ? factory.createArrayLiteralExpression(
-          item.map((item) => this.createLiteralFromAnyValue(factory, item))
-        )
-      : createPrimitiveLiteral(factory, item);
+    const hasDeprecatedKey = hasPropertyKey('deprecated', existingProperties);
+    if (!hasDeprecatedKey && tags.deprecated) {
+      const deprecatedPropertyAssignment = factory.createPropertyAssignment(
+        'deprecated',
+        createLiteralFromAnyValue(factory, tags.deprecated)
+      );
+      propertyAssignments.push(deprecatedPropertyAssignment);
+    }
+
+    return propertyAssignments;
   }
 }

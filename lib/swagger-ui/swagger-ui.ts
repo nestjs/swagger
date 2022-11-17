@@ -1,4 +1,3 @@
-import * as swaggerUi from 'swagger-ui-dist';
 import { favIconHtml, htmlTemplateString, jsTemplateString } from './constants';
 import { OpenAPIObject, SwaggerCustomOptions } from '../interfaces';
 import { buildJSInitOptions } from './helpers';
@@ -21,10 +20,20 @@ export function buildSwaggerInitJS(
   return jsTemplateString.replace('<% swaggerOptions %>', jsInitOptions);
 }
 
+let swaggerAssetsAbsoluteFSPath: string | undefined;
+
 /**
- * Stores absolute path to swagger-ui assets
+ * Returns the absolute path to swagger-ui assets.
  */
-export const swaggerAssetsAbsoluteFSPath = swaggerUi.getAbsoluteFSPath();
+export function getSwaggerAssetsAbsoluteFSPath() {
+  if (!swaggerAssetsAbsoluteFSPath) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    swaggerAssetsAbsoluteFSPath = require('swagger-ui-dist/absolute-path.js')();
+  }
+
+  return swaggerAssetsAbsoluteFSPath;
+}
+
 /**
  * Used to build swagger-ui custom html
  */
@@ -36,23 +45,31 @@ export function buildSwaggerHTML(
   const {
     customCss = '',
     customJs = '',
+    customJsStr = '',
     customfavIcon = false,
     customSiteTitle = 'Swagger UI',
-    customCssUrl = ''
+    customCssUrl = '',
+    explorer = false
   } = customOptions;
 
   const favIconString = customfavIcon
     ? `<link rel="icon" href="${customfavIcon}" />`
     : favIconHtml;
 
+  const explorerCss = explorer
+    ? ''
+    : '.swagger-ui .topbar .download-url-wrapper { display: none }';
   return htmlTemplateString
     .replace('<% customCss %>', customCss)
+    .replace('<% explorerCss %>', explorerCss)
     .replace('<% favIconString %>', favIconString)
     .replace(/<% baseUrl %>/g, baseUrl)
     .replace(
       '<% customJs %>',
       customJs ? `<script src="${customJs}"></script>` : ''
     )
+    .replace(
+      '<% customJsStr %>', customJsStr ? `<script> ${customJsStr} </script>` : '')
     .replace(
       '<% customCssUrl %>',
       customCssUrl ? `<link href="${customCssUrl}" rel="stylesheet">` : ''

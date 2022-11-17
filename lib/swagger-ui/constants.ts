@@ -1,6 +1,6 @@
 export const favIconHtml =
-  '<link rel="icon" type="image/png" href="<% baseUrl %>/favicon-32x32.png" sizes="32x32" />' +
-  '<link rel="icon" type="image/png" href="<% baseUrl %>/favicon-16x16.png" sizes="16x16" />';
+  '<link rel="icon" type="image/png" href="<% baseUrl %>favicon-32x32.png" sizes="32x32" />' +
+  '<link rel="icon" type="image/png" href="<% baseUrl %>favicon-16x16.png" sizes="16x16" />';
 
 export const htmlTemplateString = `
 <!-- HTML for static distribution bundle build -->
@@ -9,7 +9,7 @@ export const htmlTemplateString = `
 <head>
   <meta charset="UTF-8">
   <title><% title %></title>
-  <link rel="stylesheet" type="text/css" href="<% baseUrl %>/swagger-ui.css" >
+  <link rel="stylesheet" type="text/css" href="<% baseUrl %>swagger-ui.css" >
   <% favIconString %>
   <style>
     html
@@ -70,14 +70,15 @@ export const htmlTemplateString = `
 
 <div id="swagger-ui"></div>
 
-<script src="<% baseUrl %>/swagger-ui-bundle.js"> </script>
-<script src="<% baseUrl %>/swagger-ui-standalone-preset.js"> </script>
-<script src="<% baseUrl %>/swagger-ui-init.js"> </script>
+<script src="<% baseUrl %>swagger-ui-bundle.js"> </script>
+<script src="<% baseUrl %>swagger-ui-standalone-preset.js"> </script>
+<script src="<% baseUrl %>swagger-ui-init.js"> </script>
 <% customJs %>
+<% customJsStr %>
 <% customCssUrl %>
 <style>
   <% customCss %>
-  .swagger-ui .topbar .download-url-wrapper { display: none }
+  <% explorerCss %>
 </style>
 </body>
 
@@ -125,7 +126,7 @@ window.onload = function() {
   if (customOptions.authAction) {
     ui.authActions.authorize(customOptions.authAction)
   }
-
+  
   window.ui = ui
 }
 `;
