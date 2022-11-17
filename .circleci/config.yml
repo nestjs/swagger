@@ -34,7 +34,7 @@ jobs:
       - checkout
       - run:
           name: Update NPM version
-          command: npm install --location=global npm@latest
+          command: npm install -g npm@latest
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
