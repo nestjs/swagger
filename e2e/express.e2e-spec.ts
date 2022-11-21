@@ -32,7 +32,12 @@ describe('Express Swagger', () => {
       .addApiKey({ type: 'apiKey' }, 'key2')
       .addCookieAuth()
       .addSecurityRequirements('bearer')
-      .addSecurityRequirements({ basic: [], cookie: [] });
+      .addSecurityRequirements({ basic: [], cookie: [] })
+      .addGlobalParameters({
+        name: 'x-tenant-id',
+        in: 'header',
+        schema: { type: 'string' }
+      });
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {

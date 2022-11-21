@@ -40,6 +40,11 @@ describe('Validate OpenAPI schema', () => {
       .addCookieAuth()
       .addSecurityRequirements('bearer')
       .addSecurityRequirements({ basic: [], cookie: [] })
+      .addGlobalParameters({
+        name: 'x-tenant-id',
+        in: 'header',
+        schema: { type: 'string' }
+      })
       .build();
   });
 

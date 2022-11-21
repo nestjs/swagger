@@ -1,9 +1,11 @@
+import { GlobalParameterStorage } from './storages/global-parameter.storage';
 import { Logger } from '@nestjs/common';
 import { isString, isUndefined, negate, pickBy } from 'lodash';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {
   ExternalDocumentationObject,
+  ParameterObject,
   SecurityRequirementObject,
   SecuritySchemeObject,
   ServerVariableObject,
@@ -88,6 +90,11 @@ export class DocumentBuilder {
       ...(this.document.components.securitySchemes || {}),
       [name]: options
     };
+    return this;
+  }
+
+  public addGlobalParameters(...parameters: ParameterObject[]): this {
+    GlobalParameterStorage.addGlobalParameters(...parameters);
     return this;
   }
 
