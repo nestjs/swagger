@@ -1,4 +1,3 @@
-import { GlobalParameterStorage } from './storages/global-parameter.storage';
 import { Logger } from '@nestjs/common';
 import { isString, isUndefined, negate, pickBy } from 'lodash';
 import { buildDocumentBase } from './fixtures/document.base';
@@ -11,6 +10,7 @@ import {
   ServerVariableObject,
   TagObject
 } from './interfaces/open-api-spec.interface';
+import { GlobalParametersStorage } from './storages/global-parameters.storage';
 
 export class DocumentBuilder {
   private readonly logger = new Logger(DocumentBuilder.name);
@@ -94,7 +94,7 @@ export class DocumentBuilder {
   }
 
   public addGlobalParameters(...parameters: ParameterObject[]): this {
-    GlobalParameterStorage.addGlobalParameters(...parameters);
+    GlobalParametersStorage.add(...parameters);
     return this;
   }
 

@@ -10,7 +10,7 @@ import {
 import { ParametersMetadataMapper } from '../services/parameters-metadata-mapper';
 import { SchemaObjectFactory } from '../services/schema-object-factory';
 import { SwaggerTypesMapper } from '../services/swagger-types-mapper';
-import { GlobalParameterStorage } from '../storages/global-parameter.storage';
+import { GlobalParametersStorage } from '../storages/global-parameters.storage';
 
 const parameterMetadataAccessor = new ParameterMetadataAccessor();
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
@@ -33,7 +33,7 @@ export const exploreApiParametersMetadata = (
     DECORATORS.API_PARAMETERS,
     method
   );
-  const globalParameters = GlobalParameterStorage.getGlobalParameters();
+  const globalParameters = GlobalParametersStorage.getAll();
   const parametersMetadata = parameterMetadataAccessor.explore(
     instance,
     prototype,

@@ -1,4 +1,3 @@
-import { GlobalParameterStorage } from './../../lib/storages/global-parameter.storage';
 import {
   Body,
   Controller,
@@ -34,6 +33,7 @@ import { ModelPropertiesAccessor } from '../../lib/services/model-properties-acc
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
+import { GlobalParametersStorage } from '../../lib/storages/global-parameters.storage';
 
 describe('SwaggerExplorer', () => {
   const schemaObjectFactory = new SchemaObjectFactory(
@@ -1438,7 +1438,7 @@ describe('SwaggerExplorer', () => {
     }
 
     it('should properly define global paramters', () => {
-      GlobalParameterStorage.addGlobalParameters(
+      GlobalParametersStorage.add(
         {
           name: 'x-tenant-id',
           in: 'header',
@@ -1473,7 +1473,7 @@ describe('SwaggerExplorer', () => {
           schema: { type: 'string' }
         }
       ]);
-      GlobalParameterStorage.cleanGlobalParamters();
+      GlobalParametersStorage.clear();
     });
   });
 });
