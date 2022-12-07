@@ -34,6 +34,33 @@ export function getSwaggerAssetsAbsoluteFSPath() {
   return swaggerAssetsAbsoluteFSPath;
 }
 
+function toExternalScriptTag(url: string) {
+  return `<script src='${url}'></script>`;
+}
+
+function toInlineScriptTag(jsCode: string) {
+  return `<script>${jsCode}</script>`;
+}
+
+function toExternalStylesheetTag(url: string) {
+  return `<link href='${url}' rel='stylesheet'>`;
+}
+
+function toTags(
+  customCode: string | string[] | undefined,
+  toScript: (url: string) => string
+) {
+  if (!customCode) {
+    return '';
+  }
+
+  if (typeof customCode === 'string') {
+    return toScript(customCode);
+  } else {
+    return customCode.map(toScript).join('\n');
+  }
+}
+
 /**
  * Used to build swagger-ui custom html
  */
@@ -53,7 +80,7 @@ export function buildSwaggerHTML(
   } = customOptions;
 
   const favIconString = customfavIcon
-    ? `<link rel="icon" href="${customfavIcon}" />`
+    ? `<link rel='icon' href='${customfavIcon}' />`
     : favIconHtml;
 
   const explorerCss = explorer
@@ -64,15 +91,11 @@ export function buildSwaggerHTML(
     .replace('<% explorerCss %>', explorerCss)
     .replace('<% favIconString %>', favIconString)
     .replace(/<% baseUrl %>/g, baseUrl)
-    .replace(
-      '<% customJs %>',
-      customJs ? `<script src="${customJs}"></script>` : ''
-    )
-    .replace(
-      '<% customJsStr %>', customJsStr ? `<script> ${customJsStr} </script>` : '')
+    .replace('<% customJs %>', toTags(customJs, toExternalScriptTag))
+    .replace('<% customJsStr %>', toTags(customJsStr, toInlineScriptTag))
     .replace(
       '<% customCssUrl %>',
-      customCssUrl ? `<link href="${customCssUrl}" rel="stylesheet">` : ''
+      toTags(customCssUrl, toExternalStylesheetTag)
     )
     .replace('<% title %>', customSiteTitle);
 }

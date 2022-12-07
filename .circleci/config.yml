@@ -29,12 +29,12 @@ jobs:
   build:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:17.9
+      - image: cimg/node:18.10
     steps:
       - checkout
       - run:
           name: Update NPM version
-          command: npm install -g npm@latest
+          command: 'sudo npm install -g npm@^8'
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
@@ -51,7 +51,7 @@ jobs:
   unit_tests:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:17.9
+      - image: cimg/node:18.10
     steps:
       - checkout
       - *restore-cache
@@ -62,7 +62,7 @@ jobs:
   e2e_tests:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:17.9
+      - image: cimg/node:18.10
     steps:
       - checkout
       - *restore-cache
