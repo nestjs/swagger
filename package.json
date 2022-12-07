@@ -41,7 +41,7 @@
     "@types/jest": "29.2.2",
     "@types/js-yaml": "4.0.5",
     "@types/lodash": "4.14.188",
-    "@types/node": "18.11.9",
+    "@types/node": "18.11.11",
     "@typescript-eslint/eslint-plugin": "5.42.1",
     "@typescript-eslint/parser": "5.42.1",
     "class-transformer": "0.5.1",
