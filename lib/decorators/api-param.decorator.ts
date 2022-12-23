@@ -28,7 +28,9 @@ const defaultParamOptions: ApiParamOptions = {
   required: true
 };
 
-export function ApiParam(options: ApiParamOptions): MethodDecorator {
+export function ApiParam(
+  options: ApiParamOptions
+): MethodDecorator & ClassDecorator {
   const param: Record<string, any> = {
     name: isNil(options.name) ? defaultParamOptions.name : options.name,
     in: 'path',
