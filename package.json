@@ -56,7 +56,7 @@
     "openapi-types": "12.1.0",
     "prettier": "2.8.1",
     "reflect-metadata": "0.1.13",
-    "release-it": "15.5.1",
+    "release-it": "15.6.0",
     "supertest": "6.3.3",
     "swagger-parser": "10.0.3",
     "ts-jest": "29.0.3",
