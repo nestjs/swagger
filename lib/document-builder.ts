@@ -166,6 +166,7 @@ export class DocumentBuilder {
     this.addSecurity(nameOrOptions as string, {
       type: 'oauth2',
       flows: {},
+      // TODO: avoid using type assertion to 'any' below
       ...(optionsOrName as any)
     });
     return this;
