@@ -31,7 +31,7 @@
     "swagger-ui-dist": "4.15.5"
   },
   "devDependencies": {
-    "@commitlint/cli": "17.4.0",
+    "@commitlint/cli": "17.4.1",
     "@commitlint/config-angular": "17.4.0",
     "@fastify/static": "6.6.0",
     "@nestjs/common": "9.2.1",
