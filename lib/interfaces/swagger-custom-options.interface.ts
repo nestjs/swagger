@@ -5,9 +5,9 @@ export interface SwaggerCustomOptions {
   explorer?: boolean;
   swaggerOptions?: SwaggerUiOptions;
   customCss?: string;
-  customCssUrl?: string;
-  customJs?: string;
-  customJsStr?: string;
+  customCssUrl?: string | string[];
+  customJs?: string | string[];
+  customJsStr?: string | string[];
   customfavIcon?: string;
   swaggerUrl?: string;
   customSiteTitle?: string;
