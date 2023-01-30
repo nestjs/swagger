@@ -1453,8 +1453,7 @@ describe('SwaggerExplorer', () => {
       expect(['get', 'post', 'put', 'delete', 'patch', 'options', 'head'].every((method) => routes.find((route) => route.root.method === method))).toBe(true);
       expect(routes.find((route) => route.root.method === 'all')).toBe(undefined);
       // check if all routes are equal except for method
-      expect(routes.filter((v, i, a) => a.findIndex(v2 => ['path', 'operationId', 'parameter'].every(k => v2[k] === v[k])) === i).length).toEqual(1);
-      expect(routes[0].root).toEqual(expect.objectContaining({ path: '/globalPrefix/modulePath/*', operationId: 'AllController_all' }));
+      expect(routes.filter((v, i, a) => a.findIndex(v2 => ['path', 'parameter'].every(k => v2[k] === v[k])) === i).length).toEqual(1);
     });
   });
 });

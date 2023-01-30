@@ -302,7 +302,7 @@ export class SwaggerExplorer {
           return validMethods.map((meth) => ({
             method: meth.toLowerCase(),
             path: fullPath === '' ? '/' : fullPath,
-            operationId: this.getOperationId(instance, method),
+            operationId: `${this.getOperationId(instance, method)}_${meth.toLowerCase()}`,
             ...apiExtension
           }));
         }
