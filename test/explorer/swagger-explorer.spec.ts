@@ -915,6 +915,19 @@ describe('SwaggerExplorer', () => {
       }
     }
 
+    @Controller('')
+    class Bar2Controller {
+      @Get('bars/:objectId')
+      @ApiParam({
+        name: 'objectId',
+        enum: [1, 2, 3],
+        enumName: 'NumberEnum'
+      })
+      findBar(): Promise<Foo> {
+        return Promise.resolve(null);
+      }
+    }
+
     it('should properly define enums', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const config = new ApplicationConfig();
@@ -1048,6 +1061,33 @@ describe('SwaggerExplorer', () => {
           required: true,
           schema: {
             $ref: '#/components/schemas/ParamEnum'
+          }
+        }
+      ]);
+    });
+
+    it('should properly define number enum as schema', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+
+      const schema = explorer.getSchemas();
+      const routes = explorer.exploreController(
+        {
+          instance: new Bar2Controller(),
+          metatype: Bar2Controller
+        } as InstanceWrapper<Bar2Controller>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+
+      expect(schema.NumberEnum).toEqual({ type: 'number', enum: [1, 2, 3] });
+      expect(routes[0].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            $ref: '#/components/schemas/NumberEnum'
           }
         }
       ]);
