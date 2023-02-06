@@ -44,6 +44,11 @@ describe('SwaggerExplorer', () => {
     controllerKey: string,
     methodKey: string
   ) => `${controllerKey}.${methodKey}`;
+  const controllerKeyMethodKeyVersionKeyOperationIdFactory = (
+    controllerKey: string,
+    methodKey: string,
+    versionKey: string
+  ) => `${controllerKey}.${methodKey}.${versionKey}`;
 
   describe('when module only uses metadata', () => {
     class Foo {}
@@ -1300,60 +1305,148 @@ describe('SwaggerExplorer', () => {
           defaultVersion: 'THIS_SHOULD_NOT_APPEAR_ANYWHERE'
         });
       });
+      describe('and using the default operationIdFactory', () => {
+        it('should use controller version defined', () => {
+          const routes = explorer.exploreController(
+            {
+              instance: new WithVersionController(),
+              metatype: WithVersionController
+            } as InstanceWrapper<WithVersionController>,
+            config,
+            'modulePath',
+            'globalPrefix'
+          );
 
-      it('should use controller version defined', () => {
-        const routes = explorer.exploreController(
-          {
-            instance: new WithVersionController(),
-            metatype: WithVersionController
-          } as InstanceWrapper<WithVersionController>,
-          config,
-          'modulePath',
-          'globalPrefix'
-        );
+          expect(routes[0].root.path).toEqual(
+            `/globalPrefix/v${CONTROLLER_VERSION}/modulePath/with-version`
+          );
+          expect(routes[0].root.operationId).toEqual(
+            `WithVersionController_foo`
+          );
+        });
 
-        expect(routes[0].root.path).toEqual(
-          `/globalPrefix/v${CONTROLLER_VERSION}/modulePath/with-version`
-        );
+        it('should use route version defined', () => {
+          const routes = explorer.exploreController(
+            {
+              instance: new WithVersionController(),
+              metatype: WithVersionController
+            } as InstanceWrapper<WithVersionController>,
+            config,
+            'modulePath',
+            'globalPrefix'
+          );
+
+          expect(routes[1].root.path).toEqual(
+            `/globalPrefix/v${METHOD_VERSION}/modulePath/with-version`
+          );
+          expect(routes[1].root.operationId).toEqual(
+            `WithVersionController_bar`
+          );
+        });
+
+        it('should use multiple versions defined', () => {
+          const routes = explorer.exploreController(
+            {
+              instance: new WithMultipleVersionsController(),
+              metatype: WithMultipleVersionsController
+            } as InstanceWrapper<WithMultipleVersionsController>,
+            config,
+            'modulePath',
+            'globalPrefix'
+          );
+
+          expect(routes[0].root.path).toEqual(
+            `/globalPrefix/v${
+              CONTROLLER_MULTIPLE_VERSIONS[0] as string
+            }/modulePath/with-multiple-version`
+          );
+          expect(routes[0].root.operationId).toEqual(
+            `WithMultipleVersionsController_foo`
+          );
+          expect(routes[1].root.path).toEqual(
+            `/globalPrefix/v${
+              CONTROLLER_MULTIPLE_VERSIONS[1] as string
+            }/modulePath/with-multiple-version`
+          );
+          expect(routes[1].root.operationId).toEqual(
+            `WithMultipleVersionsController_foo`
+          );
+        });
       });
+      describe('and has an operationIdFactory that uses the method version', () => {
+        it('should use controller version defined', () => {
+          const routes = explorer.exploreController(
+            {
+              instance: new WithVersionController(),
+              metatype: WithVersionController
+            } as InstanceWrapper<WithVersionController>,
+            config,
+            'modulePath',
+            'globalPrefix',
+            controllerKeyMethodKeyVersionKeyOperationIdFactory
+          );
 
-      it('should use route version defined', () => {
-        const routes = explorer.exploreController(
-          {
-            instance: new WithVersionController(),
-            metatype: WithVersionController
-          } as InstanceWrapper<WithVersionController>,
-          config,
-          'modulePath',
-          'globalPrefix'
-        );
+          expect(routes[0].root.path).toEqual(
+            `/globalPrefix/v${CONTROLLER_VERSION}/modulePath/with-version`
+          );
+          expect(routes[0].root.operationId).toEqual(
+            `WithVersionController.foo.v${CONTROLLER_VERSION}`
+          );
+        });
 
-        expect(routes[1].root.path).toEqual(
-          `/globalPrefix/v${METHOD_VERSION}/modulePath/with-version`
-        );
-      });
+        it('should use route version defined', () => {
+          const routes = explorer.exploreController(
+            {
+              instance: new WithVersionController(),
+              metatype: WithVersionController
+            } as InstanceWrapper<WithVersionController>,
+            config,
+            'modulePath',
+            'globalPrefix',
+            controllerKeyMethodKeyVersionKeyOperationIdFactory
+          );
 
-      it('should use multiple versions defined', () => {
-        const routes = explorer.exploreController(
-          {
-            instance: new WithMultipleVersionsController(),
-            metatype: WithMultipleVersionsController
-          } as InstanceWrapper<WithMultipleVersionsController>,
-          config,
-          'modulePath',
-          'globalPrefix'
-        );
+          expect(routes[1].root.path).toEqual(
+            `/globalPrefix/v${METHOD_VERSION}/modulePath/with-version`
+          );
+          expect(routes[1].root.operationId).toEqual(
+            `WithVersionController.bar.v${METHOD_VERSION}`
+          );
+        });
 
-        expect(routes[0].root.path).toEqual(
-          `/globalPrefix/v${
-            CONTROLLER_MULTIPLE_VERSIONS[0] as string
-          }/modulePath/with-multiple-version`
-        );
-        expect(routes[1].root.path).toEqual(
-          `/globalPrefix/v${
-            CONTROLLER_MULTIPLE_VERSIONS[1] as string
-          }/modulePath/with-multiple-version`
-        );
+        it('should use multiple versions defined', () => {
+          const routes = explorer.exploreController(
+            {
+              instance: new WithMultipleVersionsController(),
+              metatype: WithMultipleVersionsController
+            } as InstanceWrapper<WithMultipleVersionsController>,
+            config,
+            'modulePath',
+            'globalPrefix',
+            controllerKeyMethodKeyVersionKeyOperationIdFactory
+          );
+
+          expect(routes[0].root.path).toEqual(
+            `/globalPrefix/v${
+              CONTROLLER_MULTIPLE_VERSIONS[0] as string
+            }/modulePath/with-multiple-version`
+          );
+          expect(routes[0].root.operationId).toEqual(
+            `WithMultipleVersionsController.foo.v${
+              CONTROLLER_MULTIPLE_VERSIONS[0] as string
+            }`
+          );
+          expect(routes[1].root.path).toEqual(
+            `/globalPrefix/v${
+              CONTROLLER_MULTIPLE_VERSIONS[1] as string
+            }/modulePath/with-multiple-version`
+          );
+          expect(routes[1].root.operationId).toEqual(
+            `WithMultipleVersionsController.foo.v${
+              CONTROLLER_MULTIPLE_VERSIONS[1] as string
+            }`
+          );
+        });
       });
     });
 
