@@ -1,15 +1,3 @@
-export type OperationIdFactory =
-  | ((
-      controllerKey: string,
-      methodKey: string,
-      pathVersionKey?: string
-    ) => string)
-  | ((
-      controllerKey: string,
-      methodKey: string,
-      pathVersionKey?: string
-    ) => string);
-
 export interface SwaggerDocumentOptions {
   /**
    * List of modules to include in the specification
@@ -36,5 +24,5 @@ export interface SwaggerDocumentOptions {
    * based on the `controllerKey` and `methodKey`
    * @default () => controllerKey_methodKey
    */
-  operationIdFactory?: OperationIdFactory;
+  operationIdFactory?: (controllerKey: string, methodKey: string) => string;
 }

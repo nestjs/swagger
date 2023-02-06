@@ -4,11 +4,7 @@ import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { InstanceToken, Module } from '@nestjs/core/injector/module';
 import { flatten, isEmpty } from 'lodash';
-import {
-  OpenAPIObject,
-  OperationIdFactory,
-  SwaggerDocumentOptions
-} from './interfaces';
+import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
 import { ModuleRoute } from './interfaces/module-route.interface';
 import {
   ReferenceObject,
@@ -110,7 +106,7 @@ export class SwaggerScanner {
     modulePath: string | undefined,
     globalPrefix: string | undefined,
     applicationConfig: ApplicationConfig,
-    operationIdFactory?: OperationIdFactory
+    operationIdFactory?: (controllerKey: string, methodKey: string) => string
   ): ModuleRoute[] {
     const denormalizedArray = [...routes.values()].map((ctrl) =>
       this.explorer.exploreController(
