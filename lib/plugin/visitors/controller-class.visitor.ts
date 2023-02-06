@@ -163,6 +163,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       (apiOperationExpr.properties as ts.NodeArray<ts.PropertyAssignment>);
 
     const extractedComments = getMainCommentOfNode(node, sourceFile);
+    if (!extractedComments) {
+      return [];
+    }
     const tags = getTsDocTagsOfNode(node, sourceFile, typeChecker);
 
     const properties = [
