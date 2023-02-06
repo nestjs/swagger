@@ -25,6 +25,7 @@ import {
   isArray,
   isEmpty,
   mapValues,
+  merge,
   omit,
   omitBy,
   pick,
@@ -32,6 +33,7 @@ import {
 } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
+import { ApiResponseOptions } from './decorators/';
 import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
 import {
@@ -57,6 +59,7 @@ import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolver
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface';
 import {
   OpenAPIObject,
+  ResponsesObject,
   SchemaObject
 } from './interfaces/open-api-spec.interface';
 import { MimetypeContentWrapper } from './services/mimetype-content-wrapper';
@@ -79,6 +82,7 @@ export class SwaggerExplorer {
     applicationConfig: ApplicationConfig,
     modulePath?: string | undefined,
     globalPrefix?: string | undefined,
+    globalResponses?: ResponsesObject,
     operationIdFactory?: (controllerKey: string, methodKey: string) => string
   ) {
     this.routePathFactory = new RoutePathFactory(applicationConfig);
@@ -105,7 +109,8 @@ export class SwaggerExplorer {
       documentResolvers,
       applicationConfig,
       modulePath,
-      globalPrefix
+      globalPrefix,
+      globalResponses
     );
   }
 
@@ -120,7 +125,8 @@ export class SwaggerExplorer {
     documentResolvers: DenormalizedDocResolvers,
     applicationConfig: ApplicationConfig,
     modulePath?: string,
-    globalPrefix?: string
+    globalPrefix?: string,
+    globalResponses?: ResponsesObject
   ): DenormalizedDoc[] {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
@@ -129,7 +135,12 @@ export class SwaggerExplorer {
     if (excludeController) {
       return [];
     }
-    const globalMetadata = this.exploreGlobalMetadata(metatype);
+    const globalMetadata = this.exploreGlobalMetadata(
+      // Responses is not a property of `OpenAPIObject`, but that's what's
+      // being returned (incorrect type) by this.exploreGlobalMetadata(...).
+      { responses: globalResponses } as Partial<OpenAPIObject>,
+      metatype
+    );
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);
 
@@ -225,6 +236,7 @@ export class SwaggerExplorer {
   }
 
   private exploreGlobalMetadata(
+    metadataBase: Partial<OpenAPIObject>,
     metatype: Type<unknown>
   ): Partial<OpenAPIObject> {
     const globalExplorers = [
@@ -243,8 +255,9 @@ export class SwaggerExplorer {
             chunks: (curr.chunks || []).concat(next)
           };
         }
-        return { ...curr, ...next };
-      }, {});
+
+        return merge({}, curr, next);
+      }, metadataBase);
 
     return globalMetadata;
   }

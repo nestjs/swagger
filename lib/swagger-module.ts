@@ -26,7 +26,7 @@ export class SwaggerModule {
     options: SwaggerDocumentOptions = {}
   ): OpenAPIObject {
     const swaggerScanner = new SwaggerScanner();
-    const document = swaggerScanner.scanApplication(app, options);
+    const document = swaggerScanner.scanApplication(app, options, config);
 
     document.components = assignTwoLevelsDeep(
       {},

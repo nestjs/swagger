@@ -4,10 +4,12 @@ import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { InstanceToken, Module } from '@nestjs/core/injector/module';
 import { flatten, isEmpty } from 'lodash';
+import { ApiResponseOptions } from './decorators/';
 import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
 import { ModuleRoute } from './interfaces/module-route.interface';
 import {
   ReferenceObject,
+  ResponsesObject,
   SchemaObject
 } from './interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from './services/model-properties-accessor';
@@ -15,8 +17,10 @@ import { SchemaObjectFactory } from './services/schema-object-factory';
 import { SwaggerTypesMapper } from './services/swagger-types-mapper';
 import { SwaggerExplorer } from './swagger-explorer';
 import { SwaggerTransformer } from './swagger-transformer';
+import { mapResponsesToSwaggerResponses } from './utils/map-responses-to-swagger-responses.util';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { stripLastSlash } from './utils/strip-last-slash.util';
+import { transformResponsesToRefs } from './utils/transform-responses-to-refs.util';
 
 export class SwaggerScanner {
   private readonly transformer = new SwaggerTransformer();
@@ -28,7 +32,8 @@ export class SwaggerScanner {
 
   public scanApplication(
     app: INestApplication,
-    options: SwaggerDocumentOptions
+    options: SwaggerDocumentOptions,
+    config: Omit<OpenAPIObject, 'paths'>
   ): Omit<OpenAPIObject, 'openapi' | 'info'> {
     const {
       deepScanRoutes,
@@ -37,6 +42,7 @@ export class SwaggerScanner {
       ignoreGlobalPrefix = false,
       operationIdFactory
     } = options;
+    const schemas = this.explorer.getSchemas();
 
     const container = (app as any).container as NestContainer;
     const internalConfigRef = (app as any).config as ApplicationConfig;
@@ -48,6 +54,10 @@ export class SwaggerScanner {
     const globalPrefix = !ignoreGlobalPrefix
       ? stripLastSlash(getGlobalPrefix(app))
       : '';
+    const globalResponses = mapResponsesToSwaggerResponses(
+      config.components.responses as Record<string, ApiResponseOptions>,
+      schemas
+    );
 
     const denormalizedPaths = modules.map(
       ({ routes, metatype, relatedModules }) => {
@@ -71,6 +81,7 @@ export class SwaggerScanner {
                   modulePath,
                   globalPrefix,
                   internalConfigRef,
+                  transformResponsesToRefs(globalResponses),
                   operationIdFactory
                 )
               );
@@ -83,6 +94,7 @@ export class SwaggerScanner {
             modulePath,
             globalPrefix,
             internalConfigRef,
+            transformResponsesToRefs(globalResponses),
             operationIdFactory
           )
         );
@@ -90,12 +102,12 @@ export class SwaggerScanner {
       }
     );
 
-    const schemas = this.explorer.getSchemas();
     this.addExtraModels(schemas, extraModels);
 
     return {
       ...this.transformer.normalizePaths(flatten(denormalizedPaths)),
       components: {
+        responses: globalResponses as ResponsesObject,
         schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }
     };
@@ -106,6 +118,7 @@ export class SwaggerScanner {
     modulePath: string | undefined,
     globalPrefix: string | undefined,
     applicationConfig: ApplicationConfig,
+    globalResponses?: ResponsesObject,
     operationIdFactory?: (controllerKey: string, methodKey: string) => string
   ): ModuleRoute[] {
     const denormalizedArray = [...routes.values()].map((ctrl) =>
@@ -114,6 +127,7 @@ export class SwaggerScanner {
         applicationConfig,
         modulePath,
         globalPrefix,
+        globalResponses,
         operationIdFactory
       )
     );

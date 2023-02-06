@@ -25,7 +25,8 @@ import {
   ApiParam,
   ApiProduces,
   ApiProperty,
-  ApiQuery
+  ApiQuery,
+  ApiResponse
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
@@ -132,6 +133,7 @@ describe('SwaggerExplorer', () => {
         new ApplicationConfig(),
         'modulePath',
         'globalPrefix',
+        undefined,
         methodKeyOperationIdFactory
       );
       const operationPrefix = '';
@@ -149,6 +151,7 @@ describe('SwaggerExplorer', () => {
         new ApplicationConfig(),
         'modulePath',
         'globalPrefix',
+        undefined,
         controllerKeyMethodKeyOperationIdFactory
       );
       const operationPrefix = 'FooController.';
@@ -387,6 +390,7 @@ describe('SwaggerExplorer', () => {
         new ApplicationConfig(),
         undefined,
         'globalPrefix',
+        undefined,
         methodKeyOperationIdFactory
       );
       const prefix = '';
@@ -404,6 +408,7 @@ describe('SwaggerExplorer', () => {
         new ApplicationConfig(),
         undefined,
         'globalPrefix',
+        undefined,
         controllerKeyMethodKeyOperationIdFactory
       );
       const prefix = 'FooController.';
@@ -560,6 +565,7 @@ describe('SwaggerExplorer', () => {
         new ApplicationConfig(),
         'modulePath',
         undefined,
+        undefined,
         methodKeyOperationIdFactory
       );
       const operationPrefix = '';
@@ -576,6 +582,7 @@ describe('SwaggerExplorer', () => {
         } as InstanceWrapper<FooController>,
         new ApplicationConfig(),
         'modulePath',
+        undefined,
         undefined,
         controllerKeyMethodKeyOperationIdFactory
       );
@@ -1462,6 +1469,64 @@ describe('SwaggerExplorer', () => {
         expect(postRoutes[0].root.requestBody).toBeDefined();
         expect(postRoutes[1].root.requestBody).toBeDefined();
       });
+    });
+  });
+
+  describe('when global responses defined', () => {
+    @Controller('')
+    @ApiResponse({
+      status: 500,
+      description: '500 - controller error response'
+    })
+    @ApiResponse({
+      status: 502,
+      description: '502 - controller error response'
+    })
+    class FooController {
+      @Post('foos')
+      @ApiResponse({
+        status: 200,
+        description: '200 - method response'
+      })
+      @ApiResponse({
+        status: 500,
+        description: '500 - method error response'
+      })
+      get(): Promise<any> {
+        return Promise.resolve({});
+      }
+    }
+
+    it('should merge global responses with explicit ones', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+          new ApplicationConfig(),
+        'path',
+        '',
+        {
+          '500': { description: '500 - global error response' },
+          '502': { description: '502 - global error response' },
+          '504': { description: '504 - global error response' }
+        }
+      );
+
+      // GET
+      expect(
+        (routes[0].responses['200'] as ResponseObject).description
+      ).toEqual('200 - method response');
+      expect(
+        (routes[0].responses['500'] as ResponseObject).description
+      ).toEqual('500 - method error response');
+      expect(
+        (routes[0].responses['502'] as ResponseObject).description
+      ).toEqual('502 - controller error response');
+      expect(
+        (routes[0].responses['504'] as ResponseObject).description
+      ).toEqual('504 - global error response');
     });
   });
 });

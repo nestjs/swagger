@@ -64,6 +64,7 @@ The following methods have been added:
 - `addBasicAuth`
 - `addSecurity`
 - `addSecurityRequirements`
+- `addResponse`
 
 ## Support
 
