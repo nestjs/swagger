@@ -33,6 +33,7 @@ import { ModelPropertiesAccessor } from '../../lib/services/model-properties-acc
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
+import { GlobalParametersStorage } from '../../lib/storages/global-parameters.storage';
 
 describe('SwaggerExplorer', () => {
   const schemaObjectFactory = new SchemaObjectFactory(
@@ -1555,6 +1556,57 @@ describe('SwaggerExplorer', () => {
         expect(postRoutes[0].root.requestBody).toBeDefined();
         expect(postRoutes[1].root.requestBody).toBeDefined();
       });
+    });
+  });
+
+  describe('when global paramters are defined', () => {
+    class Foo {}
+
+    @Controller('')
+    class FooController {
+      @Get('foos')
+      find(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    it('should properly define global paramters', () => {
+      GlobalParametersStorage.add(
+        {
+          name: 'x-tenant-id',
+          in: 'header',
+          schema: { type: 'string' }
+        },
+        {
+          name: 'x-tenant-id-2',
+          in: 'header',
+          schema: { type: 'string' }
+        }
+      );
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          name: 'x-tenant-id',
+          in: 'header',
+          schema: { type: 'string' }
+        },
+        {
+          name: 'x-tenant-id-2',
+          in: 'header',
+          schema: { type: 'string' }
+        }
+      ]);
+      GlobalParametersStorage.clear();
     });
   });
 });

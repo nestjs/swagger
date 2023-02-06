@@ -4,11 +4,13 @@ import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {
   ExternalDocumentationObject,
+  ParameterObject,
   SecurityRequirementObject,
   SecuritySchemeObject,
   ServerVariableObject,
   TagObject
 } from './interfaces/open-api-spec.interface';
+import { GlobalParametersStorage } from './storages/global-parameters.storage';
 
 export class DocumentBuilder {
   private readonly logger = new Logger(DocumentBuilder.name);
@@ -88,6 +90,11 @@ export class DocumentBuilder {
       ...(this.document.components.securitySchemes || {}),
       [name]: options
     };
+    return this;
+  }
+
+  public addGlobalParameters(...parameters: ParameterObject[]): this {
+    GlobalParametersStorage.add(...parameters);
     return this;
   }
 
