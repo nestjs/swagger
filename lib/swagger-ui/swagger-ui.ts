@@ -1,4 +1,3 @@
-import * as swaggerUi from 'swagger-ui-dist';
 import { favIconHtml, htmlTemplateString, jsTemplateString } from './constants';
 import { OpenAPIObject, SwaggerCustomOptions } from '../interfaces';
 import { buildJSInitOptions } from './helpers';
@@ -21,10 +20,47 @@ export function buildSwaggerInitJS(
   return jsTemplateString.replace('<% swaggerOptions %>', jsInitOptions);
 }
 
+let swaggerAssetsAbsoluteFSPath: string | undefined;
+
 /**
- * Stores absolute path to swagger-ui assets
+ * Returns the absolute path to swagger-ui assets.
  */
-export const swaggerAssetsAbsoluteFSPath = swaggerUi.getAbsoluteFSPath();
+export function getSwaggerAssetsAbsoluteFSPath() {
+  if (!swaggerAssetsAbsoluteFSPath) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    swaggerAssetsAbsoluteFSPath = require('swagger-ui-dist/absolute-path.js')();
+  }
+
+  return swaggerAssetsAbsoluteFSPath;
+}
+
+function toExternalScriptTag(url: string) {
+  return `<script src='${url}'></script>`;
+}
+
+function toInlineScriptTag(jsCode: string) {
+  return `<script>${jsCode}</script>`;
+}
+
+function toExternalStylesheetTag(url: string) {
+  return `<link href='${url}' rel='stylesheet'>`;
+}
+
+function toTags(
+  customCode: string | string[] | undefined,
+  toScript: (url: string) => string
+) {
+  if (!customCode) {
+    return '';
+  }
+
+  if (typeof customCode === 'string') {
+    return toScript(customCode);
+  } else {
+    return customCode.map(toScript).join('\n');
+  }
+}
+
 /**
  * Used to build swagger-ui custom html
  */
@@ -36,6 +72,7 @@ export function buildSwaggerHTML(
   const {
     customCss = '',
     customJs = '',
+    customJsStr = '',
     customfavIcon = false,
     customSiteTitle = 'Swagger UI',
     customCssUrl = '',
@@ -43,7 +80,7 @@ export function buildSwaggerHTML(
   } = customOptions;
 
   const favIconString = customfavIcon
-    ? `<link rel="icon" href="${customfavIcon}" />`
+    ? `<link rel='icon' href='${customfavIcon}' />`
     : favIconHtml;
 
   const explorerCss = explorer
@@ -54,13 +91,11 @@ export function buildSwaggerHTML(
     .replace('<% explorerCss %>', explorerCss)
     .replace('<% favIconString %>', favIconString)
     .replace(/<% baseUrl %>/g, baseUrl)
-    .replace(
-      '<% customJs %>',
-      customJs ? `<script src="${customJs}"></script>` : ''
-    )
+    .replace('<% customJs %>', toTags(customJs, toExternalScriptTag))
+    .replace('<% customJsStr %>', toTags(customJsStr, toInlineScriptTag))
     .replace(
       '<% customCssUrl %>',
-      customCssUrl ? `<link href="${customCssUrl}" rel="stylesheet">` : ''
+      toTags(customCssUrl, toExternalStylesheetTag)
     )
     .replace('<% title %>', customSiteTitle);
 }

@@ -74,6 +74,7 @@ export const htmlTemplateString = `
 <script src="<% baseUrl %>swagger-ui-standalone-preset.js"> </script>
 <script src="<% baseUrl %>swagger-ui-init.js"> </script>
 <% customJs %>
+<% customJsStr %>
 <% customCssUrl %>
 <style>
   <% customCss %>
@@ -125,7 +126,7 @@ window.onload = function() {
   if (customOptions.authAction) {
     ui.authActions.authorize(customOptions.authAction)
   }
-
+  
   window.ui = ui
 }
 `;

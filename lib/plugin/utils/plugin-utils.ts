@@ -6,20 +6,21 @@ import {
   getText,
   getTypeArguments,
   isArray,
+  isBigInt,
   isBoolean,
   isEnum,
   isInterface,
   isNumber,
-  isBigInt,
   isString,
   isStringLiteral
 } from './ast-utils';
 
 export function getDecoratorOrUndefinedByNames(
   names: string[],
-  decorators: ts.NodeArray<ts.Decorator>
+  decorators: ts.NodeArray<ts.Decorator>,
+  factory: ts.NodeFactory
 ): ts.Decorator | undefined {
-  return (decorators || ts.createNodeArray()).find((item) => {
+  return (decorators || factory.createNodeArray()).find((item) => {
     try {
       const decoratorName = getDecoratorName(item);
       return names.includes(decoratorName);

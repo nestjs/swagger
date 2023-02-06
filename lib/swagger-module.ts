@@ -12,7 +12,7 @@ import { SwaggerScanner } from './swagger-scanner';
 import {
   buildSwaggerHTML,
   buildSwaggerInitJS,
-  swaggerAssetsAbsoluteFSPath
+  getSwaggerAssetsAbsoluteFSPath
 } from './swagger-ui';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
@@ -45,6 +45,7 @@ export class SwaggerModule {
 
   private static serveStatic(finalPath: string, app: INestApplication) {
     const httpAdapter = app.getHttpAdapter();
+    const swaggerAssetsAbsoluteFSPath = getSwaggerAssetsAbsoluteFSPath();
 
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
       (app as NestFastifyApplication).useStaticAssets({
