@@ -19,7 +19,7 @@ export interface ApiResponseMetadata
 export interface ApiResponseSchemaHost
   extends Omit<ResponseObject, 'description'> {
   schema: SchemaObject & Partial<ReferenceObject>;
-  status?: number;
+  status?: number | 'default' | '1XX' | '2XX' | '3XX' | '4XX' | '5XX';
   description?: string;
 }
 
