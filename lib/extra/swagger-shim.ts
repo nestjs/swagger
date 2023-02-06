@@ -165,5 +165,5 @@ export function PickType() {
   return () => {};
 }
 export function getSchemaPath() {
-  return () => ''
+  return () => '';
 }

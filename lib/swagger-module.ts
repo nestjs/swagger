@@ -18,6 +18,7 @@ import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { validatePath } from './utils/validate-path.util';
 import { normalizeRelPath } from './utils/normalize-rel-path';
+import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
 
 export class SwaggerModule {
   public static createDocument(
@@ -65,9 +66,13 @@ export class SwaggerModule {
     urlLastSubdirectory: string,
     httpAdapter: HttpServer,
     swaggerInitJS: string,
-    yamlDocument: string,
-    jsonDocument: string,
-    html: string
+    options: {
+      html: string;
+      yamlDocument: string;
+      jsonDocument: string;
+      jsonDocumentUrl: string;
+      yamlDocumentUrl: string;
+    }
   ) {
     httpAdapter.get(
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
@@ -100,14 +105,14 @@ export class SwaggerModule {
 
     httpAdapter.get(finalPath, (req, res) => {
       res.type('text/html');
-      res.send(html);
+      res.send(options.html);
     });
 
     // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
     try {
       httpAdapter.get(normalizeRelPath(`${finalPath}/`), (req, res) => {
         res.type('text/html');
-        res.send(html);
+        res.send(options.html);
       });
     } catch (err) {
       /**
@@ -118,14 +123,14 @@ export class SwaggerModule {
        */
     }
 
-    httpAdapter.get(normalizeRelPath(`${finalPath}-json`), (req, res) => {
+    httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
       res.type('application/json');
-      res.send(jsonDocument);
+      res.send(options.jsonDocument);
     });
 
-    httpAdapter.get(normalizeRelPath(`${finalPath}-yaml`), (req, res) => {
+    httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
       res.type('text/yaml');
-      res.send(yamlDocument);
+      res.send(options.yamlDocument);
     });
   }
 
@@ -137,7 +142,7 @@ export class SwaggerModule {
   ) {
     const globalPrefix = getGlobalPrefix(app);
     const finalPath = validatePath(
-      options?.useGlobalPrefix && globalPrefix && !globalPrefix.match(/^(\/?)$/)
+      options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
         ? `${globalPrefix}${validatePath(path)}`
         : path
     );
@@ -145,6 +150,19 @@ export class SwaggerModule {
 
     const yamlDocument = jsyaml.dump(document, { skipInvalid: true });
     const jsonDocument = JSON.stringify(document);
+
+    const validatedGlobalPrefix =
+      options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
+        ? validatePath(globalPrefix)
+        : '';
+
+    const finalJSONDocumentPath = options?.jsonDocumentUrl
+      ? `${validatedGlobalPrefix}${validatePath(options.jsonDocumentUrl)}`
+      : `${finalPath}-json`;
+
+    const finalYAMLDocumentPath = options?.yamlDocumentUrl
+      ? `${validatedGlobalPrefix}${validatePath(options.yamlDocumentUrl)}`
+      : `${finalPath}-yaml`;
 
     const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
 
@@ -157,9 +175,13 @@ export class SwaggerModule {
       urlLastSubdirectory,
       httpAdapter,
       swaggerInitJS,
-      yamlDocument,
-      jsonDocument,
-      html
+      {
+        html,
+        yamlDocument,
+        jsonDocument,
+        jsonDocumentUrl: finalJSONDocumentPath,
+        yamlDocumentUrl: finalYAMLDocumentPath
+      }
     );
 
     SwaggerModule.serveStatic(finalPath, app);

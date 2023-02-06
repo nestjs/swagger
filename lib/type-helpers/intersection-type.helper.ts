@@ -13,7 +13,7 @@ import { clonePluginMetadataFactory } from './mapped-types.utils';
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-  k: infer I,
+  k: infer I
 ) => void
   ? I
   : never;
@@ -39,7 +39,7 @@ export function IntersectionType<T extends Type[]>(...classRefs: T) {
     const fields = modelPropertiesAccessor.getModelProperties(
       classRef.prototype
     );
-  
+
     inheritValidationMetadata(classRef, IntersectionClassType);
     inheritTransformationMetadata(classRef, IntersectionClassType);
 
@@ -57,12 +57,11 @@ export function IntersectionType<T extends Type[]>(...classRefs: T) {
       const decoratorFactory = ApiProperty(metadata);
       decoratorFactory(IntersectionClassType.prototype, propertyKey);
     });
-  
   });
 
   const intersectedNames = classRefs.reduce((prev, ref) => prev + ref.name, '');
   Object.defineProperty(IntersectionClassType, 'name', {
-    value: `Intersection${intersectedNames}`,
+    value: `Intersection${intersectedNames}`
   });
   return IntersectionClassType as Intersection<T>;
 }

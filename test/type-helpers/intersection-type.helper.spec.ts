@@ -42,7 +42,11 @@ describe('IntersectionType', () => {
     }
   }
 
-  class UpdateUserDto extends IntersectionType(UserDto, CreateUserDto, AuthorityDto) {}
+  class UpdateUserDto extends IntersectionType(
+    UserDto,
+    CreateUserDto,
+    AuthorityDto
+  ) {}
 
   let modelPropertiesAccessor: ModelPropertiesAccessor;
 
@@ -52,7 +56,7 @@ describe('IntersectionType', () => {
 
   describe('OpenAPI metadata', () => {
     it('should return combined class', () => {
-      const prototype = (UpdateUserDto.prototype as any) as Type<unknown>;
+      const prototype = UpdateUserDto.prototype as any as Type<unknown>;
 
       modelPropertiesAccessor.applyMetadataFactory(prototype);
       expect(modelPropertiesAccessor.getModelProperties(prototype)).toEqual([

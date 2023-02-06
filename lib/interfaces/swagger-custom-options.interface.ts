@@ -14,4 +14,6 @@ export interface SwaggerCustomOptions {
   validatorUrl?: string;
   url?: string;
   urls?: Record<'url' | 'name', string>[];
+  jsonDocumentUrl?: string;
+  yamlDocumentUrl?: string;
 }
