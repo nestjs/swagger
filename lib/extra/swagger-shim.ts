@@ -164,3 +164,6 @@ export function PartialType() {
 export function PickType() {
   return () => {};
 }
+export function getSchemaPath() {
+  return () => '';
+}

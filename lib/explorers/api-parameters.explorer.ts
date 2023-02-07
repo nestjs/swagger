@@ -10,6 +10,7 @@ import {
 import { ParametersMetadataMapper } from '../services/parameters-metadata-mapper';
 import { SchemaObjectFactory } from '../services/schema-object-factory';
 import { SwaggerTypesMapper } from '../services/swagger-types-mapper';
+import { GlobalParametersStorage } from '../storages/global-parameters.storage';
 
 const parameterMetadataAccessor = new ParameterMetadataAccessor();
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
@@ -32,13 +33,15 @@ export const exploreApiParametersMetadata = (
     DECORATORS.API_PARAMETERS,
     method
   );
+  const globalParameters = GlobalParametersStorage.getAll();
   const parametersMetadata = parameterMetadataAccessor.explore(
     instance,
     prototype,
     method
   );
-  const noExplicitMetadata = isNil(explicitParameters);
-  if (noExplicitMetadata && isNil(parametersMetadata)) {
+  const noExplicitAndGlobalMetadata =
+    isNil(explicitParameters) && isNil(globalParameters);
+  if (noExplicitAndGlobalMetadata && isNil(parametersMetadata)) {
     return undefined;
   }
   const reflectedParametersAsProperties =
@@ -47,7 +50,7 @@ export const exploreApiParametersMetadata = (
     );
 
   let properties = reflectedParametersAsProperties;
-  if (!noExplicitMetadata) {
+  if (!noExplicitAndGlobalMetadata) {
     const mergeImplicitAndExplicit = (item: ParamWithTypeMetadata) =>
       assign(item, find(explicitParameters, ['name', item.name]));
 
@@ -56,9 +59,14 @@ export const exploreApiParametersMetadata = (
       explicitParameters
     );
     properties = map(properties, mergeImplicitAndExplicit);
-    properties = unionWith(properties, explicitParameters, (arrVal, othVal) => {
-      return arrVal.name === othVal.name && arrVal.in === othVal.in;
-    });
+    properties = unionWith(
+      properties,
+      explicitParameters,
+      globalParameters,
+      (arrVal, othVal) => {
+        return arrVal.name === othVal.name && arrVal.in === othVal.in;
+      }
+    );
   }
 
   const paramsWithDefinitions = schemaObjectFactory.createFromModel(

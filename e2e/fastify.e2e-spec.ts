@@ -32,7 +32,12 @@ describe('Fastify Swagger', () => {
       .addApiKey({ type: 'apiKey' }, 'key2')
       .addCookieAuth()
       .addSecurityRequirements('bearer')
-      .addSecurityRequirements({ basic: [], cookie: [] });
+      .addSecurityRequirements({ basic: [], cookie: [] })
+      .addGlobalParameters({
+        name: 'x-tenant-id',
+        in: 'header',
+        schema: { type: 'string' }
+      });
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {
@@ -97,6 +102,95 @@ describe('Fastify Swagger', () => {
 
       expect(response.status).toEqual(200);
       expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('custom documents endpoints', () => {
+    const JSON_CUSTOM_URL = '/apidoc-json';
+    const YAML_CUSTOM_URL = '/apidoc-yaml';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup('api', app, swaggerDocument, {
+        jsonDocumentUrl: JSON_CUSTOM_URL,
+        yamlDocumentUrl: YAML_CUSTOM_URL
+      });
+
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('json document should be server in the custom url', async () => {
+      const response = await request(app.getHttpServer()).get(JSON_CUSTOM_URL);
+
+      expect(response.status).toEqual(200);
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
+
+    it('yaml document should be server in the custom url', async () => {
+      const response = await request(app.getHttpServer()).get(YAML_CUSTOM_URL);
+
+      expect(response.status).toEqual(200);
+      expect(response.text.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('custom documents endpoints with global prefix', () => {
+    let appGlobalPrefix: NestFastifyApplication;
+
+    const GLOBAL_PREFIX = '/v1';
+    const JSON_CUSTOM_URL = '/apidoc-json';
+    const YAML_CUSTOM_URL = '/apidoc-yaml';
+
+    beforeEach(async () => {
+      appGlobalPrefix = await NestFactory.create<NestFastifyApplication>(
+        ApplicationModule,
+        new FastifyAdapter(),
+        { logger: false }
+      );
+      appGlobalPrefix.setGlobalPrefix(GLOBAL_PREFIX);
+
+      const swaggerDocument = SwaggerModule.createDocument(
+        appGlobalPrefix,
+        builder.build()
+      );
+      SwaggerModule.setup('api', appGlobalPrefix, swaggerDocument, {
+        useGlobalPrefix: true,
+        jsonDocumentUrl: JSON_CUSTOM_URL,
+        yamlDocumentUrl: YAML_CUSTOM_URL
+      });
+
+      await appGlobalPrefix.init();
+      await appGlobalPrefix.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await appGlobalPrefix.close();
+    });
+
+    it('json document should be server in the custom url', async () => {
+      const response = await request(appGlobalPrefix.getHttpServer()).get(
+        `${GLOBAL_PREFIX}${JSON_CUSTOM_URL}`
+      );
+
+      expect(response.status).toEqual(200);
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
+
+    it('yaml document should be server in the custom url', async () => {
+      const response = await request(appGlobalPrefix.getHttpServer()).get(
+        `${GLOBAL_PREFIX}${YAML_CUSTOM_URL}`
+      );
+
+      expect(response.status).toEqual(200);
+      expect(response.text.length).toBeGreaterThan(0);
     });
   });
 });

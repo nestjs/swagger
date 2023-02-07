@@ -56,6 +56,10 @@ export class AppController {
   @Get()
   @HttpCode(HttpStatus.NO_CONTENT)
   findAll(): Promise<Cat[]> {}
+  
+  @Get()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  noComment() {}
 }`;
 
 export const appControllerWithoutModifiersTextTranspiled = `\"use strict\";
@@ -102,6 +106,7 @@ let AppController = class AppController {
      * @memberof AppController
      */
     findAll() { }
+    noComment() { }
 };
 __decorate([
     openapi.ApiOperation({ summary: "create a Cat" }),
@@ -129,6 +134,11 @@ __decorate([
     HttpCode(common_1.HttpStatus.NO_CONTENT),
     openapi.ApiResponse({ status: common_1.HttpStatus.NO_CONTENT, type: [Cat] })
 ], AppController.prototype, \"findAll\", null);
+__decorate([
+    Get(),
+    HttpCode(common_1.HttpStatus.NO_CONTENT),
+    openapi.ApiResponse({ status: common_1.HttpStatus.NO_CONTENT })
+], AppController.prototype, \"noComment\", null);
 AppController = __decorate([
     (0, common_1.Controller)('cats')
 ], AppController);
