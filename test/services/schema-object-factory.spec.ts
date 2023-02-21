@@ -25,6 +25,13 @@ describe('SchemaObjectFactory', () => {
       User = 'user'
     }
 
+    enum Group {
+      User = 'user',
+      Guest = 'guest',
+      Family = 'family',
+      Neighboard = 'neighboard'
+    }
+
     class CreatePersonDto {
       @ApiProperty()
       name: string;

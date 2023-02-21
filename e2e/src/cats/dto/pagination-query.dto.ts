@@ -38,7 +38,14 @@ export class PaginationQuery {
     enumName: 'LettersEnum',
     isArray: true
   })
-  enumArr: LettersEnum;
+  enumArr: LettersEnum[];
+
+  @ApiProperty({
+    enum: LettersEnum,
+    enumName: 'Letter',
+    isArray: true,
+  })
+  letters: LettersEnum[];
 
   @ApiProperty()
   beforeDate: Date;

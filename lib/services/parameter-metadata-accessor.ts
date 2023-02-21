@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common/constants';
 import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum';
 import { isEmpty, mapValues, omitBy } from 'lodash';
-import { ParameterLocation } from '../interfaces/open-api-spec.interface';
+import { ParameterLocation, SchemaObject } from '../interfaces/open-api-spec.interface';
 import { reverseObjectKeys } from '../utils/reverse-object-keys.util';
 
 interface ParamMetadata {
@@ -19,6 +19,7 @@ export interface ParamWithTypeMetadata {
   type?: Type<unknown>;
   in?: ParameterLocation | 'body' | typeof PARAM_TOKEN_PLACEHOLDER;
   isArray?: boolean;
+  items?: SchemaObject;
   required: true;
   enum?: unknown[];
   enumName?: string;

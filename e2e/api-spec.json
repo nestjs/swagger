@@ -336,6 +336,17 @@
             }
           },
           {
+            "name": "letters",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Letter"
+              }
+            }
+          },
+          {
             "name": "beforeDate",
             "required": true,
             "in": "query",
@@ -510,6 +521,17 @@
               "type": "array",
               "items": {
                 "$ref": "#/components/schemas/LettersEnum"
+              }
+            }
+          },
+          {
+            "name": "letters",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Letter"
               }
             }
           },
@@ -1114,6 +1136,14 @@
           "_options",
           "enum",
           "enumArr"
+        ]
+      },
+      "Letter": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C"
         ]
       }
     }
