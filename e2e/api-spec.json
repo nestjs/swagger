@@ -4,7 +4,15 @@
     "/api/v1": {
       "get": {
         "operationId": "AppController_getHello",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -15,7 +23,15 @@
     "/api/v2": {
       "get": {
         "operationId": "AppController_getHello",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -26,7 +42,15 @@
     "/api/v1/alias1": {
       "get": {
         "operationId": "AppController_withAliases",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -37,7 +61,15 @@
     "/api/v1/alias2": {
       "get": {
         "operationId": "AppController_withAliases",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -48,7 +80,15 @@
     "/api/v2/alias1": {
       "get": {
         "operationId": "AppController_withAliases",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -59,7 +99,15 @@
     "/api/v2/alias2": {
       "get": {
         "operationId": "AppController_withAliases",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -70,7 +118,15 @@
     "/api/v1/express:colon:another/{prop}": {
       "get": {
         "operationId": "AppController_withColonExpress",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -81,7 +137,15 @@
     "/api/v2/express:colon:another/{prop}": {
       "get": {
         "operationId": "AppController_withColonExpress",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -92,7 +156,15 @@
     "/api/v1/fastify:{colon}:{another}/{prop}": {
       "get": {
         "operationId": "AppController_withColonFastify",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -103,7 +175,15 @@
     "/api/v2/fastify:{colon}:{another}/{prop}": {
       "get": {
         "operationId": "AppController_withColonFastify",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -126,6 +206,13 @@
             "required": false,
             "schema": {
               "default": "test",
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
               "type": "string"
             }
           }
@@ -265,6 +352,13 @@
               "additionalProperties": true,
               "type": "object"
             }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -310,6 +404,13 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -429,6 +530,13 @@
               "additionalProperties": true,
               "type": "object"
             }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -466,6 +574,13 @@
               "default": "test",
               "type": "string"
             }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -499,6 +614,13 @@
             "required": false,
             "schema": {
               "default": "test",
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
               "type": "string"
             }
           }
@@ -550,6 +672,13 @@
             "required": false,
             "schema": {
               "default": "test",
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
               "type": "string"
             }
           }
@@ -609,6 +738,13 @@
               "default": "test",
               "type": "string"
             }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -659,6 +795,13 @@
                 "C"
               ]
             }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -704,6 +847,13 @@
             "schema": {
               "minLength": 10,
               "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
               "type": "string"
             }
           }

@@ -45,7 +45,8 @@ export class CreateCatDto2 {
 }
 `;
 
-export const createCatDtoTextAltTranspiled = `import * as package from 'class-validator';
+export const createCatDtoTextAltTranspiled = `import * as openapi from "@nestjs/swagger";
+import * as package from 'class-validator';
 var Status;
 (function (Status) {
     Status[Status["ENABLED"] = 0] = "ENABLED";

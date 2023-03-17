@@ -1,7 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
-import type { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
 import * as SwaggerParser from 'swagger-parser';
 import {
@@ -13,6 +12,7 @@ import {
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
+import { OpenAPIV3 } from 'openapi-types';
 
 describe('Validate OpenAPI schema', () => {
   let app: INestApplication;
@@ -40,6 +40,11 @@ describe('Validate OpenAPI schema', () => {
       .addCookieAuth()
       .addSecurityRequirements('bearer')
       .addSecurityRequirements({ basic: [], cookie: [] })
+      .addGlobalParameters({
+        name: 'x-tenant-id',
+        in: 'header',
+        schema: { type: 'string' }
+      })
       .build();
   });
 
@@ -73,7 +78,9 @@ describe('Validate OpenAPI schema', () => {
 
   it('should fix colons in url', async () => {
     const document = SwaggerModule.createDocument(app, options);
-    expect(document.paths['/api/v1/express:colon:another/{prop}']).toBeDefined();
+    expect(
+      document.paths['/api/v1/express:colon:another/{prop}']
+    ).toBeDefined();
   });
 
   it('should merge custom components passed via config', async () => {

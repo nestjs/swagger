@@ -7,11 +7,13 @@ import {
   ExternalDocumentationObject,
   HttpSchemeObject,
   OAuth2SchemeObject,
+  ParameterObject,
   SecurityRequirementObject,
   SecuritySchemeObject,
   ServerVariableObject,
   TagObject
 } from './interfaces/open-api-spec.interface';
+import { GlobalParametersStorage } from './storages/global-parameters.storage';
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 
@@ -93,6 +95,11 @@ export class DocumentBuilder {
       ...(this.document.components.securitySchemes || {}),
       [name]: options
     };
+    return this;
+  }
+
+  public addGlobalParameters(...parameters: ParameterObject[]): this {
+    GlobalParametersStorage.add(...parameters);
     return this;
   }
 
