@@ -53,11 +53,20 @@ export class SwaggerModule {
         prefix: finalPath,
         decorateReply: false
       });
-    } else {
+      return;
+    }
+
+    if (httpAdapter && httpAdapter.getType() === 'express') {
       (app as NestExpressApplication).useStaticAssets(
         swaggerAssetsAbsoluteFSPath,
         { prefix: finalPath }
       );
+      return;
+    }
+
+    if (httpAdapter && httpAdapter.getType() === 'koa') {
+      (app as any).useStaticAssets(swaggerAssetsAbsoluteFSPath);
+      return;
     }
   }
 
@@ -77,8 +86,8 @@ export class SwaggerModule {
     httpAdapter.get(
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
       (req, res) => {
-        res.type('application/javascript');
-        res.send(swaggerInitJS);
+        httpAdapter.setHeader(res, 'Content-Type', 'application/javascript');
+        httpAdapter.reply(res, swaggerInitJS);
       }
     );
 
@@ -92,8 +101,8 @@ export class SwaggerModule {
           `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
         ),
         (req, res) => {
-          res.type('application/javascript');
-          res.send(swaggerInitJS);
+          httpAdapter.setHeader(res, 'Content-Type', 'application/javascript');
+          httpAdapter.reply(res, swaggerInitJS);
         }
       );
     } catch (err) {
@@ -104,15 +113,15 @@ export class SwaggerModule {
     }
 
     httpAdapter.get(finalPath, (req, res) => {
-      res.type('text/html');
-      res.send(options.html);
+      httpAdapter.setHeader(res, 'Content-Type', 'text/html');
+      httpAdapter.reply(res, options.html);
     });
 
     // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
     try {
       httpAdapter.get(normalizeRelPath(`${finalPath}/`), (req, res) => {
-        res.type('text/html');
-        res.send(options.html);
+        httpAdapter.setHeader(res, 'Content-Type', 'text/html');
+        httpAdapter.reply(res, options.html);
       });
     } catch (err) {
       /**
@@ -124,13 +133,13 @@ export class SwaggerModule {
     }
 
     httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
-      res.type('application/json');
-      res.send(options.jsonDocument);
+      httpAdapter.setHeader(res, 'Content-Type', 'application/json');
+      httpAdapter.reply(res, options.jsonDocument);
     });
 
     httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
-      res.type('text/yaml');
-      res.send(options.yamlDocument);
+      httpAdapter.setHeader(res, 'Content-Type', 'text/yaml');
+      httpAdapter.reply(res, options.yamlDocument);
     });
   }
 
