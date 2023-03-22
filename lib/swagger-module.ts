@@ -87,7 +87,7 @@ export class SwaggerModule {
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
       (req, res) => {
         httpAdapter.setHeader(res, 'Content-Type', 'application/javascript');
-        httpAdapter.reply(res, swaggerInitJS);
+        httpAdapter.reply(res, swaggerInitJS, 200);
       }
     );
 
@@ -102,7 +102,7 @@ export class SwaggerModule {
         ),
         (req, res) => {
           httpAdapter.setHeader(res, 'Content-Type', 'application/javascript');
-          httpAdapter.reply(res, swaggerInitJS);
+          httpAdapter.reply(res, swaggerInitJS, 200);
         }
       );
     } catch (err) {
@@ -114,14 +114,14 @@ export class SwaggerModule {
 
     httpAdapter.get(finalPath, (req, res) => {
       httpAdapter.setHeader(res, 'Content-Type', 'text/html');
-      httpAdapter.reply(res, options.html);
+      httpAdapter.reply(res, options.html, 200);
     });
 
     // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
     try {
       httpAdapter.get(normalizeRelPath(`${finalPath}/`), (req, res) => {
         httpAdapter.setHeader(res, 'Content-Type', 'text/html');
-        httpAdapter.reply(res, options.html);
+        httpAdapter.reply(res, options.html, 200);
       });
     } catch (err) {
       /**
@@ -134,12 +134,12 @@ export class SwaggerModule {
 
     httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
       httpAdapter.setHeader(res, 'Content-Type', 'application/json');
-      httpAdapter.reply(res, options.jsonDocument);
+      httpAdapter.reply(res, options.jsonDocument, 200);
     });
 
     httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
       httpAdapter.setHeader(res, 'Content-Type', 'text/yaml');
-      httpAdapter.reply(res, options.yamlDocument);
+      httpAdapter.reply(res, options.yamlDocument, 200);
     });
   }
 
