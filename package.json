@@ -60,7 +60,7 @@
     "supertest": "6.3.3",
     "swagger-parser": "10.0.3",
     "ts-jest": "29.0.5",
-    "typescript": "4.9.5"
+    "typescript": "5.0.3"
   },
   "peerDependencies": {
     "@fastify/static": "^6.0.0",
