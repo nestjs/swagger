@@ -29,7 +29,7 @@ jobs:
   build:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:19.5
+      - image: cimg/node:19.8
     steps:
       - checkout
       - run:
@@ -51,7 +51,7 @@ jobs:
   unit_tests:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:19.5
+      - image: cimg/node:19.8
     steps:
       - checkout
       - *restore-cache
@@ -62,7 +62,7 @@ jobs:
   e2e_tests:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:19.5
+      - image: cimg/node:19.8
     steps:
       - checkout
       - *restore-cache
