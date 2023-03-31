@@ -9,7 +9,7 @@ export class AbstractFileVisitor {
     factory: ts.NodeFactory | undefined,
     program: ts.Program
   ): ts.SourceFile {
-    if (major >= 4 && minor < 2) {
+    if (major <= 4 && minor < 2) {
       throw new Error('Nest CLI plugin does not support TypeScript < v4.2');
     }
     const importEqualsDeclaration: ts.ImportDeclaration =
