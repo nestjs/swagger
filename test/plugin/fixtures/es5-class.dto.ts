@@ -22,7 +22,7 @@ exports.CreateCatDtoEs5 = void 0;
 var openapi = require(\"@nestjs/swagger\");
 var status_1 = require(\"./status\");
 var constants_1 = require(\"./constants\");
-var CreateCatDtoEs5 = /** @class */ (function () {
+var CreateCatDtoEs5 = exports.CreateCatDtoEs5 = /** @class */ (function () {
     function CreateCatDtoEs5() {
         // field name
         this.name = constants_1.CONSTANT_STRING;
@@ -40,5 +40,4 @@ var CreateCatDtoEs5 = /** @class */ (function () {
     ], CreateCatDtoEs5.prototype, \"age\", void 0);
     return CreateCatDtoEs5;
 }());
-exports.CreateCatDtoEs5 = CreateCatDtoEs5;
 `;

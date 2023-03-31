@@ -49,7 +49,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           // Support both >= v4.8 and v4.7 and lower
           const decorators = (ts as any).canHaveDecorators
             ? (ts as any).getDecorators(node)
-            : node.decorators;
+            : (node as any).decorators;
 
           const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
             [ApiHideProperty.name],
@@ -130,7 +130,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             true
           )
         )
-      : factory.createMethodDeclaration(
+      : (factory as any).createMethodDeclaration(
           undefined,
           [factory.createModifier(ts.SyntaxKind.StaticKeyword)],
           undefined,
@@ -154,9 +154,9 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           node.heritageClauses,
           [...node.members, method]
         )
-      : factory.updateClassDeclaration(
+      : (factory as any).updateClassDeclaration(
           node,
-          node.decorators,
+          (node as any).decorators,
           node.modifiers as any,
           node.name,
           node.typeParameters,
@@ -418,7 +418,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }
-    let initializer = node.initializer;
+    let initializer = (node as ts.PropertyDeclaration).initializer;
     if (!initializer) {
       return undefined;
     }
@@ -436,7 +436,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     // Support both >= v4.8 and v4.7 and lower
     const decorators = (ts as any).canHaveDecorators
       ? (ts as any).getDecorators(node)
-      : node.decorators;
+      : (node as any).decorators;
 
     this.addPropertyByValidationDecorator(
       factory,

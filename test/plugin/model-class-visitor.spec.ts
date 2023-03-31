@@ -37,6 +37,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'create-cat.dto.ts';
@@ -67,6 +68,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'create-cat.dto.ts';
@@ -88,6 +90,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'create-cat-alt2.dto.ts';
@@ -114,6 +117,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES5,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'es5-class.dto.ts';
@@ -140,6 +144,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'nullable.dto.ts';
@@ -166,6 +171,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES5,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'changed-class.dto.ts';
@@ -206,6 +212,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'string-literal.dto.ts';

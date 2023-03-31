@@ -19,7 +19,8 @@ describe('Controller methods', () => {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ESNext,
       newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true
+      noEmitHelpers: true,
+      experimentalDecorators: true
     };
     const filename = 'app.controller.ts';
     const fakeProgram = ts.createProgram([filename], options);
@@ -44,7 +45,8 @@ describe('Controller methods', () => {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ESNext,
       newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true
+      noEmitHelpers: true,
+      experimentalDecorators: true
     };
     const filename = 'app.controller.ts';
     const fakeProgram = ts.createProgram([filename], options);
@@ -69,7 +71,8 @@ describe('Controller methods', () => {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ESNext,
       newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true
+      noEmitHelpers: true,
+      experimentalDecorators: true
     };
     const filename = 'app.controller.ts';
     const fakeProgram = ts.createProgram([filename], options);
