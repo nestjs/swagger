@@ -3,7 +3,6 @@ import {
   inheritTransformationMetadata,
   inheritValidationMetadata,
   inheritPropertyInitializers,
-  MappedType
 } from '@nestjs/mapped-types';
 import { DECORATORS } from '../constants';
 import { ApiProperty } from '../decorators';
@@ -22,7 +21,7 @@ type ClassRefsToConstructors<T extends Type[]> = {
   [U in keyof T]: T[U] extends Type<infer V> ? V : never;
 };
 
-type Intersection<T extends Type[]> = MappedType<
+type Intersection<T extends Type[]> = Type<
   UnionToIntersection<ClassRefsToConstructors<T>[number]>
 >;
 
