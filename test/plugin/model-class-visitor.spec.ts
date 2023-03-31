@@ -19,7 +19,8 @@ import {
 } from './fixtures/create-cat.dto';
 import {
   es5CreateCatDtoText,
-  es5CreateCatDtoTextTranspiled
+  es5CreateCatDtoTextTranspiled,
+  es5CreateCatDtoTextTranspiledV5
 } from './fixtures/es5-class.dto';
 import {
   nullableDtoText,
@@ -135,7 +136,14 @@ describe('API model properties', () => {
         ]
       }
     });
-    expect(result.outputText).toEqual(es5CreateCatDtoTextTranspiled);
+
+    const [tsVersionMajor] = ts.versionMajorMinor?.split('.').map((x) => +x);
+
+    if (tsVersionMajor === 5) {
+      expect(result.outputText).toEqual(es5CreateCatDtoTextTranspiledV5);
+    } else {
+      expect(result.outputText).toEqual(es5CreateCatDtoTextTranspiled);
+    }
   });
 
   it('should support & understand nullable type unions', () => {
