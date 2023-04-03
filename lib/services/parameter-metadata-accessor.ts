@@ -38,7 +38,7 @@ export class ParameterMetadataAccessor {
       PARAMTYPES_METADATA,
       instance,
       method.name
-    );
+    ) ?? [];
     const routeArgsMetadata: ParamsMetadata =
       Reflect.getMetadata(
         ROUTE_ARGS_METADATA,
