@@ -27,6 +27,7 @@ describe('Fastify Swagger', () => {
       .addBasicAuth()
       .addBearerAuth()
       .addOAuth2()
+      .addOpenIdConnect({ openIdConnectUrl: 'https://oauth.example.com/.well-known/openid-configuration' })
       .addApiKey()
       .addApiKey({ type: 'apiKey' }, 'key1')
       .addApiKey({ type: 'apiKey' }, 'key2')
