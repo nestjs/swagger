@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
+import { isFunction } from '@nestjs/common/utils/shared.utils';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import * as jsyaml from 'js-yaml';
@@ -65,21 +66,39 @@ export class SwaggerModule {
     finalPath: string,
     urlLastSubdirectory: string,
     httpAdapter: HttpServer,
-    swaggerInitJS: string,
+    documentOrFactory: OpenAPIObject | (() => OpenAPIObject),
     options: {
-      html: string;
-      yamlDocument: string;
-      jsonDocument: string;
       jsonDocumentUrl: string;
       yamlDocumentUrl: string;
-    }
+      swaggerOptions: SwaggerCustomOptions
+    },
   ) {
+    let document: OpenAPIObject;
+
+    const lazyBuildDocument = () => {
+      return typeof documentOrFactory === 'function' ? documentOrFactory() : documentOrFactory;
+    }
+
+    const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
+
+    let html: string;
+    let swaggerInitJS: string;
+
     httpAdapter.get(
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
       (req, res) => {
         res.type('application/javascript');
+
+        if (!document) {
+          document = lazyBuildDocument();
+        }
+
+        if (!swaggerInitJS) {
+          swaggerInitJS = buildSwaggerInitJS(document, options);
+        }
+
         res.send(swaggerInitJS);
-      }
+      },
     );
 
     /**
@@ -89,12 +108,21 @@ export class SwaggerModule {
     try {
       httpAdapter.get(
         normalizeRelPath(
-          `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
+          `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`,
         ),
         (req, res) => {
           res.type('application/javascript');
+
+          if (!document) {
+            document = lazyBuildDocument();
+          }
+
+          if (!swaggerInitJS) {
+            swaggerInitJS = buildSwaggerInitJS(document, options);
+          }
+
           res.send(swaggerInitJS);
-        }
+        },
       );
     } catch (err) {
       /**
@@ -105,14 +133,32 @@ export class SwaggerModule {
 
     httpAdapter.get(finalPath, (req, res) => {
       res.type('text/html');
-      res.send(options.html);
+
+      if (!document) {
+        document = lazyBuildDocument();
+      }
+
+      if (!html) {
+        html = buildSwaggerHTML(baseUrlForSwaggerUI, document, options);
+      }
+
+      res.send(html);
     });
 
     // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
     try {
       httpAdapter.get(normalizeRelPath(`${finalPath}/`), (req, res) => {
         res.type('text/html');
-        res.send(options.html);
+
+        if (!document) {
+          document = lazyBuildDocument();
+        }
+
+        if (!html) {
+          html = buildSwaggerHTML(baseUrlForSwaggerUI, document, options);
+        }
+
+        res.send(html);
       });
     } catch (err) {
       /**
@@ -123,33 +169,51 @@ export class SwaggerModule {
        */
     }
 
+    let yamlDocument: string;
+    let jsonDocument: string;
+
     httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
       res.type('application/json');
-      res.send(options.jsonDocument);
+
+      if (!document) {
+         document = lazyBuildDocument();
+      }
+
+      if (!jsonDocument) {
+         jsonDocument = JSON.stringify(document);
+      }
+
+      res.send(jsonDocument);
     });
 
     httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
       res.type('text/yaml');
-      res.send(options.yamlDocument);
+
+      if (!document) {
+        document = lazyBuildDocument();
+      }
+
+      if (!yamlDocument) {
+         yamlDocument = jsyaml.dump(document, { skipInvalid: true });
+      }
+
+      res.send(yamlDocument);
     });
   }
 
   public static setup(
     path: string,
     app: INestApplication,
-    document: OpenAPIObject,
+    documentOrFactory: OpenAPIObject | (() => OpenAPIObject),
     options?: SwaggerCustomOptions
   ) {
     const globalPrefix = getGlobalPrefix(app);
     const finalPath = validatePath(
       options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
         ? `${globalPrefix}${validatePath(path)}`
-        : path
+        : path,
     );
-    const urlLastSubdirectory = finalPath.split('/').slice(-1).pop();
-
-    const yamlDocument = jsyaml.dump(document, { skipInvalid: true });
-    const jsonDocument = JSON.stringify(document);
+    const urlLastSubdirectory = finalPath.split('/').slice(-1).pop() || '';
 
     const validatedGlobalPrefix =
       options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
@@ -164,24 +228,18 @@ export class SwaggerModule {
       ? `${validatedGlobalPrefix}${validatePath(options.yamlDocumentUrl)}`
       : `${finalPath}-yaml`;
 
-    const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
-
-    const html = buildSwaggerHTML(baseUrlForSwaggerUI, document, options);
-    const swaggerInitJS = buildSwaggerInitJS(document, options);
     const httpAdapter = app.getHttpAdapter();
 
     SwaggerModule.serveDocuments(
       finalPath,
       urlLastSubdirectory,
       httpAdapter,
-      swaggerInitJS,
+      documentOrFactory,
       {
-        html,
-        yamlDocument,
-        jsonDocument,
         jsonDocumentUrl: finalJSONDocumentPath,
-        yamlDocumentUrl: finalYAMLDocumentPath
-      }
+        yamlDocumentUrl: finalYAMLDocumentPath,
+        swaggerOptions: options || {},
+      },
     );
 
     SwaggerModule.serveStatic(finalPath, app);
