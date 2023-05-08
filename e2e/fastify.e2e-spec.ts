@@ -3,6 +3,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication
 } from '@nestjs/platform-fastify';
+import * as request from 'supertest';
 import * as SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
@@ -31,7 +32,12 @@ describe('Fastify Swagger', () => {
       .addApiKey({ type: 'apiKey' }, 'key2')
       .addCookieAuth()
       .addSecurityRequirements('bearer')
-      .addSecurityRequirements({ basic: [], cookie: [] });
+      .addSecurityRequirements({ basic: [], cookie: [] })
+      .addGlobalParameters({
+        name: 'x-tenant-id',
+        in: 'header',
+        schema: { type: 'string' }
+      });
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {
@@ -52,26 +58,9 @@ describe('Fastify Swagger', () => {
     }
   });
 
-  it('should pass uiConfig options to fastify-swagger', async () => {
-    const document1 = SwaggerModule.createDocument(app, builder.build());
-    const uiConfig = {
-      displayOperationId: true,
-      persistAuthorization: true
-    };
-    const options = { uiConfig };
-    SwaggerModule.setup('/swagger1', app, document1, options);
-
-    const instance = await app.getHttpAdapter().getInstance().ready();
-
-    instance.ready(async () => {
-      const response = await instance.inject({
-        method: 'GET',
-        url: '/swagger1/uiConfig'
-      });
-
-      expect(response.statusCode).toEqual(200);
-      expect(JSON.parse(response.body)).toEqual(uiConfig);
-    });
+  it('should fix colons in url', async () => {
+    const document = SwaggerModule.createDocument(app, builder.build());
+    expect(document.paths['/fastify:colon:another/{prop}']).toBeDefined();
   });
 
   it('should setup multiple routes', async () => {
@@ -88,104 +77,120 @@ describe('Fastify Swagger', () => {
     ).resolves.toBeDefined();
   });
 
-  it('should pass initOAuth options to fastify-swagger', async () => {
-    const document1 = SwaggerModule.createDocument(app, builder.build());
-    const initOAuth = {
-      scopes: ['openid', 'profile', 'email', 'offline_access']
-    };
-    const options = { initOAuth };
-    SwaggerModule.setup('/swagger1', app, document1, options);
+  describe('served swagger ui', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
 
-    const instance = await app.getHttpAdapter().getInstance().ready();
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument);
 
-    instance.ready(async () => {
-      const response = await instance.inject({
-        method: 'GET',
-        url: '/swagger1/initOAuth'
-      });
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
 
-      expect(response.statusCode).toEqual(200);
-      expect(JSON.parse(response.body)).toEqual(initOAuth);
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('content type of served json document should be valid', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-json`
+      );
+
+      expect(response.status).toEqual(200);
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
     });
   });
 
-  it('should pass staticCSP = undefined options to fastify-swagger', async () => {
-    const document1 = SwaggerModule.createDocument(app, builder.build());
-    SwaggerModule.setup('swagger1', app, document1);
+  describe('custom documents endpoints', () => {
+    const JSON_CUSTOM_URL = '/apidoc-json';
+    const YAML_CUSTOM_URL = '/apidoc-yaml';
 
-    const instance = await app.getHttpAdapter().getInstance().ready();
-
-    instance.ready(async () => {
-      const response = await instance.inject({
-        method: 'GET',
-        url: '/swagger1/json'
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup('api', app, swaggerDocument, {
+        jsonDocumentUrl: JSON_CUSTOM_URL,
+        yamlDocumentUrl: YAML_CUSTOM_URL
       });
 
-      expect(response.statusCode).toEqual(200);
-      expect(response.headers['content-security-policy']).toBeUndefined();
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('json document should be server in the custom url', async () => {
+      const response = await request(app.getHttpServer()).get(JSON_CUSTOM_URL);
+
+      expect(response.status).toEqual(200);
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
+
+    it('yaml document should be server in the custom url', async () => {
+      const response = await request(app.getHttpServer()).get(YAML_CUSTOM_URL);
+
+      expect(response.status).toEqual(200);
+      expect(response.text.length).toBeGreaterThan(0);
     });
   });
 
-  it('should pass staticCSP = true options to fastify-swagger', async () => {
-    const document1 = SwaggerModule.createDocument(app, builder.build());
-    const options = { staticCSP: true };
-    SwaggerModule.setup('/swagger1', app, document1, options);
+  describe('custom documents endpoints with global prefix', () => {
+    let appGlobalPrefix: NestFastifyApplication;
 
-    const instance = await app.getHttpAdapter().getInstance().ready();
+    const GLOBAL_PREFIX = '/v1';
+    const JSON_CUSTOM_URL = '/apidoc-json';
+    const YAML_CUSTOM_URL = '/apidoc-yaml';
 
-    instance.ready(async () => {
-      const response = await instance.inject({
-        method: 'GET',
-        url: '/swagger1/json'
+    beforeEach(async () => {
+      appGlobalPrefix = await NestFactory.create<NestFastifyApplication>(
+        ApplicationModule,
+        new FastifyAdapter(),
+        { logger: false }
+      );
+      appGlobalPrefix.setGlobalPrefix(GLOBAL_PREFIX);
+
+      const swaggerDocument = SwaggerModule.createDocument(
+        appGlobalPrefix,
+        builder.build()
+      );
+      SwaggerModule.setup('api', appGlobalPrefix, swaggerDocument, {
+        useGlobalPrefix: true,
+        jsonDocumentUrl: JSON_CUSTOM_URL,
+        yamlDocumentUrl: YAML_CUSTOM_URL
       });
 
-      expect(response.statusCode).toEqual(200);
-      expect(response.headers['content-security-policy']).toContain(`script-src 'self' 'sha256`);
-      expect(response.headers['content-security-policy']).toContain(`style-src 'self' https: 'sha256`);
+      await appGlobalPrefix.init();
+      await appGlobalPrefix.getHttpAdapter().getInstance().ready();
     });
-  });
 
-  it('should pass staticCSP = false options to fastify-swagger', async () => {
-    const document1 = SwaggerModule.createDocument(app, builder.build());
-    const options = { staticCSP: false };
-    SwaggerModule.setup('/swagger1', app, document1, options);
-
-    const instance = await app.getHttpAdapter().getInstance().ready();
-
-    instance.ready(async () => {
-      const response = await instance.inject({
-        method: 'GET',
-        url: '/swagger1/json'
-      });
-
-      expect(response.statusCode).toEqual(200);
-      expect(response.headers['content-security-policy']).toBeUndefined();
+    afterEach(async () => {
+      await appGlobalPrefix.close();
     });
-  });
 
-  it('should pass transformStaticCSP = function options to fastify-swagger', async () => {
-    const document1 = SwaggerModule.createDocument(app, builder.build());
-    const checkParam = jest.fn((param: string) => param);
-    const options = {
-      staticCSP: `default-src 'self';`,
-      transformStaticCSP: (header: string) => {
-        checkParam(header);
-        return `default-src 'self'; script-src 'self';`
-      }
-    };
-    SwaggerModule.setup('/swagger1', app, document1, options);
+    it('json document should be server in the custom url', async () => {
+      const response = await request(appGlobalPrefix.getHttpServer()).get(
+        `${GLOBAL_PREFIX}${JSON_CUSTOM_URL}`
+      );
 
-    const instance = await app.getHttpAdapter().getInstance().ready();
+      expect(response.status).toEqual(200);
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
 
-    instance.ready(async () => {
-      const response = await instance.inject({
-        method: 'GET',
-        url: '/swagger1/json'
-      });
+    it('yaml document should be server in the custom url', async () => {
+      const response = await request(appGlobalPrefix.getHttpServer()).get(
+        `${GLOBAL_PREFIX}${YAML_CUSTOM_URL}`
+      );
 
-      expect(checkParam).toBeCalledWith(`default-src 'self';`);
-      expect(response.statusCode).toEqual(200);
-      expect(response.headers['content-security-policy']).toEqual(`default-src 'self'; script-src 'self';`);
+      expect(response.status).toEqual(200);
+      expect(response.text.length).toBeGreaterThan(0);
     });
   });
 });

@@ -6,6 +6,7 @@ import {
   getText,
   getTypeArguments,
   isArray,
+  isBigInt,
   isBoolean,
   isEnum,
   isInterface,
@@ -16,9 +17,10 @@ import {
 
 export function getDecoratorOrUndefinedByNames(
   names: string[],
-  decorators: ts.NodeArray<ts.Decorator>
+  decorators: ts.NodeArray<ts.Decorator>,
+  factory: ts.NodeFactory
 ): ts.Decorator | undefined {
-  return (decorators || ts.createNodeArray()).find((item) => {
+  return (decorators || factory.createNodeArray()).find((item) => {
     try {
       const decoratorName = getDecoratorName(item);
       return names.includes(decoratorName);
@@ -45,6 +47,9 @@ export function getTypeReferenceAsString(
   }
   if (isNumber(type)) {
     return Number.name;
+  }
+  if (isBigInt(type)) {
+    return BigInt.name;
   }
   if (isString(type) || isStringLiteral(type)) {
     return String.name;

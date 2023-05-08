@@ -25,6 +25,13 @@ describe('SchemaObjectFactory', () => {
       User = 'user'
     }
 
+    enum Group {
+      User = 'user',
+      Guest = 'guest',
+      Family = 'family',
+      Neighboard = 'neighboard'
+    }
+
     class CreatePersonDto {
       @ApiProperty()
       name: string;
@@ -112,6 +119,10 @@ describe('SchemaObjectFactory', () => {
             type: 'number',
             format: 'int64',
             example: 10
+          },
+          amount: {
+            type: 'integer',
+            format: 'int64'
           },
           createdAt: {
             format: 'date-time',
@@ -206,7 +217,8 @@ describe('SchemaObjectFactory', () => {
           'options',
           'allOf',
           'houses',
-          'createdAt'
+          'createdAt',
+          'amount'
         ]
       });
       expect(schemas['CreateProfileDto']).toEqual({

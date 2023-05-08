@@ -27,7 +27,8 @@ import {
   mapValues,
   omit,
   omitBy,
-  pick
+  pick,
+  cloneDeep
 } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
@@ -184,10 +185,10 @@ export class SwaggerExplorer {
 
       if (Array.isArray(methodMetadata.root)) {
         return methodMetadata.root.map((endpointMetadata: DenormalizedDoc) => {
-          endpointMetadata = {
+          endpointMetadata = cloneDeep({
             ...methodMetadata,
             root: endpointMetadata as any
-          };
+          });
           const mergedMethodMetadata = this.mergeMetadata(
             globalMetadata,
             omitBy(endpointMetadata, isEmpty)
@@ -286,19 +287,33 @@ export class SwaggerExplorer {
       },
       requestMethod
     );
-    return allRoutePaths.map((routePath) => {
-      const fullPath = this.validateRoutePath(routePath);
-      const apiExtension = Reflect.getMetadata(
-        DECORATORS.API_EXTENSION,
-        method
-      );
-      return {
-        method: RequestMethod[requestMethod].toLowerCase(),
-        path: fullPath === '' ? '/' : fullPath,
-        operationId: this.getOperationId(instance, method),
-        ...apiExtension
-      };
-    });
+    return flatten(
+      allRoutePaths.map((routePath) => {
+        const fullPath = this.validateRoutePath(routePath);
+        const apiExtension = Reflect.getMetadata(
+          DECORATORS.API_EXTENSION,
+          method
+        );
+        if (requestMethod === RequestMethod.ALL) {
+          // apply workaround for invalid "ALL" Method
+          const validMethods = Object.values(RequestMethod).filter(
+            (meth) => meth !== 'ALL' && typeof meth === 'string'
+          ) as string[];
+          return validMethods.map((meth) => ({
+            method: meth.toLowerCase(),
+            path: fullPath === '' ? '/' : fullPath,
+            operationId: `${this.getOperationId(instance, method)}_${meth.toLowerCase()}`,
+            ...apiExtension
+          }));
+        }
+        return {
+          method: RequestMethod[requestMethod].toLowerCase(),
+          path: fullPath === '' ? '/' : fullPath,
+          operationId: this.getOperationId(instance, method),
+          ...apiExtension
+        };
+      })
+    );
   }
 
   private getOperationId(instance: object, method: Function): string {

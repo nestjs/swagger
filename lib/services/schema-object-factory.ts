@@ -249,12 +249,16 @@ export class SchemaObjectFactory {
     if (!(enumName in schemas)) {
       const _enum = param.enum
         ? param.enum
-        : param.schema['items']
+        : param.schema ?
+        (param.schema['items']
         ? param.schema['items']['enum']
-        : param.schema['enum'];
+        : param.schema['enum'])
+        : param.isArray && param.items
+        ? param.items.enum
+        : undefined;
 
       schemas[enumName] = {
-        type: 'string',
+        type: param.schema?.['type'] ?? 'string',
         enum: _enum
       };
     }
@@ -500,6 +504,14 @@ export class SchemaObjectFactory {
         name: metadata.name || key
       };
     }
+    if (this.isBigInt(trueType as Function)) {
+      return {
+        format: 'int64',
+        ...metadata,
+        type: 'integer',
+        name: metadata.name || key
+      };
+    }
     if (!isBuiltInType(trueType as Function)) {
       return this.createNotBuiltInTypeReference(
         key,
@@ -567,6 +579,10 @@ export class SchemaObjectFactory {
       }
     }
     return Object.getPrototypeOf(obj) === objPrototype;
+  }
+
+  private isBigInt(type: Function | Type<unknown> | string): boolean {
+    return type === BigInt;
   }
 
   private extractPropertyModifiers(
