@@ -272,11 +272,11 @@ describe('SchemaObjectFactory', () => {
       })
       class CreateUserDto {}
 
-      const schemas = [];
+      const schemas: Record<string, SchemasObject> = {};
 
       schemaObjectFactory.exploreModelSchema(CreateUserDto, schemas);
 
-      expect(Object.keys(schemas[0])[0]).toEqual('CreateUser');
+      expect(Object.keys(schemas)).toContain('CreateUser');
     });
 
     it('should not use schema name of base class', () => {
@@ -287,11 +287,11 @@ describe('SchemaObjectFactory', () => {
 
       class UpdateUserDto extends CreateUserDto {}
 
-      const schemas = [];
+      const schemas: Record<string, SchemasObject> = {};
 
       schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
 
-      expect(Object.keys(schemas[0])[0]).toEqual('UpdateUserDto');
+      expect(Object.keys(schemas)).toContain('UpdateUserDto');
     });
   });
 });
