@@ -137,6 +137,9 @@ export function ApiUnsupportedMediaTypeResponse() {
 export function ApiDefaultResponse() {
   return () => {};
 }
+export function ApiSchema() {
+  return () => {};
+}
 export function ApiSecurity() {
   return () => {};
 }
