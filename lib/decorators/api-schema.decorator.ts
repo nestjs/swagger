@@ -1,6 +1,6 @@
 import { DECORATORS } from '../constants';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
-import { createClassDecorator, createPropertyDecorator } from './helpers';
+import { createClassDecorator } from './helpers';
 
 export interface ApiSchemaOptions extends Pick<SchemaObjectMetadata, 'name'> {
   /**
