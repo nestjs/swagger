@@ -17,7 +17,7 @@ import {
 
 export function getDecoratorOrUndefinedByNames(
   names: string[],
-  decorators: ts.NodeArray<ts.Decorator>,
+  decorators: readonly ts.Decorator[],
   factory: ts.NodeFactory
 ): ts.Decorator | undefined {
   return (decorators || factory.createNodeArray()).find((item) => {
