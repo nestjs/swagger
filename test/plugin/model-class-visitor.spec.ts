@@ -27,6 +27,10 @@ import {
   nullableDtoTextTranspiled
 } from './fixtures/nullable.dto';
 import {
+  nullableEnumDtoText,
+  nullableEnumDtoTextTranspiled
+} from './fixtures/nullable-enum.dto';
+import {
   stringLiteralDtoText,
   stringLiteralDtoTextTranspiled
 } from './fixtures/string-literal.dto';
@@ -171,6 +175,32 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(nullableDtoTextTranspiled);
+  });
+
+  it('should support & understand nullable type unions', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      strict: true
+    };
+    const filename = 'nullable-enum.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(nullableEnumDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(nullableEnumDtoTextTranspiled);
   });
 
   it('should remove properties from metadata when properties removed from dto', () => {

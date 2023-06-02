@@ -51,6 +51,13 @@ export class CreateCatDto {
   @ApiProperty({
     enum: LettersEnum,
     enumName: 'LettersEnum',
+    nullable: true
+  })
+  readonly enumNullable: LettersEnum | null;
+
+  @ApiProperty({
+    enum: LettersEnum,
+    enumName: 'LettersEnum',
     isArray: true
   })
   readonly enumArr: LettersEnum;
