@@ -31,8 +31,20 @@ type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 export class ModelClassVisitor extends AbstractFileVisitor {
   private readonly _collectedMetadata: Record<string, ClassMetadata> = {};
 
-  get collectedMetadata(): Record<string, ClassMetadata> {
-    return this._collectedMetadata;
+  get collectedMetadata(): Array<
+    [ts.CallExpression, Record<string, ClassMetadata>]
+  > {
+    const metadataWithImports = [];
+    Object.keys(this._collectedMetadata).forEach((filePath) => {
+      const metadata = this._collectedMetadata[filePath];
+      const importExpr = ts.factory.createCallExpression(
+        ts.factory.createIdentifier('require'),
+        undefined,
+        [ts.factory.createStringLiteral(filePath)]
+      );
+      metadataWithImports.push([importExpr, metadata]);
+    });
+    return metadataWithImports;
   }
 
   visit(
@@ -163,11 +175,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         options.pathToSource,
         sourceFile.fileName
       );
-      if (!this.collectedMetadata[filePath]) {
-        this.collectedMetadata[filePath] = {};
+      if (!this._collectedMetadata[filePath]) {
+        this._collectedMetadata[filePath] = {};
       }
       const attributeKey = node.name.getText();
-      this.collectedMetadata[filePath][attributeKey] = returnValue;
+      this._collectedMetadata[filePath][attributeKey] = returnValue;
       return;
     }
 

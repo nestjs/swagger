@@ -27,8 +27,20 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     Record<string, ClassMetadata>
   > = {};
 
-  get collectedMetadata(): Record<string, Record<string, ClassMetadata>> {
-    return this._collectedMetadata;
+  get collectedMetadata(): Array<
+    [ts.CallExpression, Record<string, ClassMetadata>]
+  > {
+    const metadataWithImports = [];
+    Object.keys(this._collectedMetadata).forEach((filePath) => {
+      const metadata = this._collectedMetadata[filePath];
+      const importExpr = ts.factory.createCallExpression(
+        ts.factory.createIdentifier('require'),
+        undefined,
+        [ts.factory.createStringLiteral(filePath)]
+      );
+      metadataWithImports.push([importExpr, metadata]);
+    });
+    return metadataWithImports;
   }
 
   visit(
@@ -62,19 +74,19 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
               sourceFile.fileName
             );
 
-            if (!this.collectedMetadata[filePath]) {
-              this.collectedMetadata[filePath] = {};
+            if (!this._collectedMetadata[filePath]) {
+              this._collectedMetadata[filePath] = {};
             }
 
             const parent = node.parent as ts.ClassDeclaration;
             const clsName = parent.name?.getText();
 
             if (clsName) {
-              if (!this.collectedMetadata[filePath][clsName]) {
-                this.collectedMetadata[filePath][clsName] = {};
+              if (!this._collectedMetadata[filePath][clsName]) {
+                this._collectedMetadata[filePath][clsName] = {};
               }
               Object.assign(
-                this.collectedMetadata[filePath][clsName],
+                this._collectedMetadata[filePath][clsName],
                 metadata
               );
             }

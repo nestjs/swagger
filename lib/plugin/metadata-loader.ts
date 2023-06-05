@@ -15,14 +15,11 @@ export class MetadataLoader {
     }
   }
 
-  private applyMetadata(models: Record<string, any>) {
-    Object.keys(models).forEach((path) => {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const fileRef = require(path);
-
-      Object.keys(models[path]).forEach((key) => {
+  private applyMetadata(meta: Record<string, any>) {
+    meta.forEach(([fileRef, fileMeta]) => {
+      Object.keys(fileMeta).forEach((key) => {
         const clsRef = fileRef[key];
-        clsRef[METADATA_FACTORY_NAME] = () => models[path][key];
+        clsRef[METADATA_FACTORY_NAME] = () => fileMeta[key];
       });
     });
   }
