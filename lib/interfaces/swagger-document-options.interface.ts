@@ -25,4 +25,9 @@ export interface SwaggerDocumentOptions {
    * @default () => controllerKey_methodKey
    */
   operationIdFactory?: (controllerKey: string, methodKey: string) => string;
+
+  /**
+   * Extra static metadata to be loaded into the specification
+   */
+  metadata?: Record<string, any>;
 }
