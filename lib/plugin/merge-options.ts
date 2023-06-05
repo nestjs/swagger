@@ -7,6 +7,8 @@ export interface PluginOptions {
   dtoKeyOfComment?: string;
   controllerKeyOfComment?: string;
   introspectComments?: boolean;
+  readonly?: boolean;
+  pathToSource?: string;
 }
 
 const defaultOptions: PluginOptions = {
@@ -15,7 +17,8 @@ const defaultOptions: PluginOptions = {
   classValidatorShim: true,
   dtoKeyOfComment: 'description',
   controllerKeyOfComment: 'description',
-  introspectComments: false
+  introspectComments: false,
+  readonly: false
 };
 
 export const mergePluginOptions = (
