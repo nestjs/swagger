@@ -34,7 +34,7 @@ function applyMetadataFactory(prototype: Type<unknown>) {
       if (Object.keys(operationMeta).length === 0) {
         return;
       }
-      ApiOperation(metadata[key], { overrideExisting: false })(
+      ApiOperation(operationMeta, { overrideExisting: false })(
         classPrototype,
         key,
         Object.getOwnPropertyDescriptor(classPrototype, key)
