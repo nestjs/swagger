@@ -5,10 +5,17 @@ import { ControllerClassVisitor } from './controller-class.visitor';
 import { ModelClassVisitor } from './model-class.visitor';
 
 export class ReadonlyVisitor {
+  public readonly key = '@nestjs/swagger';
   private readonly modelClassVisitor = new ModelClassVisitor();
   private readonly controllerClassVisitor = new ControllerClassVisitor();
 
-  constructor(private readonly options: PluginOptions) {}
+  constructor(private readonly options: PluginOptions) {
+    options.readonly = true;
+
+    if (!options.pathToSource) {
+      throw new Error(`"pathToSource" must be defined in plugin options`);
+    }
+  }
 
   visit(program: ts.Program, sf: ts.SourceFile) {
     const factoryHost = { factory: ts.factory } as any;
