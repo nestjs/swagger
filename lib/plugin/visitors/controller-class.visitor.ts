@@ -226,7 +226,19 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       factory.createNodeArray([objectLiteralExpr]);
 
     const methodKey = node.name.getText();
-    metadata[methodKey] = objectLiteralExpr;
+    if (metadata[methodKey]) {
+      const existingObjectLiteralExpr = metadata[methodKey];
+      const existingProperties = existingObjectLiteralExpr.properties;
+      const updatedProperties = factory.createNodeArray([
+        ...existingProperties,
+        ...compact(properties)
+      ]);
+      const updatedObjectLiteralExpr =
+        factory.createObjectLiteralExpression(updatedProperties);
+      metadata[methodKey] = updatedObjectLiteralExpr;
+    } else {
+      metadata[methodKey] = objectLiteralExpr;
+    }
 
     if (apiOperationDecorator) {
       const expr = apiOperationDecorator.expression as any as ts.CallExpression;
@@ -285,10 +297,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const methodKey = node.name.getText();
     const existingExprOrUndefined = metadata[methodKey];
     if (existingExprOrUndefined) {
-      factory.updateObjectLiteralExpression(objectLiteralExpr, [
-        ...existingExprOrUndefined.properties,
-        ...objectLiteralExpr.properties
+      const existingProperties = existingExprOrUndefined.properties;
+      const updatedProperties = factory.createNodeArray([
+        ...existingProperties,
+        ...compact(properties)
       ]);
+      const updatedObjectLiteralExpr =
+        factory.createObjectLiteralExpression(updatedProperties);
+      metadata[methodKey] = updatedObjectLiteralExpr;
     } else {
       metadata[methodKey] = objectLiteralExpr;
     }
