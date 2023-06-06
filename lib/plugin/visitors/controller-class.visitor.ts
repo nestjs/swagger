@@ -33,10 +33,11 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const metadataWithImports = [];
     Object.keys(this._collectedMetadata).forEach((filePath) => {
       const metadata = this._collectedMetadata[filePath];
+      const path = filePath.replace(/\.[jt]s$/, '');
       const importExpr = ts.factory.createCallExpression(
-        ts.factory.createIdentifier('require'),
+        ts.factory.createToken(ts.SyntaxKind.ImportKeyword) as ts.Expression,
         undefined,
-        [ts.factory.createStringLiteral(filePath)]
+        [ts.factory.createStringLiteral(path)]
       );
       metadataWithImports.push([importExpr, metadata]);
     });
