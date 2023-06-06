@@ -49,7 +49,7 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {
-    const document = SwaggerModule.createDocument(app, options, {
+    SwaggerModule.loadPluginMetadata({
       metadata: {
         '@nestjs/swagger': {
           models: [
@@ -91,6 +91,7 @@ describe('Validate OpenAPI schema', () => {
         }
       }
     });
+    const document = SwaggerModule.createDocument(app, options);
 
     const doc = JSON.stringify(document, null, 2);
     writeFileSync(join(__dirname, 'api-spec.json'), doc);

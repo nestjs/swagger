@@ -46,7 +46,7 @@ export class SwaggerModule {
     };
   }
 
-  public static async load(metadata: Record<string, any>) {
+  public static async loadPluginMetadata(metadata: Record<string, any>) {
     return this.metadataLoader.load(metadata);
   }
 
