@@ -29,9 +29,6 @@ export class SwaggerModule {
     config: Omit<OpenAPIObject, 'paths'>,
     options: SwaggerDocumentOptions = {}
   ): OpenAPIObject {
-    if (options.metadata) {
-      this.metadataLoader.load(options.metadata);
-    }
     const swaggerScanner = new SwaggerScanner();
     const document = swaggerScanner.scanApplication(app, options);
 
@@ -47,6 +44,10 @@ export class SwaggerModule {
       ...config,
       ...document
     };
+  }
+
+  public static async load(metadata: Record<string, any>) {
+    return this.metadataLoader.load(metadata);
   }
 
   private static serveStatic(finalPath: string, app: INestApplication) {
