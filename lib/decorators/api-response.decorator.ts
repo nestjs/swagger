@@ -2,9 +2,9 @@ import { HttpStatus, Type } from '@nestjs/common';
 import { omit } from 'lodash';
 import { DECORATORS } from '../constants';
 import {
+  ReferenceObject,
   ResponseObject,
-  SchemaObject,
-  ReferenceObject
+  SchemaObject
 } from '../interfaces/open-api-spec.interface';
 import { getTypeIsArrayTuple } from './helpers';
 
@@ -26,7 +26,8 @@ export interface ApiResponseSchemaHost
 export type ApiResponseOptions = ApiResponseMetadata | ApiResponseSchemaHost;
 
 export function ApiResponse(
-  options: ApiResponseOptions
+  options: ApiResponseOptions,
+  { overrideExisting } = { overrideExisting: true }
 ): MethodDecorator & ClassDecorator {
   const [type, isArray] = getTypeIsArrayTuple(
     (options as ApiResponseMetadata).type,
@@ -46,8 +47,14 @@ export function ApiResponse(
     descriptor?: TypedPropertyDescriptor<any>
   ): any => {
     if (descriptor) {
-      const responses =
-        Reflect.getMetadata(DECORATORS.API_RESPONSE, descriptor.value) || {};
+      const responses = Reflect.getMetadata(
+        DECORATORS.API_RESPONSE,
+        descriptor.value
+      );
+
+      if (responses && !overrideExisting) {
+        return descriptor;
+      }
       Reflect.defineMetadata(
         DECORATORS.API_RESPONSE,
         {
@@ -58,8 +65,10 @@ export function ApiResponse(
       );
       return descriptor;
     }
-    const responses =
-      Reflect.getMetadata(DECORATORS.API_RESPONSE, target) || {};
+    const responses = Reflect.getMetadata(DECORATORS.API_RESPONSE, target);
+    if (responses && !overrideExisting) {
+      return descriptor;
+    }
     Reflect.defineMetadata(
       DECORATORS.API_RESPONSE,
       {

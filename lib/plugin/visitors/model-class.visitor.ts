@@ -1,4 +1,5 @@
 import { compact, flatten, head } from 'lodash';
+import { posix } from 'path';
 import * as ts from 'typescript';
 import { PropertyAssignment, factory } from 'typescript';
 import { ApiHideProperty } from '../../decorators';
@@ -28,6 +29,24 @@ import { AbstractFileVisitor } from './abstract.visitor';
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
 export class ModelClassVisitor extends AbstractFileVisitor {
+  private readonly _collectedMetadata: Record<string, ClassMetadata> = {};
+
+  get collectedMetadata(): Array<
+    [ts.CallExpression, Record<string, ClassMetadata>]
+  > {
+    const metadataWithImports = [];
+    Object.keys(this._collectedMetadata).forEach((filePath) => {
+      const metadata = this._collectedMetadata[filePath];
+      const importExpr = ts.factory.createCallExpression(
+        ts.factory.createIdentifier('require'),
+        undefined,
+        [ts.factory.createStringLiteral(filePath)]
+      );
+      metadataWithImports.push([importExpr, metadata]);
+    });
+    return metadataWithImports;
+  }
+
   visit(
     sourceFile: ts.SourceFile,
     ctx: ts.TransformationContext,
@@ -40,66 +59,107 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const propertyNodeVisitorFactory =
       (metadata: ClassMetadata) =>
       (node: ts.Node): ts.Node => {
-        if (ts.isPropertyDeclaration(node)) {
-          const decorators =
-            ts.canHaveDecorators(node) && ts.getDecorators(node);
-
-          const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
-            [ApiHideProperty.name],
-            decorators,
-            factory
-          );
-          if (hidePropertyDecorator) {
-            return node;
-          }
-
-          const isPropertyStatic = (node.modifiers || []).some(
-            (modifier: ts.Modifier) =>
-              modifier.kind === ts.SyntaxKind.StaticKeyword
-          );
-          if (isPropertyStatic) {
-            return node;
-          }
-          try {
-            this.inspectPropertyDeclaration(
-              ctx.factory,
+        const visit = () => {
+          if (ts.isPropertyDeclaration(node)) {
+            this.visitPropertyNodeDeclaration(
               node,
+              ctx,
               typeChecker,
               options,
-              sourceFile.fileName,
               sourceFile,
               metadata
             );
-          } catch (err) {
-            return node;
           }
+          return node;
+        };
+        const visitedNode = visit();
+        if (!options.readonly) {
+          return visitedNode;
         }
-        return node;
       };
 
     const visitClassNode = (node: ts.Node): ts.Node => {
       if (ts.isClassDeclaration(node)) {
         const metadata: ClassMetadata = {};
-        node = ts.visitEachChild(
-          node,
-          propertyNodeVisitorFactory(metadata),
-          ctx
-        );
-        return this.addMetadataFactory(
+
+        if (options.readonly) {
+          ts.forEachChild(node, propertyNodeVisitorFactory(metadata));
+        } else {
+          node = ts.visitEachChild(
+            node,
+            propertyNodeVisitorFactory(metadata),
+            ctx
+          );
+        }
+
+        const declaration = this.addMetadataFactory(
           ctx.factory,
           node as ts.ClassDeclaration,
-          metadata
+          metadata,
+          sourceFile,
+          options
         );
+
+        if (!options.readonly) {
+          return declaration;
+        }
       }
-      return ts.visitEachChild(node, visitClassNode, ctx);
+
+      if (options.readonly) {
+        ts.forEachChild(node, visitClassNode);
+      } else {
+        return ts.visitEachChild(node, visitClassNode, ctx);
+      }
     };
     return ts.visitNode(sourceFile, visitClassNode);
+  }
+
+  visitPropertyNodeDeclaration(
+    node: ts.PropertyDeclaration,
+    ctx: ts.TransformationContext,
+    typeChecker: ts.TypeChecker,
+    options: PluginOptions,
+    sourceFile: ts.SourceFile,
+    metadata: ClassMetadata
+  ) {
+    const decorators = ts.canHaveDecorators(node) && ts.getDecorators(node);
+
+    const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
+      [ApiHideProperty.name],
+      decorators,
+      factory
+    );
+    if (hidePropertyDecorator) {
+      return node;
+    }
+
+    const isPropertyStatic = (node.modifiers || []).some(
+      (modifier: ts.Modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword
+    );
+    if (isPropertyStatic) {
+      return node;
+    }
+    try {
+      this.inspectPropertyDeclaration(
+        ctx.factory,
+        node,
+        typeChecker,
+        options,
+        sourceFile.fileName,
+        sourceFile,
+        metadata
+      );
+    } catch (err) {
+      return node;
+    }
   }
 
   addMetadataFactory(
     factory: ts.NodeFactory,
     node: ts.ClassDeclaration,
-    classMetadata: ClassMetadata
+    classMetadata: ClassMetadata,
+    sourceFile: ts.SourceFile,
+    options: PluginOptions
   ) {
     const returnValue = factory.createObjectLiteralExpression(
       Object.keys(classMetadata).map((key) =>
@@ -109,6 +169,20 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         )
       )
     );
+
+    if (options.readonly) {
+      const filePath = this.normalizeImportPath(
+        options.pathToSource,
+        sourceFile.fileName
+      );
+      if (!this._collectedMetadata[filePath]) {
+        this._collectedMetadata[filePath] = {};
+      }
+      const attributeKey = node.name.getText();
+      this._collectedMetadata[filePath][attributeKey] = returnValue;
+      return;
+    }
+
     const method = factory.createMethodDeclaration(
       [factory.createModifier(ts.SyntaxKind.StaticKeyword)],
       undefined,
@@ -179,7 +253,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         node.type,
         typeChecker,
         existingProperties,
-        hostFilename
+        hostFilename,
+        options
       ),
       ...this.createDescriptionAndTsDocTagPropertyAssigments(
         factory,
@@ -195,7 +270,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         node,
         typeChecker,
         existingProperties,
-        hostFilename
+        hostFilename,
+        options
       )
     ];
     if (options.classValidatorShim) {
@@ -217,7 +293,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     node: ts.TypeNode,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
-    hostFilename: string
+    hostFilename: string,
+    options: PluginOptions
   ): ts.PropertyAssignment[] {
     const key = 'type';
     if (hasPropertyKey(key, existingProperties)) {
@@ -274,7 +351,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             remainingTypes[0],
             typeChecker,
             existingProperties,
-            hostFilename
+            hostFilename,
+            options
           );
 
           const resultArray = new Array<ts.PropertyAssignment>(
@@ -300,7 +378,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (!typeReference) {
       return [];
     }
-    typeReference = replaceImportPath(typeReference, hostFilename);
+    typeReference = replaceImportPath(typeReference, hostFilename, options);
     return [
       factory.createPropertyAssignment(
         key,
@@ -321,7 +399,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     node: ts.PropertyDeclaration | ts.PropertySignature,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
-    hostFilename: string
+    hostFilename: string,
+    options: PluginOptions
   ) {
     const key = 'enum';
     if (hasPropertyKey(key, existingProperties)) {
@@ -358,7 +437,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       isArrayType = typeIsArrayTuple.isArray;
       type = typeIsArrayTuple.type;
     }
-    const enumRef = replaceImportPath(getText(type, typeChecker), hostFilename);
+    const enumRef = replaceImportPath(
+      getText(type, typeChecker),
+      hostFilename,
+      options
+    );
     const enumProperty = factory.createPropertyAssignment(
       key,
       factory.createIdentifier(enumRef)
@@ -523,8 +606,14 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         const argument: ts.Expression = head(
           getDecoratorArguments(decoratorRef)
         );
-        if (argument) {
-          return [factory.createPropertyAssignment(propertyKey, argument)];
+        const assignment = ts.isNumericLiteral(argument)
+          ? ts.factory.createNumericLiteral(argument.text)
+          : ts.isStringLiteral(argument)
+          ? ts.factory.createStringLiteral(argument.text)
+          : argument;
+
+        if (assignment) {
+          return [factory.createPropertyAssignment(propertyKey, assignment)];
         }
         return [];
       }
@@ -623,5 +712,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
 
     return propertyAssignments;
+  }
+
+  private normalizeImportPath(pathToSource: string, path: string) {
+    let relativePath = posix.relative(pathToSource, path);
+    relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
+    return relativePath;
   }
 }

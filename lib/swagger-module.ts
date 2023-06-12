@@ -9,6 +9,7 @@ import {
   SwaggerCustomOptions,
   SwaggerDocumentOptions
 } from './interfaces';
+import { MetadataLoader } from './plugin/metadata-loader';
 import { SwaggerScanner } from './swagger-scanner';
 import {
   buildSwaggerHTML,
@@ -17,11 +18,13 @@ import {
 } from './swagger-ui';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
-import { validatePath } from './utils/validate-path.util';
 import { normalizeRelPath } from './utils/normalize-rel-path';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
+import { validatePath } from './utils/validate-path.util';
 
 export class SwaggerModule {
+  private static readonly metadataLoader = new MetadataLoader();
+
   public static createDocument(
     app: INestApplication,
     config: Omit<OpenAPIObject, 'paths'>,
@@ -42,6 +45,10 @@ export class SwaggerModule {
       ...config,
       ...document
     };
+  }
+
+  public static async loadPluginMetadata(metadata: Record<string, any>) {
+    return this.metadataLoader.load(metadata);
   }
 
   private static serveStatic(finalPath: string, app: INestApplication) {

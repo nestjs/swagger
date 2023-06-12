@@ -9,7 +9,7 @@ import {
   Version,
   VersioningType
 } from '@nestjs/common';
-import { VersionValue, VERSION_NEUTRAL } from '@nestjs/common/interfaces';
+import { VERSION_NEUTRAL, VersionValue } from '@nestjs/common/interfaces';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import {
@@ -30,11 +30,12 @@ import {
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
+import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
-import { SwaggerExplorer } from '../../lib/swagger-explorer';
 import { GlobalParametersStorage } from '../../lib/storages/global-parameters.storage';
+import { SwaggerExplorer } from '../../lib/swagger-explorer';
 
 describe('SwaggerExplorer', () => {
   const schemaObjectFactory = new SchemaObjectFactory(
@@ -120,6 +121,57 @@ describe('SwaggerExplorer', () => {
         'globalPrefix'
       );
       const operationPrefix = 'FooController_';
+
+      validateRoutes(routes, operationPrefix);
+    });
+
+    @Controller('')
+    class FooWithMetadataController {
+      @Post('foos')
+      @ApiCreatedResponse({
+        type: Foo,
+        description: 'Newly created Foo object'
+      })
+      create(
+        @Body() createFoo: CreateFoo,
+        @Query() listEntities: ListEntitiesDto
+      ): Promise<Foo> {
+        return Promise.resolve({});
+      }
+
+      @Get(['foos/:objectId', 'foo/:objectId'])
+      find(
+        @Param('objectId') objectId: string,
+        @Query('page') q: string
+      ): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+
+      static [METADATA_FACTORY_NAME]() {
+        return {
+          create: {
+            summary: 'Create foo'
+          },
+          find: {
+            summary: 'List all Foos',
+            type: [Foo]
+          }
+        };
+      }
+    }
+
+    it('sees two controller operations and their responses (metadata cache)', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooWithMetadataController(),
+          metatype: FooWithMetadataController
+        } as unknown as InstanceWrapper<FooWithMetadataController>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+      const operationPrefix = 'FooWithMetadataController_';
 
       validateRoutes(routes, operationPrefix);
     });
@@ -1466,12 +1518,10 @@ describe('SwaggerExplorer', () => {
       });
     });
   });
-  
-  describe('when @All(...) is used', () => {
 
+  describe('when @All(...) is used', () => {
     @Controller('')
     class AllController {
-
       @All('*')
       all(): Promise<void> {
         return Promise.resolve();
@@ -1491,13 +1541,26 @@ describe('SwaggerExplorer', () => {
       );
 
       expect(routes.length).toEqual(7);
-      expect(['get', 'post', 'put', 'delete', 'patch', 'options', 'head'].every((method) => routes.find((route) => route.root.method === method))).toBe(true);
-      expect(routes.find((route) => route.root.method === 'all')).toBe(undefined);
+      expect(
+        ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'].every(
+          (method) => routes.find((route) => route.root.method === method)
+        )
+      ).toBe(true);
+      expect(routes.find((route) => route.root.method === 'all')).toBe(
+        undefined
+      );
       // check if all routes are equal except for method
-      expect(routes.filter((v, i, a) => a.findIndex(v2 => ['path', 'parameter'].every(k => v2[k] === v[k])) === i).length).toEqual(1);
+      expect(
+        routes.filter(
+          (v, i, a) =>
+            a.findIndex((v2) =>
+              ['path', 'parameter'].every((k) => v2[k] === v[k])
+            ) === i
+        ).length
+      ).toEqual(1);
     });
   });
-  
+
   describe('when global paramters are defined', () => {
     class Foo {}
 

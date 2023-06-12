@@ -4,13 +4,26 @@ import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 
 export function createMethodDecorator<T = any>(
   metakey: string,
-  metadata: T
+  metadata: T,
+  { overrideExisting } = { overrideExisting: true }
 ): MethodDecorator {
   return (
     target: object,
     key: string | symbol,
     descriptor: PropertyDescriptor
   ) => {
+    if (typeof metadata === 'object') {
+      const prevValue = Reflect.getMetadata(metakey, descriptor.value);
+      if (prevValue && !overrideExisting) {
+        return descriptor;
+      }
+      Reflect.defineMetadata(
+        metakey,
+        { ...prevValue, ...metadata },
+        descriptor.value
+      );
+      return descriptor;
+    }
     Reflect.defineMetadata(metakey, metadata, descriptor.value);
     return descriptor;
   };

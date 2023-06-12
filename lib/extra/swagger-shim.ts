@@ -167,3 +167,9 @@ export function PickType() {
 export function getSchemaPath() {
   return () => '';
 }
+export function before() {
+  return () => '';
+}
+export function ReadonlyVisitor() {
+  return class {};
+}
