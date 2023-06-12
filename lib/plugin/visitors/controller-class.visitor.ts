@@ -18,11 +18,6 @@ import {
 } from '../utils/plugin-utils';
 import { AbstractFileVisitor } from './abstract.visitor';
 
-const [tsVersionMajor, tsVersionMinor] = ts.versionMajorMinor
-  ?.split('.')
-  .map((x) => +x);
-const isInUpdatedAstContext = tsVersionMinor >= 8 || tsVersionMajor > 4;
-
 export class ControllerClassVisitor extends AbstractFileVisitor {
   visit(
     sourceFile: ts.SourceFile,
@@ -61,10 +56,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     hostFilename: string,
     sourceFile: ts.SourceFile
   ): ts.MethodDeclaration {
-    // Support both >= v4.8 and v4.7 and lower
-    const decorators = (ts as any).canHaveDecorators
-      ? (ts as any).getDecorators(compilerNode)
-      : (compilerNode as any).decorators;
+    const decorators =
+      ts.canHaveDecorators(compilerNode) && ts.getDecorators(compilerNode);
     if (!decorators) {
       return compilerNode;
     }
@@ -86,12 +79,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         )
       : decorators;
 
-    // Support both >= v4.8 and v4.7 and lower
-    const modifiers =
-      (isInUpdatedAstContext
-        ? (ts as any).getModifiers(compilerNode)
-        : compilerNode.modifiers) ?? [];
-
+    const modifiers = ts.getModifiers(compilerNode) ?? [];
     const updatedDecorators = [
       ...apiOperationDecoratorsArray,
       ...existingDecorators,
@@ -112,36 +100,23 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       )
     ];
 
-    return isInUpdatedAstContext
-      ? (factory as any).updateMethodDeclaration(
-          compilerNode,
-          [...updatedDecorators, ...modifiers],
-          compilerNode.asteriskToken,
-          compilerNode.name,
-          compilerNode.questionToken,
-          compilerNode.typeParameters,
-          compilerNode.parameters,
-          compilerNode.type,
-          compilerNode.body
-        )
-      : (factory as any).updateMethodDeclaration(
-          compilerNode,
-          updatedDecorators,
-          modifiers,
-          compilerNode.asteriskToken,
-          compilerNode.name,
-          compilerNode.questionToken,
-          compilerNode.typeParameters,
-          compilerNode.parameters,
-          compilerNode.type,
-          compilerNode.body
-        );
+    return factory.updateMethodDeclaration(
+      compilerNode,
+      [...updatedDecorators, ...modifiers],
+      compilerNode.asteriskToken,
+      compilerNode.name,
+      compilerNode.questionToken,
+      compilerNode.typeParameters,
+      compilerNode.parameters,
+      compilerNode.type,
+      compilerNode.body
+    );
   }
 
   createApiOperationDecorator(
     factory: ts.NodeFactory,
     node: ts.MethodDeclaration,
-    nodeArray: ts.NodeArray<ts.Decorator>,
+    decorators: readonly ts.Decorator[],
     options: PluginOptions,
     sourceFile: ts.SourceFile,
     typeChecker: ts.TypeChecker
@@ -152,7 +127,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const keyToGenerate = options.controllerKeyOfComment;
     const apiOperationDecorator = getDecoratorOrUndefinedByNames(
       [ApiOperation.name],
-      nodeArray,
+      decorators,
       factory
     );
     const apiOperationExpr: ts.ObjectLiteralExpression | undefined =
@@ -279,10 +254,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   }
 
   getStatusCodeIdentifier(factory: ts.NodeFactory, node: ts.MethodDeclaration) {
-    // Support both >= v4.8 and v4.7 and lower
-    const decorators = (ts as any).canHaveDecorators
-      ? (ts as any).getDecorators(node)
-      : (node as any).decorators;
+    const decorators = ts.canHaveDecorators(node) && ts.getDecorators(node);
     const httpCodeDecorator = getDecoratorOrUndefinedByNames(
       ['HttpCode'],
       decorators,

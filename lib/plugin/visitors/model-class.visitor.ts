@@ -1,6 +1,6 @@
 import { compact, flatten, head } from 'lodash';
 import * as ts from 'typescript';
-import { factory, PropertyAssignment } from 'typescript';
+import { PropertyAssignment, factory } from 'typescript';
 import { ApiHideProperty } from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { METADATA_FACTORY_NAME } from '../plugin-constants';
@@ -27,11 +27,6 @@ import { AbstractFileVisitor } from './abstract.visitor';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
-const [tsVersionMajor, tsVersionMinor] = ts.versionMajorMinor
-  ?.split('.')
-  .map((x) => +x);
-const isInUpdatedAstContext = tsVersionMinor >= 8 || tsVersionMajor > 4;
-
 export class ModelClassVisitor extends AbstractFileVisitor {
   visit(
     sourceFile: ts.SourceFile,
@@ -46,10 +41,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       (metadata: ClassMetadata) =>
       (node: ts.Node): ts.Node => {
         if (ts.isPropertyDeclaration(node)) {
-          // Support both >= v4.8 and v4.7 and lower
-          const decorators = (ts as any).canHaveDecorators
-            ? (ts as any).getDecorators(node)
-            : (node as any).decorators;
+          const decorators =
+            ts.canHaveDecorators(node) && ts.getDecorators(node);
 
           const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
             [ApiHideProperty.name],
@@ -116,53 +109,25 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         )
       )
     );
-    const method = isInUpdatedAstContext
-      ? (factory as any).createMethodDeclaration(
-          [factory.createModifier(ts.SyntaxKind.StaticKeyword)],
-          undefined,
-          factory.createIdentifier(METADATA_FACTORY_NAME),
-          undefined,
-          undefined,
-          [],
-          undefined,
-          factory.createBlock(
-            [factory.createReturnStatement(returnValue)],
-            true
-          )
-        )
-      : (factory as any).createMethodDeclaration(
-          undefined,
-          [factory.createModifier(ts.SyntaxKind.StaticKeyword)],
-          undefined,
-          factory.createIdentifier(METADATA_FACTORY_NAME),
-          undefined,
-          undefined,
-          [],
-          undefined,
-          factory.createBlock(
-            [factory.createReturnStatement(returnValue)],
-            true
-          )
-        );
+    const method = factory.createMethodDeclaration(
+      [factory.createModifier(ts.SyntaxKind.StaticKeyword)],
+      undefined,
+      factory.createIdentifier(METADATA_FACTORY_NAME),
+      undefined,
+      undefined,
+      [],
+      undefined,
+      factory.createBlock([factory.createReturnStatement(returnValue)], true)
+    );
 
-    return isInUpdatedAstContext
-      ? (factory as any).updateClassDeclaration(
-          node,
-          node.modifiers,
-          node.name,
-          node.typeParameters,
-          node.heritageClauses,
-          [...node.members, method]
-        )
-      : (factory as any).updateClassDeclaration(
-          node,
-          (node as any).decorators,
-          node.modifiers as any,
-          node.name,
-          node.typeParameters,
-          node.heritageClauses,
-          [...node.members, method]
-        );
+    return factory.updateClassDeclaration(
+      node,
+      node.modifiers,
+      node.name,
+      node.typeParameters,
+      node.heritageClauses,
+      [...node.members, method]
+    );
   }
 
   inspectPropertyDeclaration(
@@ -433,10 +398,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     node: ts.PropertyDeclaration | ts.PropertySignature
   ): ts.PropertyAssignment[] {
     const assignments = [];
-    // Support both >= v4.8 and v4.7 and lower
-    const decorators = (ts as any).canHaveDecorators
-      ? (ts as any).getDecorators(node)
-      : (node as any).decorators;
+    const decorators = ts.canHaveDecorators(node) && ts.getDecorators(node);
 
     this.addPropertyByValidationDecorator(
       factory,
@@ -549,7 +511,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     factory: ts.NodeFactory,
     decoratorName: string,
     propertyKey: string,
-    decorators: ts.NodeArray<ts.Decorator>,
+    decorators: readonly ts.Decorator[],
     assignments: ts.PropertyAssignment[]
   ) {
     this.addPropertiesByValidationDecorator(
@@ -572,7 +534,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   addPropertiesByValidationDecorator(
     factory: ts.NodeFactory,
     decoratorName: string,
-    decorators: ts.NodeArray<ts.Decorator>,
+    decorators: readonly ts.Decorator[],
     assignments: ts.PropertyAssignment[],
     addPropertyAssignments: (decoratorRef: ts.Decorator) => PropertyAssignment[]
   ) {
