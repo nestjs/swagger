@@ -64,8 +64,8 @@
   },
   "peerDependencies": {
     "@fastify/static": "^6.0.0",
-    "@nestjs/common": "^9.0.0",
-    "@nestjs/core": "^9.0.0",
+    "@nestjs/common": "^9.0.0 || ^10.0.0",
+    "@nestjs/core": "^9.0.0 || ^10.0.0",
     "class-transformer": "*",
     "class-validator": "*",
     "reflect-metadata": "^0.1.12"
