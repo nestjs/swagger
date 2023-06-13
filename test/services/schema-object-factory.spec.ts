@@ -1,4 +1,4 @@
-import { ApiProperty } from '../../lib/decorators';
+import { ApiProperty, ApiSchema } from '../../lib/decorators';
 import { SchemasObject } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
@@ -264,6 +264,34 @@ describe('SchemaObjectFactory', () => {
         type: 'object',
         properties: { name: { type: 'string', minLength: 1 } }
       });
+    });
+
+    it('should use schema name instead of class name', () => {
+      @ApiSchema({
+        name: 'CreateUser'
+      })
+      class CreateUserDto {}
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(CreateUserDto, schemas);
+
+      expect(Object.keys(schemas)).toContain('CreateUser');
+    });
+
+    it('should not use schema name of base class', () => {
+      @ApiSchema({
+        name: 'CreateUser'
+      })
+      class CreateUserDto {}
+
+      class UpdateUserDto extends CreateUserDto {}
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+
+      expect(Object.keys(schemas)).toContain('UpdateUserDto');
     });
   });
 });
