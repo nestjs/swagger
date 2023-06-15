@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
+import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
 import * as SwaggerParser from 'swagger-parser';
 import {
@@ -12,7 +13,6 @@ import {
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
-import { OpenAPIV3 } from 'openapi-types';
 
 describe('Validate OpenAPI schema', () => {
   let app: INestApplication;
@@ -49,6 +49,48 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {
+    SwaggerModule.loadPluginMetadata({
+      metadata: {
+        '@nestjs/swagger': {
+          models: [
+            [
+              require('./src/cats/classes/cat.class'),
+              {
+                Cat: {
+                  tags: {
+                    description: 'Tags of the cat',
+                    example: ['tag1', 'tag2']
+                  }
+                }
+              }
+            ],
+            [
+              require('./src/cats/dto/create-cat.dto'),
+              {
+                CreateCatDto: {
+                  name: {
+                    description: 'Name of the cat'
+                  }
+                }
+              }
+            ]
+          ],
+          controllers: [
+            [
+              require('./src/cats/cats.controller'),
+              {
+                CatsController: {
+                  findAllBulk: {
+                    type: [require('./src/cats/classes/cat.class').Cat],
+                    summary: 'Find all cats in bulk'
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      }
+    });
     const document = SwaggerModule.createDocument(app, options);
 
     const doc = JSON.stringify(document, null, 2);

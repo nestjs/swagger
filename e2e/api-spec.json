@@ -586,6 +586,7 @@
     "/api/cats/bulk": {
       "get": {
         "operationId": "CatsController_findAllBulk",
+        "summary": "Find all cats in bulk",
         "parameters": [
           {
             "name": "header",
@@ -607,7 +608,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Cat"
+                  }
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -992,6 +1003,7 @@
         "type": "object",
         "properties": {
           "name": {
+            "description": "Name of the cat",
             "type": "string"
           },
           "age": {
@@ -1080,6 +1092,11 @@
             "description": "The breed of the Cat"
           },
           "_tags": {
+            "description": "Tags of the cat",
+            "example": [
+              "tag1",
+              "tag2"
+            ],
             "type": "array",
             "items": {
               "type": "string"

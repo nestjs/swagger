@@ -3,27 +3,23 @@ version: 2
 aliases:
   - &restore-cache
     restore_cache:
-        key: dependency-cache-{{ checksum "package.json" }}
+      key: dependency-cache-{{ checksum "package.json" }}
   - &install-deps
     run:
-        name: Install dependencies
-        command: npm ci
+      name: Install dependencies
+      command: npm ci
   - &build-packages
     run:
-        name: Build
-        command: npm run build
+      name: Build
+      command: npm run build
   - &run-unit-tests
     run:
-        name: Test
-        command: npm run test -- --runInBand
-  - &run-unit-tests
-    run:
-        name: Test (TypeScript < v4.8)
-        command: npm i --no-save -D typescript@4.7.2 && npm run test -- --runInBand
+      name: Test
+      command: npm run test -- --runInBand
   - &run-e2e-tests
     run:
-        name: E2E test
-        command: npm run test:e2e
+      name: E2E test
+      command: npm run test:e2e
 
 jobs:
   build:
@@ -46,7 +42,7 @@ jobs:
             - ./node_modules
       - run:
           name: Build
-          command: npm run build    
+          command: npm run build
 
   unit_tests:
     working_directory: ~/nest
@@ -81,4 +77,3 @@ workflows:
       - e2e_tests:
           requires:
             - build
-      

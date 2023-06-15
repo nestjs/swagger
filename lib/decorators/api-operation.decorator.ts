@@ -9,7 +9,10 @@ const defaultOperationOptions: ApiOperationOptions = {
   summary: ''
 };
 
-export function ApiOperation(options: ApiOperationOptions): MethodDecorator {
+export function ApiOperation(
+  options: ApiOperationOptions,
+  { overrideExisting } = { overrideExisting: true }
+): MethodDecorator {
   return createMethodDecorator(
     DECORATORS.API_OPERATION,
     pickBy(
@@ -18,6 +21,7 @@ export function ApiOperation(options: ApiOperationOptions): MethodDecorator {
         ...options
       } as ApiOperationOptions,
       negate(isUndefined)
-    )
+    ),
+    { overrideExisting }
   );
 }

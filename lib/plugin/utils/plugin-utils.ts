@@ -1,6 +1,7 @@
 import { head } from 'lodash';
 import { isAbsolute, posix } from 'path';
 import * as ts from 'typescript';
+import { PluginOptions } from '../merge-options';
 import {
   getDecoratorName,
   getText,
@@ -17,7 +18,7 @@ import {
 
 export function getDecoratorOrUndefinedByNames(
   names: string[],
-  decorators: ts.NodeArray<ts.Decorator>,
+  decorators: readonly ts.Decorator[],
   factory: ts.NodeFactory
 ): ts.Decorator | undefined {
   return (decorators || factory.createNodeArray()).find((item) => {
@@ -117,7 +118,11 @@ export function hasPropertyKey(
     .some((item) => item.name.getText() === key);
 }
 
-export function replaceImportPath(typeReference: string, fileName: string) {
+export function replaceImportPath(
+  typeReference: string,
+  fileName: string,
+  options: PluginOptions
+) {
   if (!typeReference.includes('import')) {
     return typeReference;
   }
@@ -135,7 +140,10 @@ export function replaceImportPath(typeReference: string, fileName: string) {
     require.resolve(importPath);
     return typeReference.replace('import', 'require');
   } catch (_error) {
-    let relativePath = posix.relative(posix.dirname(fileName), importPath);
+    const from = options?.readonly
+      ? options.pathToSource
+      : posix.dirname(fileName);
+    let relativePath = posix.relative(from, importPath);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
     const nodeModulesText = 'node_modules';
