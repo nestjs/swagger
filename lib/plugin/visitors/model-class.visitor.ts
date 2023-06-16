@@ -29,7 +29,12 @@ import { AbstractFileVisitor } from './abstract.visitor';
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
 export class ModelClassVisitor extends AbstractFileVisitor {
+  private readonly _typeImports: Record<string, string> = {};
   private readonly _collectedMetadata: Record<string, ClassMetadata> = {};
+
+  get typeImports() {
+    return this._typeImports;
+  }
 
   get collectedMetadata(): Array<
     [ts.CallExpression, Record<string, ClassMetadata>]
@@ -37,10 +42,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const metadataWithImports = [];
     Object.keys(this._collectedMetadata).forEach((filePath) => {
       const metadata = this._collectedMetadata[filePath];
+      const path = filePath.replace(/\.[jt]s$/, '');
       const importExpr = ts.factory.createCallExpression(
-        ts.factory.createIdentifier('require'),
+        ts.factory.createToken(ts.SyntaxKind.ImportKeyword) as ts.Expression,
         undefined,
-        [ts.factory.createStringLiteral(filePath)]
+        [ts.factory.createStringLiteral(path)]
       );
       metadataWithImports.push([importExpr, metadata]);
     });
@@ -374,24 +380,26 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (!type) {
       return [];
     }
-    let typeReference = getTypeReferenceAsString(type, typeChecker);
-    if (!typeReference) {
+    const typeReferenceDescriptor = getTypeReferenceAsString(type, typeChecker);
+    if (!typeReferenceDescriptor.typeName) {
       return [];
     }
-    typeReference = replaceImportPath(typeReference, hostFilename, options);
-    return [
-      factory.createPropertyAssignment(
-        key,
-        factory.createArrowFunction(
-          undefined,
-          undefined,
-          [],
-          undefined,
-          undefined,
-          factory.createIdentifier(typeReference)
-        )
-      )
-    ];
+    const identifier = this.typeReferenceToIdentifier(
+      typeReferenceDescriptor,
+      hostFilename,
+      options,
+      factory
+    );
+
+    const initializer = factory.createArrowFunction(
+      undefined,
+      undefined,
+      [],
+      undefined,
+      undefined,
+      identifier
+    );
+    return [factory.createPropertyAssignment(key, initializer)];
   }
 
   createEnumPropertyAssignment(
@@ -437,15 +445,17 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       isArrayType = typeIsArrayTuple.isArray;
       type = typeIsArrayTuple.type;
     }
-    const enumRef = replaceImportPath(
-      getText(type, typeChecker),
+
+    const typeReferenceDescriptor = { typeName: getText(type, typeChecker) };
+    const enumIdentifier = this.typeReferenceToIdentifier(
+      typeReferenceDescriptor,
       hostFilename,
-      options
+      options,
+      factory
     );
-    const enumProperty = factory.createPropertyAssignment(
-      key,
-      factory.createIdentifier(enumRef)
-    );
+
+    const enumProperty = factory.createPropertyAssignment(key, enumIdentifier);
+
     if (isArrayType) {
       const isArrayKey = 'isArray';
       const isArrayProperty = factory.createPropertyAssignment(
@@ -718,5 +728,49 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     let relativePath = posix.relative(pathToSource, path);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
     return relativePath;
+  }
+
+  private typeReferenceToIdentifier(
+    typeReferenceDescriptor: {
+      typeName: string;
+      isArray?: boolean;
+      arrayDepth?: number;
+    },
+    hostFilename: string,
+    options: PluginOptions,
+    factory: ts.NodeFactory
+  ) {
+    const { typeReference, importPath } = replaceImportPath(
+      typeReferenceDescriptor.typeName,
+      hostFilename,
+      options
+    );
+
+    let identifier: ts.Identifier;
+    if (options.readonly && typeReference?.includes('import')) {
+      if (!this._typeImports[importPath]) {
+        this._typeImports[importPath] = typeReference;
+      }
+
+      let ref = `t["${importPath}"]`;
+      if (typeReferenceDescriptor.isArray) {
+        ref = this.wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
+      }
+      identifier = factory.createIdentifier(ref);
+    } else {
+      let ref = typeReference;
+      if (typeReferenceDescriptor.isArray) {
+        ref = this.wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
+      }
+      identifier = factory.createIdentifier(ref);
+    }
+    return identifier;
+  }
+
+  private wrapTypeInArray(typeRef: string, arrayDepth: number) {
+    for (let i = 0; i < arrayDepth; i++) {
+      typeRef = `[${typeRef}]`;
+    }
+    return typeRef;
   }
 }

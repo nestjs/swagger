@@ -49,48 +49,50 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {
-    SwaggerModule.loadPluginMetadata({
-      metadata: {
-        '@nestjs/swagger': {
-          models: [
-            [
-              require('./src/cats/classes/cat.class'),
-              {
-                Cat: {
-                  tags: {
-                    description: 'Tags of the cat',
-                    example: ['tag1', 'tag2']
-                  }
+    await SwaggerModule.loadPluginMetadata(async () => ({
+      '@nestjs/swagger': {
+        models: [
+          [
+            import('./src/cats/classes/cat.class'),
+            {
+              Cat: {
+                tags: {
+                  description: 'Tags of the cat',
+                  example: ['tag1', 'tag2']
                 }
               }
-            ],
-            [
-              require('./src/cats/dto/create-cat.dto'),
-              {
-                CreateCatDto: {
-                  name: {
-                    description: 'Name of the cat'
-                  }
-                }
-              }
-            ]
+            }
           ],
-          controllers: [
-            [
-              require('./src/cats/cats.controller'),
-              {
-                CatsController: {
-                  findAllBulk: {
-                    type: [require('./src/cats/classes/cat.class').Cat],
-                    summary: 'Find all cats in bulk'
-                  }
+          [
+            import('./src/cats/dto/create-cat.dto'),
+            {
+              CreateCatDto: {
+                name: {
+                  description: 'Name of the cat'
                 }
               }
-            ]
+            }
           ]
-        }
+        ],
+        controllers: [
+          [
+            import('./src/cats/cats.controller'),
+            {
+              CatsController: {
+                findAllBulk: {
+                  type: [
+                    await import('./src/cats/classes/cat.class').then(
+                      (f) => f.Cat
+                    )
+                  ],
+                  summary: 'Find all cats in bulk'
+                }
+              }
+            }
+          ]
+        ]
       }
-    });
+    }));
     const document = SwaggerModule.createDocument(app, options);
 
     const doc = JSON.stringify(document, null, 2);

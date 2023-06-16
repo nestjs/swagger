@@ -26,6 +26,11 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     string,
     Record<string, ClassMetadata>
   > = {};
+  private readonly _typeImports: Record<string, string> = {};
+
+  get typeImports() {
+    return this._typeImports;
+  }
 
   get collectedMetadata(): Array<
     [ts.CallExpression, Record<string, ClassMetadata>]
@@ -340,18 +345,21 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!type) {
       return undefined;
     }
-    let typeReference = getTypeReferenceAsString(type, typeChecker);
-    if (!typeReference) {
+    const { typeName, isArray } = getTypeReferenceAsString(type, typeChecker);
+    if (!typeName) {
       return undefined;
     }
-    if (typeReference.includes('node_modules')) {
+    if (typeName.includes('node_modules')) {
       return undefined;
     }
-    typeReference = replaceImportPath(typeReference, hostFilename, options);
-    return factory.createPropertyAssignment(
-      'type',
-      factory.createIdentifier(typeReference)
+    const identifier = this.typeReferenceStringToIdentifier(
+      typeName,
+      isArray,
+      hostFilename,
+      options,
+      factory
     );
+    return factory.createPropertyAssignment('type', identifier);
   }
 
   createStatusPropertyAssignment(
@@ -394,5 +402,35 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     let relativePath = posix.relative(pathToSource, path);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
     return relativePath;
+  }
+
+  private typeReferenceStringToIdentifier(
+    _typeReference: string,
+    isArray: boolean,
+    hostFilename: string,
+    options: PluginOptions,
+    factory: ts.NodeFactory
+  ) {
+    const { typeReference, importPath } = replaceImportPath(
+      _typeReference,
+      hostFilename,
+      options
+    );
+
+    let identifier: ts.Identifier;
+    if (options.readonly && typeReference?.includes('import')) {
+      if (!this._typeImports[importPath]) {
+        this._typeImports[importPath] = typeReference;
+      }
+
+      identifier = factory.createIdentifier(
+        isArray ? `[t["${importPath}"]]` : `t["${importPath}"]`
+      );
+    } else {
+      identifier = factory.createIdentifier(
+        isArray ? `[${typeReference}]` : typeReference
+      );
+    }
+    return identifier;
   }
 }

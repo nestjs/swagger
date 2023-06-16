@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
-import { isFunction } from '@nestjs/common/utils/shared.utils';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import * as jsyaml from 'js-yaml';
@@ -47,7 +46,10 @@ export class SwaggerModule {
     };
   }
 
-  public static async loadPluginMetadata(metadata: Record<string, any>) {
+  public static async loadPluginMetadata(
+    metadataFn: () => Promise<Record<string, any>>
+  ) {
+    const metadata = await metadataFn();
     return this.metadataLoader.load(metadata);
   }
 
@@ -77,14 +79,16 @@ export class SwaggerModule {
     options: {
       jsonDocumentUrl: string;
       yamlDocumentUrl: string;
-      swaggerOptions: SwaggerCustomOptions
-    },
+      swaggerOptions: SwaggerCustomOptions;
+    }
   ) {
     let document: OpenAPIObject;
 
     const lazyBuildDocument = () => {
-      return typeof documentOrFactory === 'function' ? documentOrFactory() : documentOrFactory;
-    }
+      return typeof documentOrFactory === 'function'
+        ? documentOrFactory()
+        : documentOrFactory;
+    };
 
     const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
 
@@ -105,7 +109,7 @@ export class SwaggerModule {
         }
 
         res.send(swaggerInitJS);
-      },
+      }
     );
 
     /**
@@ -115,7 +119,7 @@ export class SwaggerModule {
     try {
       httpAdapter.get(
         normalizeRelPath(
-          `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`,
+          `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
         ),
         (req, res) => {
           res.type('application/javascript');
@@ -129,7 +133,7 @@ export class SwaggerModule {
           }
 
           res.send(swaggerInitJS);
-        },
+        }
       );
     } catch (err) {
       /**
@@ -183,11 +187,11 @@ export class SwaggerModule {
       res.type('application/json');
 
       if (!document) {
-         document = lazyBuildDocument();
+        document = lazyBuildDocument();
       }
 
       if (!jsonDocument) {
-         jsonDocument = JSON.stringify(document);
+        jsonDocument = JSON.stringify(document);
       }
 
       res.send(jsonDocument);
@@ -201,7 +205,7 @@ export class SwaggerModule {
       }
 
       if (!yamlDocument) {
-         yamlDocument = jsyaml.dump(document, { skipInvalid: true });
+        yamlDocument = jsyaml.dump(document, { skipInvalid: true });
       }
 
       res.send(yamlDocument);
@@ -218,7 +222,7 @@ export class SwaggerModule {
     const finalPath = validatePath(
       options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
         ? `${globalPrefix}${validatePath(path)}`
-        : path,
+        : path
     );
     const urlLastSubdirectory = finalPath.split('/').slice(-1).pop() || '';
 
@@ -245,8 +249,8 @@ export class SwaggerModule {
       {
         jsonDocumentUrl: finalJSONDocumentPath,
         yamlDocumentUrl: finalYAMLDocumentPath,
-        swaggerOptions: options || {},
-      },
+        swaggerOptions: options || {}
+      }
     );
 
     SwaggerModule.serveStatic(finalPath, app);
