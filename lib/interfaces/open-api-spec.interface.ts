@@ -12,6 +12,7 @@ export interface OpenAPIObject {
   security?: SecurityRequirementObject[];
   tags?: TagObject[];
   externalDocs?: ExternalDocumentationObject;
+  'x-webhooks'?: WebhooksObject;
 }
 
 export interface InfoObject {
@@ -60,6 +61,23 @@ export interface ComponentsObject {
 
 export type PathsObject = Record<string, PathItemObject>;
 export interface PathItemObject {
+  $ref?: string;
+  summary?: string;
+  description?: string;
+  get?: OperationObject;
+  put?: OperationObject;
+  post?: OperationObject;
+  delete?: OperationObject;
+  options?: OperationObject;
+  head?: OperationObject;
+  patch?: OperationObject;
+  trace?: OperationObject;
+  servers?: ServerObject[];
+  parameters?: (ParameterObject | ReferenceObject)[];
+}
+
+export type WebhooksObject = Record<string, WebhookItemObject>;
+export interface WebhookItemObject {
   $ref?: string;
   summary?: string;
   description?: string;
