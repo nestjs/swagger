@@ -33,7 +33,7 @@ export const exploreApiResponseMetadata = (
   prototype: Type<unknown>,
   method: Function
 ) => {
-  applyMetadataFactory(prototype);
+  applyMetadataFactory(prototype, instance);
 
   const responses = Reflect.getMetadata(DECORATORS.API_RESPONSE, method);
   if (responses) {
@@ -88,7 +88,7 @@ const mapResponsesToSwaggerResponses = (
   return mapValues(openApiResponses, omitParamType);
 };
 
-function applyMetadataFactory(prototype: Type<unknown>) {
+function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
   const classPrototype = prototype;
   do {
     if (!prototype.constructor) {
@@ -98,7 +98,9 @@ function applyMetadataFactory(prototype: Type<unknown>) {
       continue;
     }
     const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
-    const methodKeys = Object.keys(metadata);
+    const methodKeys = Object.keys(metadata).filter(
+      (key) => typeof instance[key] === 'function'
+    );
     methodKeys.forEach((key) => {
       const { summary, deprecated, tags, ...meta } = metadata[key];
 
@@ -106,7 +108,7 @@ function applyMetadataFactory(prototype: Type<unknown>) {
         return;
       }
       if (meta.status === undefined) {
-        meta.status = getStatusCode(classPrototype[key]);
+        meta.status = getStatusCode(instance[key]);
       }
       ApiResponse(meta, { overrideExisting: false })(
         classPrototype,

@@ -8,11 +8,11 @@ export const exploreApiOperationMetadata = (
   prototype: Type<unknown>,
   method: object
 ) => {
-  applyMetadataFactory(prototype);
+  applyMetadataFactory(prototype, instance);
   return Reflect.getMetadata(DECORATORS.API_OPERATION, method);
 };
 
-function applyMetadataFactory(prototype: Type<unknown>) {
+function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
   const classPrototype = prototype;
   do {
     if (!prototype.constructor) {
@@ -22,7 +22,10 @@ function applyMetadataFactory(prototype: Type<unknown>) {
       continue;
     }
     const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
-    const methodKeys = Object.keys(metadata);
+    const methodKeys = Object.keys(metadata).filter(
+      (key) => typeof instance[key] === 'function'
+    );
+
     methodKeys.forEach((key) => {
       const operationMeta = {};
       const { summary, deprecated, tags } = metadata[key];
