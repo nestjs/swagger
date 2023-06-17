@@ -193,4 +193,82 @@ describe('Fastify Swagger', () => {
       expect(response.text.length).toBeGreaterThan(0);
     });
   });
+
+  describe('custom swagger options', () => {
+    const CUSTOM_CSS = 'body { background-color: hotpink !important }';
+    const CUSTOM_JS = '/foo.js';
+    const CUSTOM_JS_STR = 'console.log("foo")';
+    const CUSTOM_FAVICON = '/foo.ico';
+    const CUSTOM_SITE_TITLE = 'Foo';
+    const CUSTOM_CSS_URL = '/foo.css';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+
+      SwaggerModule.setup('/custom', app, swaggerDocument, {
+        customCss: CUSTOM_CSS,
+        customJs: CUSTOM_JS,
+        customJsStr: CUSTOM_JS_STR,
+        customfavIcon: CUSTOM_FAVICON,
+        customSiteTitle: CUSTOM_SITE_TITLE,
+        customCssUrl: CUSTOM_CSS_URL
+      });
+
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    it('should contain the custom css string', async () => {
+      const response: Response = await request(app.getHttpServer()).get(
+        '/custom'
+      );
+      expect(response.text).toContain(CUSTOM_CSS);
+    });
+
+    it('should source the custom js url', async () => {
+      const response: Response = await request(app.getHttpServer()).get(
+        '/custom'
+      );
+      expect(response.text).toContain(`script src='${CUSTOM_JS}'></script>`);
+    });
+
+    it('should contain the custom js string', async () => {
+      const response: Response = await request(app.getHttpServer()).get(
+        '/custom'
+      );
+      expect(response.text).toContain(CUSTOM_JS_STR);
+    });
+
+    it('should contain the custom favicon', async () => {
+      const response: Response = await request(app.getHttpServer()).get(
+        '/custom'
+      );
+      expect(response.text).toContain(
+        `<link rel='icon' href='${CUSTOM_FAVICON}' />`
+      );
+    });
+
+    it('should contain the custom site title', async () => {
+      const response: Response = await request(app.getHttpServer()).get(
+        '/custom'
+      );
+      expect(response.text).toContain(`<title>${CUSTOM_SITE_TITLE}</title>`);
+    });
+
+    it('should include the custom stylesheet', async () => {
+      const response: Response = await request(app.getHttpServer()).get(
+        '/custom'
+      );
+      expect(response.text).toContain(
+        `<link href='${CUSTOM_CSS_URL}' rel='stylesheet'>`
+      );
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+  });
 });

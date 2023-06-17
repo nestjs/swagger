@@ -77,7 +77,7 @@ export function buildSwaggerHTML(
     customSiteTitle = 'Swagger UI',
     customCssUrl = '',
     explorer = false
-  } = customOptions;
+  } = { ...customOptions, ...customOptions.swaggerOptions };
 
   const favIconString = customfavIcon
     ? `<link rel='icon' href='${customfavIcon}' />`
