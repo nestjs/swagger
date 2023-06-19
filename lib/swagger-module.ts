@@ -105,7 +105,7 @@ export class SwaggerModule {
         }
 
         if (!swaggerInitJS) {
-          swaggerInitJS = buildSwaggerInitJS(document, options);
+          swaggerInitJS = buildSwaggerInitJS(document, options.swaggerOptions);
         }
 
         res.send(swaggerInitJS);
@@ -129,7 +129,10 @@ export class SwaggerModule {
           }
 
           if (!swaggerInitJS) {
-            swaggerInitJS = buildSwaggerInitJS(document, options);
+            swaggerInitJS = buildSwaggerInitJS(
+              document,
+              options.swaggerOptions
+            );
           }
 
           res.send(swaggerInitJS);
@@ -150,7 +153,11 @@ export class SwaggerModule {
       }
 
       if (!html) {
-        html = buildSwaggerHTML(baseUrlForSwaggerUI, document, options);
+        html = buildSwaggerHTML(
+          baseUrlForSwaggerUI,
+          document,
+          options.swaggerOptions
+        );
       }
 
       res.send(html);
@@ -166,7 +173,11 @@ export class SwaggerModule {
         }
 
         if (!html) {
-          html = buildSwaggerHTML(baseUrlForSwaggerUI, document, options);
+          html = buildSwaggerHTML(
+            baseUrlForSwaggerUI,
+            document,
+            options.swaggerOptions
+          );
         }
 
         res.send(html);
