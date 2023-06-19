@@ -1,5 +1,5 @@
-import { favIconHtml, htmlTemplateString, jsTemplateString } from './constants';
 import { OpenAPIObject, SwaggerCustomOptions } from '../interfaces';
+import { favIconHtml, htmlTemplateString, jsTemplateString } from './constants';
 import { buildJSInitOptions } from './helpers';
 
 /**
@@ -77,7 +77,7 @@ export function buildSwaggerHTML(
     customSiteTitle = 'Swagger UI',
     customCssUrl = '',
     explorer = false
-  } = { ...customOptions, ...customOptions.swaggerOptions };
+  } = customOptions;
 
   const favIconString = customfavIcon
     ? `<link rel='icon' href='${customfavIcon}' />`
