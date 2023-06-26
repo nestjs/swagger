@@ -340,3 +340,18 @@ export function convertPath(windowsPath: string) {
     .replace(/\\/g, '/')
     .replace(/\/\/+/g, '/');
 }
+
+/**
+ * Checks if a node can be directly referenced.
+ * In the readonly mode, only literals can be referenced directly.
+ * Nodes like identifiers or call expressions are not available in the auto-generated code.
+ */
+export function canReferenceNode(node: ts.Node, options: PluginOptions) {
+  if (!options.readonly) {
+    return true;
+  }
+  if (ts.isIdentifier(node) || ts.isCallExpression(node)) {
+    return false;
+  }
+  return true;
+}

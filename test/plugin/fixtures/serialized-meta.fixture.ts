@@ -84,8 +84,39 @@ export default async () => {
           import('./cats/dto/create-cat.dto'),
           {
             CreateCatDto: {
+              isIn: { required: true, type: () => String },
+              pattern: {
+                required: true,
+                type: () => String,
+                pattern: '/^[+]?abc$/'
+              },
+              positive: {
+                required: true,
+                type: () => Number,
+                default: 5,
+                minimum: 1
+              },
+              negative: {
+                required: true,
+                type: () => Number,
+                default: -1,
+                maximum: -1
+              },
+              lengthMin: { required: true, type: () => String, minLength: 2 },
+              lengthMinMax: {
+                required: true,
+                type: () => String,
+                minLength: 3,
+                maxLength: 5
+              },
+              date: { required: true, type: () => Object, default: new Date() },
               name: { required: true, type: () => String },
-              age: { required: true, type: () => Number },
+              age: {
+                required: true,
+                type: () => Number,
+                default: 14,
+                minimum: 1
+              },
               breed: { required: true, type: () => String },
               tags: { required: false, type: () => [String] },
               createdAt: { required: true, type: () => Date },

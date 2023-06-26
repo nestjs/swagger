@@ -1,3 +1,13 @@
+import {
+  IsIn,
+  IsNegative,
+  IsPositive,
+  Length,
+  Matches,
+  Max,
+  Min
+} from 'class-validator';
+import { randomUUID } from 'node:crypto';
 import { ApiExtraModels, ApiProperty } from '../../../../lib';
 import { ExtraModel } from './extra-model.dto';
 import { LettersEnum } from './pagination-query.dto';
@@ -8,13 +18,37 @@ export enum CategoryState {
   DEPRECATED = 'DEPRECATED'
 }
 
+const MAX_AGE = 200;
+
 @ApiExtraModels(ExtraModel)
 export class CreateCatDto {
-  @ApiProperty()
-  readonly name: string;
+  @IsIn(['a', 'b'])
+  isIn: string;
 
+  @Matches(/^[+]?abc$/)
+  pattern: string;
+
+  @IsPositive()
+  positive: number = 5;
+
+  @IsNegative()
+  negative: number = -1;
+
+  @Length(2)
+  lengthMin: string;
+
+  @Length(3, 5)
+  lengthMinMax: string;
+
+  date = new Date();
+
+  @ApiProperty()
+  readonly name: string = randomUUID();
+
+  @Min(1)
+  @Max(MAX_AGE)
   @ApiProperty({ minimum: 1, maximum: 200 })
-  readonly age: number;
+  readonly age: number = 14;
 
   @ApiProperty({ name: '_breed', type: String })
   readonly breed: string;

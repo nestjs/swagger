@@ -281,14 +281,23 @@ export function createBooleanLiteral(
   return flag ? factory.createTrue() : factory.createFalse();
 }
 
-export function createPrimitiveLiteral(factory: ts.NodeFactory, item: unknown) {
-  const typeOfItem = typeof item;
-
+export function createPrimitiveLiteral(
+  factory: ts.NodeFactory,
+  item: unknown,
+  typeOfItem = typeof item
+) {
   switch (typeOfItem) {
     case 'boolean':
       return createBooleanLiteral(factory, item as boolean);
-    case 'number':
+    case 'number': {
+      if ((item as number) < 0) {
+        return factory.createPrefixUnaryExpression(
+          SyntaxKind.MinusToken,
+          factory.createNumericLiteral(Math.abs(item as number))
+        );
+      }
       return factory.createNumericLiteral(item as number);
+    }
     case 'string':
       return factory.createStringLiteral(item as string);
   }

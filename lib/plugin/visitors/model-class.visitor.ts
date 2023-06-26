@@ -16,6 +16,7 @@ import {
   isEnum
 } from '../utils/ast-utils';
 import {
+  canReferenceNode,
   convertPath,
   extractTypeArgumentIfArray,
   getDecoratorOrUndefinedByNames,
@@ -248,7 +249,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   ): ts.ObjectLiteralExpression {
     const isRequired = !node.questionToken;
 
-    let properties = [
+    const properties = [
       ...existingProperties,
       !hasPropertyKey('required', existingProperties) &&
         factory.createPropertyAssignment(
@@ -271,7 +272,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         options,
         sourceFile
       ),
-      this.createDefaultPropertyAssignment(factory, node, existingProperties),
+      this.createDefaultPropertyAssignment(
+        factory,
+        node,
+        existingProperties,
+        options
+      ),
       this.createEnumPropertyAssignment(
         factory,
         node,
@@ -282,8 +288,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       )
     ];
     if (options.classValidatorShim) {
-      properties = properties.concat(
-        this.createValidationPropertyAssignments(factory, node)
+      properties.push(
+        this.createValidationPropertyAssignments(factory, node, options)
       );
     }
     return factory.createObjectLiteralExpression(compact(flatten(properties)));
@@ -471,7 +477,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   createDefaultPropertyAssignment(
     factory: ts.NodeFactory,
     node: ts.PropertyDeclaration | ts.PropertySignature,
-    existingProperties: ts.NodeArray<ts.PropertyAssignment>
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>,
+    options: PluginOptions
   ) {
     const key = 'default';
     if (hasPropertyKey(key, existingProperties)) {
@@ -484,50 +491,65 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (ts.isAsExpression(initializer)) {
       initializer = initializer.expression;
     }
+    initializer =
+      this.clonePrimitiveLiteral(factory, initializer) ?? initializer;
+
+    if (!canReferenceNode(initializer, options)) {
+      return undefined;
+    }
     return factory.createPropertyAssignment(key, initializer);
   }
 
   createValidationPropertyAssignments(
     factory: ts.NodeFactory,
-    node: ts.PropertyDeclaration | ts.PropertySignature
+    node: ts.PropertyDeclaration | ts.PropertySignature,
+    options: PluginOptions
   ): ts.PropertyAssignment[] {
     const assignments = [];
     const decorators = ts.canHaveDecorators(node) && ts.getDecorators(node);
 
-    this.addPropertyByValidationDecorator(
-      factory,
-      'IsIn',
-      'enum',
-      decorators,
-      assignments
-    );
+    if (!options.readonly) {
+      // @IsIn() annotation is not supported in readonly mode
+      this.addPropertyByValidationDecorator(
+        factory,
+        'IsIn',
+        'enum',
+        decorators,
+        assignments,
+        options
+      );
+    }
     this.addPropertyByValidationDecorator(
       factory,
       'Min',
       'minimum',
       decorators,
-      assignments
+      assignments,
+      options
     );
     this.addPropertyByValidationDecorator(
       factory,
       'Max',
       'maximum',
       decorators,
-      assignments
+      assignments,
+      options
     );
     this.addPropertyByValidationDecorator(
       factory,
       'MinLength',
       'minLength',
       decorators,
-      assignments
+      assignments,
+      options
     );
     this.addPropertyByValidationDecorator(
       factory,
       'MaxLength',
       'maxLength',
       decorators,
-      assignments
+      assignments,
+      options
     );
     this.addPropertiesByValidationDecorator(
       factory,
@@ -564,19 +586,34 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       assignments,
       (decoratorRef: ts.Decorator) => {
         const decoratorArguments = getDecoratorArguments(decoratorRef);
-
         const result = [];
-        result.push(
-          factory.createPropertyAssignment(
-            'minLength',
-            head(decoratorArguments)
-          )
-        );
+
+        const minLength = head(decoratorArguments);
+        if (!canReferenceNode(minLength, options)) {
+          return result;
+        }
+
+        const clonedMinLength = this.clonePrimitiveLiteral(factory, minLength);
+        if (clonedMinLength) {
+          result.push(
+            factory.createPropertyAssignment('minLength', clonedMinLength)
+          );
+        }
 
         if (decoratorArguments.length > 1) {
-          result.push(
-            factory.createPropertyAssignment('maxLength', decoratorArguments[1])
+          const maxLength = decoratorArguments[1];
+          if (!canReferenceNode(maxLength, options)) {
+            return result;
+          }
+          const clonedMaxLength = this.clonePrimitiveLiteral(
+            factory,
+            maxLength
           );
+          if (clonedMaxLength) {
+            result.push(
+              factory.createPropertyAssignment('maxLength', clonedMaxLength)
+            );
+          }
         }
 
         return result;
@@ -606,7 +643,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     decoratorName: string,
     propertyKey: string,
     decorators: readonly ts.Decorator[],
-    assignments: ts.PropertyAssignment[]
+    assignments: ts.PropertyAssignment[],
+    options: PluginOptions
   ) {
     this.addPropertiesByValidationDecorator(
       factory,
@@ -617,16 +655,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         const argument: ts.Expression = head(
           getDecoratorArguments(decoratorRef)
         );
-        const assignment = ts.isNumericLiteral(argument)
-          ? ts.factory.createNumericLiteral(argument.text)
-          : ts.isStringLiteral(argument)
-          ? ts.factory.createStringLiteral(argument.text)
-          : argument;
-
-        if (assignment) {
-          return [factory.createPropertyAssignment(propertyKey, assignment)];
+        const assignment =
+          this.clonePrimitiveLiteral(factory, argument) ?? argument;
+        if (!canReferenceNode(assignment, options)) {
+          return [];
         }
-        return [];
+        return [factory.createPropertyAssignment(propertyKey, assignment)];
       }
     );
   }
@@ -773,5 +807,29 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       typeRef = `[${typeRef}]`;
     }
     return typeRef;
+  }
+
+  private clonePrimitiveLiteral(factory: ts.NodeFactory, node: ts.Node) {
+    const primitiveTypeName = this.getInitializerPrimitiveTypeName(node);
+    if (!primitiveTypeName) {
+      return undefined;
+    }
+    return createPrimitiveLiteral(factory, node.getText(), primitiveTypeName);
+  }
+
+  private getInitializerPrimitiveTypeName(node: ts.Node) {
+    if (
+      ts.isIdentifier(node) &&
+      (node.text === 'true' || node.text === 'false')
+    ) {
+      return 'boolean';
+    }
+    if (ts.isNumericLiteral(node) || ts.isPrefixUnaryExpression(node)) {
+      return 'number';
+    }
+    if (ts.isStringLiteral(node)) {
+      return 'string';
+    }
+    return undefined;
   }
 }
