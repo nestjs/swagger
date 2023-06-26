@@ -12,6 +12,7 @@ import {
   getTsDocTagsOfNode
 } from '../utils/ast-utils';
 import {
+  convertPath,
   getDecoratorOrUndefinedByNames,
   getTypeReferenceAsString,
   hasPropertyKey,
@@ -204,12 +205,19 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       decorators,
       factory
     );
-    const apiOperationExpr: ts.ObjectLiteralExpression | undefined =
-      apiOperationDecorator &&
-      head(getDecoratorArguments(apiOperationDecorator));
-    const apiOperationExprProperties =
-      apiOperationExpr &&
-      (apiOperationExpr.properties as ts.NodeArray<ts.PropertyAssignment>);
+    let apiOperationExistingProps:
+      | ts.NodeArray<ts.PropertyAssignment>
+      | undefined = undefined;
+
+    if (apiOperationDecorator && !options.readonly) {
+      const apiOperationExpr = head(
+        getDecoratorArguments(apiOperationDecorator)
+      );
+      if (apiOperationExpr) {
+        apiOperationExistingProps =
+          apiOperationExpr.properties as ts.NodeArray<ts.PropertyAssignment>;
+      }
+    }
 
     const extractedComments = getMainCommentOfNode(node, sourceFile);
     if (!extractedComments) {
@@ -222,12 +230,12 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         keyToGenerate,
         factory.createStringLiteral(extractedComments)
       ),
-      ...(apiOperationExprProperties ?? factory.createNodeArray())
+      ...(apiOperationExistingProps ?? factory.createNodeArray())
     ];
 
     const hasDeprecatedKey = hasPropertyKey(
       'deprecated',
-      factory.createNodeArray(apiOperationExprProperties)
+      factory.createNodeArray(apiOperationExistingProps)
     );
     if (!hasDeprecatedKey && tags.deprecated) {
       const deprecatedPropertyAssignment = factory.createPropertyAssignment(
@@ -345,16 +353,15 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!type) {
       return undefined;
     }
-    const { typeName, isArray } = getTypeReferenceAsString(type, typeChecker);
-    if (!typeName) {
+    const typeReferenceDescriptor = getTypeReferenceAsString(type, typeChecker);
+    if (!typeReferenceDescriptor.typeName) {
       return undefined;
     }
-    if (typeName.includes('node_modules')) {
+    if (typeReferenceDescriptor.typeName.includes('node_modules')) {
       return undefined;
     }
     const identifier = this.typeReferenceStringToIdentifier(
-      typeName,
-      isArray,
+      typeReferenceDescriptor,
       hostFilename,
       options,
       factory
@@ -399,20 +406,23 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   }
 
   private normalizeImportPath(pathToSource: string, path: string) {
-    let relativePath = posix.relative(pathToSource, path);
+    let relativePath = posix.relative(pathToSource, convertPath(path));
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
     return relativePath;
   }
 
   private typeReferenceStringToIdentifier(
-    _typeReference: string,
-    isArray: boolean,
+    typeReferenceDescriptor: {
+      typeName: string;
+      isArray?: boolean;
+      arrayDepth?: number;
+    },
     hostFilename: string,
     options: PluginOptions,
     factory: ts.NodeFactory
   ) {
-    const { typeReference, importPath } = replaceImportPath(
-      _typeReference,
+    const { typeReference, importPath, typeName } = replaceImportPath(
+      typeReferenceDescriptor.typeName,
       hostFilename,
       options
     );
@@ -423,14 +433,25 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         this._typeImports[importPath] = typeReference;
       }
 
-      identifier = factory.createIdentifier(
-        isArray ? `[t["${importPath}"]]` : `t["${importPath}"]`
-      );
+      let ref = `t["${importPath}"].${typeName}`;
+      if (typeReferenceDescriptor.isArray) {
+        ref = this.wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
+      }
+      identifier = factory.createIdentifier(ref);
     } else {
-      identifier = factory.createIdentifier(
-        isArray ? `[${typeReference}]` : typeReference
-      );
+      let ref = typeReference;
+      if (typeReferenceDescriptor.isArray) {
+        ref = this.wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
+      }
+      identifier = factory.createIdentifier(ref);
     }
     return identifier;
+  }
+
+  private wrapTypeInArray(typeRef: string, arrayDepth: number) {
+    for (let i = 0; i < arrayDepth; i++) {
+      typeRef = `[${typeRef}]`;
+    }
+    return typeRef;
   }
 }

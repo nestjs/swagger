@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiOperation } from '../../../../lib/decorators';
 
 @Controller()
 export class AppController {
@@ -21,6 +22,10 @@ export class AppController {
     return 'Hello world!';
   }
 
+  /**
+   * Returns information about the application
+   */
+  @ApiOperation({ summary: 'Returns Hello World' })
   @Get('fastify::colon::another/:prop')
   withColonFastify(): string {
     return 'Hello world!';

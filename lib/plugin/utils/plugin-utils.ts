@@ -161,7 +161,7 @@ export function replaceImportPath(
   } catch (_error) {
     const from = options?.readonly
       ? options.pathToSource
-      : posix.dirname(fileName);
+      : posix.dirname(convertPath(fileName));
 
     let relativePath = posix.relative(from, importPath);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
@@ -190,10 +190,17 @@ export function replaceImportPath(
 
     typeReference = typeReference.replace(importPath, relativePath);
 
+    if (options.readonly) {
+      const { typeName, typeImportStatement } =
+        convertToAsyncImport(typeReference);
+      return {
+        typeReference: typeImportStatement,
+        typeName,
+        importPath: relativePath
+      };
+    }
     return {
-      typeReference: options.readonly
-        ? convertToAsyncImport(typeReference)
-        : typeReference.replace('import', 'require'),
+      typeReference: typeReference.replace('import', 'require'),
       importPath: relativePath
     };
   }
@@ -205,14 +212,15 @@ function convertToAsyncImport(typeReference: string) {
 
   if (match?.length >= 2) {
     const importPos = typeReference.indexOf(match[0]);
-    typeReference = typeReference.replace(
-      match[1],
-      `then((f) => f.${match[1]})`
-    );
-    return insertAt(typeReference, importPos, 'await ');
+    typeReference = typeReference.replace(`.${match[1]}`, '');
+
+    return {
+      typeImportStatement: insertAt(typeReference, importPos, 'await '),
+      typeName: match[1]
+    };
   }
 
-  return typeReference;
+  return { typeImportStatement: typeReference };
 }
 
 export function insertAt(string: string, index: number, substring: string) {
@@ -326,7 +334,7 @@ function isOptionalBoolean(text: string) {
  * Converts Windows specific file paths to posix
  * @param windowsPath
  */
-function convertPath(windowsPath: string) {
+export function convertPath(windowsPath: string) {
   return windowsPath
     .replace(/^\\\\\?\\/, '')
     .replace(/\\/g, '/')

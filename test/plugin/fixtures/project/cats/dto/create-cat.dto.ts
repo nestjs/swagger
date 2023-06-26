@@ -3,6 +3,11 @@ import { ExtraModel } from './extra-model.dto';
 import { LettersEnum } from './pagination-query.dto';
 import { TagDto } from './tag.dto';
 
+export enum CategoryState {
+  OK = 'OK',
+  DEPRECATED = 'DEPRECATED'
+}
+
 @ApiExtraModels(ExtraModel)
 export class CreateCatDto {
   @ApiProperty()
@@ -47,6 +52,12 @@ export class CreateCatDto {
     enumName: 'LettersEnum'
   })
   readonly enum: LettersEnum;
+
+  /**
+   * Available language in the application
+   * @example FR
+   */
+  state?: CategoryState;
 
   @ApiProperty({
     enum: LettersEnum,

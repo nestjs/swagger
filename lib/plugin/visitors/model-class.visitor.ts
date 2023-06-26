@@ -16,6 +16,7 @@ import {
   isEnum
 } from '../utils/ast-utils';
 import {
+  convertPath,
   extractTypeArgumentIfArray,
   getDecoratorOrUndefinedByNames,
   getTypeReferenceAsString,
@@ -725,7 +726,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   private normalizeImportPath(pathToSource: string, path: string) {
-    let relativePath = posix.relative(pathToSource, path);
+    let relativePath = posix.relative(pathToSource, convertPath(path));
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
     return relativePath;
   }
@@ -740,7 +741,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     options: PluginOptions,
     factory: ts.NodeFactory
   ) {
-    const { typeReference, importPath } = replaceImportPath(
+    const { typeReference, importPath, typeName } = replaceImportPath(
       typeReferenceDescriptor.typeName,
       hostFilename,
       options
@@ -752,7 +753,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         this._typeImports[importPath] = typeReference;
       }
 
-      let ref = `t["${importPath}"]`;
+      let ref = `t["${importPath}"].${typeName}`;
       if (typeReferenceDescriptor.isArray) {
         ref = this.wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
       }
