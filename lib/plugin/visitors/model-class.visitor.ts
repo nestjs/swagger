@@ -310,14 +310,13 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   /**
-   * The function returns an array with 0, 1 or 2 PropertyAssignments.
-   * Possible keys:
-   * - 'type'
-   * - 'nullable'
+   * Returns an array with 0..2 "ts.PropertyAssignment"s.
+   * The first one is the "type" property assignment, the second one is the "nullable" property assignment.
+   * When type cannot be determined, an empty array is returned.
    */
   private createTypePropertyAssignments(
     factory: ts.NodeFactory,
-    node: ts.TypeNode,
+    node: ts.TypeNode | undefined,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string,
@@ -327,53 +326,26 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (hasPropertyKey(key, existingProperties)) {
       return [];
     }
+
     if (node) {
       if (ts.isTypeLiteralNode(node)) {
-        const propertyAssignments = Array.from(node.members || []).map(
-          (member) => {
-            const literalExpr = this.createDecoratorObjectLiteralExpr(
-              factory,
-              member as ts.PropertySignature,
-              typeChecker,
-              existingProperties,
-              {},
-              hostFilename
-            );
-            return factory.createPropertyAssignment(
-              factory.createIdentifier(member.name.getText()),
-              literalExpr
-            );
-          }
+        const initializer = this.createInitializerForTypeLiteralNode(
+          node,
+          factory,
+          typeChecker,
+          existingProperties,
+          hostFilename
         );
-        return [
-          factory.createPropertyAssignment(
-            key,
-            factory.createArrowFunction(
-              undefined,
-              undefined,
-              [],
-              undefined,
-              undefined,
-              factory.createParenthesizedExpression(
-                factory.createObjectLiteralExpression(propertyAssignments)
-              )
-            )
-          )
-        ];
+        return [factory.createPropertyAssignment(key, initializer)];
       } else if (ts.isUnionTypeNode(node)) {
-        const nullableType = node.types.find(
-          (type) =>
-            type.kind === ts.SyntaxKind.NullKeyword ||
-            (ts.SyntaxKind.LiteralType && type.getText() === 'null')
-        );
-        const isNullable = !!nullableType;
+        const { nullableType, isNullable } = this.isNullableUnion(node);
         const remainingTypes = node.types.filter(
           (item) => item !== nullableType
         );
 
-        // When we have more than 1 type left, we could use oneOf
+        // TODO: When we have more than 1 type left, we could use "oneOf"
         if (remainingTypes.length === 1) {
-          const remainingTypesProperties = this.createTypePropertyAssignments(
+          const propertyAssignments = this.createTypePropertyAssignments(
             factory,
             remainingTypes[0],
             typeChecker,
@@ -381,18 +353,16 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             hostFilename,
             options
           );
-
-          const resultArray = new Array<ts.PropertyAssignment>(
-            ...remainingTypesProperties
-          );
-          if (isNullable) {
-            const nullablePropertyAssignment = factory.createPropertyAssignment(
+          if (!isNullable) {
+            return propertyAssignments;
+          }
+          return [
+            ...propertyAssignments,
+            factory.createPropertyAssignment(
               'nullable',
               createBooleanLiteral(factory, true)
-            );
-            resultArray.push(nullablePropertyAssignment);
-          }
-          return resultArray;
+            )
+          ];
         }
       }
     }
@@ -401,10 +371,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (!type) {
       return [];
     }
+
     const typeReferenceDescriptor = getTypeReferenceAsString(type, typeChecker);
     if (!typeReferenceDescriptor.typeName) {
       return [];
     }
+
     const identifier = typeReferenceToIdentifier(
       typeReferenceDescriptor,
       hostFilename,
@@ -423,6 +395,50 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       identifier
     );
     return [factory.createPropertyAssignment(key, initializer)];
+  }
+
+  createInitializerForTypeLiteralNode(
+    node: ts.TypeLiteralNode,
+    factory: ts.NodeFactory,
+    typeChecker: ts.TypeChecker,
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>,
+    hostFilename: string
+  ) {
+    const propertyAssignments = Array.from(node.members || []).map((member) => {
+      const literalExpr = this.createDecoratorObjectLiteralExpr(
+        factory,
+        member as ts.PropertySignature,
+        typeChecker,
+        existingProperties,
+        {},
+        hostFilename
+      );
+      return factory.createPropertyAssignment(
+        factory.createIdentifier(member.name.getText()),
+        literalExpr
+      );
+    });
+    const initializer = factory.createArrowFunction(
+      undefined,
+      undefined,
+      [],
+      undefined,
+      undefined,
+      factory.createParenthesizedExpression(
+        factory.createObjectLiteralExpression(propertyAssignments)
+      )
+    );
+    return initializer;
+  }
+
+  isNullableUnion(node: ts.UnionTypeNode) {
+    const nullableType = node.types.find(
+      (type) =>
+        type.kind === ts.SyntaxKind.NullKeyword ||
+        (ts.SyntaxKind.LiteralType && type.getText() === 'null')
+    );
+    const isNullable = !!nullableType;
+    return { nullableType, isNullable };
   }
 
   createEnumPropertyAssignment(
