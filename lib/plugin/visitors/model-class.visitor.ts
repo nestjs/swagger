@@ -799,7 +799,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   }
 
   private normalizeImportPath(pathToSource: string, path: string) {
-    let relativePath = posix.relative(pathToSource, convertPath(path));
+    let relativePath = posix.relative(
+      convertPath(pathToSource),
+      convertPath(path)
+    );
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
     return relativePath;
   }

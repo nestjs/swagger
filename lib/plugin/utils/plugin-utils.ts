@@ -160,7 +160,7 @@ export function replaceImportPath(
     };
   } catch (_error) {
     const from = options?.readonly
-      ? options.pathToSource
+      ? convertPath(options.pathToSource)
       : posix.dirname(convertPath(fileName));
 
     let relativePath = posix.relative(from, importPath);
