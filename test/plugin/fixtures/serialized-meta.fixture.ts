@@ -103,7 +103,13 @@ export default async () => {
                 default: -1,
                 maximum: -1
               },
-              lengthMin: { required: true, type: () => String, minLength: 2 },
+              lengthMin: {
+                required: true,
+                type: () => String,
+                nullable: true,
+                default: null,
+                minLength: 2
+              },
               lengthMinMax: {
                 required: true,
                 type: () => String,
@@ -111,6 +117,7 @@ export default async () => {
                 maxLength: 5
               },
               date: { required: true, type: () => Object, default: new Date() },
+              active: { required: true, type: () => Boolean, default: false },
               name: { required: true, type: () => String },
               age: {
                 required: true,
@@ -156,7 +163,8 @@ export default async () => {
                   first: { required: true, type: () => String },
                   second: { required: true, type: () => Number }
                 })
-              }
+              },
+              logger: { required: true, type: () => Object }
             }
           }
         ]

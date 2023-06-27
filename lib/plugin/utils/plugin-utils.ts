@@ -350,8 +350,28 @@ export function canReferenceNode(node: ts.Node, options: PluginOptions) {
   if (!options.readonly) {
     return true;
   }
-  if (ts.isIdentifier(node) || ts.isCallExpression(node)) {
+  if (ts.isCallExpression(node) || ts.isIdentifier(node)) {
     return false;
   }
-  return true;
+  if (ts.isNewExpression(node)) {
+    if ((node.expression as ts.Identifier)?.escapedText === 'Date') {
+      return true;
+    }
+    return false;
+  }
+  if (
+    node.kind === ts.SyntaxKind.FalseKeyword ||
+    node.kind === ts.SyntaxKind.TrueKeyword ||
+    node.kind === ts.SyntaxKind.NullKeyword
+  ) {
+    return true;
+  }
+  if (
+    ts.isNumericLiteral(node) ||
+    ts.isPrefixUnaryExpression(node) ||
+    ts.isStringLiteral(node)
+  ) {
+    return true;
+  }
+  return false;
 }

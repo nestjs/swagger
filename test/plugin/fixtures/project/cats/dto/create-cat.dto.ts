@@ -1,3 +1,4 @@
+import { ConsoleLogger } from '@nestjs/common';
 import {
   IsIn,
   IsNegative,
@@ -44,12 +45,14 @@ export class CreateCatDto {
   negative: number = -1;
 
   @Length(2)
-  lengthMin: string;
+  lengthMin: string | null = null;
 
   @Length(3, 5)
   lengthMinMax: string;
 
   date = new Date();
+
+  active: boolean = false;
 
   @ApiProperty()
   name: string = randomUUID();
@@ -121,6 +124,10 @@ export class CreateCatDto {
     second: number;
   };
 
+  // Both props should be ignored
   nonExportedEnum: NonExportedEnum;
   nonExportedClass: NonExportedClass;
+
+  // Default value should be ignored
+  logger = new ConsoleLogger();
 }
