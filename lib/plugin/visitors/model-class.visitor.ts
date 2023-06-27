@@ -5,6 +5,7 @@ import { PropertyAssignment, factory } from 'typescript';
 import { ApiHideProperty } from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { METADATA_FACTORY_NAME } from '../plugin-constants';
+import { pluginDebugLogger } from '../plugin-debug-logger';
 import {
   createBooleanLiteral,
   createLiteralFromAnyValue,
@@ -97,7 +98,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           if (isExported) {
             ts.forEachChild(node, propertyNodeVisitorFactory(metadata));
           } else {
-            // TODO: Log debug warning
+            if (options.debug) {
+              pluginDebugLogger.debug(
+                `Skipping class "${node.name.getText()}" because it's not exported.`
+              );
+            }
           }
         } else {
           node = ts.visitEachChild(
