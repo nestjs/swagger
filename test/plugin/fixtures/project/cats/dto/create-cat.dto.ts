@@ -13,6 +13,15 @@ import { ExtraModel } from './extra-model.dto';
 import { LettersEnum } from './pagination-query.dto';
 import { TagDto } from './tag.dto';
 
+enum NonExportedEnum {
+  YES = 'YES',
+  NO = 'NO'
+}
+
+class NonExportedClass {
+  prop: string;
+}
+
 export enum CategoryState {
   OK = 'OK',
   DEPRECATED = 'DEPRECATED'
@@ -43,21 +52,21 @@ export class CreateCatDto {
   date = new Date();
 
   @ApiProperty()
-  readonly name: string = randomUUID();
+  name: string = randomUUID();
 
   @Min(1)
   @Max(MAX_AGE)
   @ApiProperty({ minimum: 1, maximum: 200 })
-  readonly age: number = 14;
+  age: number = 14;
 
   @ApiProperty({ name: '_breed', type: String })
-  readonly breed: string;
+  breed: string;
 
   @ApiProperty({
     format: 'uri',
     type: [String]
   })
-  readonly tags?: string[];
+  tags?: string[];
 
   @ApiProperty()
   createdAt: Date;
@@ -66,7 +75,7 @@ export class CreateCatDto {
     type: 'string',
     isArray: true
   })
-  readonly urls?: string[];
+  urls?: string[];
 
   @ApiProperty({
     type: 'array',
@@ -79,13 +88,13 @@ export class CreateCatDto {
       }
     }
   })
-  readonly options?: Record<string, any>[];
+  options?: Record<string, any>[];
 
   @ApiProperty({
     enum: LettersEnum,
     enumName: 'LettersEnum'
   })
-  readonly enum: LettersEnum;
+  enum: LettersEnum;
 
   /**
    * Available language in the application
@@ -98,17 +107,20 @@ export class CreateCatDto {
     enumName: 'LettersEnum',
     isArray: true
   })
-  readonly enumArr: LettersEnum;
+  enumArr: LettersEnum;
 
-  readonly enumArr2: LettersEnum[];
+  enumArr2: LettersEnum[];
 
   @ApiProperty({ description: 'tag', required: false })
-  readonly tag: TagDto;
+  tag: TagDto;
 
-  readonly multipleTags: TagDto[];
+  multipleTags: TagDto[];
 
   nested: {
     first: string;
     second: number;
   };
+
+  nonExportedEnum: NonExportedEnum;
+  nonExportedClass: NonExportedClass;
 }

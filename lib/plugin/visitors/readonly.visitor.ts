@@ -10,7 +10,10 @@ export class ReadonlyVisitor {
   private readonly controllerClassVisitor = new ControllerClassVisitor();
 
   get typeImports() {
-    return this.modelClassVisitor.typeImports;
+    return {
+      ...this.modelClassVisitor.typeImports,
+      ...this.controllerClassVisitor.typeImports
+    };
   }
 
   constructor(private readonly options: PluginOptions) {

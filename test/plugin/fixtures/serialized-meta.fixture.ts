@@ -5,7 +5,8 @@ export default async () => {
       './cats/dto/pagination-query.dto'
     ),
     ['./cats/dto/create-cat.dto']: await import('./cats/dto/create-cat.dto'),
-    ['./cats/dto/tag.dto']: await import('./cats/dto/tag.dto')
+    ['./cats/dto/tag.dto']: await import('./cats/dto/tag.dto'),
+    ['./cats/classes/cat.class']: await import('./cats/classes/cat.class')
   };
   return {
     '@nestjs/swagger': {

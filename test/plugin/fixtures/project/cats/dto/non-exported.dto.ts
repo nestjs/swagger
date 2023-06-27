@@ -1,0 +1,3 @@
+class NonExportedDto {
+  name: string;
+}

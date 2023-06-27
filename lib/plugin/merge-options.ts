@@ -9,6 +9,7 @@ export interface PluginOptions {
   introspectComments?: boolean;
   readonly?: boolean;
   pathToSource?: string;
+  debug?: boolean;
 }
 
 const defaultOptions: PluginOptions = {
@@ -18,7 +19,8 @@ const defaultOptions: PluginOptions = {
   dtoKeyOfComment: 'description',
   controllerKeyOfComment: 'description',
   introspectComments: false,
-  readonly: false
+  readonly: false,
+  debug: false
 };
 
 export const mergePluginOptions = (

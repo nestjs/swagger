@@ -20,7 +20,8 @@ describe('Readonly visitor', () => {
     pathToSource: join(__dirname, 'fixtures', 'project'),
     introspectComments: true,
     dtoFileNameSuffix: ['.dto.ts', '.model.ts', '.class.ts'],
-    classValidatorShim: true
+    classValidatorShim: true,
+    debug: true
   });
   const metadataPrinter = new PluginMetadataPrinter();
 

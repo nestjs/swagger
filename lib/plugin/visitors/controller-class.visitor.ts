@@ -15,9 +15,9 @@ import {
   convertPath,
   getDecoratorOrUndefinedByNames,
   getTypeReferenceAsString,
-  hasPropertyKey,
-  replaceImportPath
+  hasPropertyKey
 } from '../utils/plugin-utils';
+import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util';
 import { AbstractFileVisitor } from './abstract.visitor';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
@@ -360,11 +360,13 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (typeReferenceDescriptor.typeName.includes('node_modules')) {
       return undefined;
     }
-    const identifier = this.typeReferenceStringToIdentifier(
+    const identifier = typeReferenceToIdentifier(
       typeReferenceDescriptor,
       hostFilename,
       options,
-      factory
+      factory,
+      type,
+      this._typeImports
     );
     return factory.createPropertyAssignment('type', identifier);
   }
@@ -409,49 +411,5 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     let relativePath = posix.relative(pathToSource, convertPath(path));
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
     return relativePath;
-  }
-
-  private typeReferenceStringToIdentifier(
-    typeReferenceDescriptor: {
-      typeName: string;
-      isArray?: boolean;
-      arrayDepth?: number;
-    },
-    hostFilename: string,
-    options: PluginOptions,
-    factory: ts.NodeFactory
-  ) {
-    const { typeReference, importPath, typeName } = replaceImportPath(
-      typeReferenceDescriptor.typeName,
-      hostFilename,
-      options
-    );
-
-    let identifier: ts.Identifier;
-    if (options.readonly && typeReference?.includes('import')) {
-      if (!this._typeImports[importPath]) {
-        this._typeImports[importPath] = typeReference;
-      }
-
-      let ref = `t["${importPath}"].${typeName}`;
-      if (typeReferenceDescriptor.isArray) {
-        ref = this.wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
-      }
-      identifier = factory.createIdentifier(ref);
-    } else {
-      let ref = typeReference;
-      if (typeReferenceDescriptor.isArray) {
-        ref = this.wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
-      }
-      identifier = factory.createIdentifier(ref);
-    }
-    return identifier;
-  }
-
-  private wrapTypeInArray(typeRef: string, arrayDepth: number) {
-    for (let i = 0; i < arrayDepth; i++) {
-      typeRef = `[${typeRef}]`;
-    }
-    return typeRef;
   }
 }
