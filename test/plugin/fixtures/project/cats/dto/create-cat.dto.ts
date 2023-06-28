@@ -63,7 +63,7 @@ export class CreateCatDto {
   age: number = 14;
 
   @ApiProperty({ name: '_breed', type: String })
-  breed: string;
+  breed: string = 'Persian';
 
   @ApiProperty({
     format: 'uri',

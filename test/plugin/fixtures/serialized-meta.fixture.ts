@@ -125,7 +125,7 @@ export default async () => {
                 default: 14,
                 minimum: 1
               },
-              breed: { required: true, type: () => String },
+              breed: { required: true, type: () => String, default: 'Persian' },
               tags: { required: false, type: () => [String] },
               createdAt: { required: true, type: () => Date },
               urls: { required: false, type: () => [String] },
