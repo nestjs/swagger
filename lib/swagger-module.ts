@@ -104,7 +104,7 @@ export class SwaggerModule {
           document = lazyBuildDocument();
 
           if (options.swaggerOptions.patchDocument) {
-            document = options.swaggerOptions.patchDocument(req, res, document)
+            document = options.swaggerOptions.patchDocument(req, res, document);
           }
         }
 
@@ -132,7 +132,11 @@ export class SwaggerModule {
             document = lazyBuildDocument();
 
             if (options.swaggerOptions.patchDocument) {
-              document = options.swaggerOptions.patchDocument(req, res, document);
+              document = options.swaggerOptions.patchDocument(
+                req,
+                res,
+                document
+              );
             }
           }
 
@@ -160,7 +164,7 @@ export class SwaggerModule {
         document = lazyBuildDocument();
 
         if (options.swaggerOptions.patchDocument) {
-          document = options.swaggerOptions.patchDocument(req, res, document)
+          document = options.swaggerOptions.patchDocument(req, res, document);
         }
       }
 
@@ -217,7 +221,7 @@ export class SwaggerModule {
         document = lazyBuildDocument();
 
         if (options.swaggerOptions.patchDocument) {
-          document = options.swaggerOptions.patchDocument(req, res, document)
+          document = options.swaggerOptions.patchDocument(req, res, document);
         }
       }
 
@@ -235,7 +239,7 @@ export class SwaggerModule {
         document = lazyBuildDocument();
 
         if (options.swaggerOptions.patchDocument) {
-          document = options.swaggerOptions.patchDocument(req, res, document)
+          document = options.swaggerOptions.patchDocument(req, res, document);
         }
       }
 
