@@ -116,7 +116,14 @@ describe('Fastify Swagger', () => {
       );
       SwaggerModule.setup('api', app, swaggerDocument, {
         jsonDocumentUrl: JSON_CUSTOM_URL,
-        yamlDocumentUrl: YAML_CUSTOM_URL
+        yamlDocumentUrl: YAML_CUSTOM_URL,
+        patchDocument: (req, res, document) => ({
+          ...document,
+          info: {
+            ...document.info,
+            description: (req as Record<string, any>).query.description
+          }
+        })
       });
 
       await app.init();
@@ -134,11 +141,26 @@ describe('Fastify Swagger', () => {
       expect(Object.keys(response.body).length).toBeGreaterThan(0);
     });
 
+    it('patched JSON document should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${JSON_CUSTOM_URL}?description=My%20custom%20description`
+      );
+
+      expect(response.body.info.description).toBe("My custom description");
+    });
+
     it('yaml document should be server in the custom url', async () => {
       const response = await request(app.getHttpServer()).get(YAML_CUSTOM_URL);
 
       expect(response.status).toEqual(200);
       expect(response.text.length).toBeGreaterThan(0);
+    });
+
+    it('patched YAML document should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${YAML_CUSTOM_URL}?description=My%20custom%20description`
+      );
+      expect(response.text).toContain("My custom description");
     });
   });
 
