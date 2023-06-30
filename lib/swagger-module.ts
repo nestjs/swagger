@@ -103,8 +103,8 @@ export class SwaggerModule {
         if (!document) {
           document = lazyBuildDocument();
 
-          if (options.swaggerOptions.patchDocument) {
-            document = options.swaggerOptions.patchDocument(req, res, document);
+          if (options.swaggerOptions.patchDocumentOnRequest) {
+            document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
           }
         }
 
@@ -131,8 +131,8 @@ export class SwaggerModule {
           if (!document) {
             document = lazyBuildDocument();
 
-            if (options.swaggerOptions.patchDocument) {
-              document = options.swaggerOptions.patchDocument(
+            if (options.swaggerOptions.patchDocumentOnRequest) {
+              document = options.swaggerOptions.patchDocumentOnRequest(
                 req,
                 res,
                 document
@@ -163,8 +163,8 @@ export class SwaggerModule {
       if (!document) {
         document = lazyBuildDocument();
 
-        if (options.swaggerOptions.patchDocument) {
-          document = options.swaggerOptions.patchDocument(req, res, document);
+        if (options.swaggerOptions.patchDocumentOnRequest) {
+          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
         }
       }
 
@@ -187,8 +187,8 @@ export class SwaggerModule {
         if (!document) {
           document = lazyBuildDocument();
 
-          if (options.swaggerOptions.patchDocument) {
-            document = options.swaggerOptions.patchDocument(req, res, document);
+          if (options.swaggerOptions.patchDocumentOnRequest) {
+            document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
           }
         }
 
@@ -220,8 +220,8 @@ export class SwaggerModule {
       if (!document) {
         document = lazyBuildDocument();
 
-        if (options.swaggerOptions.patchDocument) {
-          document = options.swaggerOptions.patchDocument(req, res, document);
+        if (options.swaggerOptions.patchDocumentOnRequest) {
+          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
         }
       }
 
@@ -238,8 +238,8 @@ export class SwaggerModule {
       if (!document) {
         document = lazyBuildDocument();
 
-        if (options.swaggerOptions.patchDocument) {
-          document = options.swaggerOptions.patchDocument(req, res, document);
+        if (options.swaggerOptions.patchDocumentOnRequest) {
+          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
         }
       }
 

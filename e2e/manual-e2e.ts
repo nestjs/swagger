@@ -124,7 +124,7 @@ async function bootstrap() {
   });
 
   SwaggerModule.setup("/:tenantId/api-docs", app, document, {
-    patchDocument: (req, res, document1) => ({
+    patchDocumentOnRequest: (req, res, document1) => ({
       ...document1,
       info: {
         ...document1.info,

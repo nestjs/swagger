@@ -114,7 +114,7 @@ describe('Express Swagger', () => {
       SwaggerModule.setup('api', app, swaggerDocument, {
         jsonDocumentUrl: JSON_CUSTOM_URL,
         yamlDocumentUrl: YAML_CUSTOM_URL,
-        patchDocument: (req, res, document) => ({
+        patchDocumentOnRequest: (req, res, document) => ({
           ...document,
           info: {
             ...document.info,
@@ -232,7 +232,7 @@ describe('Express Swagger', () => {
         customfavIcon: CUSTOM_FAVICON,
         customSiteTitle: CUSTOM_SITE_TITLE,
         customCssUrl: CUSTOM_CSS_URL,
-        patchDocument<ExpressRequest, ExpressResponse> (req, res, document) {
+        patchDocumentOnRequest<ExpressRequest, ExpressResponse> (req, res, document) {
           return {
             ...document,
             info: {
@@ -301,7 +301,7 @@ describe('Express Swagger', () => {
       );
 
       SwaggerModule.setup('/:customer/', app, swaggerDocument, {
-        patchDocument<ExpressRequest, ExpressResponse> (req, res, document) {
+        patchDocumentOnRequest<ExpressRequest, ExpressResponse> (req, res, document) {
           return {
             ...document,
             info: {
