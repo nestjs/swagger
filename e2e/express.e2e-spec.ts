@@ -138,10 +138,12 @@ describe('Express Swagger', () => {
     });
 
     it('patched JSON document should be served', async () => {
-      const response = await request(app.getHttpServer()).get(`${JSON_CUSTOM_URL}?description=My%20custom%20description`);
+      const response = await request(app.getHttpServer()).get(
+        `${JSON_CUSTOM_URL}?description=My%20custom%20description`
+      );
 
-      expect(response.body.info.description).toBe("My custom description")
-    })
+      expect(response.body.info.description).toBe("My custom description");
+    });
 
     it('yaml document should be server in the custom url', async () => {
       const response = await request(app.getHttpServer()).get(YAML_CUSTOM_URL);
@@ -151,10 +153,11 @@ describe('Express Swagger', () => {
     });
 
     it('patched YAML document should be served', async () => {
-      const response = await request(app.getHttpServer()).get(`${YAML_CUSTOM_URL}?description=My%20custom%20description`);
-
-      expect(response.text).toContain("My custom description")
-    })
+      const response = await request(app.getHttpServer()).get(
+        `${YAML_CUSTOM_URL}?description=My%20custom%20description`
+      );
+      expect(response.text).toContain("My custom description");
+    });
   });
 
   describe('custom documents endpoints with global prefix', () => {
@@ -277,11 +280,13 @@ describe('Express Swagger', () => {
     });
 
     it('should patch the OpenAPI document', async () => {
-      const response: Response = await request(app.getHttpServer()).get('/swagger-ui-init.js?description=Custom%20Swagger%20description%20passed%20by%20query%20param')
+      const response: Response = await request(app.getHttpServer()).get(
+        '/swagger-ui-init.js?description=Custom%20Swagger%20description%20passed%20by%20query%20param'
+      );
       expect(response.text).toContain(
         `"description": "Custom Swagger description passed by query param"`
-      )
-    })
+      );
+    });
 
     it('should patch the OpenAPI document based on path param of the swagger prefix', async () => {
       const app = await NestFactory.create<NestExpressApplication>(
@@ -289,8 +294,6 @@ describe('Express Swagger', () => {
         new ExpressAdapter(),
         { logger: false }
       );
-
-      app.setGlobalPrefix("/:customer/")
 
       const swaggerDocument = SwaggerModule.createDocument(
         app,
@@ -310,10 +313,10 @@ describe('Express Swagger', () => {
 
       await app.init();
 
-      const response: Response = await request(app.getHttpServer()).get('/customer-1/swagger-ui-init.js')
+      const response: Response = await request(app.getHttpServer()).get('/customer-1/swagger-ui-init.js');
 
-      await app.close()
-      expect(response.text).toContain("customer-1's API documentation")
+      await app.close();
+      expect(response.text).toContain("customer-1's API documentation");
     })
 
     afterEach(async () => {

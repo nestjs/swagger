@@ -277,11 +277,11 @@ describe('Fastify Swagger', () => {
     it('should patch the OpenAPI document', async function () {
       const response: Response = await request(app.getHttpServer()).get(
         "/custom/swagger-ui-init.js?description=Custom%20Swagger%20description%20passed%20by%20query%20param"
-      )
+      );
       expect(response.text).toContain(
         `"description": "Custom Swagger description passed by query param"`
-      )
-    })
+      );
+    });
 
     it('should patch the OpenAPI document based on path param of the swagger prefix', async () => {
       const app = await NestFactory.create<NestFastifyApplication>(
@@ -309,10 +309,10 @@ describe('Fastify Swagger', () => {
       await app.init();
       await app.getHttpAdapter().getInstance().ready();
 
-      const response: Response = await request(app.getHttpServer()).get('/tenant-1/swagger-ui-init.js')
+      const response: Response = await request(app.getHttpServer()).get('/tenant-1/swagger-ui-init.js');
 
-      await app.close()
-      expect(response.text).toContain("tenant-1's API documentation")
+      await app.close();
+      expect(response.text).toContain("tenant-1's API documentation");
     })
 
     afterEach(async () => {
