@@ -18,4 +18,5 @@ export interface SwaggerCustomOptions {
   urls?: Record<'url' | 'name', string>[];
   jsonDocumentUrl?: string;
   yamlDocumentUrl?: string;
+  patchDocument?: <TRequest = any, TResponse = any> (req: TRequest, res: TResponse, document: OpenAPIObject) => OpenAPIObject;
 }
