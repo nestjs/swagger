@@ -334,7 +334,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           factory,
           typeChecker,
           existingProperties,
-          hostFilename
+          hostFilename,
+          options
         );
         return [factory.createPropertyAssignment(key, initializer)];
       } else if (ts.isUnionTypeNode(node)) {
@@ -402,7 +403,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     factory: ts.NodeFactory,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
-    hostFilename: string
+    hostFilename: string,
+    options: PluginOptions
   ) {
     const propertyAssignments = Array.from(node.members || []).map((member) => {
       const literalExpr = this.createDecoratorObjectLiteralExpr(
@@ -410,7 +412,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         member as ts.PropertySignature,
         typeChecker,
         existingProperties,
-        {},
+        options,
         hostFilename
       );
       return factory.createPropertyAssignment(
