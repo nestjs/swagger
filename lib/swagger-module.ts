@@ -102,6 +102,10 @@ export class SwaggerModule {
 
         if (!document) {
           document = lazyBuildDocument();
+
+          if (options.swaggerOptions.patchDocumentOnRequest) {
+            document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+          }
         }
 
         if (!swaggerInitJS) {
@@ -126,6 +130,14 @@ export class SwaggerModule {
 
           if (!document) {
             document = lazyBuildDocument();
+
+            if (options.swaggerOptions.patchDocumentOnRequest) {
+              document = options.swaggerOptions.patchDocumentOnRequest(
+                req,
+                res,
+                document
+              );
+            }
           }
 
           if (!swaggerInitJS) {
@@ -150,6 +162,10 @@ export class SwaggerModule {
 
       if (!document) {
         document = lazyBuildDocument();
+
+        if (options.swaggerOptions.patchDocumentOnRequest) {
+          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+        }
       }
 
       if (!html) {
@@ -170,6 +186,10 @@ export class SwaggerModule {
 
         if (!document) {
           document = lazyBuildDocument();
+
+          if (options.swaggerOptions.patchDocumentOnRequest) {
+            document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+          }
         }
 
         if (!html) {
@@ -199,6 +219,10 @@ export class SwaggerModule {
 
       if (!document) {
         document = lazyBuildDocument();
+
+        if (options.swaggerOptions.patchDocumentOnRequest) {
+          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+        }
       }
 
       if (!jsonDocument) {
@@ -213,6 +237,10 @@ export class SwaggerModule {
 
       if (!document) {
         document = lazyBuildDocument();
+
+        if (options.swaggerOptions.patchDocumentOnRequest) {
+          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+        }
       }
 
       if (!yamlDocument) {

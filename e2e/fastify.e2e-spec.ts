@@ -116,7 +116,14 @@ describe('Fastify Swagger', () => {
       );
       SwaggerModule.setup('api', app, swaggerDocument, {
         jsonDocumentUrl: JSON_CUSTOM_URL,
-        yamlDocumentUrl: YAML_CUSTOM_URL
+        yamlDocumentUrl: YAML_CUSTOM_URL,
+        patchDocumentOnRequest: (req, res, document) => ({
+          ...document,
+          info: {
+            ...document.info,
+            description: (req as Record<string, any>).query.description
+          }
+        })
       });
 
       await app.init();
@@ -134,11 +141,26 @@ describe('Fastify Swagger', () => {
       expect(Object.keys(response.body).length).toBeGreaterThan(0);
     });
 
+    it('patched JSON document should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${JSON_CUSTOM_URL}?description=My%20custom%20description`
+      );
+
+      expect(response.body.info.description).toBe("My custom description");
+    });
+
     it('yaml document should be server in the custom url', async () => {
       const response = await request(app.getHttpServer()).get(YAML_CUSTOM_URL);
 
       expect(response.status).toEqual(200);
       expect(response.text.length).toBeGreaterThan(0);
+    });
+
+    it('patched YAML document should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${YAML_CUSTOM_URL}?description=My%20custom%20description`
+      );
+      expect(response.text).toContain("My custom description");
     });
   });
 
@@ -214,7 +236,14 @@ describe('Fastify Swagger', () => {
         customJsStr: CUSTOM_JS_STR,
         customfavIcon: CUSTOM_FAVICON,
         customSiteTitle: CUSTOM_SITE_TITLE,
-        customCssUrl: CUSTOM_CSS_URL
+        customCssUrl: CUSTOM_CSS_URL,
+        patchDocumentOnRequest: (req, res, document) => ({
+          ...document,
+          info: {
+            ...document.info,
+            description: (req as Record<string, any>).query.description
+          }
+        })
       });
 
       await app.init();
@@ -266,6 +295,47 @@ describe('Fastify Swagger', () => {
         `<link href='${CUSTOM_CSS_URL}' rel='stylesheet'>`
       );
     });
+
+    it('should patch the OpenAPI document', async function () {
+      const response: Response = await request(app.getHttpServer()).get(
+        "/custom/swagger-ui-init.js?description=Custom%20Swagger%20description%20passed%20by%20query%20param"
+      );
+      expect(response.text).toContain(
+        `"description": "Custom Swagger description passed by query param"`
+      );
+    });
+
+    it('should patch the OpenAPI document based on path param of the swagger prefix', async () => {
+      const app = await NestFactory.create<NestFastifyApplication>(
+        ApplicationModule,
+        new FastifyAdapter(),
+        { logger: false }
+      );
+
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+
+      SwaggerModule.setup('/:tenantId/', app, swaggerDocument, {
+        patchDocumentOnRequest<ExpressRequest, ExpressResponse> (req, res, document) {
+          return {
+            ...document,
+            info: {
+              description: `${req.params.tenantId}'s API documentation`
+            }
+          }
+        }
+      });
+
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+
+      const response: Response = await request(app.getHttpServer()).get('/tenant-1/swagger-ui-init.js');
+
+      await app.close();
+      expect(response.text).toContain("tenant-1's API documentation");
+    })
 
     afterEach(async () => {
       await app.close();
