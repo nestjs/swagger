@@ -359,6 +359,14 @@
             "name": "filter",
             "required": true,
             "in": "query",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "age": {
+                "type": "number"
+              }
+            },
             "schema": {
               "additionalProperties": true,
               "type": "object"
@@ -545,6 +553,14 @@
             }
           },
           {
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "age": {
+                "type": "number"
+              }
+            },
             "name": "filter",
             "in": "query",
             "required": true,
