@@ -359,15 +359,15 @@
             "name": "filter",
             "required": true,
             "in": "query",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "age": {
-                "type": "number"
-              }
-            },
             "schema": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "age": {
+                  "type": "number"
+                }
+              },
               "additionalProperties": true,
               "type": "object"
             }
@@ -553,18 +553,18 @@
             }
           },
           {
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "age": {
-                "type": "number"
-              }
-            },
             "name": "filter",
             "in": "query",
             "required": true,
             "schema": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "age": {
+                  "type": "number"
+                }
+              },
               "additionalProperties": true,
               "type": "object"
             }
