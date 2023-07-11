@@ -19,7 +19,8 @@ import {
 } from './fixtures/create-cat.dto';
 import {
   es5CreateCatDtoText,
-  es5CreateCatDtoTextTranspiled
+  es5CreateCatDtoTextTranspiled,
+  es5CreateCatDtoTextTranspiledV5
 } from './fixtures/es5-class.dto';
 import {
   nullableDtoText,
@@ -37,6 +38,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'create-cat.dto.ts';
@@ -67,6 +69,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'create-cat.dto.ts';
@@ -88,6 +91,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'create-cat-alt2.dto.ts';
@@ -114,6 +118,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES5,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'es5-class.dto.ts';
@@ -131,7 +136,14 @@ describe('API model properties', () => {
         ]
       }
     });
-    expect(result.outputText).toEqual(es5CreateCatDtoTextTranspiled);
+
+    const [tsVersionMajor] = ts.versionMajorMinor?.split('.').map((x) => +x);
+
+    if (tsVersionMajor === 5) {
+      expect(result.outputText).toEqual(es5CreateCatDtoTextTranspiledV5);
+    } else {
+      expect(result.outputText).toEqual(es5CreateCatDtoTextTranspiled);
+    }
   });
 
   it('should support & understand nullable type unions', () => {
@@ -140,6 +152,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'nullable.dto.ts';
@@ -166,6 +179,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES5,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'changed-class.dto.ts';
@@ -206,6 +220,7 @@ describe('API model properties', () => {
       target: ts.ScriptTarget.ES2020,
       newLine: ts.NewLineKind.LineFeed,
       noEmitHelpers: true,
+      experimentalDecorators: true,
       strict: true
     };
     const filename = 'string-literal.dto.ts';

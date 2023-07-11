@@ -164,3 +164,12 @@ export function PartialType() {
 export function PickType() {
   return () => {};
 }
+export function getSchemaPath() {
+  return () => '';
+}
+export function before() {
+  return () => '';
+}
+export function ReadonlyVisitor() {
+  return class {};
+}

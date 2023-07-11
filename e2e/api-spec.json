@@ -4,7 +4,15 @@
     "/api/v1": {
       "get": {
         "operationId": "AppController_getHello",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -15,7 +23,15 @@
     "/api/v2": {
       "get": {
         "operationId": "AppController_getHello",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -26,7 +42,15 @@
     "/api/v1/alias1": {
       "get": {
         "operationId": "AppController_withAliases",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -37,7 +61,15 @@
     "/api/v1/alias2": {
       "get": {
         "operationId": "AppController_withAliases",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -48,7 +80,15 @@
     "/api/v2/alias1": {
       "get": {
         "operationId": "AppController_withAliases",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -59,7 +99,15 @@
     "/api/v2/alias2": {
       "get": {
         "operationId": "AppController_withAliases",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -70,7 +118,15 @@
     "/api/v1/express:colon:another/{prop}": {
       "get": {
         "operationId": "AppController_withColonExpress",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -81,7 +137,15 @@
     "/api/v2/express:colon:another/{prop}": {
       "get": {
         "operationId": "AppController_withColonExpress",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -92,7 +156,15 @@
     "/api/v1/fastify:{colon}:{another}/{prop}": {
       "get": {
         "operationId": "AppController_withColonFastify",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -103,7 +175,15 @@
     "/api/v2/fastify:{colon}:{another}/{prop}": {
       "get": {
         "operationId": "AppController_withColonFastify",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -126,6 +206,13 @@
             "required": false,
             "schema": {
               "default": "test",
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
               "type": "string"
             }
           }
@@ -249,6 +336,17 @@
             }
           },
           {
+            "name": "letters",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Letter"
+              }
+            }
+          },
+          {
             "name": "beforeDate",
             "required": true,
             "in": "query",
@@ -264,6 +362,13 @@
             "schema": {
               "additionalProperties": true,
               "type": "object"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -310,6 +415,13 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
             "schema": {
               "type": "string"
             }
@@ -413,6 +525,17 @@
             }
           },
           {
+            "name": "letters",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Letter"
+              }
+            }
+          },
+          {
             "name": "beforeDate",
             "in": "query",
             "required": true,
@@ -428,6 +551,13 @@
             "schema": {
               "additionalProperties": true,
               "type": "object"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -456,6 +586,7 @@
     "/api/cats/bulk": {
       "get": {
         "operationId": "CatsController_findAllBulk",
+        "summary": "Find all cats in bulk",
         "parameters": [
           {
             "name": "header",
@@ -466,11 +597,28 @@
               "default": "test",
               "type": "string"
             }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Cat"
+                  }
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -499,6 +647,13 @@
             "required": false,
             "schema": {
               "default": "test",
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
               "type": "string"
             }
           }
@@ -550,6 +705,13 @@
             "required": false,
             "schema": {
               "default": "test",
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
               "type": "string"
             }
           }
@@ -609,6 +771,13 @@
               "default": "test",
               "type": "string"
             }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -659,6 +828,13 @@
                 "C"
               ]
             }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -704,6 +880,13 @@
             "schema": {
               "minLength": 10,
               "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
               "type": "string"
             }
           }
@@ -820,6 +1003,7 @@
         "type": "object",
         "properties": {
           "name": {
+            "description": "Name of the cat",
             "type": "string"
           },
           "age": {
@@ -908,6 +1092,11 @@
             "description": "The breed of the Cat"
           },
           "_tags": {
+            "description": "Tags of the cat",
+            "example": [
+              "tag1",
+              "tag2"
+            ],
             "type": "array",
             "items": {
               "type": "string"
@@ -964,6 +1153,14 @@
           "_options",
           "enum",
           "enumArr"
+        ]
+      },
+      "Letter": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C"
         ]
       }
     }

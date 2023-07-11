@@ -17,9 +17,10 @@ describe('Controller methods', () => {
   it('should add response based on the return value (spaces)', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ESNext,
+      target: ts.ScriptTarget.ES2021,
       newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true
+      noEmitHelpers: true,
+      experimentalDecorators: true
     };
     const filename = 'app.controller.ts';
     const fakeProgram = ts.createProgram([filename], options);
@@ -42,9 +43,10 @@ describe('Controller methods', () => {
   it('should add response based on the return value (tabs)', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ESNext,
+      target: ts.ScriptTarget.ES2021,
       newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true
+      noEmitHelpers: true,
+      experimentalDecorators: true
     };
     const filename = 'app.controller.ts';
     const fakeProgram = ts.createProgram([filename], options);
@@ -67,9 +69,10 @@ describe('Controller methods', () => {
   it('should add response based on the return value (without modifiers)', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ESNext,
+      target: ts.ScriptTarget.ES2021,
       newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true
+      noEmitHelpers: true,
+      experimentalDecorators: true
     };
     const filename = 'app.controller.ts';
     const fakeProgram = ts.createProgram([filename], options);

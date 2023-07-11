@@ -3,8 +3,9 @@ import { HTTP_CODE_METADATA, METHOD_METADATA } from '@nestjs/common/constants';
 import { isEmpty } from '@nestjs/common/utils/shared.utils';
 import { get, mapValues, omit } from 'lodash';
 import { DECORATORS } from '../constants';
-import { ApiResponseMetadata } from '../decorators';
+import { ApiResponse, ApiResponseMetadata } from '../decorators';
 import { SchemaObject } from '../interfaces/open-api-spec.interface';
+import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 import { ResponseObjectFactory } from '../services/response-object-factory';
 import { mergeAndUniq } from '../utils/merge-and-uniq.util';
 
@@ -32,6 +33,8 @@ export const exploreApiResponseMetadata = (
   prototype: Type<unknown>,
   method: Function
 ) => {
+  applyMetadataFactory(prototype, instance);
+
   const responses = Reflect.getMetadata(DECORATORS.API_RESPONSE, method);
   if (responses) {
     const classProduces = Reflect.getMetadata(
@@ -84,3 +87,38 @@ const mapResponsesToSwaggerResponses = (
   );
   return mapValues(openApiResponses, omitParamType);
 };
+
+function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
+  const classPrototype = prototype;
+  do {
+    if (!prototype.constructor) {
+      return;
+    }
+    if (!prototype.constructor[METADATA_FACTORY_NAME]) {
+      continue;
+    }
+    const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
+    const methodKeys = Object.keys(metadata).filter(
+      (key) => typeof instance[key] === 'function'
+    );
+    methodKeys.forEach((key) => {
+      const { summary, deprecated, tags, ...meta } = metadata[key];
+
+      if (Object.keys(meta).length === 0) {
+        return;
+      }
+      if (meta.status === undefined) {
+        meta.status = getStatusCode(instance[key]);
+      }
+      ApiResponse(meta, { overrideExisting: false })(
+        classPrototype,
+        key,
+        Object.getOwnPropertyDescriptor(classPrototype, key)
+      );
+    });
+  } while (
+    (prototype = Reflect.getPrototypeOf(prototype) as Type<any>) &&
+    prototype !== Object.prototype &&
+    prototype
+  );
+}

@@ -1,4 +1,5 @@
 import {
+  All,
   Body,
   Controller,
   Get,
@@ -8,7 +9,7 @@ import {
   Version,
   VersioningType
 } from '@nestjs/common';
-import { VersionValue, VERSION_NEUTRAL } from '@nestjs/common/interfaces';
+import { VERSION_NEUTRAL, VersionValue } from '@nestjs/common/interfaces';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import {
@@ -29,9 +30,11 @@ import {
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
+import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
+import { GlobalParametersStorage } from '../../lib/storages/global-parameters.storage';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
 
 describe('SwaggerExplorer', () => {
@@ -122,6 +125,57 @@ describe('SwaggerExplorer', () => {
       validateRoutes(routes, operationPrefix);
     });
 
+    @Controller('')
+    class FooWithMetadataController {
+      @Post('foos')
+      @ApiCreatedResponse({
+        type: Foo,
+        description: 'Newly created Foo object'
+      })
+      create(
+        @Body() createFoo: CreateFoo,
+        @Query() listEntities: ListEntitiesDto
+      ): Promise<Foo> {
+        return Promise.resolve({});
+      }
+
+      @Get(['foos/:objectId', 'foo/:objectId'])
+      find(
+        @Param('objectId') objectId: string,
+        @Query('page') q: string
+      ): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+
+      static [METADATA_FACTORY_NAME]() {
+        return {
+          create: {
+            summary: 'Create foo'
+          },
+          find: {
+            summary: 'List all Foos',
+            type: [Foo]
+          }
+        };
+      }
+    }
+
+    it('sees two controller operations and their responses (metadata cache)', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooWithMetadataController(),
+          metatype: FooWithMetadataController
+        } as unknown as InstanceWrapper<FooWithMetadataController>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+      const operationPrefix = 'FooWithMetadataController_';
+
+      validateRoutes(routes, operationPrefix);
+    });
+
     it('sees two controller operations and their responses with custom operationIdFactory to return methodKey', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
@@ -163,12 +217,12 @@ describe('SwaggerExplorer', () => {
       expect(routes.length).toEqual(3);
 
       // POST
-      expect(routes[0].root.operationId).toEqual(operationPrefix + 'create');
-      expect(routes[0].root.method).toEqual('post');
-      expect(routes[0].root.path).toEqual('/globalPrefix/modulePath/foos');
-      expect(routes[0].root.summary).toEqual('Create foo');
-      expect(routes[0].root.parameters.length).toEqual(5);
-      expect(routes[0].root.parameters).toEqual([
+      expect(routes[0].root!.operationId).toEqual(operationPrefix + 'create');
+      expect(routes[0].root!.method).toEqual('post');
+      expect(routes[0].root!.path).toEqual('/globalPrefix/modulePath/foos');
+      expect(routes[0].root!.summary).toEqual('Create foo');
+      expect(routes[0].root!.parameters.length).toEqual(5);
+      expect(routes[0].root!.parameters).toEqual([
         {
           in: 'query',
           name: 'page',
@@ -218,7 +272,7 @@ describe('SwaggerExplorer', () => {
           }
         }
       ]);
-      expect(routes[0].root.requestBody).toEqual({
+      expect(routes[0].root!.requestBody).toEqual({
         required: true,
         content: {
           'application/json': {
@@ -243,14 +297,14 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.operationId).toEqual(operationPrefix + 'find');
-      expect(routes[1].root.method).toEqual('get');
-      expect(routes[1].root.path).toEqual(
+      expect(routes[1].root!.operationId).toEqual(operationPrefix + 'find');
+      expect(routes[1].root!.method).toEqual('get');
+      expect(routes[1].root!.path).toEqual(
         '/globalPrefix/modulePath/foos/{objectId}'
       );
-      expect(routes[1].root.summary).toEqual('List all Foos');
-      expect(routes[1].root.parameters.length).toEqual(2);
-      expect(routes[1].root.parameters).toEqual([
+      expect(routes[1].root!.summary).toEqual('List all Foos');
+      expect(routes[1].root!.parameters.length).toEqual(2);
+      expect(routes[1].root!.parameters).toEqual([
         {
           in: 'path',
           name: 'objectId',
@@ -285,14 +339,14 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET alias
-      expect(routes[2].root.operationId).toEqual(operationPrefix + 'find');
-      expect(routes[2].root.method).toEqual('get');
-      expect(routes[2].root.path).toEqual(
+      expect(routes[2].root!.operationId).toEqual(operationPrefix + 'find');
+      expect(routes[2].root!.method).toEqual('get');
+      expect(routes[2].root!.path).toEqual(
         '/globalPrefix/modulePath/foo/{objectId}'
       );
-      expect(routes[2].root.summary).toEqual('List all Foos');
-      expect(routes[2].root.parameters.length).toEqual(2);
-      expect(routes[2].root.parameters).toEqual([
+      expect(routes[2].root!.summary).toEqual('List all Foos');
+      expect(routes[2].root!.parameters.length).toEqual(2);
+      expect(routes[2].root!.parameters).toEqual([
         {
           in: 'path',
           name: 'objectId',
@@ -418,12 +472,12 @@ describe('SwaggerExplorer', () => {
       expect(routes.length).toEqual(2);
 
       // POST
-      expect(routes[0].root.operationId).toEqual(operationPrefix + 'create');
-      expect(routes[0].root.method).toEqual('post');
-      expect(routes[0].root.path).toEqual('/globalPrefix/foos');
-      expect(routes[0].root.summary).toEqual('Create foo');
-      expect(routes[0].root.parameters.length).toEqual(0);
-      expect(routes[0].root.requestBody).toEqual({
+      expect(routes[0].root!.operationId).toEqual(operationPrefix + 'create');
+      expect(routes[0].root!.method).toEqual('post');
+      expect(routes[0].root!.path).toEqual('/globalPrefix/foos');
+      expect(routes[0].root!.summary).toEqual('Create foo');
+      expect(routes[0].root!.parameters.length).toEqual(0);
+      expect(routes[0].root!.requestBody).toEqual({
         required: true,
         content: {
           'application/json': {
@@ -451,12 +505,12 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.operationId).toEqual(operationPrefix + 'find');
-      expect(routes[1].root.method).toEqual('get');
-      expect(routes[1].root.path).toEqual('/globalPrefix/foos/{objectId}');
-      expect(routes[1].root.summary).toEqual('List all Foos');
-      expect(routes[1].root.parameters.length).toEqual(2);
-      expect(routes[1].root.parameters).toEqual([
+      expect(routes[1].root!.operationId).toEqual(operationPrefix + 'find');
+      expect(routes[1].root!.method).toEqual('get');
+      expect(routes[1].root!.path).toEqual('/globalPrefix/foos/{objectId}');
+      expect(routes[1].root!.summary).toEqual('List all Foos');
+      expect(routes[1].root!.parameters.length).toEqual(2);
+      expect(routes[1].root!.parameters).toEqual([
         {
           in: 'query',
           name: 'page',
@@ -591,12 +645,12 @@ describe('SwaggerExplorer', () => {
       expect(routes.length).toEqual(2);
 
       // POST
-      expect(routes[0].root.operationId).toEqual(operationPrefix + 'create');
-      expect(routes[0].root.method).toEqual('post');
-      expect(routes[0].root.path).toEqual('/modulePath/foos');
-      expect(routes[0].root.summary).toEqual('Create foo');
-      expect(routes[0].root.parameters.length).toEqual(0);
-      expect(routes[0].root.requestBody).toEqual({
+      expect(routes[0].root!.operationId).toEqual(operationPrefix + 'create');
+      expect(routes[0].root!.method).toEqual('post');
+      expect(routes[0].root!.path).toEqual('/modulePath/foos');
+      expect(routes[0].root!.summary).toEqual('Create foo');
+      expect(routes[0].root!.parameters.length).toEqual(0);
+      expect(routes[0].root!.requestBody).toEqual({
         required: true,
         content: {
           'application/xml': {
@@ -621,12 +675,12 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.operationId).toEqual(operationPrefix + 'find');
-      expect(routes[1].root.method).toEqual('get');
-      expect(routes[1].root.path).toEqual('/modulePath/foos/{objectId}');
-      expect(routes[1].root.summary).toEqual('List all Foos');
-      expect(routes[1].root.parameters.length).toEqual(2);
-      expect(routes[1].root.parameters).toEqual([
+      expect(routes[1].root!.operationId).toEqual(operationPrefix + 'find');
+      expect(routes[1].root!.method).toEqual('get');
+      expect(routes[1].root!.path).toEqual('/modulePath/foos/{objectId}');
+      expect(routes[1].root!.summary).toEqual('List all Foos');
+      expect(routes[1].root!.parameters.length).toEqual(2);
+      expect(routes[1].root!.parameters).toEqual([
         {
           in: 'query',
           name: 'page',
@@ -761,11 +815,11 @@ describe('SwaggerExplorer', () => {
       expect(routes.length).toEqual(2);
 
       // POST
-      expect(routes[0].root.description).toEqual('Allows creating Foo item');
-      expect(routes[0].root.tags).toEqual(['foo']);
-      expect(routes[0].root.operationId).toEqual('FooController_create2');
-      expect(routes[0].root.parameters.length).toEqual(0);
-      expect(routes[0].root.requestBody).toEqual({
+      expect(routes[0].root!.description).toEqual('Allows creating Foo item');
+      expect(routes[0].root!.tags).toEqual(['foo']);
+      expect(routes[0].root!.operationId).toEqual('FooController_create2');
+      expect(routes[0].root!.parameters.length).toEqual(0);
+      expect(routes[0].root!.requestBody).toEqual({
         required: true,
         content: {
           'application/xml': {
@@ -794,12 +848,12 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root.path).toEqual(
+      expect(routes[1].root!.path).toEqual(
         '/globalPrefix/v2/modulePath/foos/{objectId}'
       );
-      expect(routes[1].root.operationId).toEqual('FooController_find2');
-      expect(routes[1].root.parameters.length).toEqual(2);
-      expect(routes[1].root.parameters).toEqual([
+      expect(routes[1].root!.operationId).toEqual('FooController_find2');
+      expect(routes[1].root!.parameters.length).toEqual(2);
+      expect(routes[1].root!.parameters).toEqual([
         {
           in: 'query',
           name: 'page',
@@ -820,7 +874,7 @@ describe('SwaggerExplorer', () => {
           }
         }
       ]);
-      expect(routes[1].root.requestBody).toEqual({
+      expect(routes[1].root!.requestBody).toEqual({
         required: true,
         content: {
           'application/json': {
@@ -860,9 +914,9 @@ describe('SwaggerExplorer', () => {
     }
 
     enum QueryEnum {
-      D = 'd',
-      E = 'e',
-      F = 'f'
+      D = 1,
+      E,
+      F = (() => 3)()
     }
 
     class Foo {}
@@ -915,6 +969,19 @@ describe('SwaggerExplorer', () => {
       }
     }
 
+    @Controller('')
+    class Bar2Controller {
+      @Get('bars/:objectId')
+      @ApiParam({
+        name: 'objectId',
+        enum: [1, 2, 3],
+        enumName: 'NumberEnum'
+      })
+      findBar(): Promise<Foo> {
+        return Promise.resolve(null);
+      }
+    }
+
     it('should properly define enums', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const config = new ApplicationConfig();
@@ -931,10 +998,10 @@ describe('SwaggerExplorer', () => {
         'globalPrefix'
       );
 
-      expect(routes[0].root.path).toEqual(
+      expect(routes[0].root!.path).toEqual(
         '/globalPrefix/v3/modulePath/foos/{objectId}'
       );
-      expect(routes[0].root.parameters).toEqual([
+      expect(routes[0].root!.parameters).toEqual([
         {
           in: 'query',
           name: 'page',
@@ -952,8 +1019,8 @@ describe('SwaggerExplorer', () => {
           name: 'order',
           required: true,
           schema: {
-            type: 'string',
-            enum: ['d', 'e', 'f']
+            type: 'number',
+            enum: [1, 2, 3]
           }
         },
         {
@@ -979,7 +1046,7 @@ describe('SwaggerExplorer', () => {
         'path'
       );
 
-      expect(routes[0].root.parameters).toEqual([
+      expect(routes[0].root!.parameters).toEqual([
         {
           in: 'query',
           name: 'page',
@@ -994,8 +1061,8 @@ describe('SwaggerExplorer', () => {
           name: 'order',
           required: true,
           schema: {
-            type: 'string',
-            enum: ['d', 'e', 'f']
+            type: 'number',
+            enum: [1, 2, 3]
           }
         },
         {
@@ -1022,7 +1089,7 @@ describe('SwaggerExplorer', () => {
         'globalPrefix'
       );
 
-      expect(routes[0].root.parameters).toEqual([
+      expect(routes[0].root!.parameters).toEqual([
         {
           in: 'query',
           name: 'page',
@@ -1048,6 +1115,33 @@ describe('SwaggerExplorer', () => {
           required: true,
           schema: {
             $ref: '#/components/schemas/ParamEnum'
+          }
+        }
+      ]);
+    });
+
+    it('should properly define number enum as schema', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+
+      const schema = explorer.getSchemas();
+      const routes = explorer.exploreController(
+        {
+          instance: new Bar2Controller(),
+          metatype: Bar2Controller
+        } as InstanceWrapper<Bar2Controller>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+
+      expect(schema.NumberEnum).toEqual({ type: 'number', enum: [1, 2, 3] });
+      expect(routes[0].root!.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            $ref: '#/components/schemas/NumberEnum'
           }
         }
       ]);
@@ -1093,7 +1187,7 @@ describe('SwaggerExplorer', () => {
         'globalPrefix'
       );
 
-      expect(routes[0].root.parameters).toEqual([
+      expect(routes[0].root!.parameters).toEqual([
         {
           description: 'auth token',
           name: 'Authorization',
@@ -1112,7 +1206,7 @@ describe('SwaggerExplorer', () => {
           }
         }
       ]);
-      expect(routes[1].root.parameters).toEqual([
+      expect(routes[1].root!.parameters).toEqual([
         {
           description: 'auth token',
           name: 'Authorization',
@@ -1272,7 +1366,7 @@ describe('SwaggerExplorer', () => {
           'globalPrefix'
         );
 
-        expect(routes[0].root.path).toEqual(
+        expect(routes[0].root!.path).toEqual(
           `/globalPrefix/v${CONTROLLER_VERSION}/modulePath/with-version`
         );
       });
@@ -1288,7 +1382,7 @@ describe('SwaggerExplorer', () => {
           'globalPrefix'
         );
 
-        expect(routes[1].root.path).toEqual(
+        expect(routes[1].root!.path).toEqual(
           `/globalPrefix/v${METHOD_VERSION}/modulePath/with-version`
         );
       });
@@ -1304,12 +1398,12 @@ describe('SwaggerExplorer', () => {
           'globalPrefix'
         );
 
-        expect(routes[0].root.path).toEqual(
+        expect(routes[0].root!.path).toEqual(
           `/globalPrefix/v${
             CONTROLLER_MULTIPLE_VERSIONS[0] as string
           }/modulePath/with-multiple-version`
         );
-        expect(routes[1].root.path).toEqual(
+        expect(routes[1].root!.path).toEqual(
           `/globalPrefix/v${
             CONTROLLER_MULTIPLE_VERSIONS[1] as string
           }/modulePath/with-multiple-version`
@@ -1343,7 +1437,7 @@ describe('SwaggerExplorer', () => {
           'globalPrefix'
         );
 
-        expect(routes[0].root.path).toEqual(
+        expect(routes[0].root!.path).toEqual(
           `/globalPrefix/v${DEFAULT_VERSION}/modulePath/with-multiple-version`
         );
       });
@@ -1395,12 +1489,12 @@ describe('SwaggerExplorer', () => {
           'globalPrefix'
         );
 
-        expect(routes[0].root.path).toEqual(
+        expect(routes[0].root!.path).toEqual(
           `/globalPrefix/v${
             CONTROLLER_MULTIPLE_VERSIONS[0] as string
           }/modulePath/with-multiple-version`
         );
-        expect(routes[1].root.path).toEqual(
+        expect(routes[1].root!.path).toEqual(
           `/globalPrefix/modulePath/with-multiple-version`
         );
       });
@@ -1419,9 +1513,111 @@ describe('SwaggerExplorer', () => {
           (route) => route.root?.method === 'post'
         );
 
-        expect(postRoutes[0].root.requestBody).toBeDefined();
-        expect(postRoutes[1].root.requestBody).toBeDefined();
+        expect(postRoutes[0].root!.requestBody).toBeDefined();
+        expect(postRoutes[1].root!.requestBody).toBeDefined();
       });
+    });
+  });
+
+  describe('when @All(...) is used', () => {
+    @Controller('')
+    class AllController {
+      @All('*')
+      all(): Promise<void> {
+        return Promise.resolve();
+      }
+    }
+
+    it('should create route for every method', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new AllController(),
+          metatype: AllController
+        } as InstanceWrapper<AllController>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+
+      expect(routes.length).toEqual(8);
+      expect(
+        [
+          'get',
+          'post',
+          'put',
+          'delete',
+          'patch',
+          'options',
+          'head',
+          'search'
+        ].every((method) =>
+          routes.find((route) => route.root!.method === method)
+        )
+      ).toBe(true);
+      expect(routes.find((route) => route.root!.method === 'all')).toBe(
+        undefined
+      );
+      // check if all routes are equal except for method
+      expect(
+        routes.filter(
+          (v, i, a) =>
+            a.findIndex((v2) =>
+              ['path', 'parameter'].every((k) => v2[k] === v[k])
+            ) === i
+        ).length
+      ).toEqual(1);
+    });
+  });
+
+  describe('when global parameters are defined', () => {
+    class Foo {}
+
+    @Controller('')
+    class FooController {
+      @Get('foos')
+      find(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    it('should properly define global parameters', () => {
+      GlobalParametersStorage.add(
+        {
+          name: 'x-tenant-id',
+          in: 'header',
+          schema: { type: 'string' }
+        },
+        {
+          name: 'x-tenant-id-2',
+          in: 'header',
+          schema: { type: 'string' }
+        }
+      );
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+
+      expect(routes[0].root!.parameters).toEqual([
+        {
+          name: 'x-tenant-id',
+          in: 'header',
+          schema: { type: 'string' }
+        },
+        {
+          name: 'x-tenant-id-2',
+          in: 'header',
+          schema: { type: 'string' }
+        }
+      ]);
+      GlobalParametersStorage.clear();
     });
   });
 });

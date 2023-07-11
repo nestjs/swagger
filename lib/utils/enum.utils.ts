@@ -10,22 +10,27 @@ export function getEnumValues(enumType: SwaggerEnumType): string[] | number[] {
   if (typeof enumType !== 'object') {
     return [];
   }
+  /*
+    Enums with numeric values
+      enum Size {
+        SMALL = 1,
+        BIG = 2
+      }
+    are transpiled to include a reverse mapping
+      const Size = {
+        "1": "SMALL",
+        "2": "BIG",
+        "SMALL": 1,
+        "BIG": 2,
+      }
+   */
+  const numericValues = Object.values(enumType)
+    .filter((value) => typeof value === 'number')
+    .map((value) => value.toString());
 
-  const values = [];
-  const uniqueValues = {};
-
-  for (const key in enumType) {
-    const value = enumType[key];
-    // filter out cases where enum key also becomes its value (A: B, B: A)
-    if (
-      !uniqueValues.hasOwnProperty(value) &&
-      !uniqueValues.hasOwnProperty(key)
-    ) {
-      values.push(value);
-      uniqueValues[value] = value;
-    }
-  }
-  return values;
+  return Object.keys(enumType)
+    .filter((key) => !numericValues.includes(key))
+    .map((key) => enumType[key]);
 }
 
 export function getEnumType(values: (string | number)[]): 'string' | 'number' {

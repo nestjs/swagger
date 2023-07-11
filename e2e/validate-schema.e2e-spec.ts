@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
+import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
 import * as SwaggerParser from 'swagger-parser';
 import {
@@ -41,12 +42,61 @@ describe('Validate OpenAPI schema', () => {
       .addCookieAuth()
       .addSecurityRequirements('bearer')
       .addSecurityRequirements({ basic: [], cookie: [] })
+      .addGlobalParameters({
+        name: 'x-tenant-id',
+        in: 'header',
+        schema: { type: 'string' }
+      })
       .build();
 
     Reflect.deleteMetadata("swagger/apiParameters", CatsController.prototype.getWithEnumParam);
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {
+    await SwaggerModule.loadPluginMetadata(async () => ({
+      '@nestjs/swagger': {
+        models: [
+          [
+            import('./src/cats/classes/cat.class'),
+            {
+              Cat: {
+                tags: {
+                  description: 'Tags of the cat',
+                  example: ['tag1', 'tag2']
+                }
+              }
+            }
+          ],
+          [
+            import('./src/cats/dto/create-cat.dto'),
+            {
+              CreateCatDto: {
+                name: {
+                  description: 'Name of the cat'
+                }
+              }
+            }
+          ]
+        ],
+        controllers: [
+          [
+            import('./src/cats/cats.controller'),
+            {
+              CatsController: {
+                findAllBulk: {
+                  type: [
+                    await import('./src/cats/classes/cat.class').then(
+                      (f) => f.Cat
+                    )
+                  ],
+                  summary: 'Find all cats in bulk'
+                }
+              }
+            }
+          ]
+        ]
+      }
+    }));
     const document = SwaggerModule.createDocument(app, options);
 
     const doc = JSON.stringify(document, null, 2);
