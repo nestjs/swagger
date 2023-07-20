@@ -16,6 +16,15 @@ export class DocumentBuilder {
   private readonly logger = new Logger(DocumentBuilder.name);
   private readonly document: Omit<OpenAPIObject, 'paths'> = buildDocumentBase();
 
+  public setOpenAPIVersion(version: string): this {
+    if (!version.match(/^\d+\.\d+\.\d+$/)) {
+      throw new Error('nestjs-swagger: Invalid OpenApi version.');
+    }
+
+    this.document.openapi = version;
+    return this;
+  }
+
   public setTitle(title: string): this {
     this.document.info.title = title;
     return this;
