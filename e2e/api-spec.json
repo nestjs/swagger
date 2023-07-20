@@ -1042,6 +1042,15 @@
               }
             }
           },
+          "enumWithDescription": {
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ],
+            "type": "string",
+            "description": "Enum with description"
+          },
           "enum": {
             "$ref": "#/components/schemas/LettersEnum"
           },
@@ -1068,6 +1077,7 @@
           "createdAt",
           "urls",
           "options",
+          "enumWithDescription",
           "enum",
           "enumArr"
         ]
