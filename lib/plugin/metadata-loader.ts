@@ -4,7 +4,7 @@ export class MetadataLoader {
   private static readonly refreshHooks = new Array<() => void>();
 
   static addRefreshHook(hook: () => void) {
-    return MetadataLoader.refreshHooks.unshift(hook);
+    return MetadataLoader.refreshHooks.push(hook);
   }
 
   async load(metadata: Record<string, any>) {
