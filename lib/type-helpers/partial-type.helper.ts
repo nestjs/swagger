@@ -34,6 +34,15 @@ export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
         mapValues(metadata, (item) => ({ ...item, required: false }))
     );
 
+    if (PartialTypeClass[METADATA_FACTORY_NAME]) {
+      const pluginFields = Object.keys(
+        PartialTypeClass[METADATA_FACTORY_NAME]()
+      );
+      pluginFields.forEach((key) =>
+        applyIsOptionalDecorator(PartialTypeClass, key)
+      );
+    }
+
     fields.forEach((key) => {
       const metadata =
         Reflect.getMetadata(
@@ -58,13 +67,6 @@ export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
     );
     applyFields(fields);
   });
-
-  if (PartialTypeClass[METADATA_FACTORY_NAME]) {
-    const pluginFields = Object.keys(PartialTypeClass[METADATA_FACTORY_NAME]());
-    pluginFields.forEach((key) =>
-      applyIsOptionalDecorator(PartialTypeClass, key)
-    );
-  }
 
   return PartialTypeClass as Type<Partial<T>>;
 }
