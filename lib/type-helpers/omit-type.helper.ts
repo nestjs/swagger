@@ -7,6 +7,7 @@ import {
 import { omit } from 'lodash';
 import { DECORATORS } from '../constants';
 import { ApiProperty } from '../decorators';
+import { MetadataLoader } from '../plugin/metadata-loader';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
 import { clonePluginMetadataFactory } from './mapped-types.utils';
 
@@ -15,7 +16,7 @@ const modelPropertiesAccessor = new ModelPropertiesAccessor();
 export function OmitType<T, K extends keyof T>(
   classRef: Type<T>,
   keys: readonly K[]
-): Type<Omit<T, typeof keys[number]>> {
+): Type<Omit<T, (typeof keys)[number]>> {
   const fields = modelPropertiesAccessor
     .getModelProperties(classRef.prototype)
     .filter((item) => !keys.includes(item as K));
@@ -31,20 +32,32 @@ export function OmitType<T, K extends keyof T>(
   inheritValidationMetadata(classRef, OmitTypeClass, isInheritedPredicate);
   inheritTransformationMetadata(classRef, OmitTypeClass, isInheritedPredicate);
 
-  clonePluginMetadataFactory(
-    OmitTypeClass as Type<unknown>,
-    classRef.prototype,
-    (metadata: Record<string, any>) => omit(metadata, keys)
-  );
-
-  fields.forEach((propertyKey) => {
-    const metadata = Reflect.getMetadata(
-      DECORATORS.API_MODEL_PROPERTIES,
+  function applyFields(fields: string[]) {
+    clonePluginMetadataFactory(
+      OmitTypeClass as Type<unknown>,
       classRef.prototype,
-      propertyKey
+      (metadata: Record<string, any>) => omit(metadata, keys)
     );
-    const decoratorFactory = ApiProperty(metadata);
-    decoratorFactory(OmitTypeClass.prototype, propertyKey);
+
+    fields.forEach((propertyKey) => {
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        classRef.prototype,
+        propertyKey
+      );
+      const decoratorFactory = ApiProperty(metadata);
+      decoratorFactory(OmitTypeClass.prototype, propertyKey);
+    });
+  }
+  applyFields(fields);
+
+  MetadataLoader.addRefreshHook(() => {
+    const fields = modelPropertiesAccessor
+      .getModelProperties(classRef.prototype)
+      .filter((item) => !keys.includes(item as K));
+
+    applyFields(fields);
   });
-  return OmitTypeClass as Type<Omit<T, typeof keys[number]>>;
+
+  return OmitTypeClass as Type<Omit<T, (typeof keys)[number]>>;
 }

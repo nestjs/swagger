@@ -43,6 +43,11 @@ export class CreateCatDto {
   readonly options?: Record<string, any>[];
 
   @ApiProperty({
+    description: 'Enum with description'
+  })
+  readonly enumWithDescription: LettersEnum;
+
+  @ApiProperty({
     enum: LettersEnum,
     enumName: 'LettersEnum'
   })

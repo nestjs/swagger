@@ -7,6 +7,7 @@ import {
 import { pick } from 'lodash';
 import { DECORATORS } from '../constants';
 import { ApiProperty } from '../decorators';
+import { MetadataLoader } from '../plugin/metadata-loader';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
 import { clonePluginMetadataFactory } from './mapped-types.utils';
 
@@ -15,7 +16,7 @@ const modelPropertiesAccessor = new ModelPropertiesAccessor();
 export function PickType<T, K extends keyof T>(
   classRef: Type<T>,
   keys: readonly K[]
-): Type<Pick<T, typeof keys[number]>> {
+): Type<Pick<T, (typeof keys)[number]>> {
   const fields = modelPropertiesAccessor
     .getModelProperties(classRef.prototype)
     .filter((item) => keys.includes(item as K));
@@ -32,21 +33,32 @@ export function PickType<T, K extends keyof T>(
   inheritValidationMetadata(classRef, PickTypeClass, isInheritedPredicate);
   inheritTransformationMetadata(classRef, PickTypeClass, isInheritedPredicate);
 
-  clonePluginMetadataFactory(
-    PickTypeClass as Type<unknown>,
-    classRef.prototype,
-    (metadata: Record<string, any>) => pick(metadata, keys)
-  );
-
-  fields.forEach((propertyKey) => {
-    const metadata = Reflect.getMetadata(
-      DECORATORS.API_MODEL_PROPERTIES,
+  function applyFields(fields: string[]) {
+    clonePluginMetadataFactory(
+      PickTypeClass as Type<unknown>,
       classRef.prototype,
-      propertyKey
+      (metadata: Record<string, any>) => pick(metadata, keys)
     );
-    const decoratorFactory = ApiProperty(metadata);
-    decoratorFactory(PickTypeClass.prototype, propertyKey);
+
+    fields.forEach((propertyKey) => {
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        classRef.prototype,
+        propertyKey
+      );
+      const decoratorFactory = ApiProperty(metadata);
+      decoratorFactory(PickTypeClass.prototype, propertyKey);
+    });
+  }
+  applyFields(fields);
+
+  MetadataLoader.addRefreshHook(() => {
+    const fields = modelPropertiesAccessor
+      .getModelProperties(classRef.prototype)
+      .filter((item) => keys.includes(item as K));
+
+    applyFields(fields);
   });
 
-  return PickTypeClass as Type<Pick<T, typeof keys[number]>>;
+  return PickTypeClass as Type<Pick<T, (typeof keys)[number]>>;
 }
