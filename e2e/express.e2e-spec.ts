@@ -7,6 +7,7 @@ import * as request from 'supertest';
 import * as SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
+import * as path from 'path';
 
 describe('Express Swagger', () => {
   let app: NestExpressApplication;
@@ -83,7 +84,10 @@ describe('Express Swagger', () => {
         app,
         builder.build()
       );
-      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument);
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
+        // to showcase that in new implementation u can use custom swagger-ui path. Useful when using e.g. webpack
+        customSwaggerUiPath: path.resolve(`./node_modules/swagger-ui-dist`),
+      });
 
       await app.init();
     });
@@ -99,6 +103,14 @@ describe('Express Swagger', () => {
 
       expect(response.status).toEqual(200);
       expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
+
+    it('content type of served static should be available', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}/swagger-ui-bundle.js`
+      );
+
+      expect(response.status).toEqual(200);
     });
   });
 
