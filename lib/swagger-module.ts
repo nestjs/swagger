@@ -20,6 +20,7 @@ import { getGlobalPrefix } from './utils/get-global-prefix';
 import { normalizeRelPath } from './utils/normalize-rel-path';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
 import { validatePath } from './utils/validate-path.util';
+import { resolvePath } from './utils/resolve-path.util';
 
 export class SwaggerModule {
   private static readonly metadataLoader = new MetadataLoader();
@@ -53,19 +54,23 @@ export class SwaggerModule {
     return this.metadataLoader.load(metadata);
   }
 
-  private static serveStatic(finalPath: string, app: INestApplication) {
+  private static serveStatic(finalPath: string, app: INestApplication, customStaticPath?: string) {
     const httpAdapter = app.getHttpAdapter();
-    const swaggerAssetsAbsoluteFSPath = getSwaggerAssetsAbsoluteFSPath();
+
+    // See <https://github.com/nestjs/swagger/issues/2543>
+    const swaggerAssetsPath = customStaticPath
+      ? resolvePath(customStaticPath)
+      : getSwaggerAssetsAbsoluteFSPath();
 
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
       (app as NestFastifyApplication).useStaticAssets({
-        root: swaggerAssetsAbsoluteFSPath,
+        root: swaggerAssetsPath,
         prefix: finalPath,
         decorateReply: false
       });
     } else {
       (app as NestExpressApplication).useStaticAssets(
-        swaggerAssetsAbsoluteFSPath,
+        swaggerAssetsPath,
         { prefix: finalPath }
       );
     }
@@ -264,7 +269,6 @@ export class SwaggerModule {
         : path
     );
     const urlLastSubdirectory = finalPath.split('/').slice(-1).pop() || '';
-
     const validatedGlobalPrefix =
       options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
         ? validatePath(globalPrefix)
@@ -292,7 +296,7 @@ export class SwaggerModule {
       }
     );
 
-    SwaggerModule.serveStatic(finalPath, app);
+    SwaggerModule.serveStatic(finalPath, app, options?.customSwaggerUiPath);
     /**
      * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
      * @see https://github.com/nestjs/swagger/issues/1976

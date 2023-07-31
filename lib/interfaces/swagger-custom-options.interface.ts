@@ -11,6 +11,7 @@ export interface SwaggerCustomOptions {
   customJs?: string | string[];
   customJsStr?: string | string[];
   customfavIcon?: string;
+  customSwaggerUiPath?: string;
   swaggerUrl?: string;
   customSiteTitle?: string;
   validatorUrl?: string;
