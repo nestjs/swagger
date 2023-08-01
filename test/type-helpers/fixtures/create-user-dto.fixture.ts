@@ -1,5 +1,5 @@
 import { Expose, Transform } from 'class-transformer';
-import { IsString } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
 import { ApiProperty } from '../../../lib/decorators';
 import { METADATA_FACTORY_NAME } from '../../../lib/plugin/plugin-constants';
 
@@ -9,6 +9,9 @@ export class CreateUserDto {
 
   @IsString()
   lastName: string;
+
+  @IsEnum(['admin', 'user'])
+  role: string;
 
   @ApiProperty({ required: true })
   login: string;

@@ -37,7 +37,8 @@ describe('PartialType', () => {
         'password',
         'firstName',
         'lastName',
-        'active'
+        'active',
+        'role'
       ]);
     });
 
