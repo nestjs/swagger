@@ -11,12 +11,11 @@
     "target": "es6",
     "sourceMap": false,
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "./lib",
     "skipLibCheck": true
   },
   "include": [
-    "lib/**/*",
-    "e2e/**/*"
+    "lib/**/*"
   ],
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "e2e"]
 }
