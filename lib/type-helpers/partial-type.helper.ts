@@ -27,9 +27,11 @@ export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
     classRef,
     PartialTypeClass
   );
-  keysWithValidationConstraints
-    .filter((key) => !fields.includes(key))
-    .forEach((key) => applyIsOptionalDecorator(PartialTypeClass, key));
+  if (keysWithValidationConstraints) {
+    keysWithValidationConstraints
+      .filter((key) => !fields.includes(key))
+      .forEach((key) => applyIsOptionalDecorator(PartialTypeClass, key));
+  }
 
   inheritTransformationMetadata(classRef, PartialTypeClass);
 
