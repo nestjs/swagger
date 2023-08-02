@@ -7,6 +7,7 @@ import {
 import {
   Controller,
   Type,
+  VERSION_NEUTRAL,
   VersioningOptions,
   VersionValue
 } from '@nestjs/common/interfaces';
@@ -53,6 +54,7 @@ import {
   exploreApiTagsMetadata,
   exploreGlobalApiTagsMetadata
 } from './explorers/api-use-tags.explorer';
+import { OperationIdFactory } from './interfaces';
 import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolvers.interface';
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface';
 import {
@@ -68,8 +70,10 @@ export class SwaggerExplorer {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
   private readonly metadataScanner = new MetadataScanner();
   private readonly schemas: Record<string, SchemaObject> = {};
-  private operationIdFactory = (controllerKey: string, methodKey: string) =>
-    controllerKey ? `${controllerKey}_${methodKey}` : methodKey;
+  private operationIdFactory: OperationIdFactory = (
+    controllerKey: string,
+    methodKey: string
+  ) => (controllerKey ? `${controllerKey}_${methodKey}` : methodKey);
   private routePathFactory?: RoutePathFactory;
 
   constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
@@ -79,7 +83,7 @@ export class SwaggerExplorer {
     applicationConfig: ApplicationConfig,
     modulePath?: string | undefined,
     globalPrefix?: string | undefined,
-    operationIdFactory?: (controllerKey: string, methodKey: string) => string
+    operationIdFactory?: OperationIdFactory
   ) {
     this.routePathFactory = new RoutePathFactory(applicationConfig);
     if (operationIdFactory) {
@@ -275,6 +279,25 @@ export class SwaggerExplorer {
       metatype,
       applicationConfig.getVersioning()
     );
+
+    const versionOrVersions = methodVersion ?? controllerVersion;
+    let versions: string[] = [];
+    if (!!versionOrVersions) {
+      if (Array.isArray(versionOrVersions)) {
+        versions = versionOrVersions.filter(
+          (v) => v !== VERSION_NEUTRAL
+        ) as string[];
+      } else if (versionOrVersions !== VERSION_NEUTRAL) {
+        versions = [versionOrVersions];
+      }
+
+      const versionConfig = applicationConfig.getVersioning();
+      if (versionConfig?.type == VersioningType.URI) {
+        const prefix = this.routePathFactory.getVersionPrefix(versionConfig);
+        versions = versions.map((v) => `${prefix}${v}`);
+      }
+    }
+
     const allRoutePaths = this.routePathFactory.create(
       {
         methodPath,
@@ -302,24 +325,33 @@ export class SwaggerExplorer {
           return validMethods.map((meth) => ({
             method: meth.toLowerCase(),
             path: fullPath === '' ? '/' : fullPath,
-            operationId: `${this.getOperationId(instance, method)}_${meth.toLowerCase()}`,
+            operationId: `${this.getOperationId(
+              instance,
+              method
+            )}_${meth.toLowerCase()}`,
             ...apiExtension
           }));
         }
+        const pathVersion = versions.find((v) => fullPath.includes(`/${v}/`));
         return {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,
-          operationId: this.getOperationId(instance, method),
+          operationId: this.getOperationId(instance, method, pathVersion),
           ...apiExtension
         };
       })
     );
   }
 
-  private getOperationId(instance: object, method: Function): string {
+  private getOperationId(
+    instance: object,
+    method: Function,
+    pathVersion?: string
+  ): string {
     return this.operationIdFactory(
       instance.constructor?.name || '',
-      method.name
+      method.name,
+      pathVersion
     );
   }
 
