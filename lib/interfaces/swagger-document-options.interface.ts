@@ -1,14 +1,8 @@
-export type OperationIdFactory =
-  | ((
-      controllerKey: string,
-      methodKey: string,
-      pathVersionKey?: string
-    ) => string)
-  | ((
-      controllerKey: string,
-      methodKey: string,
-      pathVersionKey?: string
-    ) => string);
+export type OperationIdFactory = (
+  controllerKey: string,
+  methodKey: string,
+  pathVersionKey?: string
+) => string;
 
 export interface SwaggerDocumentOptions {
   /**
