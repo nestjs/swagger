@@ -1,7 +1,7 @@
 export type OperationIdFactory = (
   controllerKey: string,
   methodKey: string,
-  pathVersionKey?: string
+  version?: string
 ) => string;
 
 export interface SwaggerDocumentOptions {

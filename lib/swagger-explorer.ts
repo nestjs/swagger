@@ -275,28 +275,17 @@ export class SwaggerExplorer {
       VERSION_METADATA,
       method
     );
+    const versioningOptions = applicationConfig.getVersioning();
     const controllerVersion = this.getVersionMetadata(
       metatype,
-      applicationConfig.getVersioning()
+      versioningOptions
     );
 
     const versionOrVersions = methodVersion ?? controllerVersion;
-    let versions: string[] = [];
-    if (!!versionOrVersions) {
-      if (Array.isArray(versionOrVersions)) {
-        versions = versionOrVersions.filter(
-          (v) => v !== VERSION_NEUTRAL
-        ) as string[];
-      } else if (versionOrVersions !== VERSION_NEUTRAL) {
-        versions = [versionOrVersions];
-      }
-
-      const versionConfig = applicationConfig.getVersioning();
-      if (versionConfig?.type == VersioningType.URI) {
-        const prefix = this.routePathFactory.getVersionPrefix(versionConfig);
-        versions = versions.map((v) => `${prefix}${v}`);
-      }
-    }
+    const versions = this.getRoutePathVersions(
+      versionOrVersions,
+      versioningOptions
+    );
 
     const allRoutePaths = this.routePathFactory.create(
       {
@@ -346,13 +335,35 @@ export class SwaggerExplorer {
   private getOperationId(
     instance: object,
     method: Function,
-    pathVersion?: string
+    version?: string
   ): string {
     return this.operationIdFactory(
       instance.constructor?.name || '',
       method.name,
-      pathVersion
+      version
     );
+  }
+
+  private getRoutePathVersions(
+    versionValue?: VersionValue,
+    versioningOptions?: VersioningOptions
+  ) {
+    let versions: string[] = [];
+
+    if (!versionValue || versioningOptions?.type !== VersioningType.URI) {
+      return versions;
+    }
+
+    if (Array.isArray(versionValue)) {
+      versions = versionValue.filter((v) => v !== VERSION_NEUTRAL) as string[];
+    } else if (versionValue !== VERSION_NEUTRAL) {
+      versions = [versionValue];
+    }
+
+    const prefix = this.routePathFactory.getVersionPrefix(versioningOptions);
+    versions = versions.map((v) => `${prefix}${v}`);
+
+    return versions;
   }
 
   private reflectControllerPath(metatype: Type<unknown>): string {
