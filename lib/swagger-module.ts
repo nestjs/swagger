@@ -18,9 +18,9 @@ import {
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { normalizeRelPath } from './utils/normalize-rel-path';
+import { resolvePath } from './utils/resolve-path.util';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
 import { validatePath } from './utils/validate-path.util';
-import { resolvePath } from './utils/resolve-path.util';
 
 export class SwaggerModule {
   private static readonly metadataLoader = new MetadataLoader();
@@ -54,7 +54,11 @@ export class SwaggerModule {
     return this.metadataLoader.load(metadata);
   }
 
-  private static serveStatic(finalPath: string, app: INestApplication, customStaticPath?: string) {
+  private static serveStatic(
+    finalPath: string,
+    app: INestApplication,
+    customStaticPath?: string
+  ) {
     const httpAdapter = app.getHttpAdapter();
 
     // See <https://github.com/nestjs/swagger/issues/2543>
@@ -69,10 +73,9 @@ export class SwaggerModule {
         decorateReply: false
       });
     } else {
-      (app as NestExpressApplication).useStaticAssets(
-        swaggerAssetsPath,
-        { prefix: finalPath }
-      );
+      (app as NestExpressApplication).useStaticAssets(swaggerAssetsPath, {
+        prefix: finalPath
+      });
     }
   }
 
@@ -107,10 +110,14 @@ export class SwaggerModule {
 
         if (!document) {
           document = lazyBuildDocument();
+        }
 
-          if (options.swaggerOptions.patchDocumentOnRequest) {
-            document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-          }
+        if (options.swaggerOptions.patchDocumentOnRequest) {
+          document = options.swaggerOptions.patchDocumentOnRequest(
+            req,
+            res,
+            document
+          );
         }
 
         if (!swaggerInitJS) {
@@ -135,14 +142,14 @@ export class SwaggerModule {
 
           if (!document) {
             document = lazyBuildDocument();
+          }
 
-            if (options.swaggerOptions.patchDocumentOnRequest) {
-              document = options.swaggerOptions.patchDocumentOnRequest(
-                req,
-                res,
-                document
-              );
-            }
+          if (options.swaggerOptions.patchDocumentOnRequest) {
+            document = options.swaggerOptions.patchDocumentOnRequest(
+              req,
+              res,
+              document
+            );
           }
 
           if (!swaggerInitJS) {
@@ -167,10 +174,14 @@ export class SwaggerModule {
 
       if (!document) {
         document = lazyBuildDocument();
+      }
 
-        if (options.swaggerOptions.patchDocumentOnRequest) {
-          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-        }
+      if (options.swaggerOptions.patchDocumentOnRequest) {
+        document = options.swaggerOptions.patchDocumentOnRequest(
+          req,
+          res,
+          document
+        );
       }
 
       if (!html) {
@@ -191,10 +202,14 @@ export class SwaggerModule {
 
         if (!document) {
           document = lazyBuildDocument();
+        }
 
-          if (options.swaggerOptions.patchDocumentOnRequest) {
-            document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-          }
+        if (options.swaggerOptions.patchDocumentOnRequest) {
+          document = options.swaggerOptions.patchDocumentOnRequest(
+            req,
+            res,
+            document
+          );
         }
 
         if (!html) {
@@ -224,10 +239,14 @@ export class SwaggerModule {
 
       if (!document) {
         document = lazyBuildDocument();
+      }
 
-        if (options.swaggerOptions.patchDocumentOnRequest) {
-          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-        }
+      if (options.swaggerOptions.patchDocumentOnRequest) {
+        document = options.swaggerOptions.patchDocumentOnRequest(
+          req,
+          res,
+          document
+        );
       }
 
       if (!jsonDocument) {
@@ -242,10 +261,14 @@ export class SwaggerModule {
 
       if (!document) {
         document = lazyBuildDocument();
+      }
 
-        if (options.swaggerOptions.patchDocumentOnRequest) {
-          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-        }
+      if (options.swaggerOptions.patchDocumentOnRequest) {
+        document = options.swaggerOptions.patchDocumentOnRequest(
+          req,
+          res,
+          document
+        );
       }
 
       if (!yamlDocument) {
