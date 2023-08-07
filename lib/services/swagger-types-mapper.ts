@@ -139,6 +139,7 @@ export class SwaggerTypesMapper {
 
   private getSchemaOptionsKeys(): Array<keyof SchemaObject> {
     return [
+      'properties',
       'patternProperties',
       'additionalProperties',
       'minimum',
