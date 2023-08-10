@@ -113,11 +113,13 @@ export class SwaggerModule {
         }
 
         if (options.swaggerOptions.patchDocumentOnRequest) {
-          document = options.swaggerOptions.patchDocumentOnRequest(
-            req,
-            res,
-            document
+          const documentToSerialize =
+            options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+          const swaggerInitJsPerRequest = buildSwaggerInitJS(
+            documentToSerialize,
+            options.swaggerOptions
           );
+          return res.send(swaggerInitJsPerRequest);
         }
 
         if (!swaggerInitJS) {
@@ -145,11 +147,13 @@ export class SwaggerModule {
           }
 
           if (options.swaggerOptions.patchDocumentOnRequest) {
-            document = options.swaggerOptions.patchDocumentOnRequest(
-              req,
-              res,
-              document
+            const documentToSerialize =
+              options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+            const swaggerInitJsPerRequest = buildSwaggerInitJS(
+              documentToSerialize,
+              options.swaggerOptions
             );
+            return res.send(swaggerInitJsPerRequest);
           }
 
           if (!swaggerInitJS) {
@@ -177,11 +181,14 @@ export class SwaggerModule {
       }
 
       if (options.swaggerOptions.patchDocumentOnRequest) {
-        document = options.swaggerOptions.patchDocumentOnRequest(
-          req,
-          res,
-          document
+        const documentToSerialize =
+          options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+        const htmlPerRequest = buildSwaggerHTML(
+          baseUrlForSwaggerUI,
+          documentToSerialize,
+          options.swaggerOptions
         );
+        return res.send(htmlPerRequest);
       }
 
       if (!html) {
@@ -205,11 +212,14 @@ export class SwaggerModule {
         }
 
         if (options.swaggerOptions.patchDocumentOnRequest) {
-          document = options.swaggerOptions.patchDocumentOnRequest(
-            req,
-            res,
-            document
+          const documentToSerialize =
+            options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+          const htmlPerRequest = buildSwaggerHTML(
+            baseUrlForSwaggerUI,
+            documentToSerialize,
+            options.swaggerOptions
           );
+          return res.send(htmlPerRequest);
         }
 
         if (!html) {
@@ -219,7 +229,6 @@ export class SwaggerModule {
             options.swaggerOptions
           );
         }
-
         res.send(html);
       });
     } catch (err) {
@@ -231,9 +240,6 @@ export class SwaggerModule {
        */
     }
 
-    let yamlDocument: string;
-    let jsonDocument: string;
-
     httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
       res.type('application/json');
 
@@ -241,19 +247,11 @@ export class SwaggerModule {
         document = lazyBuildDocument();
       }
 
-      if (options.swaggerOptions.patchDocumentOnRequest) {
-        document = options.swaggerOptions.patchDocumentOnRequest(
-          req,
-          res,
-          document
-        );
-      }
+      const documentToSerialize = options.swaggerOptions.patchDocumentOnRequest
+        ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
+        : document;
 
-      if (!jsonDocument) {
-        jsonDocument = JSON.stringify(document);
-      }
-
-      res.send(jsonDocument);
+      res.send(JSON.stringify(documentToSerialize));
     });
 
     httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
@@ -263,18 +261,13 @@ export class SwaggerModule {
         document = lazyBuildDocument();
       }
 
-      if (options.swaggerOptions.patchDocumentOnRequest) {
-        document = options.swaggerOptions.patchDocumentOnRequest(
-          req,
-          res,
-          document
-        );
-      }
+      const documentToSerialize = options.swaggerOptions.patchDocumentOnRequest
+        ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
+        : document;
 
-      if (!yamlDocument) {
-        yamlDocument = jsyaml.dump(document, { skipInvalid: true });
-      }
-
+      const yamlDocument = jsyaml.dump(documentToSerialize, {
+        skipInvalid: true
+      });
       res.send(yamlDocument);
     });
   }
