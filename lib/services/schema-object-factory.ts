@@ -294,7 +294,7 @@ export class SchemaObjectFactory {
 
     if (!(enumName in schemas)) {
       schemas[enumName] = {
-        type: 'string',
+        type: metadata.type as string,
         enum:
           metadata.isArray && metadata.items
             ? metadata.items['enum']
