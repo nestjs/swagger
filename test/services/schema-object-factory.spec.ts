@@ -266,4 +266,20 @@ describe('SchemaObjectFactory', () => {
       });
     });
   });
+
+  describe('createEnumSchemaType', () => {
+    it('should assign schema type correctly if enumName is provided', () => {
+      const metadata = {
+        type: 'number',
+        enum: [1, 2, 3],
+        enumName: 'MyEnum',
+        isArray: false
+      };
+      const schemas = {};
+      
+      schemaObjectFactory.createEnumSchemaType('field', metadata, schemas);
+      
+      expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number' } });
+    });
+  });
 });
