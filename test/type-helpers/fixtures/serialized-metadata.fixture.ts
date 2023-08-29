@@ -7,6 +7,9 @@ export const SERIALIZED_METADATA = {
           CreateUserDto: {
             active: {
               type: () => Boolean
+            },
+            role: {
+              type: () => String
             }
           }
         }

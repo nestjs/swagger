@@ -52,6 +52,14 @@ export class PaginationQuery {
 
   @ApiProperty({
     type: 'object',
+    properties: {
+      name: {
+        type: 'string'
+      },
+      age: {
+        type: 'number',
+      }
+    },
     additionalProperties: true
   })
   filter: Record<string, any>;

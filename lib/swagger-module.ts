@@ -18,6 +18,7 @@ import {
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { normalizeRelPath } from './utils/normalize-rel-path';
+import { resolvePath } from './utils/resolve-path.util';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
 import { validatePath } from './utils/validate-path.util';
 
@@ -53,21 +54,28 @@ export class SwaggerModule {
     return this.metadataLoader.load(metadata);
   }
 
-  private static serveStatic(finalPath: string, app: INestApplication) {
+  private static serveStatic(
+    finalPath: string,
+    app: INestApplication,
+    customStaticPath?: string
+  ) {
     const httpAdapter = app.getHttpAdapter();
-    const swaggerAssetsAbsoluteFSPath = getSwaggerAssetsAbsoluteFSPath();
+
+    // See <https://github.com/nestjs/swagger/issues/2543>
+    const swaggerAssetsPath = customStaticPath
+      ? resolvePath(customStaticPath)
+      : getSwaggerAssetsAbsoluteFSPath();
 
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
       (app as NestFastifyApplication).useStaticAssets({
-        root: swaggerAssetsAbsoluteFSPath,
+        root: swaggerAssetsPath,
         prefix: finalPath,
         decorateReply: false
       });
     } else {
-      (app as NestExpressApplication).useStaticAssets(
-        swaggerAssetsAbsoluteFSPath,
-        { prefix: finalPath }
-      );
+      (app as NestExpressApplication).useStaticAssets(swaggerAssetsPath, {
+        prefix: finalPath
+      });
     }
   }
 
@@ -102,10 +110,16 @@ export class SwaggerModule {
 
         if (!document) {
           document = lazyBuildDocument();
+        }
 
-          if (options.swaggerOptions.patchDocumentOnRequest) {
-            document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-          }
+        if (options.swaggerOptions.patchDocumentOnRequest) {
+          const documentToSerialize =
+            options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+          const swaggerInitJsPerRequest = buildSwaggerInitJS(
+            documentToSerialize,
+            options.swaggerOptions
+          );
+          return res.send(swaggerInitJsPerRequest);
         }
 
         if (!swaggerInitJS) {
@@ -130,14 +144,16 @@ export class SwaggerModule {
 
           if (!document) {
             document = lazyBuildDocument();
+          }
 
-            if (options.swaggerOptions.patchDocumentOnRequest) {
-              document = options.swaggerOptions.patchDocumentOnRequest(
-                req,
-                res,
-                document
-              );
-            }
+          if (options.swaggerOptions.patchDocumentOnRequest) {
+            const documentToSerialize =
+              options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+            const swaggerInitJsPerRequest = buildSwaggerInitJS(
+              documentToSerialize,
+              options.swaggerOptions
+            );
+            return res.send(swaggerInitJsPerRequest);
           }
 
           if (!swaggerInitJS) {
@@ -162,10 +178,17 @@ export class SwaggerModule {
 
       if (!document) {
         document = lazyBuildDocument();
+      }
 
-        if (options.swaggerOptions.patchDocumentOnRequest) {
-          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-        }
+      if (options.swaggerOptions.patchDocumentOnRequest) {
+        const documentToSerialize =
+          options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+        const htmlPerRequest = buildSwaggerHTML(
+          baseUrlForSwaggerUI,
+          documentToSerialize,
+          options.swaggerOptions
+        );
+        return res.send(htmlPerRequest);
       }
 
       if (!html) {
@@ -186,10 +209,17 @@ export class SwaggerModule {
 
         if (!document) {
           document = lazyBuildDocument();
+        }
 
-          if (options.swaggerOptions.patchDocumentOnRequest) {
-            document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-          }
+        if (options.swaggerOptions.patchDocumentOnRequest) {
+          const documentToSerialize =
+            options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+          const htmlPerRequest = buildSwaggerHTML(
+            baseUrlForSwaggerUI,
+            documentToSerialize,
+            options.swaggerOptions
+          );
+          return res.send(htmlPerRequest);
         }
 
         if (!html) {
@@ -199,7 +229,6 @@ export class SwaggerModule {
             options.swaggerOptions
           );
         }
-
         res.send(html);
       });
     } catch (err) {
@@ -211,25 +240,18 @@ export class SwaggerModule {
        */
     }
 
-    let yamlDocument: string;
-    let jsonDocument: string;
-
     httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
       res.type('application/json');
 
       if (!document) {
         document = lazyBuildDocument();
-
-        if (options.swaggerOptions.patchDocumentOnRequest) {
-          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-        }
       }
 
-      if (!jsonDocument) {
-        jsonDocument = JSON.stringify(document);
-      }
+      const documentToSerialize = options.swaggerOptions.patchDocumentOnRequest
+        ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
+        : document;
 
-      res.send(jsonDocument);
+      res.send(JSON.stringify(documentToSerialize));
     });
 
     httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
@@ -237,16 +259,15 @@ export class SwaggerModule {
 
       if (!document) {
         document = lazyBuildDocument();
-
-        if (options.swaggerOptions.patchDocumentOnRequest) {
-          document = options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-        }
       }
 
-      if (!yamlDocument) {
-        yamlDocument = jsyaml.dump(document, { skipInvalid: true });
-      }
+      const documentToSerialize = options.swaggerOptions.patchDocumentOnRequest
+        ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
+        : document;
 
+      const yamlDocument = jsyaml.dump(documentToSerialize, {
+        skipInvalid: true
+      });
       res.send(yamlDocument);
     });
   }
@@ -264,7 +285,6 @@ export class SwaggerModule {
         : path
     );
     const urlLastSubdirectory = finalPath.split('/').slice(-1).pop() || '';
-
     const validatedGlobalPrefix =
       options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
         ? validatePath(globalPrefix)
@@ -292,7 +312,7 @@ export class SwaggerModule {
       }
     );
 
-    SwaggerModule.serveStatic(finalPath, app);
+    SwaggerModule.serveStatic(finalPath, app, options?.customSwaggerUiPath);
     /**
      * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
      * @see https://github.com/nestjs/swagger/issues/1976

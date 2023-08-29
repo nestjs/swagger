@@ -26,7 +26,8 @@ describe('OmitType', () => {
       expect(modelPropertiesAccessor.getModelProperties(prototype)).toEqual([
         'password',
         'firstName',
-        'active'
+        'active',
+        'role'
       ]);
     });
   });

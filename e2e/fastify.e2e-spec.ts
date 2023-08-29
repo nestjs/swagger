@@ -7,6 +7,7 @@ import * as request from 'supertest';
 import * as SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
+import * as path from 'path';
 
 describe('Fastify Swagger', () => {
   let app: NestFastifyApplication;
@@ -83,9 +84,12 @@ describe('Fastify Swagger', () => {
     beforeEach(async () => {
       const swaggerDocument = SwaggerModule.createDocument(
         app,
-        builder.build()
+        builder.build(),
       );
-      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument);
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
+        // to showcase that in new implementation u can use custom swagger-ui path. Useful when using e.g. webpack
+        customSwaggerUiPath: path.resolve(`./node_modules/swagger-ui-dist`),
+      });
 
       await app.init();
       await app.getHttpAdapter().getInstance().ready();
@@ -102,6 +106,14 @@ describe('Fastify Swagger', () => {
 
       expect(response.status).toEqual(200);
       expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
+
+    it('content type of served static should be available', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}/swagger-ui-bundle.js`
+      );
+
+      expect(response.status).toEqual(200);
     });
   });
 

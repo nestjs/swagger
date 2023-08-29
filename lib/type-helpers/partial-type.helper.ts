@@ -23,7 +23,16 @@ export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
       inheritPropertyInitializers(this, classRef);
     }
   }
-  inheritValidationMetadata(classRef, PartialTypeClass);
+  const keysWithValidationConstraints = inheritValidationMetadata(
+    classRef,
+    PartialTypeClass
+  );
+  if (keysWithValidationConstraints) {
+    keysWithValidationConstraints
+      .filter((key) => !fields.includes(key))
+      .forEach((key) => applyIsOptionalDecorator(PartialTypeClass, key));
+  }
+
   inheritTransformationMetadata(classRef, PartialTypeClass);
 
   function applyFields(fields: string[]) {

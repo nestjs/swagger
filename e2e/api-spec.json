@@ -360,6 +360,14 @@
             "required": true,
             "in": "query",
             "schema": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "age": {
+                  "type": "number"
+                }
+              },
               "additionalProperties": true,
               "type": "object"
             }
@@ -549,6 +557,14 @@
             "in": "query",
             "required": true,
             "schema": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "age": {
+                  "type": "number"
+                }
+              },
               "additionalProperties": true,
               "type": "object"
             }

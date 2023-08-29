@@ -14,10 +14,11 @@
     "skipLibCheck": true
   },
   "include": [
-    "lib/**/*"
+    "lib/**/*",
+    "test/**/*",
+    "e2e/**/*"
   ],
   "exclude": [
     "node_modules",
-    "**/*.spec.ts"
   ]
 }
