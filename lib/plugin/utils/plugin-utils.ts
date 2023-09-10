@@ -13,7 +13,8 @@ import {
   isInterface,
   isNumber,
   isString,
-  isStringLiteral
+  isStringLiteral,
+  isStringMapping
 } from './ast-utils';
 
 export function getDecoratorOrUndefinedByNames(
@@ -65,7 +66,7 @@ export function getTypeReferenceAsString(
   if (isBigInt(type)) {
     return { typeName: BigInt.name, arrayDepth };
   }
-  if (isString(type) || isStringLiteral(type)) {
+  if (isString(type) || isStringLiteral(type) || isStringMapping(type)) {
     return { typeName: String.name, arrayDepth };
   }
   if (isPromiseOrObservable(getText(type, typeChecker))) {

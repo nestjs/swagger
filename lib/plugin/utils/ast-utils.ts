@@ -46,6 +46,10 @@ export function isStringLiteral(type: Type) {
   return hasFlag(type, TypeFlags.StringLiteral) && !type.isUnion();
 }
 
+export function isStringMapping(type: Type) {
+  return hasFlag(type, TypeFlags.StringMapping);
+}
+
 export function isNumber(type: Type) {
   return hasFlag(type, TypeFlags.Number);
 }
