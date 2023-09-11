@@ -167,8 +167,15 @@ export class SchemaObjectFactory {
       );
 
       const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
-      if (schemaCombinators.some((key) => key in property)) {
-        delete (property as SchemaObjectMetadata).type;
+      let keyOfCombinators = '';
+      if (schemaCombinators.some((_key) => { keyOfCombinators = _key; return _key in property; })) {
+          if (((property as SchemaObjectMetadata)?.type === 'array' || (property as SchemaObjectMetadata).isArray) && keyOfCombinators) {
+              (property as SchemaObjectMetadata).items = {};
+              (property as SchemaObjectMetadata).items[keyOfCombinators] = property[keyOfCombinators];
+              delete property[keyOfCombinators];
+          } else {
+              delete (property as SchemaObjectMetadata).type;
+          }
       }
       return property as ParameterObject;
     });
