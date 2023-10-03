@@ -300,8 +300,14 @@ export class SchemaObjectFactory {
     const $ref = getSchemaPath(enumName);
 
     if (!(enumName in schemas)) {
+      const enumType: string = (
+        metadata.isArray
+        ? metadata.items['type']
+        : metadata.type
+      ) ?? 'string';
+
       schemas[enumName] = {
-        type: metadata.type as string ?? 'string',
+        type: enumType,
         enum:
           metadata.isArray && metadata.items
             ? metadata.items['enum']
