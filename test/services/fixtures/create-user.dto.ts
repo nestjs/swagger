@@ -41,6 +41,12 @@ export class CreateUserDto {
   })
   profile: CreateProfileDto;
 
+  @ApiProperty({
+    nullable: false,
+    type: () => CreateProfileDto
+  })
+  nonNullProfile: CreateProfileDto;
+
   @ApiProperty()
   tags: string[];
 

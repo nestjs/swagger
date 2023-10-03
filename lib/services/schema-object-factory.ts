@@ -168,14 +168,24 @@ export class SchemaObjectFactory {
 
       const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
       let keyOfCombinators = '';
-      if (schemaCombinators.some((_key) => { keyOfCombinators = _key; return _key in property; })) {
-          if (((property as SchemaObjectMetadata)?.type === 'array' || (property as SchemaObjectMetadata).isArray) && keyOfCombinators) {
-              (property as SchemaObjectMetadata).items = {};
-              (property as SchemaObjectMetadata).items[keyOfCombinators] = property[keyOfCombinators];
-              delete property[keyOfCombinators];
-          } else {
-              delete (property as SchemaObjectMetadata).type;
-          }
+      if (
+        schemaCombinators.some((_key) => {
+          keyOfCombinators = _key;
+          return _key in property;
+        })
+      ) {
+        if (
+          ((property as SchemaObjectMetadata)?.type === 'array' ||
+            (property as SchemaObjectMetadata).isArray) &&
+          keyOfCombinators
+        ) {
+          (property as SchemaObjectMetadata).items = {};
+          (property as SchemaObjectMetadata).items[keyOfCombinators] =
+            property[keyOfCombinators];
+          delete property[keyOfCombinators];
+        } else {
+          delete (property as SchemaObjectMetadata).type;
+        }
       }
       return property as ParameterObject;
     });
@@ -301,7 +311,7 @@ export class SchemaObjectFactory {
 
     if (!(enumName in schemas)) {
       schemas[enumName] = {
-        type: metadata.type as string ?? 'string',
+        type: (metadata.type as string) ?? 'string',
         enum:
           metadata.isArray && metadata.items
             ? metadata.items['enum']
@@ -354,13 +364,14 @@ export class SchemaObjectFactory {
     if (metadata.isArray) {
       return this.transformToArraySchemaProperty(metadata, key, { $ref });
     }
-    const keysToRemove = ['type', 'isArray', 'required'];
+    const keysToRemove = ['type', 'isArray', 'nullable', 'required'];
     const validMetadataObject = omit(metadata, keysToRemove);
     const extraMetadataKeys = Object.keys(validMetadataObject);
 
     if (extraMetadataKeys.length > 0) {
       return {
         name: metadata.name || key,
+        nullable: metadata.nullable,
         required: metadata.required,
         ...validMetadataObject,
         allOf: [{ $ref }]
@@ -368,6 +379,7 @@ export class SchemaObjectFactory {
     }
     return {
       name: metadata.name || key,
+      nullable: metadata.nullable,
       required: metadata.required,
       $ref
     } as SchemaObjectMetadata;

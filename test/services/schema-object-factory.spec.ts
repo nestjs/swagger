@@ -149,6 +149,10 @@ describe('SchemaObjectFactory', () => {
               }
             ]
           },
+          nonNullProfile: {
+            nullable: false,
+            $ref: '#/components/schemas/CreateProfileDto'
+          },
           tags: {
             items: {
               type: 'string'
@@ -209,6 +213,7 @@ describe('SchemaObjectFactory', () => {
           'login',
           'password',
           'profile',
+          'nonNullProfile',
           'tags',
           'twoDimensionPrimitives',
           'twoDimensionModels',
@@ -276,9 +281,9 @@ describe('SchemaObjectFactory', () => {
         isArray: false
       };
       const schemas = {};
-      
+
       schemaObjectFactory.createEnumSchemaType('field', metadata, schemas);
-      
+
       expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number' } });
     });
   });
