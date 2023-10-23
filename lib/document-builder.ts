@@ -4,6 +4,9 @@ import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {
   ExternalDocumentationObject,
+  HttpSecuritySchemeObject,
+  OAuth2SecuritySchemeObject,
+  OpenIdSecurityConnectSchemeObject,
   ParameterObject,
   SecurityRequirementObject,
   SecuritySchemeObject,
@@ -117,7 +120,7 @@ export class DocumentBuilder {
   }
 
   public addBearerAuth(
-    options: SecuritySchemeObject = {
+    options: HttpSecuritySchemeObject = {
       type: 'http'
     },
     name = 'bearer'
@@ -131,7 +134,7 @@ export class DocumentBuilder {
   }
 
   public addOAuth2(
-    options: SecuritySchemeObject = {
+    options: OAuth2SecuritySchemeObject | OpenIdSecurityConnectSchemeObject = {
       type: 'oauth2'
     },
     name = 'oauth2'
@@ -144,8 +147,21 @@ export class DocumentBuilder {
     return this;
   }
 
+  public addOpenIdConnect(
+    options: Partial<OpenIdSecurityConnectSchemeObject> = {
+      type: 'openIdConnect'
+    },
+    name = 'openIdConnect'
+  ): this {
+    this.addSecurity(name, {
+      type: 'openIdConnect',
+      ...options
+    });
+    return this;
+  }
+
   public addApiKey(
-    options: SecuritySchemeObject = {
+    options: HttpSecuritySchemeObject = {
       type: 'apiKey'
     },
     name = 'api_key'
@@ -160,7 +176,7 @@ export class DocumentBuilder {
   }
 
   public addBasicAuth(
-    options: SecuritySchemeObject = {
+    options: HttpSecuritySchemeObject = {
       type: 'http'
     },
     name = 'basic'
@@ -175,7 +191,7 @@ export class DocumentBuilder {
 
   public addCookieAuth(
     cookieName = 'connect.sid',
-    options: SecuritySchemeObject = {
+    options: HttpSecuritySchemeObject = {
       type: 'apiKey'
     },
     securityName = 'cookie'

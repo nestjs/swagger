@@ -251,15 +251,26 @@ export interface XmlObject {
 
 export type SecuritySchemeType = 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
 
-export interface SecuritySchemeObject {
+export type SecuritySchemeObject = HttpSecuritySchemeObject | OAuth2SecuritySchemeObject | OpenIdSecurityConnectSchemeObject;
+
+interface CommonSecuritySchemeObject {
   type: SecuritySchemeType;
   description?: string;
   name?: string;
+}
+
+export interface HttpSecuritySchemeObject extends CommonSecuritySchemeObject {
   in?: string;
   scheme?: string;
   bearerFormat?: string;
+}
+
+export interface OAuth2SecuritySchemeObject extends CommonSecuritySchemeObject {
   flows?: OAuthFlowsObject;
-  openIdConnectUrl?: string;
+}
+
+export interface OpenIdSecurityConnectSchemeObject extends CommonSecuritySchemeObject {
+  openIdConnectUrl: string;
 }
 
 export interface OAuthFlowsObject {
