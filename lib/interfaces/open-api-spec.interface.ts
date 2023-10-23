@@ -260,6 +260,7 @@ export interface SecuritySchemeObject {
   bearerFormat?: string;
   flows?: OAuthFlowsObject;
   openIdConnectUrl?: string;
+  'x-tokenName'?: string;
 }
 
 export interface OAuthFlowsObject {
