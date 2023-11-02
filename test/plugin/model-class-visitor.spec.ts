@@ -30,6 +30,10 @@ import {
   stringLiteralDtoText,
   stringLiteralDtoTextTranspiled
 } from './fixtures/string-literal.dto';
+import {
+  parameterPropertyDtoText,
+  parameterPropertyDtoTextTranspiled
+} from './fixtures/parameter-property.dto';
 
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
@@ -239,5 +243,36 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(stringLiteralDtoTextTranspiled);
+  });
+
+  it('should support & understand parameter properties', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'parameter-property.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(parameterPropertyDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              introspectComments: true,
+              classValidatorShim: true,
+              parameterProperties: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(parameterPropertyDtoTextTranspiled);
   });
 });
