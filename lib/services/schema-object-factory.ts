@@ -204,7 +204,7 @@ export class SchemaObjectFactory {
     if (!propertiesWithType) {
       return '';
     }
-    const extensionProperties = Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || [];
+    const extensionProperties = Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
     const typeDefinition: SchemaObject = {
       type: 'object',
       properties: mapValues(keyBy(propertiesWithType, 'name'), (property) =>
