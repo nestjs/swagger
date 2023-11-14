@@ -1,5 +1,5 @@
 import { head } from 'lodash';
-import { isAbsolute, posix } from 'path';
+import {isAbsolute, join, posix} from 'path';
 import * as ts from 'typescript';
 import { PluginOptions } from '../merge-options';
 import {
@@ -16,6 +16,8 @@ import {
   isStringLiteral,
   isStringMapping
 } from './ast-utils';
+import {readFileSync} from "node:fs";
+import {normalize, sep} from "node:path"
 
 export function getDecoratorOrUndefinedByNames(
   names: string[],
@@ -166,6 +168,7 @@ export function replaceImportPath(
 
     let relativePath = posix.relative(from, importPath);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
+    relativePath = adaptPathWithConfig(relativePath);
 
     const nodeModulesText = 'node_modules';
     const nodeModulePos = relativePath.indexOf(nodeModulesText);
@@ -329,6 +332,24 @@ export function extractTypeArgumentIfArray(type: ts.Type) {
  */
 function isOptionalBoolean(text: string) {
   return typeof text === 'string' && text === 'boolean | undefined';
+}
+
+function adaptPathWithConfig(inputPath: string) {
+  try {
+    const rawConfig = readFileSync('tsconfig.json', 'utf8');
+    const parsedConfig =  JSON.parse(rawConfig);
+    const outDir = parsedConfig.compilerOptions.outDir;
+
+    const outDirDepth = normalize(outDir)
+      .split(sep)
+      .map(() => '..')
+      .join(sep);
+
+    return join(outDirDepth, inputPath);
+  } catch (error) {
+    console.error(error);
+    return inputPath;
+  }
 }
 
 /**
