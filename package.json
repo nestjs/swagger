@@ -24,7 +24,7 @@
     "start:debug": "nest start --watch --debug"
   },
   "dependencies": {
-    "@nestjs/mapped-types": "2.0.3",
+    "@nestjs/mapped-types": "2.0.4",
     "js-yaml": "4.1.0",
     "lodash": "4.17.21",
     "path-to-regexp": "3.2.0",
