@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { isString, isUndefined, negate, pickBy } from 'lodash';
+import { clone, isString, isUndefined, negate, pickBy } from 'lodash';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {
@@ -82,6 +82,18 @@ export class DocumentBuilder {
         negate(isUndefined)
       ) as TagObject
     );
+    return this;
+  }
+
+  public addExtension(extensionKey: string, extensionProperties: any): this {
+    if (!extensionKey.startsWith('x-')) {
+      throw new Error(
+        'Extension key is not prefixed. Please ensure you prefix it with `x-`.'
+      );
+    }
+
+    this.document[extensionKey] = clone(extensionProperties);
+
     return this;
   }
 

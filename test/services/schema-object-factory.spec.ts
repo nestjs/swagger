@@ -1,4 +1,4 @@
-import { ApiProperty } from '../../lib/decorators';
+import { ApiExtension, ApiProperty } from '../../lib/decorators';
 import { SchemasObject } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
@@ -296,6 +296,20 @@ describe('SchemaObjectFactory', () => {
         type: 'object',
         properties: { name: { type: 'string', minLength: 1 } }
       });
+    });
+
+    it('should include extension properties', () => {
+      @ApiExtension('x-test', 'value')
+      class CreatUserDto {
+        @ApiProperty({ minLength: 0, required: true })
+        name: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(CreatUserDto, schemas);
+
+      expect(schemas[CreatUserDto.name]['x-test']).toEqual('value');
     });
   });
 

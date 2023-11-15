@@ -204,11 +204,13 @@ export class SchemaObjectFactory {
     if (!propertiesWithType) {
       return '';
     }
+    const extensionProperties = Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
     const typeDefinition: SchemaObject = {
       type: 'object',
       properties: mapValues(keyBy(propertiesWithType, 'name'), (property) =>
         omit(property, ['name', 'isArray', 'required', 'enumName'])
-      ) as Record<string, SchemaObject | ReferenceObject>
+      ) as Record<string, SchemaObject | ReferenceObject>,
+      ...extensionProperties
     };
     const typeDefinitionRequiredFields = propertiesWithType
       .filter((property) => property.required != false)
