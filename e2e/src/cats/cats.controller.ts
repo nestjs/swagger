@@ -96,9 +96,16 @@ export class CatsController {
   @ApiParam({
     name: 'type',
     enum: LettersEnum,
-    enumName: 'Letter'
   })
   getWithEnumParam(@Param('type') type: LettersEnum) {}
+
+  @Get('with-enum-named/:type')
+  @ApiParam({
+    name: 'type',
+    enum: LettersEnum,
+    enumName: 'Letter'
+  })
+  getWithEnumNamedParam(@Param('type') type: LettersEnum) {}
 
   @Get('with-random-query')
   @ApiQuery({

@@ -875,6 +875,58 @@
         ]
       }
     },
+    "/api/cats/with-enum-named/{type}": {
+      "get": {
+        "operationId": "CatsController_getWithEnumNamedParam",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "default": "test",
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/Letter"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      }
+    },
     "/api/cats/with-random-query": {
       "get": {
         "operationId": "CatsController_getWithRandomQuery",
