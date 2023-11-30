@@ -51,6 +51,9 @@ export class SchemaObjectFactory {
           undefined
         ) as [Type<any>, boolean];
       }
+      if (!isBodyParameter(param) && param.enumName) {
+        return this.createEnumParam(param, schemas);
+      }
       if (this.isPrimitiveType(param.type)) {
         return param;
       }
@@ -89,14 +92,10 @@ export class SchemaObjectFactory {
     return flatten(parameterObjects);
   }
 
-  createQueryOrParamSchema(
+  private createQueryOrParamSchema(
     param: ParamWithTypeMetadata,
     schemas: Record<string, SchemaObject>
   ) {
-    if (param.enumName) {
-      return this.createEnumParam(param, schemas);
-    }
-
     if (isDateCtor(param.type as Function)) {
       return {
         format: 'date-time',
