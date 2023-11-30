@@ -66,8 +66,8 @@ export function addEnumSchema(
   const enumValues = getEnumValues(decoratorOptions.enum);
 
   paramDefinition.schema = paramSchema;
-  paramSchema.enum = enumValues;
   paramSchema.type = getEnumType(enumValues);
+  paramSchema.enum = enumValues;
 
   if (decoratorOptions.enumName) {
     paramDefinition.enumName = decoratorOptions.enumName;
