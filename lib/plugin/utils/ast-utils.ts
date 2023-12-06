@@ -103,7 +103,17 @@ export function getText(
     typeFormatFlags = getDefaultTypeFormatFlags(enclosingNode);
   }
   const compilerNode = !enclosingNode ? undefined : enclosingNode;
-  return typeChecker.typeToString(type, compilerNode, typeFormatFlags);
+
+  const text = typeChecker.typeToString(type, compilerNode, typeFormatFlags);
+
+  // Regex to match escaped unicode
+  const unicodeRegex = /\\u([\dA-Fa-f]{4})/g
+
+  // Unescape escaped unicode https://github.com/microsoft/TypeScript/issues/36174
+  return text.replace(unicodeRegex, (match, unicode) => {
+    const charCode = parseInt(unicode, 16);
+    return String.fromCharCode(charCode);
+  });
 }
 
 export function getDefaultTypeFormatFlags(enclosingNode: Node) {
