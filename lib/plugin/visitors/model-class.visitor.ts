@@ -28,6 +28,10 @@ import {
 } from '../utils/plugin-utils';
 import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util';
 import { AbstractFileVisitor } from './abstract.visitor';
+import {
+  decoratorsProperties,
+  decoratorsPropertiesMappingType
+} from '../../services/decorators-properties';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
@@ -560,352 +564,73 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         options
       );
     }
-    this.addPropertyByValidationDecorator(
-      factory,
-      'Min',
-      'minimum',
-      decorators,
-      assignments,
-      options
-    );
-    this.addPropertyByValidationDecorator(
-      factory,
-      'Max',
-      'maximum',
-      decorators,
-      assignments,
-      options
-    );
-    this.addPropertyByValidationDecorator(
-      factory,
-      'MinLength',
-      'minLength',
-      decorators,
-      assignments,
-      options
-    );
-    this.addPropertyByValidationDecorator(
-      factory,
-      'MaxLength',
-      'maxLength',
-      decorators,
-      assignments,
-      options
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsPositive',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'minimum',
-            createPrimitiveLiteral(factory, 1)
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsNegative',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'maximum',
-            createPrimitiveLiteral(factory, -1)
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'ArrayNotEmpty',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'minItems',
-            createPrimitiveLiteral(factory, 1)
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'ArrayUnique',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'uniqueItems',
-            createPrimitiveLiteral(factory, true)
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsBase64',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'format',
-            createPrimitiveLiteral(factory, 'base64')
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsCreditCard',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'format',
-            createPrimitiveLiteral(factory, 'credit-card')
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsCurrency',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'format',
-            createPrimitiveLiteral(factory, 'currency')
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsEmail',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'format',
-            createPrimitiveLiteral(factory, 'email')
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsJSON',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'format',
-            createPrimitiveLiteral(factory, 'json')
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsUrl',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'format',
-            createPrimitiveLiteral(factory, 'url')
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsUuid',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'format',
-            createPrimitiveLiteral(factory, 'uuid')
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsMobilePhone',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'format',
-            createPrimitiveLiteral(factory, 'mobile-phone')
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'ArrayMinSize',
-      decorators,
-      assignments,
-      (decoratorRef: ts.Decorator) => {
-        const decoratorArguments = getDecoratorArguments(decoratorRef);
-        const result = [];
 
-        const minSize = head(decoratorArguments);
-        if (!canReferenceNode(minSize, options)) {
-          return result;
-        }
-
-        const clonedMinSize = this.clonePrimitiveLiteral(
+    decoratorsProperties.forEach((decoratorProperty) => {
+      if (
+        decoratorProperty.mappingType === decoratorsPropertiesMappingType.DIRECT
+      ) {
+        this.addPropertyByValidationDecorator(
           factory,
-          minSize
+          decoratorProperty.decorator,
+          decoratorProperty.property,
+          decorators,
+          assignments,
+          options
         );
-        if (clonedMinSize) {
-          result.push(
-            factory.createPropertyAssignment('minItems', clonedMinSize)
-          );
-        }
-        return result;
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'ArrayMaxSize',
-      decorators,
-      assignments,
-      (decoratorRef: ts.Decorator) => {
-        const decoratorArguments = getDecoratorArguments(decoratorRef);
-        const result = [];
-
-        const maxSize = head(decoratorArguments);
-        if (!canReferenceNode(maxSize, options)) {
-          return result;
-        }
-
-        const clonedMaxSize = this.clonePrimitiveLiteral(
+      } else if (
+        decoratorProperty.mappingType ===
+        decoratorsPropertiesMappingType.INDIRECT_VALUE
+      ) {
+        this.addPropertiesByValidationDecorator(
           factory,
-          maxSize
+          decoratorProperty.decorator,
+          decorators,
+          assignments,
+          () => {
+            return [
+              factory.createPropertyAssignment(
+                decoratorProperty.property,
+                createPrimitiveLiteral(factory, decoratorProperty.value)
+              )
+            ];
+          }
         );
-        if (clonedMaxSize) {
-          result.push(
-            factory.createPropertyAssignment('maxItems', clonedMaxSize)
-          );
-        }
-        return result;
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsDivisibleBy',
-      decorators,
-      assignments,
-      (decoratorRef: ts.Decorator) => {
-        const decoratorArguments = getDecoratorArguments(decoratorRef);
-        const result = [];
-
-        const divisibleBy = head(decoratorArguments);
-        if (!canReferenceNode(divisibleBy, options)) {
-          return result;
-        }
-
-        const clonedDivisibleBy = this.clonePrimitiveLiteral(
+      } else if (
+        decoratorProperty.mappingType ===
+        decoratorsPropertiesMappingType.INDIRECT_ARGUMENT
+      ) {
+        this.addPropertiesByValidationDecorator(
           factory,
-          divisibleBy
-        );
-        if (clonedDivisibleBy) {
-          result.push(
-            factory.createPropertyAssignment('multipleOf', clonedDivisibleBy)
-          );
-        }
-        return result;
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsAscii',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'pattern',
-            createPrimitiveLiteral(factory, '^[\\x00-\\x7F]+$')
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsHexColor',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'pattern',
-            createPrimitiveLiteral(
+          decoratorProperty.decorator,
+          decorators,
+          assignments,
+          (decoratorRef: ts.Decorator) => {
+            const decoratorArguments = getDecoratorArguments(decoratorRef);
+            const result = [];
+
+            const argumentValue = head(decoratorArguments);
+            if (!canReferenceNode(argumentValue, options)) {
+              return result;
+            }
+
+            const clonedArgumentValue = this.clonePrimitiveLiteral(
               factory,
-              '^#?([0-9A-F]{3}|[0-9A-F]{4}|[0-9A-F]{6}|[0-9A-F]{8})$'
-            )
-          )
-        ];
+              argumentValue
+            );
+            if (clonedArgumentValue) {
+              result.push(
+                factory.createPropertyAssignment(
+                  decoratorProperty.property,
+                  clonedArgumentValue
+                )
+              );
+            }
+            return result;
+          }
+        );
       }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsHexadecimal',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'pattern',
-            createPrimitiveLiteral(factory, '^(0x|0h)?[0-9A-F]+$')
-          )
-        ];
-      }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'Contains',
-      decorators,
-      assignments,
-      (decoratorRef: ts.Decorator) => {
-        const decoratorArguments = getDecoratorArguments(decoratorRef);
-        const result = [];
+    });
 
-        const pattern = head(decoratorArguments);
-        if (!canReferenceNode(pattern, options)) {
-          return result;
-        }
-
-        const clonedPattern = this.clonePrimitiveLiteral(factory, pattern);
-        if (clonedPattern) {
-          result.push(
-            factory.createPropertyAssignment('pattern', clonedPattern)
-          );
-        }
-        return result;
-      }
-    );
     this.addPropertiesByValidationDecorator(
       factory,
       'Length',
