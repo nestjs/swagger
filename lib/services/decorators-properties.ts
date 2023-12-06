@@ -86,7 +86,7 @@ export const decoratorsProperties = [
     mappingType: decoratorsPropertiesMappingType.INDIRECT_VALUE,
     decorator: 'IsUrl',
     property: 'format',
-    value: 'url'
+    value: 'uri'
   },
   {
     mappingType: decoratorsPropertiesMappingType.INDIRECT_VALUE,
