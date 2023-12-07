@@ -12,6 +12,7 @@ import { randomUUID } from 'node:crypto';
 import { ApiExtraModels, ApiProperty } from '../../../../lib';
 import { ExtraModel } from './extra-model.dto';
 import { LettersEnum } from './pagination-query.dto';
+import { UnicodeDto } from './privé/unicode.dto';
 import { TagDto } from './tag.dto';
 
 enum NonExportedEnum {
@@ -116,6 +117,9 @@ export class CreateCatDto {
 
   @ApiProperty({ description: 'tag', required: false })
   tag: TagDto;
+
+  @ApiProperty({ description: 'unicode', required: false })
+  unicode: UnicodeDto;
 
   multipleTags: TagDto[];
 

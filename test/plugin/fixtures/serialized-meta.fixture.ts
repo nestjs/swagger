@@ -6,6 +6,9 @@ export default async () => {
     ),
     ['./cats/dto/create-cat.dto']: await import('./cats/dto/create-cat.dto'),
     ['./cats/dto/tag.dto']: await import('./cats/dto/tag.dto'),
+    ['./cats/dto/priv\u00E9/unicode.dto']: await import(
+      './cats/dto/privé/unicode.dto'
+    ),
     ['./cats/classes/cat.class']: await import('./cats/classes/cat.class')
   };
   return {
@@ -82,6 +85,10 @@ export default async () => {
           }
         ],
         [
+          import('./cats/dto/priv\u00E9/unicode.dto'),
+          { UnicodeDto: { name: { required: true, type: () => String } } }
+        ],
+        [
           import('./cats/dto/tag.dto'),
           { TagDto: { name: { required: true, type: () => String } } }
         ],
@@ -156,6 +163,10 @@ export default async () => {
               tag: {
                 required: true,
                 type: () => t['./cats/dto/tag.dto'].TagDto
+              },
+              unicode: {
+                required: true,
+                type: () => t['./cats/dto/privé/unicode.dto'].UnicodeDto
               },
               multipleTags: {
                 required: true,
