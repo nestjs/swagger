@@ -1,6 +1,6 @@
 {
   "name": "@nestjs/swagger",
-  "version": "7.1.16",
+  "version": "7.1.17",
   "description": "Nest - modern, fast, powerful node.js web framework (@swagger)",
   "author": "Kamil Mysliwiec",
   "license": "MIT",
