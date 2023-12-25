@@ -59,8 +59,7 @@
     "release-it": "17.0.1",
     "supertest": "6.3.3",
     "swagger-parser": "10.0.3",
-    "ts-jest": "29.1.1",
-    "typescript": "5.1.6"
+    "ts-jest": "29.1.1"
   },
   "peerDependencies": {
     "@fastify/static": "^6.0.0",
@@ -68,7 +67,8 @@
     "@nestjs/core": "^9.0.0 || ^10.0.0",
     "class-transformer": "*",
     "class-validator": "*",
-    "reflect-metadata": "^0.1.12"
+    "reflect-metadata": "^0.1.12",
+    "typescript": "5.1.6"
   },
   "peerDependenciesMeta": {
     "@fastify/static": {
