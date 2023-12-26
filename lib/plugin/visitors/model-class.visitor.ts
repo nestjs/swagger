@@ -634,7 +634,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           return result;
         }
 
-        const clonedMinLength = this.clonePrimitiveLiteral(factory, minLength);
+        const clonedMinLength = this.clonePrimitiveLiteral(factory, minLength) ?? minLength;
         if (clonedMinLength) {
           result.push(
             factory.createPropertyAssignment('minLength', clonedMinLength)
@@ -649,7 +649,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           const clonedMaxLength = this.clonePrimitiveLiteral(
             factory,
             maxLength
-          );
+          ) ?? maxLength;
           if (clonedMaxLength) {
             result.push(
               factory.createPropertyAssignment('maxLength', clonedMaxLength)
