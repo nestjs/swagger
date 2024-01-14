@@ -57,7 +57,7 @@
     "prettier": "2.8.8",
     "reflect-metadata": "0.1.14",
     "release-it": "17.0.1",
-    "supertest": "6.3.3",
+    "supertest": "6.3.4",
     "swagger-parser": "10.0.3",
     "ts-jest": "29.1.1",
     "typescript": "5.1.6"
