@@ -26,8 +26,8 @@ export function ApiHeader(
       description: options.description,
       required: options.required,
       schema: {
-        ...(options.schema || {}),
-        type: 'string'
+        type: 'string',
+        ...(options.schema || {})
       }
     },
     negate(isUndefined)
