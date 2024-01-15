@@ -5,7 +5,7 @@ import {
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
-import { addEnumSchema, getEnumType, getEnumValues, isEnumDefined } from '../utils/enum.utils';
+import { addEnumSchema, isEnumDefined } from '../utils/enum.utils';
 import { createParamDecorator } from './helpers';
 
 type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
@@ -28,7 +28,9 @@ const defaultParamOptions: ApiParamOptions = {
   required: true
 };
 
-export function ApiParam(options: ApiParamOptions): MethodDecorator {
+export function ApiParam(
+  options: ApiParamOptions
+): MethodDecorator & ClassDecorator {
   const param: ApiParamMetadata & Record<string, any> = {
     name: isNil(options.name) ? defaultParamOptions.name : options.name,
     in: 'path',
