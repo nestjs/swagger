@@ -115,6 +115,9 @@ export function getTypeReferenceAsString(
     if (type.aliasSymbol) {
       return { typeName: 'Object', arrayDepth };
     }
+    if (typeChecker.getApparentType(type).getSymbol().getEscapedName() === 'String') {
+      return { typeName: String.name, arrayDepth };
+    }
     return { typeName: undefined };
   } catch {
     return { typeName: undefined };
