@@ -51,6 +51,9 @@ export class SchemaObjectFactory {
           undefined
         ) as [Type<any>, boolean];
       }
+      if (!isBodyParameter(param) && param.enumName) {
+        return this.createEnumParam(param, schemas);
+      }
       if (this.isPrimitiveType(param.type)) {
         return param;
       }
@@ -89,14 +92,10 @@ export class SchemaObjectFactory {
     return flatten(parameterObjects);
   }
 
-  createQueryOrParamSchema(
+  private createQueryOrParamSchema(
     param: ParamWithTypeMetadata,
     schemas: Record<string, SchemaObject>
   ) {
-    if (param.enumName) {
-      return this.createEnumParam(param, schemas);
-    }
-
     if (isDateCtor(param.type as Function)) {
       return {
         format: 'date-time',
@@ -167,8 +166,15 @@ export class SchemaObjectFactory {
       );
 
       const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
-      if (schemaCombinators.some((key) => key in property)) {
-        delete (property as SchemaObjectMetadata).type;
+      let keyOfCombinators = '';
+      if (schemaCombinators.some((_key) => { keyOfCombinators = _key; return _key in property; })) {
+          if (((property as SchemaObjectMetadata)?.type === 'array' || (property as SchemaObjectMetadata).isArray) && keyOfCombinators) {
+              (property as SchemaObjectMetadata).items = {};
+              (property as SchemaObjectMetadata).items[keyOfCombinators] = property[keyOfCombinators];
+              delete property[keyOfCombinators];
+          } else {
+              delete (property as SchemaObjectMetadata).type;
+          }
       }
       return property as ParameterObject;
     });
@@ -197,11 +203,13 @@ export class SchemaObjectFactory {
     if (!propertiesWithType) {
       return '';
     }
+    const extensionProperties = Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
     const typeDefinition: SchemaObject = {
       type: 'object',
       properties: mapValues(keyBy(propertiesWithType, 'name'), (property) =>
         omit(property, ['name', 'isArray', 'required', 'enumName'])
-      ) as Record<string, SchemaObject | ReferenceObject>
+      ) as Record<string, SchemaObject | ReferenceObject>,
+      ...extensionProperties
     };
     const typeDefinitionRequiredFields = propertiesWithType
       .filter((property) => property.required != false)
@@ -293,8 +301,14 @@ export class SchemaObjectFactory {
     const $ref = getSchemaPath(enumName);
 
     if (!(enumName in schemas)) {
+      const enumType: string = (
+        metadata.isArray
+        ? metadata.items['type']
+        : metadata.type
+      ) ?? 'string';
+
       schemas[enumName] = {
-        type: metadata.type as string ?? 'string',
+        type: enumType,
         enum:
           metadata.isArray && metadata.items
             ? metadata.items['enum']

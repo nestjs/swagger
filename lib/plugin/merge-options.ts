@@ -10,6 +10,7 @@ export interface PluginOptions {
   readonly?: boolean;
   pathToSource?: string;
   debug?: boolean;
+  parameterProperties?: boolean;
 }
 
 const defaultOptions: PluginOptions = {

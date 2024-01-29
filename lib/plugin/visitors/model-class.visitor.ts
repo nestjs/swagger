@@ -1,7 +1,7 @@
 import { compact, flatten, head } from 'lodash';
 import { posix } from 'path';
 import * as ts from 'typescript';
-import { PropertyAssignment, factory } from 'typescript';
+import { factory, PropertyAssignment } from 'typescript';
 import { ApiHideProperty } from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { METADATA_FACTORY_NAME } from '../plugin-constants';
@@ -73,6 +73,17 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             this.visitPropertyNodeDeclaration(
               node,
               ctx,
+              typeChecker,
+              options,
+              sourceFile,
+              metadata
+            );
+          } else if (
+            options.parameterProperties &&
+            ts.isConstructorDeclaration(node)
+          ) {
+            this.visitConstructorDeclarationNode(
+              node,
               typeChecker,
               options,
               sourceFile,
@@ -176,6 +187,41 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
   }
 
+  visitConstructorDeclarationNode(
+    constructorNode: ts.ConstructorDeclaration,
+    typeChecker: ts.TypeChecker,
+    options: PluginOptions,
+    sourceFile: ts.SourceFile,
+    metadata: ClassMetadata
+  ) {
+    constructorNode.forEachChild((node) => {
+      if (
+        ts.isParameter(node) &&
+        node.modifiers != null &&
+        node.modifiers.some(
+          (modifier: ts.Modifier) =>
+            modifier.kind === ts.SyntaxKind.ReadonlyKeyword ||
+            modifier.kind === ts.SyntaxKind.PrivateKeyword ||
+            modifier.kind === ts.SyntaxKind.PublicKeyword ||
+            modifier.kind === ts.SyntaxKind.ProtectedKeyword
+        )
+      ) {
+        const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
+          factory,
+          node,
+          typeChecker,
+          factory.createNodeArray(),
+          options,
+          sourceFile.fileName,
+          sourceFile
+        );
+
+        const propertyName = node.name.getText();
+        metadata[propertyName] = objectLiteralExpr;
+      }
+    });
+  }
+
   addMetadataFactory(
     factory: ts.NodeFactory,
     node: ts.ClassDeclaration,
@@ -254,7 +300,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
   createDecoratorObjectLiteralExpr(
     factory: ts.NodeFactory,
-    node: ts.PropertyDeclaration | ts.PropertySignature,
+    node:
+      | ts.PropertyDeclaration
+      | ts.PropertySignature
+      | ts.ParameterDeclaration,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment> = factory.createNodeArray(),
     options: PluginOptions = {},
@@ -278,7 +327,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         hostFilename,
         options
       ),
-      ...this.createDescriptionAndTsDocTagPropertyAssigments(
+      ...this.createDescriptionAndTsDocTagPropertyAssignments(
         factory,
         node,
         typeChecker,
@@ -301,7 +350,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         options
       )
     ];
-    if (options.classValidatorShim) {
+    if (
+      (ts.isPropertyDeclaration(node) || ts.isPropertySignature(node)) &&
+      options.classValidatorShim
+    ) {
       properties.push(
         this.createValidationPropertyAssignments(factory, node, options)
       );
@@ -445,7 +497,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
   createEnumPropertyAssignment(
     factory: ts.NodeFactory,
-    node: ts.PropertyDeclaration | ts.PropertySignature,
+    node:
+      | ts.PropertyDeclaration
+      | ts.PropertySignature
+      | ts.ParameterDeclaration,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string,
@@ -512,7 +567,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
   createDefaultPropertyAssignment(
     factory: ts.NodeFactory,
-    node: ts.PropertyDeclaration | ts.PropertySignature,
+    node:
+      | ts.PropertyDeclaration
+      | ts.PropertySignature
+      | ts.ParameterDeclaration,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     options: PluginOptions
   ) {
@@ -520,10 +578,13 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }
-    let initializer = (node as ts.PropertyDeclaration).initializer;
-    if (!initializer) {
+    if (ts.isPropertySignature(node)) {
       return undefined;
     }
+    if (node.initializer == null) {
+      return undefined;
+    }
+    let initializer = node.initializer;
     if (ts.isAsExpression(initializer)) {
       initializer = initializer.expression;
     }
@@ -634,7 +695,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           return result;
         }
 
-        const clonedMinLength = this.clonePrimitiveLiteral(factory, minLength);
+        const clonedMinLength = this.clonePrimitiveLiteral(factory, minLength) ?? minLength;
         if (clonedMinLength) {
           result.push(
             factory.createPropertyAssignment('minLength', clonedMinLength)
@@ -649,7 +710,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           const clonedMaxLength = this.clonePrimitiveLiteral(
             factory,
             maxLength
-          );
+          ) ?? maxLength;
           if (clonedMaxLength) {
             result.push(
               factory.createPropertyAssignment('maxLength', clonedMaxLength)
@@ -745,9 +806,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     metadata[propertyName] = objectLiteral;
   }
 
-  createDescriptionAndTsDocTagPropertyAssigments(
+  createDescriptionAndTsDocTagPropertyAssignments(
     factory: ts.NodeFactory,
-    node: ts.PropertyDeclaration | ts.PropertySignature,
+    node:
+      | ts.PropertyDeclaration
+      | ts.PropertySignature
+      | ts.ParameterDeclaration,
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment> = factory.createNodeArray(),
     options: PluginOptions = {},

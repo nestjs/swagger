@@ -266,7 +266,8 @@ export class SwaggerModule {
         : document;
 
       const yamlDocument = jsyaml.dump(documentToSerialize, {
-        skipInvalid: true
+        skipInvalid: true,
+        noRefs: true
       });
       res.send(yamlDocument);
     });

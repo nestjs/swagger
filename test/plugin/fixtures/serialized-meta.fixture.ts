@@ -64,7 +64,11 @@ export default async () => {
               enumArr: {
                 required: true,
                 enum: t['./cats/dto/pagination-query.dto'].LettersEnum
-              }
+              },
+              uppercaseString: { required: true, type: () => String },
+              lowercaseString: { required: true, type: () => String },
+              capitalizeString: { required: true, type: () => String },
+              uncapitalizeString: { required: true, type: () => String }
             }
           }
         ],

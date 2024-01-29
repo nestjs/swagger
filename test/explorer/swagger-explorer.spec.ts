@@ -1844,4 +1844,124 @@ describe('SwaggerExplorer', () => {
       GlobalParametersStorage.clear();
     });
   });
+
+  describe('when params are defined', () => {
+    class Foo {}
+
+    @ApiParam({ name: 'parentId', type: 'number' })
+    @Controller(':parentId')
+    class FooController {
+      @ApiParam({ name: 'objectId', type: 'number' })
+      @Get('foos/:objectId')
+      find(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+
+      @Post('foos')
+      create(): Promise<any> {
+        return Promise.resolve();
+      }
+    }
+
+    it('should properly define params', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        'path'
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'number'
+          }
+        },
+        {
+          in: 'path',
+          name: 'parentId',
+          required: true,
+          schema: {
+            type: 'number'
+          }
+        }
+      ]);
+      expect(routes[1].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'parentId',
+          required: true,
+          schema: {
+            type: 'number'
+          }
+        }
+      ]);
+    });
+  });
+
+  describe('when queries are defined', () => {
+    class Foo {}
+
+    @ApiQuery({ name: 'parentId', type: 'number' })
+    @Controller('')
+    class FooController {
+      @ApiQuery({ name: 'objectId', type: 'number' })
+      @Get('foos')
+      find(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+
+      @Post('foos')
+      create(): Promise<any> {
+        return Promise.resolve();
+      }
+    }
+
+    it('should properly define params', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        'path'
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          in: 'query',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'number'
+          }
+        },
+        {
+          in: 'query',
+          name: 'parentId',
+          required: true,
+          schema: {
+            type: 'number'
+          }
+        }
+      ]);
+      expect(routes[1].root.parameters).toEqual([
+        {
+          in: 'query',
+          name: 'parentId',
+          required: true,
+          schema: {
+            type: 'number'
+          }
+        }
+      ]);
+    });
+  });
 });

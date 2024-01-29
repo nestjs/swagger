@@ -25,4 +25,12 @@ export class Cat {
   enum: LettersEnum;
 
   enumArr: LettersEnum;
+
+  uppercaseString: Uppercase<string>;
+  
+  lowercaseString: Lowercase<string>;
+
+  capitalizeString: Capitalize<string>;
+
+  uncapitalizeString: Uncapitalize<string>;
 }

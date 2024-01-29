@@ -1,4 +1,4 @@
-import { ApiProperty } from '../../lib/decorators';
+import { ApiExtension, ApiProperty } from '../../lib/decorators';
 import { SchemasObject } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
@@ -32,6 +32,12 @@ describe('SchemaObjectFactory', () => {
       Neighboard = 'neighboard'
     }
 
+    enum Ranking {
+      First = 1,
+      Second = 2,
+      Third = 3
+    }
+
     class CreatePersonDto {
       @ApiProperty()
       name: string;
@@ -42,20 +48,35 @@ describe('SchemaObjectFactory', () => {
     class Person {
       @ApiProperty({ enum: Role, enumName: 'Role' })
       role: Role;
+
       @ApiProperty({ enum: Role, enumName: 'Role', isArray: true })
       roles: Role[];
+
+      @ApiProperty({ enum: Group, enumName: 'Group', isArray: true })
+      groups: Group[];
+
+      @ApiProperty({ enum: Ranking, enumName: 'Ranking', isArray: true })
+      rankings: Ranking[];
     }
 
     it('should explore enum', () => {
       const schemas: Record<string, SchemasObject> = {};
       schemaObjectFactory.exploreModelSchema(Person, schemas);
 
-      expect(Object.keys(schemas)).toHaveLength(2);
+      expect(Object.keys(schemas)).toHaveLength(4);
 
       expect(schemas).toHaveProperty('Role');
       expect(schemas.Role).toEqual({
         type: 'string',
         enum: ['admin', 'user']
+      });
+      expect(schemas.Group).toEqual({
+        type: 'string',
+        enum: ['user', 'guest', 'family', 'neighboard']
+      });
+      expect(schemas.Ranking).toEqual({
+        type: 'number',
+        enum: [1, 2, 3]
       });
       expect(schemas).toHaveProperty('Person');
       expect(schemas.Person).toEqual({
@@ -69,14 +90,25 @@ describe('SchemaObjectFactory', () => {
             items: {
               $ref: '#/components/schemas/Role'
             }
+          },
+          groups: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/Group'
+            }
+          },
+          rankings: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/Ranking'
+            }
           }
         },
-        required: ['role', 'roles']
+        required: ['role', 'roles', 'groups', 'rankings']
       });
-
       schemaObjectFactory.exploreModelSchema(CreatePersonDto, schemas);
 
-      expect(Object.keys(schemas)).toHaveLength(3);
+      expect(Object.keys(schemas)).toHaveLength(5);
       expect(schemas).toHaveProperty('CreatePersonDto');
       expect(schemas.CreatePersonDto).toEqual({
         type: 'object',
@@ -265,6 +297,20 @@ describe('SchemaObjectFactory', () => {
         properties: { name: { type: 'string', minLength: 1 } }
       });
     });
+
+    it('should include extension properties', () => {
+      @ApiExtension('x-test', 'value')
+      class CreatUserDto {
+        @ApiProperty({ minLength: 0, required: true })
+        name: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(CreatUserDto, schemas);
+
+      expect(schemas[CreatUserDto.name]['x-test']).toEqual('value');
+    });
   });
 
   describe('createEnumSchemaType', () => {
@@ -276,9 +322,9 @@ describe('SchemaObjectFactory', () => {
         isArray: false
       };
       const schemas = {};
-      
+
       schemaObjectFactory.createEnumSchemaType('field', metadata, schemas);
-      
+
       expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number' } });
     });
   });
