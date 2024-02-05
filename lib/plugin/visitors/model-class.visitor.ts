@@ -861,6 +861,15 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       propertyAssignments.push(deprecatedPropertyAssignment);
     }
 
+    const hasNameKey = hasPropertyKey('name', existingProperties);
+    if (!hasNameKey && tags.name) {
+      const namePropertyAssignment = factory.createPropertyAssignment(
+        'name',
+        factory.createStringLiteral(tags.name)
+      );
+      propertyAssignments.push(namePropertyAssignment);
+    }
+
     return propertyAssignments;
   }
 
