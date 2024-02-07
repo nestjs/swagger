@@ -34,7 +34,7 @@
   "devDependencies": {
     "@commitlint/cli": "18.6.0",
     "@commitlint/config-angular": "18.6.0",
-    "@fastify/static": "6.12.0",
+    "@fastify/static": "7.0.0",
     "@nestjs/common": "10.3.2",
     "@nestjs/core": "10.3.2",
     "@nestjs/platform-express": "10.3.2",
@@ -64,7 +64,7 @@
     "typescript": "5.1.6"
   },
   "peerDependencies": {
-    "@fastify/static": "^6.0.0",
+    "@fastify/static": "^6.0.0 || ^7.0.0",
     "@nestjs/common": "^9.0.0 || ^10.0.0",
     "@nestjs/core": "^9.0.0 || ^10.0.0",
     "class-transformer": "*",
