@@ -61,6 +61,15 @@ export class CreateCatDto {
   })
   readonly enumArr: LettersEnum;
 
+  @ApiProperty({
+    enum: LettersEnum,
+    enumName: 'LettersEnum',
+    description: 'A small assortment of letters?',
+    default: 'A',
+    deprecated: true,
+  })
+  readonly enumWithRef: LettersEnum
+
   @ApiProperty({ description: 'tag', required: false })
   readonly tag: TagDto;
 

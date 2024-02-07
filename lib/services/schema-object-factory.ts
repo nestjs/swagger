@@ -300,21 +300,25 @@ export class SchemaObjectFactory {
     const enumName = metadata.enumName;
     const $ref = getSchemaPath(enumName);
 
-    if (!(enumName in schemas)) {
-      const enumType: string = (
-        metadata.isArray
-        ? metadata.items['type']
-        : metadata.type
-      ) ?? 'string';
+    // Allow given fields to be part of the referenced enum schema
+    const additionalParams = ['description', 'deprecated', 'default']
+    const additionalFields = additionalParams.reduce((acc, param) =>
+      ({...acc, ...(metadata[param] && { [param]: metadata[param] })}), {});
 
-      schemas[enumName] = {
-        type: enumType,
-        enum:
-          metadata.isArray && metadata.items
-            ? metadata.items['enum']
-            : metadata.enum
-      };
-    }
+    const enumType: string = (
+      metadata.isArray
+      ? metadata.items['type']
+      : metadata.type
+    ) ?? 'string';
+
+    schemas[enumName] = {
+      type: enumType,
+      ...additionalFields,
+      enum:
+        metadata.isArray && metadata.items
+          ? metadata.items['enum']
+          : metadata.enum
+    };
 
     const _schemaObject = {
       ...metadata,
@@ -324,7 +328,7 @@ export class SchemaObjectFactory {
 
     const refHost = metadata.isArray ? { items: { $ref } } : { $ref };
     const paramObject = { ..._schemaObject, ...refHost };
-    const pathsToOmit = ['enum', 'enumName'];
+    const pathsToOmit = ['enum', 'enumName', ...additionalParams];
 
     if (!metadata.isArray) {
       pathsToOmit.push('type');
@@ -498,6 +502,7 @@ export class SchemaObjectFactory {
         schemas
       );
     }
+
     if (isString(typeRef)) {
       if (isEnumMetadata(metadata)) {
         return this.createEnumSchemaType(key, metadata, schemas);

@@ -53,4 +53,13 @@ export class Cat {
     isArray: true
   })
   enumArr: LettersEnum;
+
+  @ApiProperty({
+    enum: LettersEnum,
+    enumName: 'LettersEnum',
+    description: 'A small assortment of letters?',
+    default: 'A',
+    deprecated: true,
+  })
+  enumWithRef: LettersEnum
 }

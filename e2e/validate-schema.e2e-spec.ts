@@ -104,7 +104,7 @@ describe('Validate OpenAPI schema', () => {
     writeFileSync(join(__dirname, 'api-spec.json'), doc);
 
     try {
-      let api = await SwaggerParser.validate(document as any);
+      const api = await SwaggerParser.validate(document as any);
       console.log(
         'API name: %s, Version: %s',
         api.info.title,
