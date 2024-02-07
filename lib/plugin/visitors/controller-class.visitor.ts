@@ -5,9 +5,11 @@ import { ApiOperation, ApiResponse } from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { OPENAPI_NAMESPACE } from '../plugin-constants';
 import {
-  docNodeToString,
+  createLiteralFromAnyValue,
   getDecoratorArguments,
-  getMainCommentAndExamplesOfNode, getNodeDocs
+  getDecoratorName,
+  getMainCommentOfNode,
+  getTsDocTagsOfNode
 } from '../utils/ast-utils';
 import {
   convertPath,
@@ -203,69 +205,85 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       decorators,
       factory
     );
-    const apiOperationExpr: ts.ObjectLiteralExpression | undefined =
-      apiOperationDecorator &&
-      head(getDecoratorArguments(apiOperationDecorator));
-    const apiOperationExprProperties =
-      apiOperationExpr &&
-      (apiOperationExpr.properties as ts.NodeArray<ts.PropertyAssignment>);
+    let apiOperationExistingProps:
+      | ts.NodeArray<ts.PropertyAssignment>
+      | undefined = undefined;
 
-    if (
-      !apiOperationDecorator ||
-      !apiOperationExpr ||
-      !apiOperationExprProperties ||
-      !hasPropertyKey(keyToGenerate, apiOperationExprProperties)
-    ) {
-      const properties = [];
-
-      if (keyToGenerate) {
-        const [extractedComments] = getMainCommentAndExamplesOfNode(
-          node,
-          sourceFile,
-          typeChecker
-        );
-
-        if (!extractedComments) {
-          // Node does not have any comments
-          return [];
-        }
-
-        properties.push(ts.createPropertyAssignment(keyToGenerate, ts.createLiteral(extractedComments)));
-      } else {
-        const docs = getNodeDocs(node);
-
-        if (!docs) {
-          return [];
-        }
-
-        const summary = docNodeToString(docs.summarySection);
-        if (summary && (!apiOperationExprProperties || !hasPropertyKey("summary", apiOperationExprProperties))) {
-          properties.push(ts.createPropertyAssignment("summary", ts.createLiteral(summary)));
-        }
-
-        const remarks = docNodeToString(docs.remarksBlock.content);
-        if (remarks && (!apiOperationExprProperties || !hasPropertyKey("description", apiOperationExprProperties))) {
-          properties.push(ts.createPropertyAssignment("description", ts.createLiteral(remarks)));
-        }
-      }
-
-      const apiOperationDecoratorArguments: ts.NodeArray<ts.Expression> = ts.createNodeArray(
-        [ts.createObjectLiteral(compact([
-          ...properties,
-          ...(apiOperationExprProperties ?? ts.createNodeArray())
-        ]))]
+    if (apiOperationDecorator && !options.readonly) {
+      const apiOperationExpr = head(
+        getDecoratorArguments(apiOperationDecorator)
       );
+      if (apiOperationExpr) {
+        apiOperationExistingProps =
+          apiOperationExpr.properties as ts.NodeArray<ts.PropertyAssignment>;
+      }
+    }
 
-      if (apiOperationDecorator) {
-        ((apiOperationDecorator.expression as ts.CallExpression) as any).arguments = apiOperationDecoratorArguments;
-      } else {
-        return [
-          ts.createDecorator(
-            ts.createCall(
-              ts.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiOperation.name}`),
-              undefined,
-              apiOperationDecoratorArguments
-            )
+    const extractedComments = getMainCommentOfNode(node, sourceFile);
+    if (!extractedComments) {
+      return [];
+    }
+    const tags = getTsDocTagsOfNode(node, typeChecker);
+
+    const properties = [
+      factory.createPropertyAssignment(
+        keyToGenerate,
+        factory.createStringLiteral(extractedComments)
+      ),
+      ...(apiOperationExistingProps ?? factory.createNodeArray())
+    ];
+
+    const hasDeprecatedKey = hasPropertyKey(
+      'deprecated',
+      factory.createNodeArray(apiOperationExistingProps)
+    );
+    if (!hasDeprecatedKey && tags.deprecated) {
+      const deprecatedPropertyAssignment = factory.createPropertyAssignment(
+        'deprecated',
+        createLiteralFromAnyValue(factory, tags.deprecated)
+      );
+      properties.push(deprecatedPropertyAssignment);
+    }
+
+    const objectLiteralExpr = factory.createObjectLiteralExpression(
+      compact(properties)
+    );
+    const apiOperationDecoratorArguments: ts.NodeArray<ts.Expression> =
+      factory.createNodeArray([objectLiteralExpr]);
+
+    const methodKey = node.name.getText();
+    if (metadata[methodKey]) {
+      const existingObjectLiteralExpr = metadata[methodKey];
+      const existingProperties = existingObjectLiteralExpr.properties;
+      const updatedProperties = factory.createNodeArray([
+        ...existingProperties,
+        ...compact(properties)
+      ]);
+      const updatedObjectLiteralExpr =
+        factory.createObjectLiteralExpression(updatedProperties);
+      metadata[methodKey] = updatedObjectLiteralExpr;
+    } else {
+      metadata[methodKey] = objectLiteralExpr;
+    }
+
+    if (apiOperationDecorator) {
+      const expr = apiOperationDecorator.expression as any as ts.CallExpression;
+      const updatedCallExpr = factory.updateCallExpression(
+        expr,
+        expr.expression,
+        undefined,
+        apiOperationDecoratorArguments
+      );
+      return [factory.updateDecorator(apiOperationDecorator, updatedCallExpr)];
+    } else {
+      return [
+        factory.createDecorator(
+          factory.createCallExpression(
+            factory.createIdentifier(
+              `${OPENAPI_NAMESPACE}.${ApiOperation.name}`
+            ),
+            undefined,
+            apiOperationDecoratorArguments
           )
         )
       ];

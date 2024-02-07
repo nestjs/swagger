@@ -695,7 +695,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           return result;
         }
 
-        const clonedMinLength = this.clonePrimitiveLiteral(factory, minLength) ?? minLength;
+        const clonedMinLength =
+          this.clonePrimitiveLiteral(factory, minLength) ?? minLength;
         if (clonedMinLength) {
           result.push(
             factory.createPropertyAssignment('minLength', clonedMinLength)
@@ -707,10 +708,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           if (!canReferenceNode(maxLength, options)) {
             return result;
           }
-          const clonedMaxLength = this.clonePrimitiveLiteral(
-            factory,
-            maxLength
-          ) ?? maxLength;
+          const clonedMaxLength =
+            this.clonePrimitiveLiteral(factory, maxLength) ?? maxLength;
           if (clonedMaxLength) {
             result.push(
               factory.createPropertyAssignment('maxLength', clonedMaxLength)
@@ -822,7 +821,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
     const propertyAssignments = [];
     const comments = getMainCommentOfNode(node, sourceFile);
-    const tags = getTsDocTagsOfNode(node, sourceFile, typeChecker);
+    const tags = getTsDocTagsOfNode(node, typeChecker);
 
     const keyOfComment = options.dtoKeyOfComment;
     if (!hasPropertyKey(keyOfComment, existingProperties) && comments) {

@@ -21,7 +21,37 @@ import {
   UnionTypeNode
 } from 'typescript';
 import { isDynamicallyAdded } from './plugin-utils';
-import { DocComment, DocExcerpt, DocNode, ParserContext, TSDocParser } from '@microsoft/tsdoc';
+import {
+  DocNode,
+  DocExcerpt,
+  TSDocParser,
+  ParserContext,
+  DocComment,
+  DocBlock
+} from '@microsoft/tsdoc';
+
+export class Formatter {
+  public static renderDocNode(docNode: DocNode): string {
+    let result: string = '';
+    if (docNode) {
+      if (docNode instanceof DocExcerpt) {
+        result += docNode.content.toString();
+      }
+      for (const childNode of docNode.getChildNodes()) {
+        result += Formatter.renderDocNode(childNode);
+      }
+    }
+    return result;
+  }
+
+  public static renderDocNodes(docNodes: ReadonlyArray<DocNode>): string {
+    let result: string = '';
+    for (const docNode of docNodes) {
+      result += Formatter.renderDocNode(docNode);
+    }
+    return result;
+  }
+}
 
 export function isArray(type: Type) {
   const symbol = type.getSymbol();
@@ -118,142 +148,90 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
   return formatFlags;
 }
 
-export function getNodeDocs(
-  node: Node
-): DocComment {
-  const tsdocParser: TSDocParser = new TSDocParser();
-  const parserContext: ParserContext = tsdocParser.parseString(node.getFullText());
-  return parserContext.docComment;
-}
-
-export function docNodeToString(docNode: DocNode): string {
-  let result = '';
-
-  if (docNode) {
-    if (docNode instanceof DocExcerpt) {
-      result += docNode.content.toString();
-    }
-
-    for(const childNode of docNode.getChildNodes()) {
-      result += docNodeToString(childNode);
-    }
-  }
-
-  return result.trim();
-}
-
-export function getMainCommentAndExamplesOfNode(
+export function getMainCommentOfNode(
   node: Node,
   sourceFile: SourceFile
 ): string {
-  const sourceText = sourceFile.getFullText();
-  // in case we decide to include "// comments"
-  const replaceRegex =
-    /^\s*\** *@.*$|^\s*\/\*+ *|^\s*\/\/+.*|^\s*\/+ *|^\s*\*+ *| +$| *\**\/ *$/gim;
-  //const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
-
-  const commentResult = [];
-  const introspectComments = (comments?: CommentRange[]) =>
-    comments?.forEach((comment) => {
-      const commentSource = sourceText.substring(comment.pos, comment.end);
-      const oneComment = commentSource.replace(replaceRegex, '').trim();
-      if (oneComment) {
-        commentResult.push(oneComment);
-      }
-    });
-
-  const leadingCommentRanges = getLeadingCommentRanges(
-    sourceText,
-    node.getFullStart()
+  const tsdocParser: TSDocParser = new TSDocParser();
+  const parserContext: ParserContext = tsdocParser.parseString(
+    node.getFullText()
   );
-  introspectComments(leadingCommentRanges);
-  if (!commentResult.length) {
-    const trailingCommentRanges = getTrailingCommentRanges(
-      sourceText,
-      node.getFullStart()
-    );
-    introspectComments(trailingCommentRanges);
-  }
-  return commentResult.join('\n');
+  const docComment: DocComment = parserContext.docComment;
+  return Formatter.renderDocNode(docComment.summarySection).trim();
 }
 
-export function getTsDocTagsOfNode(
-  node: Node,
-  sourceFile: SourceFile,
-  typeChecker: TypeChecker
-) {
-  const sourceText = sourceFile.getFullText();
+export function parseCommentDocValue(docValue: string, type: ts.Type) {
+  let value = docValue.replace(/'/g, '"').trim();
+
+  if (!type || !isString(type)) {
+    try {
+      value = JSON.parse(value);
+    } catch {}
+  } else if (isString(type)) {
+    if (value.split(' ').length !== 1 && !value.startsWith('"')) {
+      value = null;
+    } else {
+      value = value.replace(/"/g, '');
+    }
+  }
+  return value;
+}
+
+export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
+  const tsdocParser: TSDocParser = new TSDocParser();
+  const parserContext: ParserContext = tsdocParser.parseString(
+    node.getFullText()
+  );
+  const docComment: DocComment = parserContext.docComment;
 
   const tagDefinitions: {
     [key: string]: {
-      regex: RegExp;
       hasProperties: boolean;
       repeatable: boolean;
     };
   } = {
     example: {
-      regex:
-        /@example *((['"](?<string>.+?)['"])|(?<booleanOrNumber>[^ ]+?)|(?<array>(\[.+?\]))) *$/gim,
       hasProperties: true,
       repeatable: true
-    },
-    deprecated: {
-      regex: /@deprecated */gim,
-      hasProperties: false,
-      repeatable: false
     }
   };
 
   const tagResults: any = {};
-  const introspectTsDocTags = (comments?: CommentRange[]) =>
-    comments?.forEach((comment) => {
-      const commentSource = sourceText.substring(comment.pos, comment.end);
 
-      for (const tag in tagDefinitions) {
-        const { regex, hasProperties, repeatable } = tagDefinitions[tag];
+  const introspectTsDocTags = (docComment: DocComment) => {
+    for (const tag in tagDefinitions) {
+      const { hasProperties, repeatable } = tagDefinitions[tag];
+      const blocks = docComment.customBlocks.filter(
+        (block) => block.blockTag.tagName === `@${tag}`
+      );
+      if (blocks.length === 0) continue;
+      if (repeatable && !tagResults[tag]) tagResults[tag] = [];
+      const type = typeChecker.getTypeAtLocation(node);
+      if (hasProperties) {
+        blocks.forEach((block) => {
+          const docValue = Formatter.renderDocNode(block.content).split(
+            '\n'
+          )[0];
+          const value = parseCommentDocValue(docValue, type);
 
-        let value: any;
-
-        let execResult: RegExpExecArray;
-        while (
-          (execResult = regex.exec(commentSource)) &&
-          (!hasProperties || execResult.length > 1)
-        ) {
-          if (repeatable && !tagResults[tag]) tagResults[tag] = [];
-
-          if (hasProperties) {
-            const docValue =
-              execResult.groups?.string ??
-              execResult.groups?.booleanOrNumber ??
-              (execResult.groups?.array &&
-                execResult.groups.array.replace(/'/g, '"'));
-
-            const type = typeChecker.getTypeAtLocation(node);
-
-            value = docValue;
-            if (!type || !isString(type)) {
-              try {
-                value = JSON.parse(value);
-              } catch {}
+          if (value !== null) {
+            if (repeatable) {
+              tagResults[tag].push(value);
+            } else {
+              tagResults[tag] = value;
             }
-          } else {
-            value = true;
           }
-
-          if (repeatable) {
-            tagResults[tag].push(value);
-          } else {
-            tagResults[tag] = value;
-          }
-        }
+        });
+      } else {
+        tagResults[tag] = true;
       }
-    });
+    }
+    if (docComment.deprecatedBlock) {
+      tagResults['deprecated'] = true;
+    }
+  };
+  introspectTsDocTags(docComment);
 
-  const leadingCommentRanges = getLeadingCommentRanges(
-    sourceText,
-    node.getFullStart()
-  );
-  introspectTsDocTags(leadingCommentRanges);
   return tagResults;
 }
 
