@@ -66,7 +66,6 @@ function toTags(
  */
 export function buildSwaggerHTML(
   baseUrl: string,
-  swaggerDoc: OpenAPIObject,
   customOptions: SwaggerCustomOptions = {}
 ) {
   const {

@@ -180,21 +180,9 @@ export class SwaggerModule {
         document = lazyBuildDocument();
       }
 
-      if (options.swaggerOptions.patchDocumentOnRequest) {
-        const documentToSerialize =
-          options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-        const htmlPerRequest = buildSwaggerHTML(
-          baseUrlForSwaggerUI,
-          documentToSerialize,
-          options.swaggerOptions
-        );
-        return res.send(htmlPerRequest);
-      }
-
       if (!html) {
         html = buildSwaggerHTML(
           baseUrlForSwaggerUI,
-          document,
           options.swaggerOptions
         );
       }
@@ -211,24 +199,13 @@ export class SwaggerModule {
           document = lazyBuildDocument();
         }
 
-        if (options.swaggerOptions.patchDocumentOnRequest) {
-          const documentToSerialize =
-            options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-          const htmlPerRequest = buildSwaggerHTML(
-            baseUrlForSwaggerUI,
-            documentToSerialize,
-            options.swaggerOptions
-          );
-          return res.send(htmlPerRequest);
-        }
-
         if (!html) {
           html = buildSwaggerHTML(
             baseUrlForSwaggerUI,
-            document,
             options.swaggerOptions
           );
         }
+
         res.send(html);
       });
     } catch (err) {
