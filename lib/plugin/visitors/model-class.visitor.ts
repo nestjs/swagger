@@ -2,7 +2,7 @@ import { compact, flatten, head } from 'lodash';
 import { posix } from 'path';
 import * as ts from 'typescript';
 import { factory, PropertyAssignment } from 'typescript';
-import { ApiHideProperty } from '../../decorators';
+import { ApiHideProperty, ApiProperty } from '../../decorators';
 import { PluginOptions } from '../merge-options';
 import { METADATA_FACTORY_NAME } from '../plugin-constants';
 import { pluginDebugLogger } from '../plugin-debug-logger';
@@ -155,23 +155,43 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     sourceFile: ts.SourceFile,
     metadata: ClassMetadata
   ) {
-    const decorators = ts.canHaveDecorators(node) && ts.getDecorators(node);
-
-    const hidePropertyDecorator = getDecoratorOrUndefinedByNames(
-      [ApiHideProperty.name],
-      decorators,
-      factory
-    );
-    if (hidePropertyDecorator) {
-      return node;
-    }
-
     const isPropertyStatic = (node.modifiers || []).some(
       (modifier: ts.Modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword
     );
     if (isPropertyStatic) {
       return node;
     }
+
+    const decorators = ts.canHaveDecorators(node) && ts.getDecorators(node);
+
+    const classTransformerShim = options.classTransformerShim;
+
+    const hidePropertyDecoratorExists = getDecoratorOrUndefinedByNames(
+      classTransformerShim
+        ? [ApiHideProperty.name, 'Exclude']
+        : [ApiHideProperty.name],
+      decorators,
+      factory
+    );
+
+    const annotatePropertyDecoratorExists = getDecoratorOrUndefinedByNames(
+      classTransformerShim ? [ApiProperty.name, 'Expose'] : [ApiProperty.name],
+      decorators,
+      factory
+    );
+
+    if (
+      !annotatePropertyDecoratorExists &&
+      (hidePropertyDecoratorExists || classTransformerShim === 'exclusive')
+    ) {
+      return node;
+    } else if (annotatePropertyDecoratorExists && hidePropertyDecoratorExists) {
+      pluginDebugLogger.debug(
+        `"${node.parent.name.getText()}->${node.name.getText()}" has conflicting decorators, excluding as @ApiHideProperty() takes priority.`
+      );
+      return node;
+    }
+
     try {
       this.inspectPropertyDeclaration(
         ctx.factory,

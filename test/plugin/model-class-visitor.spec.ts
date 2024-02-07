@@ -34,6 +34,20 @@ import {
   parameterPropertyDtoText,
   parameterPropertyDtoTextTranspiled
 } from './fixtures/parameter-property.dto';
+import {
+  createCatExcludeDtoText,
+  createCatExcludeDtoTextTranspiled,
+  createCatIgnoreExcludeDtoTextTranspiled
+} from './fixtures/create-cat-exclude.dto';
+import {
+  createCatExclusiveDtoText,
+  createCatExclusiveDtoTextTranspiled
+} from './fixtures/create-cat-exclusive.dto';
+import {
+  createCatPriorityDtoText,
+  createCatPriorityDtoTextTranspiled
+} from './fixtures/create-cat-priority.dto';
+import { pluginDebugLogger } from '../../lib/plugin/plugin-debug-logger';
 
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
@@ -274,5 +288,139 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(parameterPropertyDtoTextTranspiled);
+  });
+
+  it('should ignore Exclude decorator', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'create-cat-exclude.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(createCatExcludeDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              classValidatorShim: true,
+              classTransformerShim: false,
+              dtoKeyOfComment: 'title',
+              introspectComments: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(createCatIgnoreExcludeDtoTextTranspiled);
+  });
+
+  it('should hide properties decorated with the Exclude decorator', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'create-cat-exclude.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(createCatExcludeDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              classValidatorShim: true,
+              classTransformerShim: true,
+              dtoKeyOfComment: 'title',
+              introspectComments: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(createCatExcludeDtoTextTranspiled);
+  });
+
+  it('should hide a property with conflicting decorators', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'create-cat-priority.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const debugLoggerSpy = jest.spyOn(pluginDebugLogger, 'debug');
+
+    const result = ts.transpileModule(createCatPriorityDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              classValidatorShim: true,
+              classTransformerShim: true,
+              dtoKeyOfComment: 'title',
+              introspectComments: true,
+              debug: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(createCatPriorityDtoTextTranspiled);
+    expect(debugLoggerSpy).toHaveBeenCalledWith(
+      '"CreateCatDto->hidden" has conflicting decorators, excluding as @ApiHideProperty() takes priority.'
+    );
+  });
+
+  it('should add the metadata factory only when decorators exist', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'create-cat-exclusive.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(createCatExclusiveDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              classValidatorShim: true,
+              classTransformerShim: 'exclusive',
+              dtoKeyOfComment: 'title',
+              introspectComments: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(createCatExclusiveDtoTextTranspiled);
   });
 });

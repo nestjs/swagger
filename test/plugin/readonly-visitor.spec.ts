@@ -50,7 +50,10 @@ describe('Readonly visitor', () => {
     const expectedOutput = readFileSync(
       join(__dirname, 'fixtures', 'serialized-meta.fixture.ts'),
       'utf-8'
-    );
+    )
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
+    /** Normalize the file line endings to LF */
 
     // writeFileSync(
     //   join(__dirname, 'fixtures', 'serialized-meta.fixture.ts'),
