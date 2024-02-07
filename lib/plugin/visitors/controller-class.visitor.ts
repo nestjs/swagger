@@ -223,7 +223,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!extractedComments) {
       return [];
     }
-    const tags = getTsDocTagsOfNode(node, sourceFile, typeChecker);
+    const tags = getTsDocTagsOfNode(node, typeChecker);
 
     const properties = [
       factory.createPropertyAssignment(
@@ -232,6 +232,18 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       ),
       ...(apiOperationExistingProps ?? factory.createNodeArray())
     ];
+
+    const hasRemarksKey = hasPropertyKey(
+      'description',
+      factory.createNodeArray(apiOperationExistingProps)
+    );
+    if (!hasRemarksKey && tags.remarks) {
+      const remarksPropertyAssignment = factory.createPropertyAssignment(
+        'description',
+        createLiteralFromAnyValue(factory, tags.remarks)
+      );
+      properties.push(remarksPropertyAssignment);
+    }
 
     const hasDeprecatedKey = hasPropertyKey(
       'deprecated',
