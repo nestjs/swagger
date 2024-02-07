@@ -5,92 +5,53 @@ import {
   appControllerTextTranspiled
 } from './fixtures/app.controller';
 import {
-  appControllerWithTabsText,
-  appControllerWithTabsTextTranspiled
-} from './fixtures/app.controller-tabs';
-import {
-  appControllerWithoutModifiersText,
-  appControllerWithoutModifiersTextTranspiled
-} from './fixtures/app.controller-without-modifiers';
+  enhancedCommentsControllerText,
+  enhancedCommentsControllerTextTranspiled
+} from './fixtures/enhanced-comments.controller';
+
+const compilerOptions: ts.CompilerOptions = {
+  module: ts.ModuleKind.CommonJS,
+  target: ts.ScriptTarget.ESNext,
+  newLine: ts.NewLineKind.LineFeed,
+  noEmitHelpers: true
+}
+
+const transpileModule = (filename, controllerText, compilerOptions, swaggerDocumentOptions = {}) => {
+  const fakeProgram = ts.createProgram([filename], compilerOptions);
+
+  return ts.transpileModule(controllerText, {
+    compilerOptions,
+    fileName: filename,
+    transformers: {
+      before: [
+        before(
+          {...swaggerDocumentOptions, introspectComments: true },
+          fakeProgram
+        )
+      ]
+    }
+  })
+}
 
 describe('Controller methods', () => {
-  it('should add response based on the return value (spaces)', () => {
-    const options: ts.CompilerOptions = {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2021,
-      newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true,
-      experimentalDecorators: true
-    };
-    const filename = 'app.controller.ts';
-    const fakeProgram = ts.createProgram([filename], options);
+  it('Should generate summary property', () => {
+    const result = transpileModule(
+      'app.controller.ts',
+      appControllerText,
+      compilerOptions,
+      {controllerKeyOfComment: 'summary'}
+    );
 
-    const result = ts.transpileModule(appControllerText, {
-      compilerOptions: options,
-      fileName: filename,
-      transformers: {
-        before: [
-          before(
-            { controllerKeyOfComment: 'summary', introspectComments: true },
-            fakeProgram
-          )
-        ]
-      }
-    });
     expect(result.outputText).toEqual(appControllerTextTranspiled);
   });
 
-  it('should add response based on the return value (tabs)', () => {
-    const options: ts.CompilerOptions = {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2021,
-      newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true,
-      experimentalDecorators: true
-    };
-    const filename = 'app.controller.ts';
-    const fakeProgram = ts.createProgram([filename], options);
-
-    const result = ts.transpileModule(appControllerWithTabsText, {
-      compilerOptions: options,
-      fileName: filename,
-      transformers: {
-        before: [
-          before(
-            { controllerKeyOfComment: 'summary', introspectComments: true },
-            fakeProgram
-          )
-        ]
-      }
-    });
-    expect(result.outputText).toEqual(appControllerWithTabsTextTranspiled);
-  });
-
-  it('should add response based on the return value (without modifiers)', () => {
-    const options: ts.CompilerOptions = {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2021,
-      newLine: ts.NewLineKind.LineFeed,
-      noEmitHelpers: true,
-      experimentalDecorators: true
-    };
-    const filename = 'app.controller.ts';
-    const fakeProgram = ts.createProgram([filename], options);
-
-    const result = ts.transpileModule(appControllerWithoutModifiersText, {
-      compilerOptions: options,
-      fileName: filename,
-      transformers: {
-        before: [
-          before(
-            { controllerKeyOfComment: 'summary', introspectComments: true },
-            fakeProgram
-          )
-        ]
-      }
-    });
-    expect(result.outputText).toEqual(
-      appControllerWithoutModifiersTextTranspiled
+  it('Should generate summary and description if no controllerKeyOfComments', () => {
+    const result = transpileModule(
+      'enhanced-comments.controller.ts',
+      enhancedCommentsControllerText,
+      compilerOptions,
+      { controllerKeyOfComment: null }
     );
-  });
+    expect(result.outputText).toEqual(enhancedCommentsControllerTextTranspiled);
+  })
 });

@@ -21,6 +21,7 @@ import {
   UnionTypeNode
 } from 'typescript';
 import { isDynamicallyAdded } from './plugin-utils';
+import { DocComment, DocExcerpt, DocNode, ParserContext, TSDocParser } from '@microsoft/tsdoc';
 
 export function isArray(type: Type) {
   const symbol = type.getSymbol();
@@ -117,7 +118,31 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
   return formatFlags;
 }
 
-export function getMainCommentOfNode(
+export function getNodeDocs(
+  node: Node
+): DocComment {
+  const tsdocParser: TSDocParser = new TSDocParser();
+  const parserContext: ParserContext = tsdocParser.parseString(node.getFullText());
+  return parserContext.docComment;
+}
+
+export function docNodeToString(docNode: DocNode): string {
+  let result = '';
+
+  if (docNode) {
+    if (docNode instanceof DocExcerpt) {
+      result += docNode.content.toString();
+    }
+
+    for(const childNode of docNode.getChildNodes()) {
+      result += docNodeToString(childNode);
+    }
+  }
+
+  return result.trim();
+}
+
+export function getMainCommentAndExamplesOfNode(
   node: Node,
   sourceFile: SourceFile
 ): string {
