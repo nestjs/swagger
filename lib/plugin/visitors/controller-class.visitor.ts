@@ -233,6 +233,18 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       ...(apiOperationExistingProps ?? factory.createNodeArray())
     ];
 
+    const hasRemarksKey = hasPropertyKey(
+      'description',
+      factory.createNodeArray(apiOperationExistingProps)
+    );
+    if (!hasRemarksKey && tags.remarks) {
+      const remarksPropertyAssignment = factory.createPropertyAssignment(
+        'description',
+        createLiteralFromAnyValue(factory, tags.remarks)
+      );
+      properties.push(remarksPropertyAssignment);
+    }
+
     const hasDeprecatedKey = hasPropertyKey(
       'deprecated',
       factory.createNodeArray(apiOperationExistingProps)

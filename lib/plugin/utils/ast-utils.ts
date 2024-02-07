@@ -30,27 +30,17 @@ import {
   DocBlock
 } from '@microsoft/tsdoc';
 
-export class Formatter {
-  public static renderDocNode(docNode: DocNode): string {
-    let result: string = '';
-    if (docNode) {
-      if (docNode instanceof DocExcerpt) {
-        result += docNode.content.toString();
-      }
-      for (const childNode of docNode.getChildNodes()) {
-        result += Formatter.renderDocNode(childNode);
-      }
+export function renderDocNode(docNode: DocNode) {
+  let result: string = '';
+  if (docNode) {
+    if (docNode instanceof DocExcerpt) {
+      result += docNode.content.toString();
     }
-    return result;
-  }
-
-  public static renderDocNodes(docNodes: ReadonlyArray<DocNode>): string {
-    let result: string = '';
-    for (const docNode of docNodes) {
-      result += Formatter.renderDocNode(docNode);
+    for (const childNode of docNode.getChildNodes()) {
+      result += renderDocNode(childNode);
     }
-    return result;
   }
+  return result;
 }
 
 export function isArray(type: Type) {
@@ -157,7 +147,7 @@ export function getMainCommentOfNode(
     node.getFullText()
   );
   const docComment: DocComment = parserContext.docComment;
-  return Formatter.renderDocNode(docComment.summarySection).trim();
+  return renderDocNode(docComment.summarySection).trim();
 }
 
 export function parseCommentDocValue(docValue: string, type: ts.Type) {
@@ -209,9 +199,7 @@ export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
       const type = typeChecker.getTypeAtLocation(node);
       if (hasProperties) {
         blocks.forEach((block) => {
-          const docValue = Formatter.renderDocNode(block.content).split(
-            '\n'
-          )[0];
+          const docValue = renderDocNode(block.content).split('\n')[0];
           const value = parseCommentDocValue(docValue, type);
 
           if (value !== null) {
@@ -225,6 +213,11 @@ export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
       } else {
         tagResults[tag] = true;
       }
+    }
+    if (docComment.remarksBlock) {
+      tagResults['remarks'] = renderDocNode(
+        docComment.remarksBlock.content
+      ).trim();
     }
     if (docComment.deprecatedBlock) {
       tagResults['deprecated'] = true;

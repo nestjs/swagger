@@ -9,6 +9,8 @@ export class AppController {
 
   /**
    * create a Cat
+   * 
+   * @remarks Creating a test cat
    *
    * @returns {Promise<Cat>}
    * @memberof AppController
@@ -71,6 +73,8 @@ let AppController = exports.AppController = class AppController {
     /**
      * create a Cat
      *
+     * @remarks Creating a test cat
+     *
      * @returns {Promise<Cat>}
      * @memberof AppController
      */
@@ -104,7 +108,7 @@ let AppController = exports.AppController = class AppController {
     async findAll() { }
 };
 __decorate([
-    openapi.ApiOperation({ summary: \"create a Cat\" }),
+    openapi.ApiOperation({ summary: \"create a Cat\", description: \"Creating a test cat\" }),
     (0, common_1.Post)(),
     openapi.ApiResponse({ status: 201, type: Cat })
 ], AppController.prototype, \"create\", null);
