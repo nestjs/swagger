@@ -1,9 +1,9 @@
 import { SwaggerUiOptions } from './swagger-ui-options.interface';
-import { SwaggerDocumentOptions } from './swagger-document-options.interface';
 import { OpenAPIObject } from './open-api-spec.interface';
 
 export interface SwaggerCustomOptions {
   useGlobalPrefix?: boolean;
+  swaggerUiEnabled?: boolean;
   explorer?: boolean;
   swaggerOptions?: SwaggerUiOptions;
   customCss?: string;
@@ -22,5 +22,9 @@ export interface SwaggerCustomOptions {
   urls?: Record<'url' | 'name', string>[];
   jsonDocumentUrl?: string;
   yamlDocumentUrl?: string;
-  patchDocumentOnRequest?: <TRequest = any, TResponse = any> (req: TRequest, res: TResponse, document: OpenAPIObject) => OpenAPIObject;
+  patchDocumentOnRequest?: <TRequest = any, TResponse = any>(
+    req: TRequest,
+    res: TResponse,
+    document: OpenAPIObject
+  ) => OpenAPIObject;
 }
