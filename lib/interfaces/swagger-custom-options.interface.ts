@@ -14,8 +14,11 @@ export interface SwaggerCustomOptions {
   customSwaggerUiPath?: string;
   swaggerUrl?: string;
   customSiteTitle?: string;
+  /** @deprecated This property has no effect. */
   validatorUrl?: string;
+  /** @deprecated This property has no effect. */
   url?: string;
+  /** @deprecated This property has no effect. */
   urls?: Record<'url' | 'name', string>[];
   jsonDocumentUrl?: string;
   yamlDocumentUrl?: string;
