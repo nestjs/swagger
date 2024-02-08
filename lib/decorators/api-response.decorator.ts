@@ -129,6 +129,12 @@ export const ApiUnauthorizedResponse = (options: ApiResponseOptions = {}) =>
     status: HttpStatus.UNAUTHORIZED
   });
 
+export const ApiTooEarlyResponse = (options: ApiResponseOptions = {}) =>
+  ApiResponse({
+    ...options,
+    status: 425
+  });
+
 export const ApiTooManyRequestsResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
     ...options,

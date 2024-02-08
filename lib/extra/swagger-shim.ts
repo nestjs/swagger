@@ -83,6 +83,9 @@ export function ApiBadRequestResponse() {
 export function ApiUnauthorizedResponse() {
   return () => {};
 }
+export function ApiTooEarlyResponse() {
+  return () => {};
+}
 export function ApiTooManyRequestsResponse() {
   return () => {};
 }
