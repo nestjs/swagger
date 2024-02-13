@@ -228,6 +228,35 @@ export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
   return tagResults;
 }
 
+export function getTsDocReturnsOrErrorOfNode(node: Node) {
+  const tsdocParser: TSDocParser = new TSDocParser();
+  const parserContext: ParserContext = tsdocParser.parseString(
+    node.getFullText()
+  );
+  const docComment: DocComment = parserContext.docComment;
+
+  const tagResults = [];
+  const introspectTsDocTags = (docComment: DocComment) => {
+    const blocks = docComment.customBlocks.filter((block) =>
+      ['@throws', '@returns'].includes(block.blockTag.tagName)
+    );
+
+    blocks.forEach((block) => {
+      try {
+        const docValue = renderDocNode(block.content).split('\n')[0].trim();
+        const regex = /{(\d+)} (.*)/;
+        const match = docValue.match(regex);
+        tagResults.push({
+          status: match[1],
+          description: `"${match[2]}"`
+        });
+      } catch (err) {}
+    });
+  };
+  introspectTsDocTags(docComment);
+  return tagResults;
+}
+
 export function getDecoratorArguments(decorator: Decorator) {
   const callExpression = decorator.expression;
   return (callExpression && (callExpression as CallExpression).arguments) || [];

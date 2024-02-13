@@ -9,6 +9,7 @@ import {
   getDecoratorArguments,
   getDecoratorName,
   getMainCommentOfNode,
+  getTsDocReturnsOrErrorOfNode,
   getTsDocTagsOfNode
 } from '../utils/ast-utils';
 import {
@@ -139,14 +140,34 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       typeChecker,
       metadata
     );
+
+    const apiResponseDecoratorsArray = this.createApiResponseDecorator(
+      factory,
+      compilerNode,
+      decorators,
+      options,
+      sourceFile,
+      typeChecker,
+      metadata
+    );
+
     const removeExistingApiOperationDecorator =
       apiOperationDecoratorsArray.length > 0;
 
-    const existingDecorators = removeExistingApiOperationDecorator
-      ? decorators.filter(
-          (item) => getDecoratorName(item) !== ApiOperation.name
-        )
-      : decorators;
+    const removeExistingApiResponseDecorator =
+      apiResponseDecoratorsArray.length > 0;
+
+    let existingDecorators = decorators;
+    if (
+      removeExistingApiOperationDecorator ||
+      removeExistingApiResponseDecorator
+    ) {
+      existingDecorators = decorators.filter(
+        (item) =>
+          getDecoratorName(item) !== ApiOperation.name &&
+          getDecoratorName(item) !== ApiResponse.name
+      );
+    }
 
     const modifiers = ts.getModifiers(compilerNode) ?? [];
     const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
@@ -160,6 +181,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     );
     const updatedDecorators = [
       ...apiOperationDecoratorsArray,
+      ...apiResponseDecoratorsArray,
       ...existingDecorators,
       factory.createDecorator(
         factory.createCallExpression(
@@ -300,6 +322,74 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         )
       ];
     }
+  }
+
+  createApiResponseDecorator(
+    factory: ts.NodeFactory,
+    node: ts.MethodDeclaration,
+    decorators: readonly ts.Decorator[],
+    options: PluginOptions,
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker,
+    metadata: ClassMetadata
+  ) {
+    if (!options.introspectComments) {
+      return [];
+    }
+    const apiResponseDecorator = getDecoratorOrUndefinedByNames(
+      [ApiResponse.name],
+      decorators,
+      factory
+    );
+    let apiResponseExistingProps:
+      | ts.NodeArray<ts.PropertyAssignment>
+      | undefined = undefined;
+
+    if (apiResponseDecorator && !options.readonly) {
+      const apiResponseExpr = head(getDecoratorArguments(apiResponseDecorator));
+      if (apiResponseExpr) {
+        apiResponseExistingProps =
+          apiResponseExpr.properties as ts.NodeArray<ts.PropertyAssignment>;
+      }
+    }
+
+    const tags = getTsDocReturnsOrErrorOfNode(node);
+    if (!tags.length) {
+      return [];
+    }
+
+    return tags.map((tag) => {
+      const properties = [
+        ...(apiResponseExistingProps ?? factory.createNodeArray())
+      ];
+      properties.push(
+        factory.createPropertyAssignment(
+          'status',
+          factory.createNumericLiteral(tag.status)
+        )
+      );
+      properties.push(
+        factory.createPropertyAssignment(
+          'description',
+          factory.createNumericLiteral(tag.description)
+        )
+      );
+      const objectLiteralExpr = factory.createObjectLiteralExpression(
+        compact(properties)
+      );
+      const methodKey = node.name.getText();
+      metadata[methodKey] = objectLiteralExpr;
+
+      const apiResponseDecoratorArguments: ts.NodeArray<ts.Expression> =
+        factory.createNodeArray([objectLiteralExpr]);
+      return factory.createDecorator(
+        factory.createCallExpression(
+          factory.createIdentifier(`${OPENAPI_NAMESPACE}.${ApiResponse.name}`),
+          undefined,
+          apiResponseDecoratorArguments
+        )
+      );
+    });
   }
 
   createDecoratorObjectLiteralExpr(
