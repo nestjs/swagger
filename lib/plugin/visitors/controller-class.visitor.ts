@@ -154,20 +154,11 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const removeExistingApiOperationDecorator =
       apiOperationDecoratorsArray.length > 0;
 
-    const removeExistingApiResponseDecorator =
-      apiResponseDecoratorsArray.length > 0;
-
-    let existingDecorators = decorators;
-    if (
-      removeExistingApiOperationDecorator ||
-      removeExistingApiResponseDecorator
-    ) {
-      existingDecorators = decorators.filter(
-        (item) =>
-          getDecoratorName(item) !== ApiOperation.name &&
-          getDecoratorName(item) !== ApiResponse.name
-      );
-    }
+    const existingDecorators = removeExistingApiOperationDecorator
+      ? decorators.filter(
+          (item) => getDecoratorName(item) !== ApiOperation.name
+        )
+      : decorators;
 
     const modifiers = ts.getModifiers(compilerNode) ?? [];
     const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
