@@ -228,7 +228,7 @@ export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
   return tagResults;
 }
 
-export function getTsDocReturnsOrErrorOfNode(node: Node) {
+export function getTsDocErrorsOfNode(node: Node) {
   const tsdocParser: TSDocParser = new TSDocParser();
   const parserContext: ParserContext = tsdocParser.parseString(
     node.getFullText()
@@ -236,16 +236,17 @@ export function getTsDocReturnsOrErrorOfNode(node: Node) {
   const docComment: DocComment = parserContext.docComment;
 
   const tagResults = [];
+  const errorParsingRegex = /{(\d+)} (.*)/;
+
   const introspectTsDocTags = (docComment: DocComment) => {
-    const blocks = docComment.customBlocks.filter((block) =>
-      ['@throws', '@returns'].includes(block.blockTag.tagName)
+    const blocks = docComment.customBlocks.filter(
+      (block) => block.blockTag.tagName === '@throws'
     );
 
     blocks.forEach((block) => {
       try {
         const docValue = renderDocNode(block.content).split('\n')[0].trim();
-        const regex = /{(\d+)} (.*)/;
-        const match = docValue.match(regex);
+        const match = docValue.match(errorParsingRegex);
         tagResults.push({
           status: match[1],
           description: `"${match[2]}"`

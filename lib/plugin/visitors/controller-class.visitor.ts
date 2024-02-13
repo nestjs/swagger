@@ -9,7 +9,7 @@ import {
   getDecoratorArguments,
   getDecoratorName,
   getMainCommentOfNode,
-  getTsDocReturnsOrErrorOfNode,
+  getTsDocErrorsOfNode,
   getTsDocTagsOfNode
 } from '../utils/ast-utils';
 import {
@@ -353,7 +353,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       }
     }
 
-    const tags = getTsDocReturnsOrErrorOfNode(node);
+    const tags = getTsDocErrorsOfNode(node);
     if (!tags.length) {
       return [];
     }
