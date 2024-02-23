@@ -38,6 +38,8 @@ describe('SchemaObjectFactory', () => {
       Third = 3
     }
 
+    const getAvailableUserRoles = () => ['admin', 'user'];
+
     class CreatePersonDto {
       @ApiProperty()
       name: string;
@@ -57,6 +59,13 @@ describe('SchemaObjectFactory', () => {
 
       @ApiProperty({ enum: Ranking, enumName: 'Ranking', isArray: true })
       rankings: Ranking[];
+
+      @ApiProperty({
+        enum: getAvailableUserRoles(),
+        enumName: 'Role',
+        isArray: true
+      })
+      rolesCategory: Role[];
     }
 
     it('should explore enum', () => {
@@ -91,6 +100,12 @@ describe('SchemaObjectFactory', () => {
               $ref: '#/components/schemas/Role'
             }
           },
+          rolesCategory: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/Role'
+            }
+          },
           groups: {
             type: 'array',
             items: {
@@ -104,7 +119,7 @@ describe('SchemaObjectFactory', () => {
             }
           }
         },
-        required: ['role', 'roles', 'groups', 'rankings']
+        required: ['role', 'roles', 'groups', 'rankings', 'rolesCategory']
       });
       schemaObjectFactory.exploreModelSchema(CreatePersonDto, schemas);
 
