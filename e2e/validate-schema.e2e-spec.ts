@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
+import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
 import * as SwaggerParser from 'swagger-parser';
 import {
@@ -12,7 +13,6 @@ import {
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
-import { OpenAPIV3 } from 'openapi-types';
 
 describe('Validate OpenAPI schema', () => {
   let app: INestApplication;
@@ -49,13 +49,62 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {
+    await SwaggerModule.loadPluginMetadata(async () => ({
+      '@nestjs/swagger': {
+        models: [
+          [
+            import('./src/cats/classes/cat.class'),
+            {
+              Cat: {
+                tags: {
+                  description: 'Tags of the cat',
+                  example: ['tag1', 'tag2']
+                }
+              }
+            }
+          ],
+          [
+            import('./src/cats/dto/create-cat.dto'),
+            {
+              CreateCatDto: {
+                enumWithDescription: {
+                  enum: await import(
+                    './src/cats/dto/pagination-query.dto'
+                  ).then((f) => f.LettersEnum)
+                },
+                name: {
+                  description: 'Name of the cat'
+                }
+              }
+            }
+          ]
+        ],
+        controllers: [
+          [
+            import('./src/cats/cats.controller'),
+            {
+              CatsController: {
+                findAllBulk: {
+                  type: [
+                    await import('./src/cats/classes/cat.class').then(
+                      (f) => f.Cat
+                    )
+                  ],
+                  summary: 'Find all cats in bulk'
+                }
+              }
+            }
+          ]
+        ]
+      }
+    }));
     const document = SwaggerModule.createDocument(app, options);
 
     const doc = JSON.stringify(document, null, 2);
     writeFileSync(join(__dirname, 'api-spec.json'), doc);
 
     try {
-      let api = await SwaggerParser.validate(document as any);
+      const api = await SwaggerParser.validate(document as any);
       console.log(
         'API name: %s, Version: %s',
         api.info.title,

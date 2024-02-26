@@ -1,4 +1,5 @@
 export const createCatDtoText = `
+import { UUID } from 'crypto';
 import { IsInt, IsString, IsPositive, IsNegative, Length, Matches, IsIn } from 'class-validator';
 
 enum Status {
@@ -50,7 +51,7 @@ export class CreateCatDto {
   nodes: Node[];
   optionalBoolean?: boolean;
   date: Date;
-  
+
   twoDimensionPrimitives: string[][];
   twoDimensionNodes: OtherNode[][];
 
@@ -58,6 +59,10 @@ export class CreateCatDto {
   hidden: number;
 
   static staticProperty: string;
+
+  cryptoUUIDProperty: UUID;
+
+  arrayOfUUIDs: UUID[];
 }
 `;
 
@@ -85,7 +90,7 @@ export class CreateCatDto {
         this.status = Status.ENABLED;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { isIn: { required: true, type: () => String, enum: ['a', 'b'] }, pattern: { required: true, type: () => String, pattern: "/^[+]?abc$/" }, name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, positive: { required: true, type: () => Number, default: 5, minimum: 1 }, negative: { required: true, type: () => Number, default: -1, maximum: -1 }, lengthMin: { required: true, type: () => String, minLength: 2 }, lengthMinMax: { required: true, type: () => String, minLength: 3, maxLength: 5 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, statusArr: { required: false, enum: Status, isArray: true }, oneValueEnum: { required: false, enum: OneValueEnum }, oneValueEnumArr: { required: false, enum: OneValueEnum }, breed: { required: false, type: () => String, title: "this is breed im comment" }, nodes: { required: true, type: () => [Object] }, optionalBoolean: { required: false, type: () => Boolean }, date: { required: true, type: () => Date }, twoDimensionPrimitives: { required: true, type: () => [[String]] }, twoDimensionNodes: { required: true, type: () => [[OtherNode]] } };
+        return { isIn: { required: true, type: () => String, enum: ['a', 'b'] }, pattern: { required: true, type: () => String, pattern: "/^[+]?abc$/" }, name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, positive: { required: true, type: () => Number, default: 5, minimum: 1 }, negative: { required: true, type: () => Number, default: -1, maximum: -1 }, lengthMin: { required: true, type: () => String, minLength: 2 }, lengthMinMax: { required: true, type: () => String, minLength: 3, maxLength: 5 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, statusArr: { required: false, enum: Status, isArray: true }, oneValueEnum: { required: false, enum: OneValueEnum }, oneValueEnumArr: { required: false, enum: OneValueEnum }, breed: { required: false, type: () => String, title: "this is breed im comment" }, nodes: { required: true, type: () => [Object] }, optionalBoolean: { required: false, type: () => Boolean }, date: { required: true, type: () => Date }, twoDimensionPrimitives: { required: true, type: () => [[String]] }, twoDimensionNodes: { required: true, type: () => [[OtherNode]] }, cryptoUUIDProperty: { required: true, type: () => String }, arrayOfUUIDs: { required: true, type: () => [String] } };
     }
 }
 __decorate([

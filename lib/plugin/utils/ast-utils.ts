@@ -21,6 +21,27 @@ import {
   UnionTypeNode
 } from 'typescript';
 import { isDynamicallyAdded } from './plugin-utils';
+import {
+  DocNode,
+  DocExcerpt,
+  TSDocParser,
+  ParserContext,
+  DocComment,
+  DocBlock
+} from '@microsoft/tsdoc';
+
+export function renderDocNode(docNode: DocNode) {
+  let result: string = '';
+  if (docNode) {
+    if (docNode instanceof DocExcerpt) {
+      result += docNode.content.toString();
+    }
+    for (const childNode of docNode.getChildNodes()) {
+      result += renderDocNode(childNode);
+    }
+  }
+  return result;
+}
 
 export function isArray(type: Type) {
   const symbol = type.getSymbol();
@@ -44,6 +65,10 @@ export function isString(type: Type) {
 
 export function isStringLiteral(type: Type) {
   return hasFlag(type, TypeFlags.StringLiteral) && !type.isUnion();
+}
+
+export function isStringMapping(type: Type) {
+  return hasFlag(type, TypeFlags.StringMapping);
 }
 
 export function isNumber(type: Type) {
@@ -117,114 +142,89 @@ export function getMainCommentOfNode(
   node: Node,
   sourceFile: SourceFile
 ): string {
-  const sourceText = sourceFile.getFullText();
-  // in case we decide to include "// comments"
-  const replaceRegex =
-    /^\s*\** *@.*$|^\s*\/\*+ *|^\s*\/\/+.*|^\s*\/+ *|^\s*\*+ *| +$| *\**\/ *$/gim;
-  //const replaceRegex = /^ *\** *@.*$|^ *\/\*+ *|^ *\/+ *|^ *\*+ *| +$| *\**\/ *$/gim;
-
-  const commentResult = [];
-  const introspectComments = (comments?: CommentRange[]) =>
-    comments?.forEach((comment) => {
-      const commentSource = sourceText.substring(comment.pos, comment.end);
-      const oneComment = commentSource.replace(replaceRegex, '').trim();
-      if (oneComment) {
-        commentResult.push(oneComment);
-      }
-    });
-
-  const leadingCommentRanges = getLeadingCommentRanges(
-    sourceText,
-    node.getFullStart()
+  const tsdocParser: TSDocParser = new TSDocParser();
+  const parserContext: ParserContext = tsdocParser.parseString(
+    node.getFullText()
   );
-  introspectComments(leadingCommentRanges);
-  if (!commentResult.length) {
-    const trailingCommentRanges = getTrailingCommentRanges(
-      sourceText,
-      node.getFullStart()
-    );
-    introspectComments(trailingCommentRanges);
-  }
-  return commentResult.join('\n');
+  const docComment: DocComment = parserContext.docComment;
+  return renderDocNode(docComment.summarySection).trim();
 }
 
-export function getTsDocTagsOfNode(
-  node: Node,
-  sourceFile: SourceFile,
-  typeChecker: TypeChecker
-) {
-  const sourceText = sourceFile.getFullText();
+export function parseCommentDocValue(docValue: string, type: ts.Type) {
+  let value = docValue.replace(/'/g, '"').trim();
+
+  if (!type || !isString(type)) {
+    try {
+      value = JSON.parse(value);
+    } catch {}
+  } else if (isString(type)) {
+    if (value.split(' ').length !== 1 && !value.startsWith('"')) {
+      value = null;
+    } else {
+      value = value.replace(/"/g, '');
+    }
+  }
+  return value;
+}
+
+export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
+  const tsdocParser: TSDocParser = new TSDocParser();
+  const parserContext: ParserContext = tsdocParser.parseString(
+    node.getFullText()
+  );
+  const docComment: DocComment = parserContext.docComment;
 
   const tagDefinitions: {
     [key: string]: {
-      regex: RegExp;
       hasProperties: boolean;
       repeatable: boolean;
     };
   } = {
     example: {
-      regex:
-        /@example *((['"](?<string>.+?)['"])|(?<booleanOrNumber>[^ ]+?)|(?<array>(\[.+?\]))) *$/gim,
       hasProperties: true,
       repeatable: true
-    },
-    deprecated: {
-      regex: /@deprecated */gim,
-      hasProperties: false,
-      repeatable: false
     }
   };
 
   const tagResults: any = {};
-  const introspectTsDocTags = (comments?: CommentRange[]) =>
-    comments?.forEach((comment) => {
-      const commentSource = sourceText.substring(comment.pos, comment.end);
 
-      for (const tag in tagDefinitions) {
-        const { regex, hasProperties, repeatable } = tagDefinitions[tag];
+  const introspectTsDocTags = (docComment: DocComment) => {
+    for (const tag in tagDefinitions) {
+      const { hasProperties, repeatable } = tagDefinitions[tag];
+      const blocks = docComment.customBlocks.filter(
+        (block) => block.blockTag.tagName === `@${tag}`
+      );
+      if (blocks.length === 0) continue;
+      if (repeatable && !tagResults[tag]) tagResults[tag] = [];
+      const type = typeChecker.getTypeAtLocation(node);
+      if (hasProperties) {
+        blocks.forEach((block) => {
+          const docValue = renderDocNode(block.content).split('\n')[0];
+          const value = parseCommentDocValue(docValue, type);
 
-        let value: any;
-
-        let execResult: RegExpExecArray;
-        while (
-          (execResult = regex.exec(commentSource)) &&
-          (!hasProperties || execResult.length > 1)
-        ) {
-          if (repeatable && !tagResults[tag]) tagResults[tag] = [];
-
-          if (hasProperties) {
-            const docValue =
-              execResult.groups?.string ??
-              execResult.groups?.booleanOrNumber ??
-              (execResult.groups?.array &&
-                execResult.groups.array.replace(/'/g, '"'));
-
-            const type = typeChecker.getTypeAtLocation(node);
-
-            value = docValue;
-            if (!type || !isString(type)) {
-              try {
-                value = JSON.parse(value);
-              } catch {}
+          if (value !== null) {
+            if (repeatable) {
+              tagResults[tag].push(value);
+            } else {
+              tagResults[tag] = value;
             }
-          } else {
-            value = true;
           }
-
-          if (repeatable) {
-            tagResults[tag].push(value);
-          } else {
-            tagResults[tag] = value;
-          }
-        }
+        });
+      } else {
+        tagResults[tag] = true;
       }
-    });
+    }
+    if (docComment.remarksBlock) {
+      tagResults['remarks'] = renderDocNode(
+        docComment.remarksBlock.content
+      ).trim();
+    }
+    if (docComment.deprecatedBlock) {
+      tagResults['deprecated'] = true;
+    }
+  };
+  introspectTsDocTags(docComment);
 
-  const leadingCommentRanges = getLeadingCommentRanges(
-    sourceText,
-    node.getFullStart()
-  );
-  introspectTsDocTags(leadingCommentRanges);
   return tagResults;
 }
 
@@ -281,14 +281,23 @@ export function createBooleanLiteral(
   return flag ? factory.createTrue() : factory.createFalse();
 }
 
-export function createPrimitiveLiteral(factory: ts.NodeFactory, item: unknown) {
-  const typeOfItem = typeof item;
-
+export function createPrimitiveLiteral(
+  factory: ts.NodeFactory,
+  item: unknown,
+  typeOfItem = typeof item
+) {
   switch (typeOfItem) {
     case 'boolean':
       return createBooleanLiteral(factory, item as boolean);
-    case 'number':
+    case 'number': {
+      if ((item as number) < 0) {
+        return factory.createPrefixUnaryExpression(
+          SyntaxKind.MinusToken,
+          factory.createNumericLiteral(Math.abs(item as number))
+        );
+      }
       return factory.createNumericLiteral(item as number);
+    }
     case 'string':
       return factory.createStringLiteral(item as string);
   }

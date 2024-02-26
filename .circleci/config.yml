@@ -3,55 +3,51 @@ version: 2
 aliases:
   - &restore-cache
     restore_cache:
-        key: dependency-cache-{{ checksum "package.json" }}
+      key: dependency-cache-{{ checksum "package.json" }}
   - &install-deps
     run:
-        name: Install dependencies
-        command: npm ci
+      name: Install dependencies
+      command: npm ci --ignore-scripts
   - &build-packages
     run:
-        name: Build
-        command: npm run build
+      name: Build
+      command: npm run build
   - &run-unit-tests
     run:
-        name: Test
-        command: npm run test -- --runInBand
-  - &run-unit-tests
-    run:
-        name: Test (TypeScript < v4.8)
-        command: npm i --no-save -D typescript@4.7.2 && npm run test -- --runInBand
+      name: Test
+      command: npm run test -- --runInBand
   - &run-e2e-tests
     run:
-        name: E2E test
-        command: npm run test:e2e
+      name: E2E test
+      command: npm run test:e2e
 
 jobs:
   build:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:19.5
+      - image: cimg/node:21.6
     steps:
       - checkout
       - run:
           name: Update NPM version
-          command: 'sudo npm install -g npm@^8'
+          command: sudo npm install -g npm@latest --ignore-scripts
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
           name: Install dependencies
-          command: npm ci
+          command: npm ci --ignore-scripts
       - save_cache:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - ./node_modules
       - run:
           name: Build
-          command: npm run build    
+          command: npm run build
 
   unit_tests:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:19.5
+      - image: cimg/node:21.6
     steps:
       - checkout
       - *restore-cache
@@ -62,7 +58,7 @@ jobs:
   e2e_tests:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:19.5
+      - image: cimg/node:21.6
     steps:
       - checkout
       - *restore-cache
@@ -81,4 +77,3 @@ workflows:
       - e2e_tests:
           requires:
             - build
-      

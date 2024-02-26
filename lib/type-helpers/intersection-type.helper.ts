@@ -1,12 +1,12 @@
 import { Type } from '@nestjs/common';
 import {
-  inheritTransformationMetadata,
-  inheritValidationMetadata,
   inheritPropertyInitializers,
-  MappedType
+  inheritTransformationMetadata,
+  inheritValidationMetadata
 } from '@nestjs/mapped-types';
 import { DECORATORS } from '../constants';
 import { ApiProperty } from '../decorators';
+import { MetadataLoader } from '../plugin/metadata-loader';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
 import { clonePluginMetadataFactory } from './mapped-types.utils';
 
@@ -22,7 +22,7 @@ type ClassRefsToConstructors<T extends Type[]> = {
   [U in keyof T]: T[U] extends Type<infer V> ? V : never;
 };
 
-type Intersection<T extends Type[]> = MappedType<
+type Intersection<T extends Type[]> = Type<
   UnionToIntersection<ClassRefsToConstructors<T>[number]>
 >;
 
@@ -43,19 +43,29 @@ export function IntersectionType<T extends Type[]>(...classRefs: T) {
     inheritValidationMetadata(classRef, IntersectionClassType);
     inheritTransformationMetadata(classRef, IntersectionClassType);
 
-    clonePluginMetadataFactory(
-      IntersectionClassType as Type<unknown>,
-      classRef.prototype
-    );
-
-    fields.forEach((propertyKey) => {
-      const metadata = Reflect.getMetadata(
-        DECORATORS.API_MODEL_PROPERTIES,
-        classRef.prototype,
-        propertyKey
+    function applyFields(fields: string[]) {
+      clonePluginMetadataFactory(
+        IntersectionClassType as Type<unknown>,
+        classRef.prototype
       );
-      const decoratorFactory = ApiProperty(metadata);
-      decoratorFactory(IntersectionClassType.prototype, propertyKey);
+
+      fields.forEach((propertyKey) => {
+        const metadata = Reflect.getMetadata(
+          DECORATORS.API_MODEL_PROPERTIES,
+          classRef.prototype,
+          propertyKey
+        );
+        const decoratorFactory = ApiProperty(metadata);
+        decoratorFactory(IntersectionClassType.prototype, propertyKey);
+      });
+    }
+    applyFields(fields);
+
+    MetadataLoader.addRefreshHook(() => {
+      const fields = modelPropertiesAccessor.getModelProperties(
+        classRef.prototype
+      );
+      applyFields(fields);
     });
   });
 

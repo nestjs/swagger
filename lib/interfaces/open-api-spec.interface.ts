@@ -271,10 +271,12 @@ export interface HttpSchemeObject {
   scheme: string;
   bearerFormat?: string;
 }
+
 export interface OAuth2SchemeObject {
   type: 'oauth2';
   description?: string;
   flows: OAuthFlowsObject;
+  'x-tokenName'?: string;
 }
 
 export interface OpenIdConnectSchemeObject {

@@ -122,6 +122,9 @@ export function ApiPreconditionFailedResponse() {
 export function ApiPayloadTooLargeResponse() {
   return () => {};
 }
+export function ApiPaymentRequiredResponse() {
+  return () => {};
+}
 export function ApiRequestTimeoutResponse() {
   return () => {};
 }
@@ -153,17 +156,23 @@ export function SwaggerModule() {
   return () => {};
 }
 export function IntersectionType() {
-  return () => {};
+  return class {};
 }
 export function OmitType() {
-  return () => {};
+  return class {};
 }
 export function PartialType() {
-  return () => {};
+  return class {};
 }
 export function PickType() {
-  return () => {};
+  return class {};
 }
 export function getSchemaPath() {
   return () => '';
+}
+export function before() {
+  return () => '';
+}
+export function ReadonlyVisitor() {
+  return class {};
 }

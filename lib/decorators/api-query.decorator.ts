@@ -36,7 +36,9 @@ const defaultQueryOptions: ApiQueryOptions = {
   required: true
 };
 
-export function ApiQuery(options: ApiQueryOptions): MethodDecorator {
+export function ApiQuery(
+  options: ApiQueryOptions
+): MethodDecorator & ClassDecorator {
   const apiQueryMetadata = options as ApiQueryMetadata;
   const [type, isArray] = getTypeIsArrayTuple(
     apiQueryMetadata.type,

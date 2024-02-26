@@ -123,6 +123,16 @@ async function bootstrap() {
     }
   });
 
+  SwaggerModule.setup("/:tenantId/api-docs", app, document, {
+    patchDocumentOnRequest: (req, res, document1) => ({
+      ...document1,
+      info: {
+        ...document1.info,
+        title: `${(req as Record<string, any>).params.tenantId}'s API document`
+      }
+    })
+  })
+
   USE_FASTIFY
     ? (app as NestFastifyApplication).useStaticAssets({
         root: publicFolderPath,

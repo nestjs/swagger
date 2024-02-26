@@ -38,13 +38,28 @@ export class PaginationQuery {
     enumName: 'LettersEnum',
     isArray: true
   })
-  enumArr: LettersEnum;
+  enumArr: LettersEnum[];
+
+  @ApiProperty({
+    enum: LettersEnum,
+    enumName: 'Letter',
+    isArray: true,
+  })
+  letters: LettersEnum[];
 
   @ApiProperty()
   beforeDate: Date;
 
   @ApiProperty({
     type: 'object',
+    properties: {
+      name: {
+        type: 'string'
+      },
+      age: {
+        type: 'number',
+      }
+    },
     additionalProperties: true
   })
   filter: Record<string, any>;

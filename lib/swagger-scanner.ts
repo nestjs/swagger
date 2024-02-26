@@ -1,10 +1,14 @@
-import { INestApplication, Type } from '@nestjs/common';
+import { INestApplication, InjectionToken, Type } from '@nestjs/common';
 import { MODULE_PATH } from '@nestjs/common/constants';
 import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { InstanceToken, Module } from '@nestjs/core/injector/module';
+import { Module } from '@nestjs/core/injector/module';
 import { flatten, isEmpty } from 'lodash';
-import { OpenAPIObject, SwaggerDocumentOptions } from './interfaces';
+import {
+  OpenAPIObject,
+  OperationIdFactory,
+  SwaggerDocumentOptions
+} from './interfaces';
 import { ModuleRoute } from './interfaces/module-route.interface';
 import {
   ReferenceObject,
@@ -50,24 +54,24 @@ export class SwaggerScanner {
       : '';
 
     const denormalizedPaths = modules.map(
-      ({ routes, metatype, relatedModules }) => {
+      ({ controllers, metatype, imports }) => {
         let result: ModuleRoute[] = [];
 
         if (deepScanRoutes) {
-          // only load submodules routes if asked
+          // Only load submodules routes if explicitly enabled
           const isGlobal = (module: Type<any>) =>
             !container.isGlobalModule(module);
 
-          Array.from(relatedModules.values())
+          Array.from(imports.values())
             .filter(isGlobal as any)
-            .forEach(({ metatype, routes }) => {
+            .forEach(({ metatype, controllers }) => {
               const modulePath = this.getModulePathMetadata(
                 container,
                 metatype
               );
               result = result.concat(
-                this.scanModuleRoutes(
-                  routes,
+                this.scanModuleControllers(
+                  controllers,
                   modulePath,
                   globalPrefix,
                   internalConfigRef,
@@ -78,8 +82,8 @@ export class SwaggerScanner {
         }
         const modulePath = this.getModulePathMetadata(container, metatype);
         result = result.concat(
-          this.scanModuleRoutes(
-            routes,
+          this.scanModuleControllers(
+            controllers,
             modulePath,
             globalPrefix,
             internalConfigRef,
@@ -101,14 +105,14 @@ export class SwaggerScanner {
     };
   }
 
-  public scanModuleRoutes(
-    routes: Map<InstanceToken, InstanceWrapper>,
+  public scanModuleControllers(
+    controller: Map<InjectionToken, InstanceWrapper>,
     modulePath: string | undefined,
     globalPrefix: string | undefined,
     applicationConfig: ApplicationConfig,
-    operationIdFactory?: (controllerKey: string, methodKey: string) => string
+    operationIdFactory?: OperationIdFactory
   ): ModuleRoute[] {
-    const denormalizedArray = [...routes.values()].map((ctrl) =>
+    const denormalizedArray = [...controller.values()].map((ctrl) =>
       this.explorer.exploreController(
         ctrl,
         applicationConfig,

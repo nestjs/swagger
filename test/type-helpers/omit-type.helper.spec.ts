@@ -1,33 +1,14 @@
 import { Type } from '@nestjs/common';
-import { Transform } from 'class-transformer';
-import { MinLength } from 'class-validator';
-import { ApiProperty } from '../../lib/decorators';
-import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
+import { MetadataLoader } from '../../lib/plugin/metadata-loader';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { OmitType } from '../../lib/type-helpers';
+import { CreateUserDto } from './fixtures/create-user-dto.fixture';
+import { SERIALIZED_METADATA } from './fixtures/serialized-metadata.fixture';
+
+class UpdateUserDto extends OmitType(CreateUserDto, ['login', 'lastName']) {}
 
 describe('OmitType', () => {
-  class CreateUserDto {
-    @MinLength(10)
-    @ApiProperty({ required: true })
-    login: string;
-
-    @Transform((str) => str + '_transformed')
-    @MinLength(10)
-    @ApiProperty({ minLength: 10 })
-    password: string;
-
-    lastName: string;
-
-    static [METADATA_FACTORY_NAME]() {
-      return {
-        firstName: { required: true, type: () => String },
-        lastName: { required: true, type: () => String }
-      };
-    }
-  }
-
-  class UpdateUserDto extends OmitType(CreateUserDto, ['login', 'lastName']) {}
+  const metadataLoader = new MetadataLoader();
 
   let modelPropertiesAccessor: ModelPropertiesAccessor;
 
@@ -36,13 +17,17 @@ describe('OmitType', () => {
   });
 
   describe('OpenAPI metadata', () => {
-    it('should omit "login" property', () => {
-      const prototype = (UpdateUserDto.prototype as any) as Type<unknown>;
+    it('should omit "login" property', async () => {
+      await metadataLoader.load(SERIALIZED_METADATA);
+
+      const prototype = UpdateUserDto.prototype as any as Type<unknown>;
 
       modelPropertiesAccessor.applyMetadataFactory(prototype);
       expect(modelPropertiesAccessor.getModelProperties(prototype)).toEqual([
         'password',
-        'firstName'
+        'firstName',
+        'active',
+        'role'
       ]);
     });
   });

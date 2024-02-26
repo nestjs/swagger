@@ -18,7 +18,9 @@ export function buildJSInitOptions(initOptions: SwaggerUIInitOptions) {
     2
   );
 
-  json = json.replace(new RegExp('"' + functionPlaceholder + '"', 'g'), () => fns.shift());
+  json = json.replace(new RegExp('"' + functionPlaceholder + '"', 'g'), () =>
+    fns.shift()
+  );
 
   return `let options = ${json};`;
 }

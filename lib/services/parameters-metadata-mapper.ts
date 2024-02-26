@@ -5,8 +5,8 @@ import { DECORATORS } from '../constants';
 import { isBodyParameter } from '../utils/is-body-parameter.util';
 import { ModelPropertiesAccessor } from './model-properties-accessor';
 import {
-  ParamsWithType,
-  ParamWithTypeMetadata
+  ParamWithTypeMetadata,
+  ParamsWithType
 } from './parameter-metadata-accessor';
 
 export class ParametersMetadataMapper {
@@ -18,7 +18,7 @@ export class ParametersMetadataMapper {
     parameters: ParamsWithType
   ): ParamWithTypeMetadata[] {
     const properties = flatMap(parameters, (param: ParamWithTypeMetadata) => {
-      if (!param || param.type === Object) {
+      if (!param || param.type === Object || !param.type) {
         return undefined;
       }
       if (param.name) {

@@ -7,6 +7,7 @@ import {
 import {
   Controller,
   Type,
+  VERSION_NEUTRAL,
   VersioningOptions,
   VersionValue
 } from '@nestjs/common/interfaces';
@@ -53,6 +54,7 @@ import {
   exploreApiTagsMetadata,
   exploreGlobalApiTagsMetadata
 } from './explorers/api-use-tags.explorer';
+import { OperationIdFactory } from './interfaces';
 import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolvers.interface';
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface';
 import {
@@ -68,8 +70,10 @@ export class SwaggerExplorer {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
   private readonly metadataScanner = new MetadataScanner();
   private readonly schemas: Record<string, SchemaObject> = {};
-  private operationIdFactory = (controllerKey: string, methodKey: string) =>
-    controllerKey ? `${controllerKey}_${methodKey}` : methodKey;
+  private operationIdFactory: OperationIdFactory = (
+    controllerKey: string,
+    methodKey: string
+  ) => (controllerKey ? `${controllerKey}_${methodKey}` : methodKey);
   private routePathFactory?: RoutePathFactory;
 
   constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
@@ -79,7 +83,7 @@ export class SwaggerExplorer {
     applicationConfig: ApplicationConfig,
     modulePath?: string | undefined,
     globalPrefix?: string | undefined,
-    operationIdFactory?: (controllerKey: string, methodKey: string) => string
+    operationIdFactory?: OperationIdFactory
   ) {
     this.routePathFactory = new RoutePathFactory(applicationConfig);
     if (operationIdFactory) {
@@ -271,10 +275,18 @@ export class SwaggerExplorer {
       VERSION_METADATA,
       method
     );
+    const versioningOptions = applicationConfig.getVersioning();
     const controllerVersion = this.getVersionMetadata(
       metatype,
-      applicationConfig.getVersioning()
+      versioningOptions
     );
+
+    const versionOrVersions = methodVersion ?? controllerVersion;
+    const versions = this.getRoutePathVersions(
+      versionOrVersions,
+      versioningOptions
+    );
+
     const allRoutePaths = this.routePathFactory.create(
       {
         methodPath,
@@ -287,26 +299,71 @@ export class SwaggerExplorer {
       },
       requestMethod
     );
-    return allRoutePaths.map((routePath) => {
-      const fullPath = this.validateRoutePath(routePath);
-      const apiExtension = Reflect.getMetadata(
-        DECORATORS.API_EXTENSION,
-        method
-      );
-      return {
-        method: RequestMethod[requestMethod].toLowerCase(),
-        path: fullPath === '' ? '/' : fullPath,
-        operationId: this.getOperationId(instance, method),
-        ...apiExtension
-      };
-    });
+    return flatten(
+      allRoutePaths.map((routePath) => {
+        const fullPath = this.validateRoutePath(routePath);
+        const apiExtension = Reflect.getMetadata(
+          DECORATORS.API_EXTENSION,
+          method
+        );
+        if (requestMethod === RequestMethod.ALL) {
+          // apply workaround for invalid "ALL" Method
+          const validMethods = Object.values(RequestMethod).filter(
+            (meth) => meth !== 'ALL' && typeof meth === 'string'
+          ) as string[];
+          return validMethods.map((meth) => ({
+            method: meth.toLowerCase(),
+            path: fullPath === '' ? '/' : fullPath,
+            operationId: `${this.getOperationId(
+              instance,
+              method
+            )}_${meth.toLowerCase()}`,
+            ...apiExtension
+          }));
+        }
+        const pathVersion = versions.find((v) => fullPath.includes(`/${v}/`));
+        return {
+          method: RequestMethod[requestMethod].toLowerCase(),
+          path: fullPath === '' ? '/' : fullPath,
+          operationId: this.getOperationId(instance, method, pathVersion),
+          ...apiExtension
+        };
+      })
+    );
   }
 
-  private getOperationId(instance: object, method: Function): string {
+  private getOperationId(
+    instance: object,
+    method: Function,
+    version?: string
+  ): string {
     return this.operationIdFactory(
       instance.constructor?.name || '',
-      method.name
+      method.name,
+      version
     );
+  }
+
+  private getRoutePathVersions(
+    versionValue?: VersionValue,
+    versioningOptions?: VersioningOptions
+  ) {
+    let versions: string[] = [];
+
+    if (!versionValue || versioningOptions?.type !== VersioningType.URI) {
+      return versions;
+    }
+
+    if (Array.isArray(versionValue)) {
+      versions = versionValue.filter((v) => v !== VERSION_NEUTRAL) as string[];
+    } else if (versionValue !== VERSION_NEUTRAL) {
+      versions = [versionValue];
+    }
+
+    const prefix = this.routePathFactory.getVersionPrefix(versioningOptions);
+    versions = versions.map((v) => `${prefix}${v}`);
+
+    return versions;
   }
 
   private reflectControllerPath(metatype: Type<unknown>): string {
