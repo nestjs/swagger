@@ -4,18 +4,20 @@ import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {
   ApiKeySchemeObject,
-  ExternalDocumentationObject,
   HttpSchemeObject,
   OAuth2SchemeObject,
+  SecuritySchemeObject as SSObject,
+  ExternalDocumentationObject,
   ParameterObject,
   SecurityRequirementObject,
-  SecuritySchemeObject,
   ServerVariableObject,
   TagObject
 } from './interfaces/open-api-spec.interface';
 import { GlobalParametersStorage } from './storages/global-parameters.storage';
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+
+type OptSObject<T extends Partial<SSObject>> = Partial<Optional<T, 'type'>>;
 
 export class DocumentBuilder {
   private readonly logger = new Logger(DocumentBuilder.name);
@@ -102,7 +104,7 @@ export class DocumentBuilder {
     return this;
   }
 
-  public addSecurity(name: string, options: SecuritySchemeObject): this {
+  public addSecurity(name: string, options: SSObject): this {
     this.document.components.securitySchemes = {
       ...(this.document.components.securitySchemes || {}),
       [name]: options
@@ -133,22 +135,20 @@ export class DocumentBuilder {
     return this;
   }
 
-  public addBearerAuth(
+  public addBearerAuth<SO extends SSObject = HttpSchemeObject>(
     name?: string,
-    options?: Partial<Optional<HttpSchemeObject, 'type'>>
+    options?: OptSObject<SO>
   ): this;
   /**
    * @deprecated Use `addBearerAuth(name, options)` instead
    */
-  public addBearerAuth(
-    options?: Partial<Optional<HttpSchemeObject, 'type'>>,
+  public addBearerAuth<SO extends SSObject = HttpSchemeObject>(
+    options?: OptSObject<SO>,
     name?: string
   ): this;
-  public addBearerAuth(
-    nameOrOptions:
-      | string
-      | Partial<Optional<HttpSchemeObject, 'type'>> = 'bearer',
-    optionsOrName: string | Partial<Optional<HttpSchemeObject, 'type'>> = {}
+  public addBearerAuth<SO extends SSObject = HttpSchemeObject>(
+    nameOrOptions: string | OptSObject<SO> = 'bearer',
+    optionsOrName: string | OptSObject<SO> = {}
   ): this {
     if (typeof nameOrOptions === 'object') {
       [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
@@ -157,27 +157,25 @@ export class DocumentBuilder {
       type: 'http',
       scheme: 'bearer',
       bearerFormat: 'JWT',
-      ...(optionsOrName as any)
+      ...(optionsOrName as OptSObject<SO>)
     });
     return this;
   }
 
-  public addOAuth2(
+  public addOAuth2<SO extends SSObject = OAuth2SchemeObject>(
     name?: string,
-    options?: Partial<Optional<OAuth2SchemeObject, 'type'>>
+    options?: OptSObject<SO>
   ): this;
   /**
    * @deprecated Use `addOAuth2(name, options)` instead
    */
-  public addOAuth2(
-    options?: Partial<Optional<OAuth2SchemeObject, 'type'>>,
+  public addOAuth2<SO extends SSObject = OAuth2SchemeObject>(
+    options?: OptSObject<SO>,
     name?: string
   ): this;
-  public addOAuth2(
-    nameOrOptions:
-      | string
-      | Partial<Optional<OAuth2SchemeObject, 'type'>> = 'oauth2',
-    optionsOrName: string | Partial<Optional<OAuth2SchemeObject, 'type'>> = {}
+  public addOAuth2<SO extends SSObject = OAuth2SchemeObject>(
+    nameOrOptions: string | OptSObject<SO> = 'oauth2',
+    optionsOrName: string | OptSObject<SO> = {}
   ): this {
     if (typeof nameOrOptions === 'object') {
       [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
@@ -185,28 +183,25 @@ export class DocumentBuilder {
     this.addSecurity(nameOrOptions as string, {
       type: 'oauth2',
       flows: {},
-      // TODO: avoid using type assertion to 'any' below
-      ...(optionsOrName as any)
+      ...(optionsOrName as OptSObject<SO>)
     });
     return this;
   }
 
-  public addBasicAuth(
+  public addBasicAuth<SO extends SSObject = HttpSchemeObject>(
     name?: string,
-    options?: Partial<Optional<HttpSchemeObject, 'type'>>
+    options?: OptSObject<SO>
   ): this;
   /**
    * @deprecated Use `addBasicAuth(name, options)` instead
    */
-  public addBasicAuth(
-    options?: Partial<Optional<HttpSchemeObject, 'type'>>,
+  public addBasicAuth<SO extends SSObject = HttpSchemeObject>(
+    options?: OptSObject<SO>,
     name?: string
   ): this;
-  public addBasicAuth(
-    nameOrOptions:
-      | string
-      | Partial<Optional<HttpSchemeObject, 'type'>> = 'basic',
-    optionsOrName: string | Partial<Optional<HttpSchemeObject, 'type'>> = {}
+  public addBasicAuth<SO extends SSObject = HttpSchemeObject>(
+    nameOrOptions: string | OptSObject<SO> = 'basic',
+    optionsOrName: string | OptSObject<SO> = {}
   ): this {
     if (typeof nameOrOptions === 'object') {
       [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
@@ -214,27 +209,25 @@ export class DocumentBuilder {
     this.addSecurity(nameOrOptions as string, {
       type: 'http',
       scheme: 'basic',
-      ...(optionsOrName as any)
+      ...(optionsOrName as OptSObject<SO>)
     });
     return this;
   }
 
-  public addApiKey(
+  public addApiKey<SO extends SSObject = ApiKeySchemeObject>(
     name?: string,
-    options?: Partial<Optional<ApiKeySchemeObject, 'type'>>
+    options?: OptSObject<SO>
   ): this;
   /**
    * @deprecated Use `addApiKey(name, options)` instead
    */
-  public addApiKey(
-    options?: Partial<Optional<ApiKeySchemeObject, 'type'>>,
+  public addApiKey<SO extends SSObject = ApiKeySchemeObject>(
+    options?: OptSObject<SO>,
     name?: string
   ): this;
-  public addApiKey(
-    nameOrOptions:
-      | string
-      | Partial<Optional<ApiKeySchemeObject, 'type'>> = 'api_key',
-    optionsOrName: string | Partial<Optional<ApiKeySchemeObject, 'type'>> = {}
+  public addApiKey<SO extends SSObject = ApiKeySchemeObject>(
+    nameOrOptions: string | OptSObject<SO> = 'api_key',
+    optionsOrName: string | OptSObject<SO> = {}
   ): this {
     if (typeof nameOrOptions === 'object') {
       [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
@@ -242,31 +235,29 @@ export class DocumentBuilder {
     this.addSecurity(nameOrOptions as string, {
       type: 'apiKey',
       in: 'header',
-      name: nameOrOptions,
-      ...(optionsOrName as any)
+      name: nameOrOptions as string,
+      ...(optionsOrName as OptSObject<SO>)
     });
     return this;
   }
 
-  public addCookieAuth(
+  public addCookieAuth<SO extends SSObject = ApiKeySchemeObject>(
     cookieName?: string,
     name?: string,
-    options?: Partial<Optional<ApiKeySchemeObject, 'type'>>
+    options?: OptSObject<ApiKeySchemeObject>
   ): this;
   /**
    * @deprecated Use `addCookieAuth(cookieName, name, options)` instead
    */
-  public addCookieAuth(
+  public addCookieAuth<SO extends SSObject = ApiKeySchemeObject>(
     cookieName: string,
-    options?: Partial<Optional<ApiKeySchemeObject, 'type'>>,
+    options?: OptSObject<ApiKeySchemeObject>,
     name?: string
   ): this;
-  public addCookieAuth(
+  public addCookieAuth<SO extends SSObject = ApiKeySchemeObject>(
     cookieName = 'connect.sid',
-    nameOrOptions:
-      | string
-      | Partial<Optional<ApiKeySchemeObject, 'type'>> = 'cookie',
-    optionsOrName: string | Partial<Optional<ApiKeySchemeObject, 'type'>> = {}
+    nameOrOptions: string | OptSObject<ApiKeySchemeObject> = 'cookie',
+    optionsOrName: string | OptSObject<ApiKeySchemeObject> = {}
   ): this {
     if (typeof nameOrOptions === 'object') {
       [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
@@ -275,7 +266,7 @@ export class DocumentBuilder {
       type: 'apiKey',
       in: 'cookie',
       name: cookieName,
-      ...(optionsOrName as any)
+      ...(optionsOrName as OptSObject<SO>)
     });
     return this;
   }
