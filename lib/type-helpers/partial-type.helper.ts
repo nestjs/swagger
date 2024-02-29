@@ -1,6 +1,7 @@
 import { Type } from '@nestjs/common';
 import {
   applyIsOptionalDecorator,
+  applyValidateIfDefinedDecorator,
   inheritPropertyInitializers,
   inheritTransformationMetadata,
   inheritValidationMetadata
@@ -15,7 +16,25 @@ import { clonePluginMetadataFactory } from './mapped-types.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
-export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
+export function PartialType<T>(
+  classRef: Type<T>,
+  /**
+   *  Configuration options.
+   */
+  options: {
+    /**
+     * If true, validations will be ignored on a property if it is either null or undefined. If
+     * false, validations will be ignored only if the property is undefined.
+     * @default true
+     */
+    skipNullProperties?: boolean;
+  } = {}
+): Type<Partial<T>> {
+  const applyPartialDecoratorFn =
+    options.skipNullProperties === false
+      ? applyValidateIfDefinedDecorator
+      : applyIsOptionalDecorator;
+
   const fields = modelPropertiesAccessor.getModelProperties(classRef.prototype);
 
   abstract class PartialTypeClass {
@@ -30,7 +49,7 @@ export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
   if (keysWithValidationConstraints) {
     keysWithValidationConstraints
       .filter((key) => !fields.includes(key))
-      .forEach((key) => applyIsOptionalDecorator(PartialTypeClass, key));
+      .forEach((key) => applyPartialDecoratorFn(PartialTypeClass, key));
   }
 
   inheritTransformationMetadata(classRef, PartialTypeClass);
@@ -48,7 +67,7 @@ export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
         PartialTypeClass[METADATA_FACTORY_NAME]()
       );
       pluginFields.forEach((key) =>
-        applyIsOptionalDecorator(PartialTypeClass, key)
+        applyPartialDecoratorFn(PartialTypeClass, key)
       );
     }
 
@@ -65,7 +84,7 @@ export function PartialType<T>(classRef: Type<T>): Type<Partial<T>> {
         required: false
       });
       decoratorFactory(PartialTypeClass.prototype, key);
-      applyIsOptionalDecorator(PartialTypeClass, key);
+      applyPartialDecoratorFn(PartialTypeClass, key);
     });
   }
   applyFields(fields);
