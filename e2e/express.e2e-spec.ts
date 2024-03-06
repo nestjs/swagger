@@ -46,7 +46,7 @@ describe('Express Swagger', () => {
     const doc = JSON.stringify(document, null, 2);
 
     try {
-      let api = await SwaggerParser.validate(document as any);
+      const api = await SwaggerParser.validate(document as any);
       console.log(
         'API name: %s, Version: %s',
         api.info.title,

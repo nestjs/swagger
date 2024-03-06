@@ -122,6 +122,9 @@ export function ApiPreconditionFailedResponse() {
 export function ApiPayloadTooLargeResponse() {
   return () => {};
 }
+export function ApiPaymentRequiredResponse() {
+  return () => {};
+}
 export function ApiRequestTimeoutResponse() {
   return () => {};
 }

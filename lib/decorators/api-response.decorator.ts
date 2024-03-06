@@ -211,6 +211,12 @@ export const ApiPayloadTooLargeResponse = (options: ApiResponseOptions = {}) =>
     status: HttpStatus.PAYLOAD_TOO_LARGE
   });
 
+export const ApiPaymentRequiredResponse = (options: ApiResponseOptions = {}) =>
+  ApiResponse({
+    ...options,
+    status: HttpStatus.PAYMENT_REQUIRED
+  });
+
 export const ApiRequestTimeoutResponse = (options: ApiResponseOptions = {}) =>
   ApiResponse({
     ...options,

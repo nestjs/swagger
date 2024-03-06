@@ -205,8 +205,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -277,8 +277,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -415,8 +415,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -474,8 +474,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -610,8 +610,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -662,8 +662,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -720,8 +720,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -784,8 +784,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -828,8 +828,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -885,8 +885,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -937,8 +937,8 @@
             "description": "Test",
             "required": false,
             "schema": {
-              "default": "test",
-              "type": "string"
+              "type": "string",
+              "default": "test"
             }
           },
           {
@@ -1049,6 +1049,9 @@
       },
       "LettersEnum": {
         "type": "string",
+        "description": "A small assortment of letters?",
+        "deprecated": true,
+        "default": "A",
         "enum": [
           "A",
           "B",
@@ -1128,6 +1131,9 @@
               "$ref": "#/components/schemas/LettersEnum"
             }
           },
+          "enumWithRef": {
+            "$ref": "#/components/schemas/LettersEnum"
+          },
           "tag": {
             "description": "tag",
             "allOf": [
@@ -1151,7 +1157,8 @@
           "options",
           "enumWithDescription",
           "enum",
-          "enumArr"
+          "enumArr",
+          "enumWithRef"
         ]
       },
       "Cat": {
@@ -1223,6 +1230,9 @@
                 "C"
               ]
             }
+          },
+          "enumWithRef": {
+            "$ref": "#/components/schemas/LettersEnum"
           }
         },
         "required": [
@@ -1234,7 +1244,8 @@
           "urls",
           "_options",
           "enum",
-          "enumArr"
+          "enumArr",
+          "enumWithRef"
         ]
       },
       "Letter": {

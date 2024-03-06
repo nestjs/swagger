@@ -4,6 +4,7 @@ export interface PluginOptions {
   dtoFileNameSuffix?: string | string[];
   controllerFileNameSuffix?: string | string[];
   classValidatorShim?: boolean;
+  classTransformerShim?: boolean | 'exclusive';
   dtoKeyOfComment?: string;
   controllerKeyOfComment?: string;
   introspectComments?: boolean;
@@ -17,6 +18,7 @@ const defaultOptions: PluginOptions = {
   dtoFileNameSuffix: ['.dto.ts', '.entity.ts'],
   controllerFileNameSuffix: ['.controller.ts'],
   classValidatorShim: true,
+  classTransformerShim: false,
   dtoKeyOfComment: 'description',
   controllerKeyOfComment: 'description',
   introspectComments: false,
