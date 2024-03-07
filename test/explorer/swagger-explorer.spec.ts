@@ -91,6 +91,14 @@ describe('SwaggerExplorer', () => {
       enumArr: LettersEnum;
     }
 
+    class ErrorEntitiesDto {
+      @ApiProperty()
+      isError: boolean;
+      
+      @ApiProperty()
+      reason: string;
+    }
+
     @Controller('')
     class FooController {
       @Post('foos')
@@ -98,6 +106,26 @@ describe('SwaggerExplorer', () => {
       @ApiCreatedResponse({
         type: Foo,
         description: 'Newly created Foo object'
+      })
+      @ApiBadRequestResponse({
+        type: Foo,
+        description: 'Invalid parameter error',
+        examples: {
+          ParameterInvalidName: {
+            summary: 'failure create foo object (invalid name)',
+            value: {
+              isError: true,
+              reason: 'Foo parameter name is invalid'
+            }
+          },
+          ParameterInvalidEmail: {
+            summary: 'failure create foo object (invalid email)',
+            value: {
+              isError: true,
+              reason: 'Foo parameter email is invalid'
+            }
+          }
+        }
       })
       create(
         @Body() createFoo: CreateFoo,
@@ -116,6 +144,22 @@ describe('SwaggerExplorer', () => {
         return Promise.resolve([]);
       }
     }
+
+    it('sees two examples for error responses by same response code', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+
+      expect((routes[0].responses['400'] as ResponseObject).content['application/json'].examples.ParameterInvalidName).toBeDefined();
+      expect((routes[0].responses['400'] as ResponseObject).content['application/json'].examples.ParameterInvalidEmail).toBeDefined();
+    });
 
     it('sees two controller operations and their responses', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
