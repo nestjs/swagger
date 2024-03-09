@@ -1,5 +1,8 @@
 import { ApiExtension, ApiProperty } from '../../lib/decorators';
-import { BaseParameterObject, SchemasObject } from '../../lib/interfaces/open-api-spec.interface';
+import {
+  BaseParameterObject,
+  SchemasObject
+} from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
@@ -337,15 +340,15 @@ describe('SchemaObjectFactory', () => {
         isArray: false,
         enumName: 'MyEnum',
         enum: ['a', 'b', 'c']
-      }
+      };
       const schemas = {};
-      schemaObjectFactory.createEnumParam(params, schemas)
+      schemaObjectFactory.createEnumParam(params, schemas);
 
       expect(schemas['MyEnum']).toEqual({
         enum: ['a', 'b', 'c'],
         type: 'string'
-      })
-    })
+      });
+    });
 
     it('should create an enum schema definition for an array', () => {
       const params: ParamWithTypeMetadata & BaseParameterObject = {
@@ -359,14 +362,14 @@ describe('SchemaObjectFactory', () => {
             enum: ['a', 'b', 'c']
           }
         }
-      }
+      };
       const schemas = {};
-      schemaObjectFactory.createEnumParam(params, schemas)
+      schemaObjectFactory.createEnumParam(params, schemas);
 
       expect(schemas['MyEnum']).toEqual({
         enum: ['a', 'b', 'c'],
         type: 'string'
-      })
-    })
-  })
+      });
+    });
+  });
 });
