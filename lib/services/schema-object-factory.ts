@@ -273,7 +273,7 @@ export class SchemaObjectFactory {
         : undefined;
 
       schemas[enumName] = {
-        type: param.schema?.['type'] ?? 'string',
+        type: (param.isArray ? param.schema?.['items']?.['type'] : param.schema?.['type']) ?? 'string',
         enum: _enum
       };
     }
