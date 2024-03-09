@@ -138,15 +138,18 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
   return formatFlags;
 }
 
-export function getMainCommentOfNode(
-  node: Node,
-  sourceFile: SourceFile
-): string {
+export function getDocComment(node: Node): DocComment {
   const tsdocParser: TSDocParser = new TSDocParser();
   const parserContext: ParserContext = tsdocParser.parseString(
     node.getFullText()
   );
-  const docComment: DocComment = parserContext.docComment;
+  return parserContext.docComment;
+}
+export function getMainCommentOfNode(
+  node: Node,
+  sourceFile: SourceFile
+): string {
+  const docComment = getDocComment(node);
   return renderDocNode(docComment.summarySection).trim();
 }
 
@@ -168,11 +171,7 @@ export function parseCommentDocValue(docValue: string, type: ts.Type) {
 }
 
 export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
-  const tsdocParser: TSDocParser = new TSDocParser();
-  const parserContext: ParserContext = tsdocParser.parseString(
-    node.getFullText()
-  );
-  const docComment: DocComment = parserContext.docComment;
+  const docComment = getDocComment(node);
 
   const tagDefinitions: {
     [key: string]: {
