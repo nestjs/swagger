@@ -20,7 +20,7 @@ export class ResponseObjectMapper {
             $ref: getSchemaPath(name)
           }
         },
-        ...(response.example ? { example: response.example } : {})
+        example: response.example
       })
     };
   }
@@ -32,7 +32,7 @@ export class ResponseObjectMapper {
         schema: {
           $ref: getSchemaPath(name)
         },
-        ...(response.example ? { example: response.example } : {})
+        example: response.example
       })
     };
   }
@@ -45,8 +45,8 @@ export class ResponseObjectMapper {
       return response;
     }
     const content = this.mimetypeContentWrapper.wrap(produces, {
-      ...(response.schema ? { schema: response.schema } : {}),
-      ...(response.example ? { example: response.example } : {})
+      schema: response.schema,
+      example: response.example
     });
     return {
       ...omit(response, ['schema', 'example']),
