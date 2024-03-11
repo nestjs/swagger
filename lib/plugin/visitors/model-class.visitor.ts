@@ -640,6 +640,14 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         assignments,
         options
       );
+      this.addPropertyByValidationDecorator(
+        factory,
+        'IsEnum',
+        'enum',
+        decorators,
+        assignments,
+        options
+      );
     }
     this.addPropertyByValidationDecorator(
       factory,
