@@ -1,5 +1,5 @@
 import { omit } from 'lodash';
-import { ApiResponseSchemaHost } from '../decorators';
+import { ApiResponseMetadata, ApiResponseSchemaHost } from '../decorators';
 import { getSchemaPath } from '../utils';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper';
 
@@ -19,7 +19,8 @@ export class ResponseObjectMapper {
           items: {
             $ref: getSchemaPath(name)
           }
-        }
+        },
+        ...(response.example ? { example: response.example } : {})
       })
     };
   }
@@ -30,20 +31,25 @@ export class ResponseObjectMapper {
       ...this.mimetypeContentWrapper.wrap(produces, {
         schema: {
           $ref: getSchemaPath(name)
-        }
+        },
+        ...(response.example ? { example: response.example } : {})
       })
     };
   }
 
-  wrapSchemaWithContent(response: ApiResponseSchemaHost, produces: string[]) {
-    if (!response.schema) {
+  wrapSchemaWithContent(
+    response: ApiResponseSchemaHost & ApiResponseMetadata,
+    produces: string[]
+  ) {
+    if (!response.schema && !response.example) {
       return response;
     }
     const content = this.mimetypeContentWrapper.wrap(produces, {
-      schema: response.schema
+      ...(response.schema ? { schema: response.schema } : {}),
+      ...(response.example ? { example: response.example } : {})
     });
     return {
-      ...omit(response, 'schema'),
+      ...omit(response, ['schema', 'example']),
       ...content
     };
   }
