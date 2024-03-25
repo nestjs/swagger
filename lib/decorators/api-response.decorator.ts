@@ -14,6 +14,7 @@ export interface ApiResponseMetadata
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   description?: string;
+  example?: any;
 }
 
 export interface ApiResponseSchemaHost
