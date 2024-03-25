@@ -70,8 +70,8 @@ export const htmlTemplateString = `
 
 <div id="swagger-ui"></div>
 
-<script src="<% baseUrl %>swagger-ui-bundle.js"> </script>
-<script src="<% baseUrl %>swagger-ui-standalone-preset.js"> </script>
+<script src="<% baseUrl %>swagger-ui-bundle.js" integrity="sha384-yrdF3mlUytUBwQyEVFAdwuUKEC9Qqrf+IUCgFgho4O5O6irf77pMjv36FN4eTpQD"> </script>
+<script src="<% baseUrl %>swagger-ui-standalone-preset.js" integrity="sha384-azzkurII4f+bjmZvm3hWhj7JezshyXtwobwneRyWCCIksK61Xi0Ry3xA2am9/TWp"> </script>
 <script src="<% baseUrl %>swagger-ui-init.js"> </script>
 <% customJs %>
 <% customJsStr %>
