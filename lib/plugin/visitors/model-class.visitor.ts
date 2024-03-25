@@ -631,10 +631,18 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const decorators = ts.canHaveDecorators(node) && ts.getDecorators(node);
 
     if (!options.readonly) {
-      // @IsIn() annotation is not supported in readonly mode
+      // @IsIn() and @IsEnum() decorator is not supported in readonly mode
       this.addPropertyByValidationDecorator(
         factory,
         'IsIn',
+        'enum',
+        decorators,
+        assignments,
+        options
+      );
+      this.addPropertyByValidationDecorator(
+        factory,
+        'IsEnum',
         'enum',
         decorators,
         assignments,
