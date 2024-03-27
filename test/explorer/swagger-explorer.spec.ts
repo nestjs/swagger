@@ -938,7 +938,7 @@ describe('SwaggerExplorer', () => {
       })
       @ApiQuery({ name: 'order', enum: QueryEnum })
       @ApiQuery({ name: 'page', enum: ['d', 'e', 'f'], isArray: true })
-      find(): Promise<Foo[]> {
+      find(@Param('objectId') objectId: ParamEnum): Promise<Foo[]> {
         return Promise.resolve([]);
       }
     }
@@ -952,7 +952,7 @@ describe('SwaggerExplorer', () => {
       })
       @ApiQuery({ name: 'order', enum: QueryEnum })
       @ApiQuery({ name: 'page', enum: ['d', 'e', 'f'] })
-      find(): Promise<Foo[]> {
+      find(@Param('objectId') objectId: ParamEnum, @Query('order') order: QueryEnum, @Query('page') page: 'd' | 'e' | 'f'): Promise<Foo[]> {
         return Promise.resolve([]);
       }
     }
@@ -972,7 +972,7 @@ describe('SwaggerExplorer', () => {
         enumName: 'QueryEnum',
         isArray: true
       })
-      findBar(): Promise<Foo> {
+      findBar(@Param('objectId') objectId: ParamEnum, @Query('order') order: QueryEnum, @Query('page') page: QueryEnum[]): Promise<Foo> {
         return Promise.resolve(null);
       }
     }
@@ -985,7 +985,7 @@ describe('SwaggerExplorer', () => {
         enum: [1, 2, 3],
         enumName: 'NumberEnum'
       })
-      findBar(): Promise<Foo> {
+      findBar(@Param('objectId') objectId: number): Promise<Foo> {
         return Promise.resolve(null);
       }
     }
@@ -1011,6 +1011,15 @@ describe('SwaggerExplorer', () => {
       );
       expect(routes[0].root!.parameters).toEqual([
         {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['a', 'b', 'c']
+          }
+        },
+        {
           in: 'query',
           name: 'page',
           required: true,
@@ -1030,15 +1039,6 @@ describe('SwaggerExplorer', () => {
             type: 'number',
             enum: [1, 2, 3]
           }
-        },
-        {
-          in: 'path',
-          name: 'objectId',
-          required: true,
-          schema: {
-            type: 'string',
-            enum: ['a', 'b', 'c']
-          }
         }
       ]);
     });
@@ -1056,12 +1056,12 @@ describe('SwaggerExplorer', () => {
 
       expect(routes[0].root!.parameters).toEqual([
         {
-          in: 'query',
-          name: 'page',
+          in: 'path',
+          name: 'objectId',
           required: true,
           schema: {
             type: 'string',
-            enum: ['d', 'e', 'f']
+            enum: ['a', 'b', 'c']
           }
         },
         {
@@ -1074,12 +1074,12 @@ describe('SwaggerExplorer', () => {
           }
         },
         {
-          in: 'path',
-          name: 'objectId',
+          in: 'query',
+          name: 'page',
           required: true,
           schema: {
             type: 'string',
-            enum: ['a', 'b', 'c']
+            enum: ['d', 'e', 'f']
           }
         }
       ]);
@@ -1099,14 +1099,11 @@ describe('SwaggerExplorer', () => {
 
       expect(routes[0].root!.parameters).toEqual([
         {
-          in: 'query',
-          name: 'page',
+          in: 'path',
+          name: 'objectId',
           required: true,
           schema: {
-            type: 'array',
-            items: {
-              $ref: '#/components/schemas/QueryEnum'
-            }
+            $ref: '#/components/schemas/ParamEnum'
           }
         },
         {
@@ -1118,11 +1115,14 @@ describe('SwaggerExplorer', () => {
           }
         },
         {
-          in: 'path',
-          name: 'objectId',
+          in: 'query',
+          name: 'page',
           required: true,
           schema: {
-            $ref: '#/components/schemas/ParamEnum'
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/QueryEnum'
+            }
           }
         }
       ]);
