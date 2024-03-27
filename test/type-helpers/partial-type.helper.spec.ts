@@ -21,8 +21,43 @@ describe('PartialType', () => {
   describe('Validation metadata', () => {
     it('should apply @IsOptional to properties reflected by the plugin', async () => {
       const updateDto = new UpdateUserDto();
+      updateDto.firstName = null;
       const validationErrors = await validate(updateDto);
       expect(validationErrors).toHaveLength(0);
+    });
+
+    it('should apply @IsOptional to properties reflected by the plugin if option `skipNullProperties` is true', async () => {
+      class UpdateUserWithNullableDto extends PartialType(CreateUserDto, {
+        skipNullProperties: true
+      }) {}
+      const updateDto = new UpdateUserWithNullableDto();
+      updateDto.firstName = null;
+      const validationErrors = await validate(updateDto);
+      expect(validationErrors).toHaveLength(0);
+    });
+
+    it('should apply @IsOptional to properties reflected by the plugin if option `skipNullProperties` is undefined', async () => {
+      class UpdateUserWithoutNullableDto extends PartialType(
+        CreateUserDto,
+        {}
+      ) {}
+      const updateDto = new UpdateUserWithoutNullableDto();
+      updateDto.firstName = null;
+      const validationErrors = await validate(updateDto);
+      expect(validationErrors).toHaveLength(0);
+    });
+
+    it('should apply @ValidateIf to properties reflected by the plugin if option `skipNullProperties` is false', async () => {
+      class UpdateUserWithoutNullableDto extends PartialType(CreateUserDto, {
+        skipNullProperties: false
+      }) {}
+      const updateDto = new UpdateUserWithoutNullableDto();
+      updateDto.firstName = null;
+      const validationErrors = await validate(updateDto);
+      expect(validationErrors).toHaveLength(1);
+      expect(validationErrors[0].constraints).toEqual({
+        isString: 'firstName must be a string'
+      });
     });
   });
   describe('OpenAPI metadata', () => {
