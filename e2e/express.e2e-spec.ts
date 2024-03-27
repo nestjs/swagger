@@ -86,7 +86,7 @@ describe('Express Swagger', () => {
       );
       SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
         // to showcase that in new implementation u can use custom swagger-ui path. Useful when using e.g. webpack
-        customSwaggerUiPath: path.resolve(`./node_modules/swagger-ui-dist`),
+        customSwaggerUiPath: path.resolve(`./node_modules/swagger-ui-dist`)
       });
 
       await app.init();
@@ -111,6 +111,55 @@ describe('Express Swagger', () => {
       );
 
       expect(response.status).toEqual(200);
+    });
+  });
+
+  describe('disabled Swagger UI but served JSON/YAML definitions', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
+        swaggerUiEnabled: false
+      });
+
+      await app.init();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('should serve the JSON definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-json`
+      );
+
+      expect(response.status).toEqual(200);
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
+
+    it('should serve the YAML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-yaml`
+      );
+
+      expect(response.status).toEqual(200);
+      expect(response.text.length).toBeGreaterThan(0);
+    });
+
+    it.each([
+      '/apidoc',
+      '/apidoc/',
+      '/apidoc/swagger-ui-bundle.js',
+      '/apidoc/swagger-ui-init.js'
+    ])('should not serve "%s"', async (file) => {
+      const response = await request(app.getHttpServer()).get(file);
+
+      expect(response.status).toEqual(404);
     });
   });
 
@@ -154,10 +203,10 @@ describe('Express Swagger', () => {
         `${JSON_CUSTOM_URL}?description=My%20custom%20description`
       );
 
-      expect(response.body.info.description).toBe("My custom description");
+      expect(response.body.info.description).toBe('My custom description');
     });
 
-    it('yaml document should be server in the custom url', async () => {
+    it('yaml document should be served in the custom url', async () => {
       const response = await request(app.getHttpServer()).get(YAML_CUSTOM_URL);
 
       expect(response.status).toEqual(200);
@@ -168,7 +217,7 @@ describe('Express Swagger', () => {
       const response = await request(app.getHttpServer()).get(
         `${YAML_CUSTOM_URL}?description=My%20custom%20description`
       );
-      expect(response.text).toContain("My custom description");
+      expect(response.text).toContain('My custom description');
     });
   });
 
@@ -244,13 +293,17 @@ describe('Express Swagger', () => {
         customfavIcon: CUSTOM_FAVICON,
         customSiteTitle: CUSTOM_SITE_TITLE,
         customCssUrl: CUSTOM_CSS_URL,
-        patchDocumentOnRequest<ExpressRequest, ExpressResponse> (req, res, document) {
+        patchDocumentOnRequest<ExpressRequest, ExpressResponse>(
+          req,
+          res,
+          document
+        ) {
           return {
             ...document,
             info: {
               description: req.query.description
             }
-          }
+          };
         }
       });
 
@@ -313,23 +366,29 @@ describe('Express Swagger', () => {
       );
 
       SwaggerModule.setup('/:customer/', app, swaggerDocument, {
-        patchDocumentOnRequest<ExpressRequest, ExpressResponse> (req, res, document) {
+        patchDocumentOnRequest<ExpressRequest, ExpressResponse>(
+          req,
+          res,
+          document
+        ) {
           return {
             ...document,
             info: {
               description: `${req.params.customer}'s API documentation`
             }
-          }
+          };
         }
       });
 
       await app.init();
 
-      const response: Response = await request(app.getHttpServer()).get('/customer-1/swagger-ui-init.js');
+      const response: Response = await request(app.getHttpServer()).get(
+        '/customer-1/swagger-ui-init.js'
+      );
 
       await app.close();
       expect(response.text).toContain("customer-1's API documentation");
-    })
+    });
 
     afterEach(async () => {
       await app.close();
