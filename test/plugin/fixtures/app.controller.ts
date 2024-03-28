@@ -11,6 +11,10 @@ export class AppController {
    * create a Cat
    * 
    * @remarks Creating a test cat
+   * 
+   * @throws {500} Something is wrong.
+   * @throws {400} Bad Request.
+   * @throws {400} Missing parameters.
    *
    * @returns {Promise<Cat>}
    * @memberof AppController
@@ -75,6 +79,10 @@ let AppController = exports.AppController = class AppController {
      *
      * @remarks Creating a test cat
      *
+     * @throws {500} Something is wrong.
+     * @throws {400} Bad Request.
+     * @throws {400} Missing parameters.
+     *
      * @returns {Promise<Cat>}
      * @memberof AppController
      */
@@ -109,6 +117,9 @@ let AppController = exports.AppController = class AppController {
 };
 __decorate([
     openapi.ApiOperation({ summary: \"create a Cat\", description: \"Creating a test cat\" }),
+    openapi.ApiResponse({ status: 500, description: "Something is wrong." }),
+    openapi.ApiResponse({ status: 400, description: "Bad Request." }),
+    openapi.ApiResponse({ status: 400, description: "Missing parameters." }),
     (0, common_1.Post)(),
     openapi.ApiResponse({ status: 201, type: Cat })
 ], AppController.prototype, \"create\", null);
