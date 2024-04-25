@@ -1087,6 +1087,7 @@ describe('SwaggerExplorer', () => {
 
     it('should properly define enum as schema with lazy function', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const schema = explorer.getSchemas();
       const routes = explorer.exploreController(
         {
           instance: new BarController(),
@@ -1096,6 +1097,12 @@ describe('SwaggerExplorer', () => {
         'modulePath',
         'globalPrefix'
       );
+
+      expect(schema.QueryEnum).toEqual({ type: 'number', enum: [1, 2, 3] });
+      expect(schema.ParamEnum).toEqual({
+        type: 'string',
+        enum: ['a', 'b', 'c']
+      });
 
       expect(routes[0].root!.parameters).toEqual([
         {

@@ -262,18 +262,29 @@ export class SchemaObjectFactory {
     const $ref = getSchemaPath(enumName);
 
     if (!(enumName in schemas)) {
-      const _enum = param.enum
-        ? param.enum
-        : param.schema
-        ? param.schema['items']
-          ? param.schema['items']['enum']
-          : param.schema['enum']
-        : param.isArray && param.items
-        ? param.items.enum
-        : undefined;
+      let _enum;
+      let _type;
+      if (param.enum) {
+        _enum = param.enum;
+        _type = param.type;
+      } else if (param.schema) {
+        if (param.schema['items']) {
+          _enum = param.schema['items']['enum'];
+          _type = param.schema['items']['type'];
+        } else {
+          _enum = param.schema['enum'];
+          _type = param.schema['type'];
+        }
+      } else if (param.isArray && param.items) {
+        _enum = param.items.enum;
+        _type = param.items.type;
+      } else {
+        _enum = undefined;
+        _type = 'string';
+      }
 
       schemas[enumName] = {
-        type: param.schema?.['type'] ?? 'string',
+        type: _type ?? 'string',
         enum: _enum
       };
     }
