@@ -3,7 +3,11 @@ import { SchemaObject } from '../interfaces/open-api-spec.interface';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
 import { SwaggerEnumType } from '../types/swagger-enum.type';
 
-export function getEnumValues(enumType: SwaggerEnumType): string[] | number[] {
+export function getEnumValues(enumType: SwaggerEnumType | (() => SwaggerEnumType)): string[] | number[] {
+  if (typeof enumType === 'function') {
+    return getEnumValues(enumType());
+  }
+
   if (Array.isArray(enumType)) {
     return enumType as string[];
   }

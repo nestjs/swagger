@@ -6,7 +6,7 @@ import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers';
 export interface ApiPropertyOptions
   extends Omit<SchemaObjectMetadata, 'name' | 'enum'> {
   name?: string;
-  enum?: any[] | Record<string, any>;
+  enum?: any[] | Record<string, any> | (() => (any[] | Record<string, any>));
   enumName?: string;
 }
 

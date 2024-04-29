@@ -38,6 +38,12 @@ describe('SchemaObjectFactory', () => {
       Third = 3
     }
 
+    enum HairColour {
+      Brown = 'Brown',
+      Blond = 'Blond',
+      Ginger = 'Ginger',
+    }
+
     class CreatePersonDto {
       @ApiProperty()
       name: string;
@@ -57,13 +63,19 @@ describe('SchemaObjectFactory', () => {
 
       @ApiProperty({ enum: Ranking, enumName: 'Ranking', isArray: true })
       rankings: Ranking[];
+
+      @ApiProperty({ enum: () => HairColour, enumName: 'HairColour' })
+      hairColour: HairColour;
+
+      @ApiProperty({ enum: () => ['Pizza', 'Burger', 'Salad'], enumName: 'Food', isArray: true })
+      favouriteFoods: string[];
     }
 
     it('should explore enum', () => {
       const schemas: Record<string, SchemasObject> = {};
       schemaObjectFactory.exploreModelSchema(Person, schemas);
 
-      expect(Object.keys(schemas)).toHaveLength(4);
+      expect(Object.keys(schemas)).toHaveLength(6);
 
       expect(schemas).toHaveProperty('Role');
       expect(schemas.Role).toEqual({
@@ -77,6 +89,10 @@ describe('SchemaObjectFactory', () => {
       expect(schemas.Ranking).toEqual({
         type: 'number',
         enum: [1, 2, 3]
+      });
+      expect(schemas.HairColour).toEqual({
+        type: 'string',
+        enum: ['Brown', 'Blond', 'Ginger']
       });
       expect(schemas).toHaveProperty('Person');
       expect(schemas.Person).toEqual({
@@ -102,13 +118,22 @@ describe('SchemaObjectFactory', () => {
             items: {
               $ref: '#/components/schemas/Ranking'
             }
+          },
+          'favouriteFoods': {
+            'items': {
+              '$ref': '#/components/schemas/Food'
+            },
+            'type': 'array'
+          },
+          'hairColour': {
+            '$ref': '#/components/schemas/HairColour'
           }
         },
-        required: ['role', 'roles', 'groups', 'rankings']
+        required: ['role', 'roles', 'groups', 'rankings', 'hairColour', 'favouriteFoods']
       });
       schemaObjectFactory.exploreModelSchema(CreatePersonDto, schemas);
 
-      expect(Object.keys(schemas)).toHaveLength(5);
+      expect(Object.keys(schemas)).toHaveLength(7);
       expect(schemas).toHaveProperty('CreatePersonDto');
       expect(schemas.CreatePersonDto).toEqual({
         type: 'object',
