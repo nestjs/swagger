@@ -365,7 +365,7 @@ export class SchemaObjectFactory {
     if (metadata.isArray) {
       return this.transformToArraySchemaProperty(metadata, key, { $ref });
     }
-    const keysToRemove = ['type', 'isArray', 'required'];
+    const keysToRemove = ['type', 'isArray', 'required', 'name'];
     const validMetadataObject = omit(metadata, keysToRemove);
     const extraMetadataKeys = Object.keys(validMetadataObject);
 

@@ -10,7 +10,8 @@ export class CreateProfileDto {
   lastname: string;
 
   @ApiProperty({
-    type: () => CreateUserDto
+    type: () => CreateUserDto,
+    name: 'parent'
   })
   parent: CreateUserDto;
 }
