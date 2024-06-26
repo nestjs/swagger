@@ -171,7 +171,7 @@ export function getSchemaPath() {
   return () => '';
 }
 export function refs() {
-  return () => '';
+  return [];
 }
 export function before() {
   return () => '';
