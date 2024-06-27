@@ -17,6 +17,7 @@ export function buildSwaggerInitJS(
   };
 
   const jsInitOptions = buildJSInitOptions(swaggerInitOptions);
+  // Cannot dynamically compute integrity: https://github.com/nestjs/swagger/issues/2667#issuecomment-1780515512
   return jsTemplateString.replace('<% swaggerOptions %>', jsInitOptions);
 }
 
@@ -34,20 +35,30 @@ export function getSwaggerAssetsAbsoluteFSPath() {
   return swaggerAssetsAbsoluteFSPath;
 }
 
-function toExternalScriptTag(url: string) {
-  return `<script src='${url}'></script>`;
+function toExternalScriptTag(url: string, integrity?: string) {
+  // Cannot dynamically compute integrity: https://github.com/nestjs/swagger/issues/2667#issuecomment-1780515512
+  return `<script src='${url}' ${
+    !!integrity ? `integrity="${integrity}"` : ''
+  }></script>`.replace(/\s+>/g, '>');
 }
 
-function toInlineScriptTag(jsCode: string) {
-  return `<script>${jsCode}</script>`;
+function toInlineScriptTag(jsCode: string, integrity?: string) {
+  // Cannot dynamically compute integrity: https://github.com/nestjs/swagger/issues/2667#issuecomment-1780515512
+  return `<script ${
+    !!integrity ? `integrity="${integrity}"` : ''
+  }>${jsCode}</script>`.replace(/\s+>/g, '>');
 }
 
-function toExternalStylesheetTag(url: string) {
-  return `<link href='${url}' rel='stylesheet'>`;
+function toExternalStylesheetTag(url: string, integrity?: string) {
+  // Cannot dynamically compute integrity: https://github.com/nestjs/swagger/issues/2667#issuecomment-1780515512
+  return `<link href='${url}' rel='stylesheet' ${
+    !!integrity ? `integrity="${integrity}"` : ''
+  }>`.replace(/\s+>/g, '>');
 }
 
 function toTags(
   customCode: string | string[] | undefined,
+  integrity: typeof customCode,
   toScript: (url: string) => string
 ) {
   if (!customCode) {
@@ -71,11 +82,11 @@ export function buildSwaggerHTML(
 ) {
   const {
     customCss = '',
-    customJs = '',
-    customJsStr = '',
+    customJs: { customJs = '', customJsIntegrity = null },
+    customJsStr: { customJsStr = '', customJsStrIntegrity = null },
     customfavIcon = false,
     customSiteTitle = 'Swagger UI',
-    customCssUrl = '',
+    customCssUrl: { customCssUrl = '', customCssUrlIntegrity = null },
     explorer = false
   } = customOptions;
 
@@ -91,11 +102,17 @@ export function buildSwaggerHTML(
     .replace('<% explorerCss %>', explorerCss)
     .replace('<% favIconString %>', favIconString)
     .replace(/<% baseUrl %>/g, baseUrl)
-    .replace('<% customJs %>', toTags(customJs, toExternalScriptTag))
-    .replace('<% customJsStr %>', toTags(customJsStr, toInlineScriptTag))
+    .replace(
+      '<% customJs %>',
+      toTags(customJs, customJsIntegrity, toExternalScriptTag)
+    )
+    .replace(
+      '<% customJsStr %>',
+      toTags(customJsStr, customJsStrIntegrity, toInlineScriptTag)
+    )
     .replace(
       '<% customCssUrl %>',
-      toTags(customCssUrl, toExternalStylesheetTag)
+      toTags(customCssUrl, customCssUrlIntegrity, toExternalStylesheetTag)
     )
     .replace('<% title %>', customSiteTitle);
 }
