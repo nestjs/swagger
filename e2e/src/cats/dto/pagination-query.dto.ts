@@ -8,9 +8,11 @@ export enum LettersEnum {
 
 export class PaginationQuery {
   @ApiProperty({
-    exclusiveMinimum: 0,
-    exclusiveMaximum: 10000,
+    minimum: 0,
+    maximum: 10000,
     title: 'Page',
+    exclusiveMaximum: true,
+    exclusiveMinimum: true,
     format: 'int32',
     default: 0
   })

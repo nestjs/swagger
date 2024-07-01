@@ -219,9 +219,9 @@ export interface SchemaObject {
   title?: string;
   multipleOf?: number;
   maximum?: number;
-  exclusiveMaximum?: boolean | number;
+  exclusiveMaximum?: boolean;
   minimum?: number;
-  exclusiveMinimum?: boolean | number;
+  exclusiveMinimum?: boolean;
   maxLength?: number;
   minLength?: number;
   pattern?: string;
