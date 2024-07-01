@@ -85,6 +85,7 @@ export class SwaggerModule {
     httpAdapter: HttpServer,
     documentOrFactory: OpenAPIObject | (() => OpenAPIObject),
     options: {
+      swaggerUiEnabled: boolean;
       jsonDocumentUrl: string;
       yamlDocumentUrl: string;
       swaggerOptions: SwaggerCustomOptions;
@@ -92,41 +93,64 @@ export class SwaggerModule {
   ) {
     let document: OpenAPIObject;
 
-    const lazyBuildDocument = () => {
-      return typeof documentOrFactory === 'function'
-        ? documentOrFactory()
-        : documentOrFactory;
+    const getBuiltDocument = () => {
+      if (!document) {
+        document =
+          typeof documentOrFactory === 'function'
+            ? documentOrFactory()
+            : documentOrFactory;
+      }
+      return document;
     };
 
+    if (options.swaggerUiEnabled) {
+      this.serveSwaggerUi(
+        finalPath,
+        urlLastSubdirectory,
+        httpAdapter,
+        getBuiltDocument,
+        options.swaggerOptions
+      );
+    }
+    this.serveDefinitions(httpAdapter, getBuiltDocument, options);
+  }
+
+  private static serveSwaggerUi(
+    finalPath: string,
+    urlLastSubdirectory: string,
+    httpAdapter: HttpServer,
+    getBuiltDocument: () => OpenAPIObject,
+    swaggerOptions: SwaggerCustomOptions
+  ) {
     const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
 
-    let html: string;
-    let swaggerInitJS: string;
+    let swaggerUiHtml: string;
+    let swaggerUiInitJS: string;
 
     httpAdapter.get(
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
       (req, res) => {
         res.type('application/javascript');
+        const document = getBuiltDocument();
 
-        if (!document) {
-          document = lazyBuildDocument();
-        }
-
-        if (options.swaggerOptions.patchDocumentOnRequest) {
-          const documentToSerialize =
-            options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+        if (swaggerOptions.patchDocumentOnRequest) {
+          const documentToSerialize = swaggerOptions.patchDocumentOnRequest(
+            req,
+            res,
+            document
+          );
           const swaggerInitJsPerRequest = buildSwaggerInitJS(
             documentToSerialize,
-            options.swaggerOptions
+            swaggerOptions
           );
           return res.send(swaggerInitJsPerRequest);
         }
 
-        if (!swaggerInitJS) {
-          swaggerInitJS = buildSwaggerInitJS(document, options.swaggerOptions);
+        if (!swaggerUiInitJS) {
+          swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
         }
 
-        res.send(swaggerInitJS);
+        res.send(swaggerUiInitJS);
       }
     );
 
@@ -141,29 +165,26 @@ export class SwaggerModule {
         ),
         (req, res) => {
           res.type('application/javascript');
+          const document = getBuiltDocument();
 
-          if (!document) {
-            document = lazyBuildDocument();
-          }
-
-          if (options.swaggerOptions.patchDocumentOnRequest) {
-            const documentToSerialize =
-              options.swaggerOptions.patchDocumentOnRequest(req, res, document);
+          if (swaggerOptions.patchDocumentOnRequest) {
+            const documentToSerialize = swaggerOptions.patchDocumentOnRequest(
+              req,
+              res,
+              document
+            );
             const swaggerInitJsPerRequest = buildSwaggerInitJS(
               documentToSerialize,
-              options.swaggerOptions
+              swaggerOptions
             );
             return res.send(swaggerInitJsPerRequest);
           }
 
-          if (!swaggerInitJS) {
-            swaggerInitJS = buildSwaggerInitJS(
-              document,
-              options.swaggerOptions
-            );
+          if (!swaggerUiInitJS) {
+            swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
           }
 
-          res.send(swaggerInitJS);
+          res.send(swaggerUiInitJS);
         }
       );
     } catch (err) {
@@ -173,63 +194,26 @@ export class SwaggerModule {
        */
     }
 
-    httpAdapter.get(finalPath, (req, res) => {
+    httpAdapter.get(finalPath, (_, res) => {
       res.type('text/html');
 
-      if (!document) {
-        document = lazyBuildDocument();
+      if (!swaggerUiHtml) {
+        swaggerUiHtml = buildSwaggerHTML(baseUrlForSwaggerUI, swaggerOptions);
       }
 
-      if (options.swaggerOptions.patchDocumentOnRequest) {
-        const documentToSerialize =
-          options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-        const htmlPerRequest = buildSwaggerHTML(
-          baseUrlForSwaggerUI,
-          documentToSerialize,
-          options.swaggerOptions
-        );
-        return res.send(htmlPerRequest);
-      }
-
-      if (!html) {
-        html = buildSwaggerHTML(
-          baseUrlForSwaggerUI,
-          document,
-          options.swaggerOptions
-        );
-      }
-
-      res.send(html);
+      res.send(swaggerUiHtml);
     });
 
     // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
     try {
-      httpAdapter.get(normalizeRelPath(`${finalPath}/`), (req, res) => {
+      httpAdapter.get(normalizeRelPath(`${finalPath}/`), (_, res) => {
         res.type('text/html');
 
-        if (!document) {
-          document = lazyBuildDocument();
+        if (!swaggerUiHtml) {
+          swaggerUiHtml = buildSwaggerHTML(baseUrlForSwaggerUI, swaggerOptions);
         }
 
-        if (options.swaggerOptions.patchDocumentOnRequest) {
-          const documentToSerialize =
-            options.swaggerOptions.patchDocumentOnRequest(req, res, document);
-          const htmlPerRequest = buildSwaggerHTML(
-            baseUrlForSwaggerUI,
-            documentToSerialize,
-            options.swaggerOptions
-          );
-          return res.send(htmlPerRequest);
-        }
-
-        if (!html) {
-          html = buildSwaggerHTML(
-            baseUrlForSwaggerUI,
-            document,
-            options.swaggerOptions
-          );
-        }
-        res.send(html);
+        res.send(swaggerUiHtml);
       });
     } catch (err) {
       /**
@@ -239,13 +223,20 @@ export class SwaggerModule {
        * We can simply ignore that error here.
        */
     }
+  }
 
+  private static serveDefinitions(
+    httpAdapter: HttpServer,
+    getBuiltDocument: () => OpenAPIObject,
+    options: {
+      jsonDocumentUrl: string;
+      yamlDocumentUrl: string;
+      swaggerOptions: SwaggerCustomOptions;
+    }
+  ) {
     httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
       res.type('application/json');
-
-      if (!document) {
-        document = lazyBuildDocument();
-      }
+      const document = getBuiltDocument();
 
       const documentToSerialize = options.swaggerOptions.patchDocumentOnRequest
         ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
@@ -256,10 +247,7 @@ export class SwaggerModule {
 
     httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
       res.type('text/yaml');
-
-      if (!document) {
-        document = lazyBuildDocument();
-      }
+      const document = getBuiltDocument();
 
       const documentToSerialize = options.swaggerOptions.patchDocumentOnRequest
         ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
@@ -299,6 +287,8 @@ export class SwaggerModule {
       ? `${validatedGlobalPrefix}${validatePath(options.yamlDocumentUrl)}`
       : `${finalPath}-yaml`;
 
+    const swaggerUiEnabled = options?.swaggerUiEnabled ?? true;
+
     const httpAdapter = app.getHttpAdapter();
 
     SwaggerModule.serveDocuments(
@@ -307,24 +297,27 @@ export class SwaggerModule {
       httpAdapter,
       documentOrFactory,
       {
+        swaggerUiEnabled,
         jsonDocumentUrl: finalJSONDocumentPath,
         yamlDocumentUrl: finalYAMLDocumentPath,
         swaggerOptions: options || {}
       }
     );
 
-    SwaggerModule.serveStatic(finalPath, app, options?.customSwaggerUiPath);
-    /**
-     * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
-     * @see https://github.com/nestjs/swagger/issues/1976
-     */
-    const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
-    /**
-     *  serveStaticSlashEndingPath === finalPath when path === '' || path === '/'
-     *  in that case we don't need to serve swagger assets on extra sub path
-     */
-    if (serveStaticSlashEndingPath !== finalPath) {
-      SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
+    if (swaggerUiEnabled) {
+      SwaggerModule.serveStatic(finalPath, app, options?.customSwaggerUiPath);
+      /**
+       * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
+       * @see https://github.com/nestjs/swagger/issues/1976
+       */
+      const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
+      /**
+       *  serveStaticSlashEndingPath === finalPath when path === '' || path === '/'
+       *  in that case we don't need to serve swagger assets on extra sub path
+       */
+      if (serveStaticSlashEndingPath !== finalPath) {
+        SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
+      }
     }
   }
 }
