@@ -103,7 +103,11 @@ describe('SwaggerExplorer', () => {
       @ApiOperation({ summary: 'Create foo' })
       @ApiCreatedResponse({
         type: Foo,
-        description: 'Newly created Foo object'
+        description: 'Newly created Foo object',
+        example: {
+          id: 'foo',
+          name: 'Foo'
+        }
       })
       create(
         @Body() createFoo: CreateFoo,
@@ -144,7 +148,11 @@ describe('SwaggerExplorer', () => {
       @Post('foos')
       @ApiCreatedResponse({
         type: Foo,
-        description: 'Newly created Foo object'
+        description: 'Newly created Foo object',
+        example: {
+          id: 'foo',
+          name: 'Foo'
+        }
       })
       create(
         @Body() createFoo: CreateFoo,
@@ -164,7 +172,11 @@ describe('SwaggerExplorer', () => {
       static [METADATA_FACTORY_NAME]() {
         return {
           create: {
-            summary: 'Create foo'
+            summary: 'Create foo',
+            example: {
+              id: 'foo',
+              name: 'Foo'
+            }
           },
           find: {
             summary: 'List all Foos',
@@ -315,7 +327,8 @@ describe('SwaggerExplorer', () => {
       ).toEqual({
         schema: {
           $ref: '#/components/schemas/Foo'
-        }
+        },
+        example: { id: 'foo', name: 'Foo' }
       });
 
       // GET
