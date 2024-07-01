@@ -1,9 +1,13 @@
 import { ApiExtension, ApiProperty } from '../../lib/decorators';
-import { SchemasObject } from '../../lib/interfaces/open-api-spec.interface';
+import {
+  BaseParameterObject,
+  SchemasObject
+} from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { CreateUserDto } from './fixtures/create-user.dto';
+import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 
 describe('SchemaObjectFactory', () => {
   let modelPropertiesAccessor: ModelPropertiesAccessor;
@@ -351,6 +355,46 @@ describe('SchemaObjectFactory', () => {
       schemaObjectFactory.createEnumSchemaType('field', metadata, schemas);
 
       expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number' } });
+    });
+  });
+
+  describe('createEnumParam', () => {
+    it('should create an enum schema definition', () => {
+      const params: ParamWithTypeMetadata & BaseParameterObject = {
+        required: true,
+        isArray: false,
+        enumName: 'MyEnum',
+        enum: ['a', 'b', 'c']
+      };
+      const schemas = {};
+      schemaObjectFactory.createEnumParam(params, schemas);
+
+      expect(schemas['MyEnum']).toEqual({
+        enum: ['a', 'b', 'c'],
+        type: 'string'
+      });
+    });
+
+    it('should create an enum schema definition for an array', () => {
+      const params: ParamWithTypeMetadata & BaseParameterObject = {
+        required: true,
+        isArray: true,
+        enumName: 'MyEnum',
+        schema: {
+          type: 'array',
+          items: {
+            type: 'string',
+            enum: ['a', 'b', 'c']
+          }
+        }
+      };
+      const schemas = {};
+      schemaObjectFactory.createEnumParam(params, schemas);
+
+      expect(schemas['MyEnum']).toEqual({
+        enum: ['a', 'b', 'c'],
+        type: 'string'
+      });
     });
   });
 });
