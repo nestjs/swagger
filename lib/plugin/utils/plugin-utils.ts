@@ -125,7 +125,7 @@ export function getTypeReferenceAsString(
 }
 
 export function isPromiseOrObservable(type: string) {
-  return type.includes('Promise') || type.includes('Observable');
+  return type.includes('Promise<') || type.includes('Observable<');
 }
 
 export function hasPropertyKey(

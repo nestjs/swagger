@@ -3,6 +3,10 @@ import { ApiOperation } from '@nestjs/swagger';
 
 class Cat {}
 
+class PromiseCat {}
+
+class ObservableCat {}
+
 @Controller('cats')
 export class AppController {
   onApplicationBootstrap() {}
@@ -40,6 +44,24 @@ export class AppController {
   async testCreate2(): Promise<Cat> {}
 
   /**
+   * create a test PromiseCat
+   *
+   * @returns {Promise<PromiseCat>>}
+   * @memberof AppController
+   */
+  @Post()
+  async testCreate3(): Promise<PromiseCat> {}
+
+  /**
+   * create a test ObservableCat
+   *
+   * @returns {Promise<ObservableCat>}
+   * @memberof AppController
+   */
+  @Post()
+  async testCreate4(): Promise<ObservableCat> {}
+
+  /**
    * find a Cat
    */
   @ApiOperation({})
@@ -67,6 +89,10 @@ const openapi = require(\"@nestjs/swagger\");
 const common_1 = require(\"@nestjs/common\");
 const swagger_1 = require(\"@nestjs/swagger\");
 class Cat {
+}
+class PromiseCat {
+}
+class ObservableCat {
 }
 let AppController = exports.AppController = class AppController {
     onApplicationBootstrap() { }
@@ -96,6 +122,20 @@ let AppController = exports.AppController = class AppController {
      */
     async testCreate2() { }
     /**
+     * create a test PromiseCat
+     *
+     * @returns {Promise<PromiseCat>>}
+     * @memberof AppController
+     */
+    async testCreate3() { }
+    /**
+     * create a test ObservableCat
+     *
+     * @returns {Promise<ObservableCat>}
+     * @memberof AppController
+     */
+    async testCreate4() { }
+    /**
      * find a Cat
      */
     async findOne() { }
@@ -122,6 +162,16 @@ __decorate([
     (0, common_1.Post)(),
     openapi.ApiResponse({ status: 201, type: Cat })
 ], AppController.prototype, \"testCreate2\", null);
+__decorate([
+    openapi.ApiOperation({ summary: \"create a test PromiseCat\" }),
+    (0, common_1.Post)(),
+    openapi.ApiResponse({ status: 201, type: PromiseCat })
+], AppController.prototype, \"testCreate3\", null);
+__decorate([
+    openapi.ApiOperation({ summary: \"create a test ObservableCat\" }),
+    (0, common_1.Post)(),
+    openapi.ApiResponse({ status: 201, type: ObservableCat })
+], AppController.prototype, \"testCreate4\", null);
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: \"find a Cat\" }),
     Get(),
