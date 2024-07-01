@@ -170,6 +170,9 @@ export function PickType() {
 export function getSchemaPath() {
   return () => '';
 }
+export function refs() {
+  return [];
+}
 export function before() {
   return () => '';
 }
