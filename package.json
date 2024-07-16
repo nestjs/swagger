@@ -41,7 +41,7 @@
     "@nestjs/platform-fastify": "10.3.10",
     "@types/jest": "29.5.12",
     "@types/js-yaml": "4.0.9",
-    "@types/lodash": "4.17.6",
+    "@types/lodash": "4.17.7",
     "@types/node": "20.14.10",
     "@typescript-eslint/eslint-plugin": "7.16.1",
     "@typescript-eslint/parser": "7.16.1",
