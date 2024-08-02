@@ -28,6 +28,10 @@ import {
 } from '../utils/plugin-utils';
 import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util';
 import { AbstractFileVisitor } from './abstract.visitor';
+import {
+  getExternalImports,
+  replaceExternalImportsInTypeReference
+} from '../utils/external-imports.util';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
@@ -62,6 +66,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     program: ts.Program,
     options: PluginOptions
   ) {
+    const externalImports = getExternalImports(sourceFile);
     const typeChecker = program.getTypeChecker();
     sourceFile = this.updateImports(sourceFile, ctx.factory, program);
 
@@ -76,7 +81,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
               typeChecker,
               options,
               sourceFile,
-              metadata
+              metadata,
+              externalImports
             );
           } else if (
             options.parameterProperties &&
@@ -87,7 +93,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
               typeChecker,
               options,
               sourceFile,
-              metadata
+              metadata,
+              externalImports
             );
           }
           return node;
@@ -153,7 +160,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     options: PluginOptions,
     sourceFile: ts.SourceFile,
-    metadata: ClassMetadata
+    metadata: ClassMetadata,
+    externalImports: Record<string, string>
   ) {
     const isPropertyStatic = (node.modifiers || []).some(
       (modifier: ts.Modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword
@@ -200,7 +208,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         options,
         sourceFile.fileName,
         sourceFile,
-        metadata
+        metadata,
+        externalImports
       );
     } catch (err) {
       return node;
@@ -212,7 +221,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     options: PluginOptions,
     sourceFile: ts.SourceFile,
-    metadata: ClassMetadata
+    metadata: ClassMetadata,
+    externalImports: Record<string, string>
   ) {
     constructorNode.forEachChild((node) => {
       if (
@@ -233,7 +243,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           factory.createNodeArray(),
           options,
           sourceFile.fileName,
-          sourceFile
+          sourceFile,
+          externalImports
         );
 
         const propertyName = node.name.getText();
@@ -299,7 +310,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     options: PluginOptions,
     hostFilename: string,
     sourceFile: ts.SourceFile,
-    metadata: ClassMetadata
+    metadata: ClassMetadata,
+    externalImports: Record<string, string>
   ) {
     const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
       factory,
@@ -308,7 +320,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       factory.createNodeArray(),
       options,
       hostFilename,
-      sourceFile
+      sourceFile,
+      externalImports
     );
     this.addClassMetadata(
       compilerNode,
@@ -328,7 +341,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     existingProperties: ts.NodeArray<ts.PropertyAssignment> = factory.createNodeArray(),
     options: PluginOptions = {},
     hostFilename = '',
-    sourceFile?: ts.SourceFile
+    sourceFile?: ts.SourceFile,
+    externalImports: Record<string, string> = {}
   ): ts.ObjectLiteralExpression {
     const isRequired = !node.questionToken;
 
@@ -367,7 +381,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         typeChecker,
         existingProperties,
         hostFilename,
-        options
+        options,
+        externalImports
       )
     ];
     if (
@@ -524,7 +539,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string,
-    options: PluginOptions
+    options: PluginOptions,
+    externalImports: Record<string, string>
   ) {
     const key = 'enum';
     if (hasPropertyKey(key, existingProperties)) {
@@ -561,8 +577,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       isArrayType = typeIsArrayTuple.isArray;
       type = typeIsArrayTuple.type;
     }
-
-    const typeReferenceDescriptor = { typeName: getText(type, typeChecker) };
+    const typeReferenceDescriptor = {
+      typeName: replaceExternalImportsInTypeReference(
+        getText(type, typeChecker),
+        externalImports
+      )
+    };
     const enumIdentifier = typeReferenceToIdentifier(
       typeReferenceDescriptor,
       hostFilename,
