@@ -157,7 +157,8 @@ export class SwaggerTypesMapper {
       'format',
       'pattern',
       'nullable',
-      'default'
+      'default',
+      'example'
     ];
   }
 }
