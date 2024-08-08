@@ -52,7 +52,7 @@ import {
 } from './explorers/api-security.explorer';
 import {
   exploreApiTagsMetadata,
-  exploreGlobalApiTagsMetadata
+  exploreGlobalApiTagsMetadata,
 } from './explorers/api-use-tags.explorer';
 import { OperationIdFactory } from './interfaces';
 import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolvers.interface';
@@ -83,7 +83,8 @@ export class SwaggerExplorer {
     applicationConfig: ApplicationConfig,
     modulePath?: string | undefined,
     globalPrefix?: string | undefined,
-    operationIdFactory?: OperationIdFactory
+    operationIdFactory?: OperationIdFactory,
+    includeControllerTag?: boolean
   ) {
     this.routePathFactory = new RoutePathFactory(applicationConfig);
     if (operationIdFactory) {
@@ -109,7 +110,8 @@ export class SwaggerExplorer {
       documentResolvers,
       applicationConfig,
       modulePath,
-      globalPrefix
+      globalPrefix,
+      includeControllerTag,
     );
   }
 
@@ -124,7 +126,8 @@ export class SwaggerExplorer {
     documentResolvers: DenormalizedDocResolvers,
     applicationConfig: ApplicationConfig,
     modulePath?: string,
-    globalPrefix?: string
+    globalPrefix?: string,
+    includeControllerTag?: boolean,
   ): DenormalizedDoc[] {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
@@ -133,7 +136,7 @@ export class SwaggerExplorer {
     if (excludeController) {
       return [];
     }
-    const globalMetadata = this.exploreGlobalMetadata(metatype);
+    const globalMetadata = this.exploreGlobalMetadata(metatype, includeControllerTag);
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);
 
@@ -167,7 +170,8 @@ export class SwaggerExplorer {
             metatype,
             globalPrefix,
             modulePath,
-            applicationConfig
+            applicationConfig,
+            includeControllerTag,
           );
           if (!exploredMetadata) {
             return metadata;
@@ -229,10 +233,11 @@ export class SwaggerExplorer {
   }
 
   private exploreGlobalMetadata(
-    metatype: Type<unknown>
+    metatype: Type<unknown>,
+    includeControllerTag?: boolean
   ): Partial<OpenAPIObject> {
     const globalExplorers = [
-      exploreGlobalApiTagsMetadata,
+      exploreGlobalApiTagsMetadata(includeControllerTag),
       exploreGlobalApiSecurityMetadata,
       exploreGlobalApiResponseMetadata.bind(null, this.schemas),
       exploreGlobalApiHeaderMetadata

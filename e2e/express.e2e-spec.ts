@@ -272,6 +272,24 @@ describe('Express Swagger', () => {
     });
   });
 
+  describe('api tags',  () => {
+    it('supports controller name', async () => {
+      const document = SwaggerModule.createDocument(app, builder.build(), {
+        includeControllerTag: true
+      });
+      const doc = JSON.stringify(document, null, 2);
+  
+      try {
+        const api = await SwaggerParser.validate(document as any);
+        const postPath = api.paths["/"].get
+        expect(postPath.tags).toEqual(['AppController']);
+      } catch (err) {
+        console.log(doc);
+        expect(err).toBeUndefined();
+      }
+    });
+  })
+
   describe('custom swagger options', () => {
     const CUSTOM_CSS = 'body { background-color: hotpink !important }';
     const CUSTOM_JS = '/foo.js';
