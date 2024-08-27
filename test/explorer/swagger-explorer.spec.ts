@@ -173,6 +173,8 @@ describe('SwaggerExplorer', () => {
         return {
           create: {
             summary: 'Create foo',
+            type: Foo,
+            description: 'Newly created Foo object',
             example: {
               id: 'foo',
               name: 'Foo'
