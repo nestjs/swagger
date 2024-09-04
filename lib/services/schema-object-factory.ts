@@ -122,7 +122,7 @@ export class SchemaObjectFactory {
         (property: ParameterObject & ParamWithTypeMetadata) => {
           const parameterObject = {
             ...(omit(property, 'enumName') as ParameterObject),
-            in: 'query',
+            in: param.in ?? 'query',
             required: property.required ?? true
           };
           return parameterObject;
