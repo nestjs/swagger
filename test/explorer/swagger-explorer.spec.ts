@@ -92,7 +92,7 @@ describe('SwaggerExplorer', () => {
 
       @ApiProperty({
         enum: () => LettersEnum,
-        enumName: 'LettersEnum',
+        enumName: 'LettersEnum'
       })
       enumFunction: LettersEnum;
     }
@@ -979,7 +979,11 @@ describe('SwaggerExplorer', () => {
       })
       @ApiQuery({ name: 'order', enum: QueryEnum })
       @ApiQuery({ name: 'page', enum: ['d', 'e', 'f'] })
-      find(@Param('objectId') objectId: ParamEnum, @Query('order') order: QueryEnum, @Query('page') page: 'd' | 'e' | 'f'): Promise<Foo[]> {
+      find(
+        @Param('objectId') objectId: ParamEnum,
+        @Query('order') order: QueryEnum,
+        @Query('page') page: 'd' | 'e' | 'f'
+      ): Promise<Foo[]> {
         return Promise.resolve([]);
       }
     }
@@ -999,7 +1003,11 @@ describe('SwaggerExplorer', () => {
         enumName: 'QueryEnum',
         isArray: true
       })
-      findBar(@Param('objectId') objectId: ParamEnum, @Query('order') order: QueryEnum, @Query('page') page: QueryEnum[]): Promise<Foo> {
+      findBar(
+        @Param('objectId') objectId: ParamEnum,
+        @Query('order') order: QueryEnum,
+        @Query('page') page: QueryEnum[]
+      ): Promise<Foo> {
         return Promise.resolve(null);
       }
     }

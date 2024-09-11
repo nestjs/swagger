@@ -369,7 +369,6 @@ export class SwaggerExplorer {
   private reflectControllerPath(metatype: Type<unknown>): string {
     return Reflect.getMetadata(PATH_METADATA, metatype);
   }
-
   private validateRoutePath(path: string): string {
     if (isUndefined(path)) {
       return '';
@@ -377,10 +376,60 @@ export class SwaggerExplorer {
     if (Array.isArray(path)) {
       path = head(path);
     }
-    let pathWithParams = '';
-    for (const item of pathToRegexp.parse(path)) {
-      pathWithParams += isString(item) ? item : `${item.prefix}{${item.name}}`;
+    if (!isString(path)) {
+      throw new Error('Invalid path type');
     }
+
+    if (path.includes('*') && !path.includes('*:')) {
+      path = path.replace('*', '*wildcard');
+    }
+
+    let pathWithParams = '';
+    let parsedTokens = pathToRegexp.parse(path);
+
+    for (const item of parsedTokens.tokens) {
+      if (typeof item === 'string') {
+        pathWithParams += item;
+      } else {
+        switch (item.type) {
+          case 'text':
+            pathWithParams += item.value;
+            break;
+          case 'param':
+            if (!item.name || !/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(item.name)) {
+              throw new Error(
+                `Invalid or missing parameter name in path: ${path}`
+              );
+            }
+            pathWithParams += `{${item.name}}`;
+            break;
+          case 'wildcard':
+            const wildcardName = item.name || 'wildcard';
+            pathWithParams += `{${wildcardName}}`;
+            break;
+          case 'group':
+            pathWithParams += item.tokens
+              .map((token) => {
+                if (typeof token === 'string') {
+                  return token;
+                } else if (token.type === 'text') {
+                  return token.value;
+                } else if (
+                  token.type === 'param' ||
+                  token.type === 'wildcard'
+                ) {
+                  const tokenName = token.name || 'wildcard';
+                  return `{${tokenName}}`;
+                }
+              })
+              .join('');
+            break;
+          default:
+            throw new Error(`Unknown token type in path: ${path}`);
+        }
+      }
+    }
+
     return pathWithParams === '/' ? '' : addLeadingSlash(pathWithParams);
   }
 
