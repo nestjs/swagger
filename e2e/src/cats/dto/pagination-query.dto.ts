@@ -14,13 +14,15 @@ export class PaginationQuery {
     exclusiveMaximum: true,
     exclusiveMinimum: true,
     format: 'int32',
-    default: 0
+    default: 0,
+    example: 123
   })
   page: number;
 
   @ApiProperty({
     name: '_sortBy',
-    nullable: true
+    nullable: true,
+    example: ['sort1', 'sort2']
   })
   sortBy: string[];
 

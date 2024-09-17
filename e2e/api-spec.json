@@ -293,6 +293,7 @@
               "title": "Page",
               "format": "int32",
               "default": 0,
+              "example": 123,
               "type": "number"
             }
           },
@@ -302,6 +303,10 @@
             "in": "query",
             "schema": {
               "nullable": true,
+              "example": [
+                "sort1",
+                "sort2"
+              ],
               "type": "array",
               "items": {
                 "type": "string"
@@ -490,6 +495,7 @@
               "title": "Page",
               "format": "int32",
               "default": 0,
+              "example": 123,
               "type": "number"
             }
           },
@@ -499,6 +505,10 @@
             "required": true,
             "schema": {
               "nullable": true,
+              "example": [
+                "sort1",
+                "sort2"
+              ],
               "type": "array",
               "items": {
                 "type": "string"
