@@ -221,9 +221,10 @@ describe('SchemaObjectFactory', () => {
               type: 'array',
               items: {
                 type: 'string'
-              }
+              },
+              required: true
             },
-            type: 'array'
+            type: 'array',
           },
           twoDimensionModels: {
             items: {
