@@ -6,16 +6,18 @@ import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers';
 export interface ApiPropertyOptions
   extends Omit<SchemaObjectMetadata, 'name' | 'enum'> {
   name?: string;
-  enum?: any[] | Record<string, any> | (() => (any[] | Record<string, any>));
+  enum?: any[] | Record<string, any> | (() => any[] | Record<string, any>);
   enumName?: string;
-  'x-enumNames'?: string[]
+  'x-enumNames'?: string[];
 }
 
 const isEnumArray = (obj: ApiPropertyOptions): boolean =>
   obj.isArray && !!obj.enum;
 
 export function ApiProperty(
-  options: ApiPropertyOptions = {}
+  options: ApiPropertyOptions = {
+    required: true
+  }
 ): PropertyDecorator {
   return createApiPropertyDecorator(options);
 }
