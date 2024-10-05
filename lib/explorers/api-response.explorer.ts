@@ -110,7 +110,7 @@ function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
       if (meta.status === undefined) {
         meta.status = getStatusCode(instance[key]);
       }
-      ApiResponse(meta, { overrideExisting: false })(
+      ApiResponse(meta, { overrideExisting: true })(
         classPrototype,
         key,
         Object.getOwnPropertyDescriptor(classPrototype, key)
