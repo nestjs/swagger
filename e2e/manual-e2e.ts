@@ -95,6 +95,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerSettings, {
     deepScanRoutes: true,
     ignoreGlobalPrefix: false,
+    includeControllerTag: true,
     extraModels: [] // add DTOs that are not explicitly registered here (like PaginatedDto, etc)
   });
 
