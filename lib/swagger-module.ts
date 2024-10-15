@@ -54,7 +54,7 @@ export class SwaggerModule {
     return this.metadataLoader.load(metadata);
   }
 
-  private static serveStatic(
+  protected static serveStatic(
     finalPath: string,
     app: INestApplication,
     customStaticPath?: string
@@ -79,7 +79,7 @@ export class SwaggerModule {
     }
   }
 
-  private static serveDocuments(
+  protected static serveDocuments(
     finalPath: string,
     urlLastSubdirectory: string,
     httpAdapter: HttpServer,
@@ -115,7 +115,7 @@ export class SwaggerModule {
     this.serveDefinitions(httpAdapter, getBuiltDocument, options);
   }
 
-  private static serveSwaggerUi(
+  protected static serveSwaggerUi(
     finalPath: string,
     urlLastSubdirectory: string,
     httpAdapter: HttpServer,
@@ -225,7 +225,7 @@ export class SwaggerModule {
     }
   }
 
-  private static serveDefinitions(
+  protected static serveDefinitions(
     httpAdapter: HttpServer,
     getBuiltDocument: () => OpenAPIObject,
     options: {
