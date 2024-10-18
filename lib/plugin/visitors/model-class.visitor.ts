@@ -750,7 +750,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         return [
           factory.createPropertyAssignment(
             'pattern',
-            createPrimitiveLiteral(factory, head(decoratorArguments).text)
+            createPrimitiveLiteral(factory, (head(decoratorArguments) as ts.Expression).getText())
           )
         ];
       }
