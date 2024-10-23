@@ -50,7 +50,9 @@ export class DocumentBuilder {
     if (version.match(/^\d\.\d\.\d$/)) {
       this.document.openapi = version;
     } else {
-      this.logger.warn('The OpenApi version is invalid. Expecting format "x.x.x"');
+      this.logger.warn(
+        'The OpenApi version is invalid. Expecting format "x.x.x"'
+      );
     }
     return this;
   }
@@ -114,7 +116,11 @@ export class DocumentBuilder {
     return this;
   }
 
-  public addGlobalParameters(...parameters: ParameterObject[]): this {
+  public addGlobalParameters(
+    // Examples should be specified under the "schema" object
+    // Top level attributes are ignored
+    ...parameters: Omit<ParameterObject, 'example' | 'examples'>[]
+  ): this {
     GlobalParametersStorage.add(...parameters);
     return this;
   }
