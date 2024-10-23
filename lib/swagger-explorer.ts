@@ -20,6 +20,7 @@ import { ApplicationConfig, MetadataScanner } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { RoutePathFactory } from '@nestjs/core/router/route-path-factory';
 import {
+  cloneDeep,
   flatten,
   get,
   head,
@@ -28,8 +29,7 @@ import {
   mapValues,
   omit,
   omitBy,
-  pick,
-  cloneDeep
+  pick
 } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
@@ -72,8 +72,16 @@ export class SwaggerExplorer {
   private readonly schemas: Record<string, SchemaObject> = {};
   private operationIdFactory: OperationIdFactory = (
     controllerKey: string,
-    methodKey: string
-  ) => (controllerKey ? `${controllerKey}_${methodKey}` : methodKey);
+    methodKey: string,
+    version?: string
+  ) =>
+    version
+      ? controllerKey
+        ? `${controllerKey}_${methodKey}_${version}`
+        : `${methodKey}_${version}`
+      : controllerKey
+      ? `${controllerKey}_${methodKey}`
+      : methodKey;
   private routePathFactory?: RoutePathFactory;
 
   constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
@@ -299,33 +307,41 @@ export class SwaggerExplorer {
       },
       requestMethod
     );
+
     return flatten(
-      allRoutePaths.map((routePath) => {
+      allRoutePaths.map((routePath, index) => {
         const fullPath = this.validateRoutePath(routePath);
         const apiExtension = Reflect.getMetadata(
           DECORATORS.API_EXTENSION,
           method
         );
         if (requestMethod === RequestMethod.ALL) {
-          // apply workaround for invalid "ALL" Method
+          // Workaround for the invalid "ALL" Method
           const validMethods = Object.values(RequestMethod).filter(
             (meth) => meth !== 'ALL' && typeof meth === 'string'
           ) as string[];
-          return validMethods.map((meth) => ({
-            method: meth.toLowerCase(),
+
+          return validMethods.map((requestMethod) => ({
+            method: requestMethod.toLowerCase(),
             path: fullPath === '' ? '/' : fullPath,
             operationId: `${this.getOperationId(
               instance,
-              method
-            )}_${meth.toLowerCase()}`,
+              method.name
+            )}_${requestMethod.toLowerCase()}`,
             ...apiExtension
           }));
         }
-        const pathVersion = versions.find((v) => fullPath.includes(`/${v}/`));
+
+        const pathVersion = versions.find(
+          (v) => fullPath.includes(`/${v}/`) || fullPath.endsWith(`/${v}`)
+        );
+        const isAlias =
+          allRoutePaths.length > 1 && allRoutePaths.length !== versions.length;
+        const methodKey = isAlias ? `${method.name}${index}` : method.name;
         return {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,
-          operationId: this.getOperationId(instance, method, pathVersion),
+          operationId: this.getOperationId(instance, methodKey, pathVersion),
           ...apiExtension
         };
       })
@@ -334,12 +350,12 @@ export class SwaggerExplorer {
 
   private getOperationId(
     instance: object,
-    method: Function,
+    methodKey: string,
     version?: string
   ): string {
     return this.operationIdFactory(
       instance.constructor?.name || '',
-      method.name,
+      methodKey,
       version
     );
   }

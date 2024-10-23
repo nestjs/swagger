@@ -3,7 +3,7 @@
   "paths": {
     "/api/v1": {
       "get": {
-        "operationId": "AppController_getHello",
+        "operationId": "AppController_getHello_v1",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -22,7 +22,7 @@
     },
     "/api/v2": {
       "get": {
-        "operationId": "AppController_getHello",
+        "operationId": "AppController_getHello_v2",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -41,7 +41,7 @@
     },
     "/api/v1/alias1": {
       "get": {
-        "operationId": "AppController_withAliases",
+        "operationId": "AppController_withAliases0_v1",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -60,7 +60,7 @@
     },
     "/api/v1/alias2": {
       "get": {
-        "operationId": "AppController_withAliases",
+        "operationId": "AppController_withAliases1_v1",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -79,7 +79,7 @@
     },
     "/api/v2/alias1": {
       "get": {
-        "operationId": "AppController_withAliases",
+        "operationId": "AppController_withAliases2_v2",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -98,7 +98,7 @@
     },
     "/api/v2/alias2": {
       "get": {
-        "operationId": "AppController_withAliases",
+        "operationId": "AppController_withAliases3_v2",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -117,7 +117,7 @@
     },
     "/api/v1/express:colon:another/{prop}": {
       "get": {
-        "operationId": "AppController_withColonExpress",
+        "operationId": "AppController_withColonExpress_v1",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -136,7 +136,7 @@
     },
     "/api/v2/express:colon:another/{prop}": {
       "get": {
-        "operationId": "AppController_withColonExpress",
+        "operationId": "AppController_withColonExpress_v2",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -155,7 +155,7 @@
     },
     "/api/v1/fastify:{colon}:{another}/{prop}": {
       "get": {
-        "operationId": "AppController_withColonFastify",
+        "operationId": "AppController_withColonFastify_v1",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -174,7 +174,7 @@
     },
     "/api/v2/fastify:{colon}:{another}/{prop}": {
       "get": {
-        "operationId": "AppController_withColonFastify",
+        "operationId": "AppController_withColonFastify_v2",
         "parameters": [
           {
             "name": "x-tenant-id",
