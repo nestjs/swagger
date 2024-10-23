@@ -409,6 +409,70 @@
         ]
       }
     },
+    "/api/cats/explicit-body": {
+      "post": {
+        "operationId": "CatsController_createExplicitBody",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "test"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCatDto"
+              },
+              "examples": {
+                "mau": {
+                  "summary": "Mau example",
+                  "value": {
+                    "name": "Mau cat",
+                    "age": 5,
+                    "breed": "Mau"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ]
+      }
+    },
     "/api/cats/{id}": {
       "get": {
         "operationId": "CatsController_findOne",

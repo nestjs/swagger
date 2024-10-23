@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiConsumes,
   ApiExtension,
   ApiHeader,
@@ -44,6 +45,24 @@ export class CatsController {
     return this.catsService.create(createCatDto);
   }
 
+  @Post('explicit-body')
+  @ApiBody({
+    type: CreateCatDto,
+    examples: {
+      mau: {
+        summary: 'Mau example',
+        value: {
+          name: 'Mau cat',
+          age: 5,
+          breed: 'Mau'
+        }
+      }
+    }
+  })
+  async createExplicitBody(@Body() createCatDto: CreateCatDto): Promise<Cat> {
+    return this.catsService.create(createCatDto);
+  }
+
   @Get(':id')
   @ApiResponse({
     status: 200,
@@ -59,9 +78,9 @@ export class CatsController {
   @ApiExtension('x-codeSamples', [
     { lang: 'JavaScript', source: "console.log('Hello World');" }
   ])
-  @ApiExtension('x-multiple', { test: "test" })
-  @ApiTags("tag1")
-  @ApiTags("tag2")
+  @ApiExtension('x-multiple', { test: 'test' })
+  @ApiTags('tag1')
+  @ApiTags('tag2')
   findAll(@Query() paginationQuery: PaginationQuery) {}
 
   @ApiQuery({ type: PaginationQuery })
@@ -95,7 +114,7 @@ export class CatsController {
   @Get('with-enum/:type')
   @ApiParam({
     name: 'type',
-    enum: LettersEnum,
+    enum: LettersEnum
   })
   getWithEnumParam(@Param('type') type: LettersEnum) {}
 
