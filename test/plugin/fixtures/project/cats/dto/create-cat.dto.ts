@@ -1,4 +1,4 @@
-import { ConsoleLogger } from '@nestjs/common';
+import { ConsoleLogger, HttpStatus } from '@nestjs/common';
 import {
   IsIn,
   IsNegative,
@@ -98,6 +98,12 @@ export class CreateCatDto {
     enumName: 'LettersEnum'
   })
   enum: LettersEnum;
+
+  @ApiProperty({
+    enum: HttpStatus,
+    enumName: 'HttpStatus'
+  })
+  externalEnum: HttpStatus;
 
   /**
    * Available language in the application
