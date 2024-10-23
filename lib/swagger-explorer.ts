@@ -337,7 +337,7 @@ export class SwaggerExplorer {
         );
         const isAlias =
           allRoutePaths.length > 1 && allRoutePaths.length !== versions.length;
-        const methodKey = isAlias ? `${method.name}${index}` : method.name;
+        const methodKey = isAlias ? `${method.name}[${index}]` : method.name;
         return {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,

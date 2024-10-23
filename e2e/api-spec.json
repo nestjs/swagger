@@ -41,7 +41,7 @@
     },
     "/api/v1/alias1": {
       "get": {
-        "operationId": "AppController_withAliases0_v1",
+        "operationId": "AppController_withAliases[0]_v1",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -60,7 +60,7 @@
     },
     "/api/v1/alias2": {
       "get": {
-        "operationId": "AppController_withAliases1_v1",
+        "operationId": "AppController_withAliases[1]_v1",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -79,7 +79,7 @@
     },
     "/api/v2/alias1": {
       "get": {
-        "operationId": "AppController_withAliases2_v2",
+        "operationId": "AppController_withAliases[2]_v2",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -98,7 +98,7 @@
     },
     "/api/v2/alias2": {
       "get": {
-        "operationId": "AppController_withAliases3_v2",
+        "operationId": "AppController_withAliases[3]_v2",
         "parameters": [
           {
             "name": "x-tenant-id",

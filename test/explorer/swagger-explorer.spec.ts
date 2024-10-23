@@ -332,7 +332,7 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET
-      expect(routes[1].root!.operationId).toEqual(operationPrefix + 'find');
+      expect(routes[1].root!.operationId).toEqual(operationPrefix + 'find[0]');
       expect(routes[1].root!.method).toEqual('get');
       expect(routes[1].root!.path).toEqual(
         '/globalPrefix/modulePath/foos/{objectId}'
@@ -374,7 +374,7 @@ describe('SwaggerExplorer', () => {
       });
 
       // GET alias
-      expect(routes[2].root!.operationId).toEqual(operationPrefix + 'find');
+      expect(routes[2].root!.operationId).toEqual(operationPrefix + 'find[1]');
       expect(routes[2].root!.method).toEqual('get');
       expect(routes[2].root!.path).toEqual(
         '/globalPrefix/modulePath/foo/{objectId}'
@@ -1427,7 +1427,7 @@ describe('SwaggerExplorer', () => {
             `/globalPrefix/v${CONTROLLER_VERSION}/modulePath/with-version`
           );
           expect(routes[0].root.operationId).toEqual(
-            `WithVersionController_foo`
+            `WithVersionController_foo_v1`
           );
         });
 
@@ -1446,7 +1446,7 @@ describe('SwaggerExplorer', () => {
             `/globalPrefix/v${METHOD_VERSION}/modulePath/with-version`
           );
           expect(routes[1].root.operationId).toEqual(
-            `WithVersionController_bar`
+            `WithVersionController_bar_v2`
           );
         });
 
@@ -1467,7 +1467,7 @@ describe('SwaggerExplorer', () => {
             }/modulePath/with-multiple-version`
           );
           expect(routes[0].root.operationId).toEqual(
-            `WithMultipleVersionsController_foo`
+            `WithMultipleVersionsController_foo_v3`
           );
           expect(routes[1].root.path).toEqual(
             `/globalPrefix/v${
@@ -1475,7 +1475,7 @@ describe('SwaggerExplorer', () => {
             }/modulePath/with-multiple-version`
           );
           expect(routes[1].root.operationId).toEqual(
-            `WithMultipleVersionsController_foo`
+            `WithMultipleVersionsController_foo_v4`
           );
         });
 
@@ -1496,14 +1496,14 @@ describe('SwaggerExplorer', () => {
             }/modulePath/with-multiple-version-neutral`
           );
           expect(routes[0].root.operationId).toEqual(
-            `WithMultipleVersionsNeutralController_foo`
+            `WithMultipleVersionsNeutralController_foo[0]_v5`
           );
 
           expect(routes[1].root.path).toEqual(
             `/globalPrefix/modulePath/with-multiple-version-neutral`
           );
           expect(routes[1].root.operationId).toEqual(
-            `WithMultipleVersionsNeutralController_foo`
+            `WithMultipleVersionsNeutralController_foo[1]`
           );
         });
       });
@@ -1601,7 +1601,7 @@ describe('SwaggerExplorer', () => {
             }/modulePath/with-multiple-version-neutral`
           );
           expect(routes[0].root.operationId).toEqual(
-            `WithMultipleVersionsNeutralController.foo.v${
+            `WithMultipleVersionsNeutralController.foo[0].v${
               CONTROLLER_MULTIPLE_VERSIONS_NEUTRAL[0] as string
             }`
           );
@@ -1609,7 +1609,7 @@ describe('SwaggerExplorer', () => {
             `/globalPrefix/modulePath/with-multiple-version-neutral`
           );
           expect(routes[1].root.operationId).toEqual(
-            `WithMultipleVersionsNeutralController.foo`
+            `WithMultipleVersionsNeutralController.foo[1]`
           );
         });
       });
