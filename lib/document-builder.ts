@@ -46,6 +46,15 @@ export class DocumentBuilder {
     return this;
   }
 
+  public setOpenAPIVersion(version: string): this {
+    if (version.match(/^\d\.\d\.\d$/)) {
+      this.document.openapi = version;
+    } else {
+      this.logger.warn('The OpenApi version is invalid. Expecting format "x.x.x"');
+    }
+    return this;
+  }
+
   public addServer(
     url: string,
     description?: string,
