@@ -59,7 +59,17 @@ export class Cat {
     enumName: 'LettersEnum',
     description: 'A small assortment of letters?',
     default: 'A',
-    deprecated: true,
+    deprecated: true
   })
-  enumWithRef: LettersEnum
+  enumWithRef: LettersEnum;
+
+  @ApiProperty({
+    oneOf: [
+      { type: 'array', items: { type: 'string' } },
+      { type: 'array', items: { type: 'number' } },
+      { type: 'array', items: { type: 'boolean' } }
+    ],
+    description: 'Array of values that uses "oneOf"'
+  })
+  oneOfExample?: string[] | number[] | boolean[];
 }

@@ -1307,6 +1307,29 @@
           },
           "enumWithRef": {
             "$ref": "#/components/schemas/LettersEnum"
+          },
+          "oneOfExample": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "boolean"
+                }
+              }
+            ],
+            "description": "Array of values that uses \"oneOf\""
           }
         },
         "required": [
@@ -1319,7 +1342,8 @@
           "_options",
           "enum",
           "enumArr",
-          "enumWithRef"
+          "enumWithRef",
+          "oneOfExample"
         ]
       },
       "Letter": {

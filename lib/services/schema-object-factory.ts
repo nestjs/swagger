@@ -166,24 +166,22 @@ export class SchemaObjectFactory {
       );
 
       const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
-      let keyOfCombinators = '';
-      if (
-        schemaCombinators.some((_key) => {
-          keyOfCombinators = _key;
-          return _key in property;
-        })
-      ) {
+      const declaredSchemaCombinator = schemaCombinators.find(
+        (combinator) => combinator in property
+      );
+      if (declaredSchemaCombinator) {
+        const schemaObjectMetadata = property as SchemaObjectMetadata;
+
         if (
-          ((property as SchemaObjectMetadata)?.type === 'array' ||
-            (property as SchemaObjectMetadata).isArray) &&
-          keyOfCombinators
+          schemaObjectMetadata?.type === 'array' ||
+          schemaObjectMetadata.isArray
         ) {
-          (property as SchemaObjectMetadata).items = {};
-          (property as SchemaObjectMetadata).items[keyOfCombinators] =
-            property[keyOfCombinators];
-          delete property[keyOfCombinators];
+          schemaObjectMetadata.items = {};
+          schemaObjectMetadata.items[declaredSchemaCombinator] =
+            property[declaredSchemaCombinator];
+          delete property[declaredSchemaCombinator];
         } else {
-          delete (property as SchemaObjectMetadata).type;
+          delete schemaObjectMetadata.type;
         }
       }
       return property as ParameterObject;
@@ -289,7 +287,7 @@ export class SchemaObjectFactory {
             ? param.schema?.['items']?.['type']
             : param.schema?.['type']) ?? 'string',
         enum: _enum,
-        ...(param['x-enumNames'] ? {'x-enumNames': param['x-enumNames']} : {})
+        ...(param['x-enumNames'] ? { 'x-enumNames': param['x-enumNames'] } : {})
       };
     }
 
@@ -566,12 +564,39 @@ export class SchemaObjectFactory {
     }
     const typeName = this.getTypeName(typeRef as Type<unknown>);
     const itemType = this.swaggerTypesMapper.mapTypeToOpenAPIType(typeName);
+
     if (metadata.isArray) {
       return this.transformToArraySchemaProperty(metadata, key, {
         type: itemType
       });
     } else if (itemType === 'array') {
       const defaultOnArray = 'string';
+
+      // Check if the schema has a combinator because if so
+      // we should not auto-wrap the type in an array
+      //
+      // Example:
+      // @ApiProperty({
+      //   oneOf: [
+      //     { type: 'array', items: { type: 'string' } },
+      //     { type: 'array', items: { type: 'number' } },
+      //     { type: 'array', items: { type: 'boolean' } }
+      //   ],
+      // })
+      // attribute: string[] | number[] | boolean[];
+      //
+      // this should not produce an array of arrays
+      const hasSchemaCombinator = ['oneOf', 'anyOf', 'allOf'].some(
+        (combinator) => combinator in metadata
+      );
+      if (hasSchemaCombinator) {
+        return {
+          ...metadata,
+          type: undefined,
+          name: metadata.name || key
+        };
+      }
+
       return this.transformToArraySchemaProperty(metadata, key, {
         type: defaultOnArray
       });
