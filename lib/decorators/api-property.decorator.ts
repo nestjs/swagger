@@ -8,6 +8,7 @@ export interface ApiPropertyOptions
   name?: string;
   enum?: any[] | Record<string, any> | (() => (any[] | Record<string, any>));
   enumName?: string;
+  'x-enumNames'?: string[]
 }
 
 const isEnumArray = (obj: ApiPropertyOptions): boolean =>

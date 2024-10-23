@@ -32,6 +32,10 @@ import {
   getExternalImports,
   replaceExternalImportsInTypeReference
 } from '../utils/external-imports.util';
+import {
+  decoratorsProperties,
+  decoratorsPropertiesMappingType
+} from '../../services/decorators-properties';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
@@ -661,66 +665,73 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         options
       );
     }
-    this.addPropertyByValidationDecorator(
-      factory,
-      'Min',
-      'minimum',
-      decorators,
-      assignments,
-      options
-    );
-    this.addPropertyByValidationDecorator(
-      factory,
-      'Max',
-      'maximum',
-      decorators,
-      assignments,
-      options
-    );
-    this.addPropertyByValidationDecorator(
-      factory,
-      'MinLength',
-      'minLength',
-      decorators,
-      assignments,
-      options
-    );
-    this.addPropertyByValidationDecorator(
-      factory,
-      'MaxLength',
-      'maxLength',
-      decorators,
-      assignments,
-      options
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsPositive',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'minimum',
-            createPrimitiveLiteral(factory, 1)
-          )
-        ];
+
+    decoratorsProperties.forEach((decoratorProperty) => {
+      if (
+        decoratorProperty.mappingType === decoratorsPropertiesMappingType.DIRECT
+      ) {
+        this.addPropertyByValidationDecorator(
+          factory,
+          decoratorProperty.decorator,
+          decoratorProperty.property,
+          decorators,
+          assignments,
+          options
+        );
+      } else if (
+        decoratorProperty.mappingType ===
+        decoratorsPropertiesMappingType.INDIRECT_VALUE
+      ) {
+        this.addPropertiesByValidationDecorator(
+          factory,
+          decoratorProperty.decorator,
+          decorators,
+          assignments,
+          () => {
+            return [
+              factory.createPropertyAssignment(
+                decoratorProperty.property,
+                createPrimitiveLiteral(factory, decoratorProperty.value)
+              )
+            ];
+          }
+        );
+      } else if (
+        decoratorProperty.mappingType ===
+        decoratorsPropertiesMappingType.INDIRECT_ARGUMENT
+      ) {
+        this.addPropertiesByValidationDecorator(
+          factory,
+          decoratorProperty.decorator,
+          decorators,
+          assignments,
+          (decoratorRef: ts.Decorator) => {
+            const decoratorArguments = getDecoratorArguments(decoratorRef);
+            const result = [];
+
+            const argumentValue = head(decoratorArguments);
+            if (!canReferenceNode(argumentValue, options)) {
+              return result;
+            }
+
+            const clonedArgumentValue = this.clonePrimitiveLiteral(
+              factory,
+              argumentValue
+            );
+            if (clonedArgumentValue) {
+              result.push(
+                factory.createPropertyAssignment(
+                  decoratorProperty.property,
+                  clonedArgumentValue
+                )
+              );
+            }
+            return result;
+          }
+        );
       }
-    );
-    this.addPropertiesByValidationDecorator(
-      factory,
-      'IsNegative',
-      decorators,
-      assignments,
-      () => {
-        return [
-          factory.createPropertyAssignment(
-            'maximum',
-            createPrimitiveLiteral(factory, -1)
-          )
-        ];
-      }
-    );
+    });
+
     this.addPropertiesByValidationDecorator(
       factory,
       'Length',
