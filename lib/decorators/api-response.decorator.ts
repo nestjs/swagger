@@ -9,15 +9,24 @@ import {
 import { getTypeIsArrayTuple } from './helpers';
 
 type ApiResponseExampleValue = any;
+export interface ApiResponseExamples {
+  summary: string;
+  value: ApiResponseExampleValue;
+}
 
-export interface ApiResponseMetadata
+export interface ApiResponseCommonMetadata
   extends Omit<ResponseObject, 'description'> {
   status?: number | 'default' | '1XX' | '2XX' | '3XX' | '4XX' | '5XX';
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   description?: string;
-  example?: ApiResponseExampleValue;
 }
+
+export type ApiResponseMetadata =
+  | (ApiResponseCommonMetadata & { example?: ApiResponseExampleValue })
+  | (ApiResponseCommonMetadata & {
+      examples?: { [key: string]: ApiResponseExamples };
+    });
 
 export interface ApiResponseSchemaHost
   extends Omit<ResponseObject, 'description'> {
