@@ -562,7 +562,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (!typeIsArrayTuple) {
       return undefined;
     }
-    let isArrayType = typeIsArrayTuple.isArray;
+    const isArrayType = typeIsArrayTuple.isArray;
     type = typeIsArrayTuple.type;
 
     const isEnumMember =
@@ -578,7 +578,6 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       if (!typeIsArrayTuple) {
         return undefined;
       }
-      isArrayType = typeIsArrayTuple.isArray;
       type = typeIsArrayTuple.type;
     }
     const typeReferenceDescriptor = {
