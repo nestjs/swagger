@@ -12,20 +12,24 @@ import {
 import { VERSION_NEUTRAL, VersionValue } from '@nestjs/common/interfaces';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
+import { upperFirst } from 'lodash';
 import {
   ApiBadRequestResponse,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
+  ApiDefaultGetter,
   ApiDefaultResponse,
   ApiExcludeController,
   ApiExtraModels,
   ApiHeader,
+  ApiLink,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiProduces,
   ApiProperty,
+  ApiPropertyOptional,
   ApiQuery,
   ApiSchema
 } from '../../lib/decorators';
@@ -2130,6 +2134,132 @@ describe('SwaggerExplorer', () => {
         }
       ]);
       GlobalParametersStorage.clear();
+    });
+  });
+
+  describe('when links are defined', () => {
+    class Human {
+      @ApiProperty()
+      id: string;
+
+      @ApiProperty({
+        link: () => Human,
+        example: ['a33d0f4b-aec2-4b07-b407-45d8e70332b2']
+      })
+      @ApiPropertyOptional()
+      spouseId?: string;
+
+      @ApiProperty({
+        link: () => Human,
+        example: [
+          '5593519b-b830-4c5a-b5f6-3cbbfbecbd1b',
+          '8044bf32-5485-42c4-b481-d6ef1ae89163'
+        ]
+      })
+      parentIds: string[];
+    }
+
+    @Controller('')
+    class HumanController {
+      @ApiDefaultGetter(Human, 'id')
+      @Get(':id')
+      @ApiOkResponse({
+        type: Human,
+        description: 'Human corresponding to `id`'
+      })
+      getHuman(@Param('id') id: string): Promise<Human> {
+        const human = new Human();
+        human.id = id;
+        return Promise.resolve(human);
+      }
+
+      @Get(':id/children')
+      @ApiLink({ from: Human, routeParam: 'id' })
+      @ApiOkResponse({
+        type: [Human],
+        description: 'Children of human with id `id`'
+      })
+      getChildren(@Param('id') id: string): Promise<Human[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    it('should generate open api link objects', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+
+      const routes = explorer.exploreController(
+        {
+          instance: new HumanController(),
+          metatype: HumanController
+        } as InstanceWrapper<HumanController>,
+        new ApplicationConfig(),
+        'path'
+      );
+
+      expect((routes[0].responses['200'] as ResponseObject).links).toEqual({
+        HumanController_getHuman_from_spouseId: {
+          operationId: 'HumanController_getHuman',
+          parameters: {
+            id: '$response.body#/spouseId'
+          }
+        },
+        HumanController_getHuman_from_parentIds: {
+          operationId: 'HumanController_getHuman',
+          parameters: {
+            id: '$response.body#/parentIds'
+          }
+        },
+        HumanController_getChildren_from_id: {
+          operationId: 'HumanController_getChildren',
+          parameters: {
+            id: '$response.body#/id'
+          }
+        }
+      });
+
+      expect((routes[1].responses['200'] as ResponseObject).links).toEqual(
+        (routes[0].responses['200'] as ResponseObject).links
+      );
+    });
+
+    it('should generate open api link objects with custom linkNameFactory', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+
+      const routes = explorer.exploreController(
+        {
+          instance: new HumanController(),
+          metatype: HumanController
+        } as InstanceWrapper<HumanController>,
+        new ApplicationConfig(),
+        'path',
+        undefined,
+        undefined,
+        (controllerKey, methodKey, paramKey) =>
+          paramKey === 'id'
+            ? methodKey.replace(/^get/, '')
+            : upperFirst(paramKey.replace(/Id(s)?$/, '$1'))
+      );
+
+      expect((routes[0].responses['200'] as ResponseObject).links).toEqual({
+        Spouse: {
+          operationId: 'HumanController_getHuman',
+          parameters: {
+            id: '$response.body#/spouseId'
+          }
+        },
+        Parents: {
+          operationId: 'HumanController_getHuman',
+          parameters: {
+            id: '$response.body#/parentIds'
+          }
+        },
+        Children: {
+          operationId: 'HumanController_getChildren',
+          parameters: {
+            id: '$response.body#/id'
+          }
+        }
+      });
     });
   });
 

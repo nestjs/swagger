@@ -72,4 +72,7 @@ export class Cat {
     description: 'Array of values that uses "oneOf"'
   })
   oneOfExample?: string[] | number[] | boolean[];
+
+  @ApiProperty({ type: [String], link: () => Cat })
+  kittenIds?: string[];
 }

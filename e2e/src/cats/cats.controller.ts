@@ -3,6 +3,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiDefaultGetter,
   ApiExtension,
   ApiHeader,
   ApiOperation,
@@ -94,6 +95,7 @@ export class CatsController {
     type: Cat
   })
   @ApiExtension('x-auth-type', 'NONE')
+  @ApiDefaultGetter(Cat, 'id')
   findOne(@Param('id') id: string): Cat {
     return this.catsService.findOne(+id);
   }

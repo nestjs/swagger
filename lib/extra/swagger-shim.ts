@@ -218,6 +218,12 @@ export function ApiTags() {
 export function ApiCallbacks() {
   return () => {};
 }
+export function ApiLink() {
+  return () => {};
+}
+export function ApiDefaultGetter() {
+  return () => {};
+}
 export function ApiExtension() {
   return () => {};
 }

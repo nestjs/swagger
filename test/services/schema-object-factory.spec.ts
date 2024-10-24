@@ -318,6 +318,32 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should purge linked types from properties', () => {
+      class Human {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty({ link: () => Human })
+        spouseId: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(Human, schemas);
+      expect(schemas[Human.name]).toEqual({
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string'
+          },
+          spouseId: {
+            type: 'string'
+          }
+        },
+        required: ['id', 'spouseId']
+      });
+    });
+
     it('should override base class metadata', () => {
       class CreatUserDto {
         @ApiProperty({ minLength: 0, required: true })
