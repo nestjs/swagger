@@ -1,9 +1,9 @@
 import { ApiExtension, ApiExtraModels, ApiProperty } from '../../../../lib';
-import { ExtraModel } from './extra-model.dto';
+import { ExtraModelDto } from './extra-model.dto';
 import { LettersEnum } from './pagination-query.dto';
 import { TagDto } from './tag.dto';
 
-@ApiExtraModels(ExtraModel)
+@ApiExtraModels(ExtraModelDto)
 @ApiExtension('x-tags', ['foo', 'bar'])
 export class CreateCatDto {
   @ApiProperty()
@@ -66,9 +66,9 @@ export class CreateCatDto {
     enumName: 'LettersEnum',
     description: 'A small assortment of letters?',
     default: 'A',
-    deprecated: true,
+    deprecated: true
   })
-  readonly enumWithRef: LettersEnum
+  readonly enumWithRef: LettersEnum;
 
   @ApiProperty({ description: 'tag', required: false })
   readonly tag: TagDto;

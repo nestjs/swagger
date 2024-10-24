@@ -11,6 +11,7 @@ import {
   pick
 } from 'lodash';
 import { DECORATORS } from '../constants';
+import { ApiSchemaOptions } from '../decorators';
 import { getTypeIsArrayTuple } from '../decorators/helpers';
 import { exploreGlobalApiExtraModelsMetadata } from '../explorers/api-extra-models.explorer';
 import {
@@ -218,8 +219,23 @@ export class SchemaObjectFactory {
     if (typeDefinitionRequiredFields.length > 0) {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
-    schemas[type.name] = typeDefinition;
-    return type.name;
+    const schemaName = this.getSchemaName(type);
+    schemas[schemaName] = typeDefinition;
+    return schemaName;
+  }
+
+  getSchemaName(type: Function | Type<unknown>) {
+    const customSchema: ApiSchemaOptions[] = Reflect.getOwnMetadata(
+      DECORATORS.API_SCHEMA,
+      type
+    );
+
+    if (!customSchema || customSchema.length === 0) {
+      return type.name;
+    }
+
+    const schemaName = customSchema[0].name;
+    return schemaName ?? type.name;
   }
 
   mergePropertyWithMetadata(
