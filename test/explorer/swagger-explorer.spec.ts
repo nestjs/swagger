@@ -1999,4 +1999,117 @@ describe('SwaggerExplorer', () => {
       ]);
     });
   });
+
+  describe('when arrays are used', () => {
+    enum LettersEnum {
+      A = 'A',
+      B = 'B',
+      C = 'C'
+    }
+
+    class NestedDto {
+      @ApiProperty()
+      nestedString: string;
+    }
+
+    class ObjectDto {
+      @ApiProperty()
+      field: string;
+
+      @ApiProperty()
+      nestedObject: NestedDto;
+
+      @ApiProperty({
+        isArray: true,
+        type: NestedDto
+      })
+      nestedArrayOfObjects: NestedDto[];
+
+      @ApiProperty({
+        type: [NestedDto]
+      })
+      nestedArrayOfObjects2: NestedDto[];
+    }
+
+    class FooDto {
+      @ApiProperty({
+        isArray: true,
+        type: ObjectDto
+      })
+      arrayOfObjectsDto: ObjectDto[];
+    }
+
+    class FooController {
+      @Get('/route1')
+      route1(@Query() fooDto: FooDto) {}
+      @Get('/route2')
+      route2(@Query() objectDto: ObjectDto) {}
+    }
+
+    it('should properly define arrays in query', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        'path'
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          name: 'arrayOfObjectsDto',
+          required: true,
+          in: 'query',
+          schema: {
+            items: {
+              $ref: '#/components/schemas/ObjectDto'
+            },
+            type: 'array'
+          }
+        }
+      ]);
+      expect(routes[1].root.parameters).toEqual([
+        {
+          name: 'field',
+          required: true,
+          in: 'query',
+          schema: {
+            type: 'string'
+          }
+        },
+        {
+          name: 'nestedObject',
+          required: true,
+          in: 'query',
+          schema: {
+            $ref: '#/components/schemas/NestedDto'
+          }
+        },
+        {
+          name: 'nestedArrayOfObjects',
+          required: true,
+          in: 'query',
+          schema: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/NestedDto'
+            }
+          }
+        },
+        {
+          name: 'nestedArrayOfObjects2',
+          required: true,
+          in: 'query',
+          schema: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/NestedDto'
+            }
+          }
+        }
+      ]);
+    });
+  });
 });

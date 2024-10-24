@@ -4,10 +4,10 @@ import {
   SchemasObject
 } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
+import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { CreateUserDto } from './fixtures/create-user.dto';
-import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 
 describe('SchemaObjectFactory', () => {
   let modelPropertiesAccessor: ModelPropertiesAccessor;
@@ -45,7 +45,7 @@ describe('SchemaObjectFactory', () => {
     enum HairColour {
       Brown = 'Brown',
       Blond = 'Blond',
-      Ginger = 'Ginger',
+      Ginger = 'Ginger'
     }
 
     class CreatePersonDto {
@@ -71,7 +71,11 @@ describe('SchemaObjectFactory', () => {
       @ApiProperty({ enum: () => HairColour, enumName: 'HairColour' })
       hairColour: HairColour;
 
-      @ApiProperty({ enum: () => ['Pizza', 'Burger', 'Salad'], enumName: 'Food', isArray: true })
+      @ApiProperty({
+        enum: () => ['Pizza', 'Burger', 'Salad'],
+        enumName: 'Food',
+        isArray: true
+      })
       favouriteFoods: string[];
     }
 
@@ -123,17 +127,24 @@ describe('SchemaObjectFactory', () => {
               $ref: '#/components/schemas/Ranking'
             }
           },
-          'favouriteFoods': {
-            'items': {
-              '$ref': '#/components/schemas/Food'
+          favouriteFoods: {
+            items: {
+              $ref: '#/components/schemas/Food'
             },
-            'type': 'array'
+            type: 'array'
           },
-          'hairColour': {
-            '$ref': '#/components/schemas/HairColour'
+          hairColour: {
+            $ref: '#/components/schemas/HairColour'
           }
         },
-        required: ['role', 'roles', 'groups', 'rankings', 'hairColour', 'favouriteFoods']
+        required: [
+          'role',
+          'roles',
+          'groups',
+          'rankings',
+          'hairColour',
+          'favouriteFoods'
+        ]
       });
       schemaObjectFactory.exploreModelSchema(CreatePersonDto, schemas);
 
@@ -339,6 +350,55 @@ describe('SchemaObjectFactory', () => {
       schemaObjectFactory.exploreModelSchema(CreatUserDto, schemas);
 
       expect(schemas[CreatUserDto.name]['x-test']).toEqual('value');
+    });
+
+    it('should create arrays of objects', () => {
+      class ObjectDto {
+        @ApiProperty()
+        field: string;
+      }
+
+      class TestDto {
+        @ApiProperty()
+        arrayOfStrings: string[];
+      }
+
+      class Test2Dto {
+        @ApiProperty({
+          isArray: true,
+          type: ObjectDto
+        })
+        arrayOfObjects: ObjectDto[];
+      }
+
+      const schemas = {};
+      schemaObjectFactory.exploreModelSchema(TestDto, schemas);
+      schemaObjectFactory.exploreModelSchema(Test2Dto, schemas);
+
+      expect(schemas[TestDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          arrayOfStrings: {
+            type: 'array',
+            items: {
+              type: 'string'
+            }
+          }
+        },
+        required: ['arrayOfStrings']
+      });
+      expect(schemas[Test2Dto.name]).toEqual({
+        type: 'object',
+        properties: {
+          arrayOfObjects: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/ObjectDto'
+            }
+          }
+        },
+        required: ['arrayOfObjects']
+      });
     });
   });
 
