@@ -332,19 +332,15 @@ describe('SwaggerExplorer', () => {
         }
       });
 
-      expect(
-        (routes[0].responses['201'] as ResponseObject).description
-      ).toEqual('Newly created Foo object');
-      expect(
-        (routes[0].responses['201'] as ResponseObject).content[
-          'application/json'
-        ]
-      ).toEqual({
+      const createdResponse = routes[0].responses['201'] as ResponseObject;
+      expect(createdResponse.description).toEqual('Newly created Foo object');
+      expect(createdResponse.content['application/json']).toEqual({
         schema: {
           $ref: '#/components/schemas/Foo'
         },
         example: { id: 'foo', name: 'Foo' }
       });
+      expect(createdResponse).not.toHaveProperty('example');
 
       // GET
       expect(routes[1].root!.operationId).toEqual(operationPrefix + 'find[0]');

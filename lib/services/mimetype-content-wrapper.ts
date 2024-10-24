@@ -1,13 +1,5 @@
 import { ContentObject } from '../interfaces/open-api-spec.interface';
-
-function removeUndefinedKeys(obj: { [x: string]: any }) {
-  Object.entries(obj).forEach(([key, value]) => {
-    if (value === undefined) {
-      delete obj[key];
-    }
-  });
-  return obj;
-}
+import { removeUndefinedKeys } from '../utils/remove-undefined-keys';
 
 export class MimetypeContentWrapper {
   wrap(

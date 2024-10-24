@@ -25,12 +25,14 @@ export class ResponseObjectFactory {
   ) {
     const { type, isArray } = response as ApiResponseMetadata;
     response = omit(response, ['isArray']);
+
     if (!type) {
       return this.responseObjectMapper.wrapSchemaWithContent(
         response as ApiResponseSchemaHost,
         produces
       );
     }
+
     if (isBuiltInType(type as Function)) {
       const typeName =
         type && isFunction(type) ? (type as Function).name : (type as string);
@@ -47,7 +49,7 @@ export class ResponseObjectFactory {
           }
         });
         return {
-          ...response,
+          ...omit(response, 'example'),
           ...content
         };
       }
@@ -57,7 +59,7 @@ export class ResponseObjectFactory {
         }
       });
       return {
-        ...response,
+        ...omit(response, 'example'),
         ...content
       };
     }

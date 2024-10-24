@@ -12,7 +12,7 @@ export class ResponseObjectMapper {
     produces: string[]
   ) {
     return {
-      ...response,
+      ...omit(response, 'example'),
       ...this.mimetypeContentWrapper.wrap(produces, {
         schema: {
           type: 'array',
@@ -27,7 +27,7 @@ export class ResponseObjectMapper {
 
   toRefObject(response: Record<string, any>, name: string, produces: string[]) {
     return {
-      ...response,
+      ...omit(response, 'example'),
       ...this.mimetypeContentWrapper.wrap(produces, {
         schema: {
           $ref: getSchemaPath(name)
