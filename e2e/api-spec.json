@@ -966,6 +966,58 @@
           }
         ]
       }
+    },
+    "/api/cats/download": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "binary file for download",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "cats"
+        ],
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "operationId": "CatsController_download",
+        "summary": "",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "default": "test",
+              "type": "string"
+            }
+          }
+        ]
+      }
     }
   },
   "info": {
