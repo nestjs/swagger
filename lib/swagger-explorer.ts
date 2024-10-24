@@ -33,6 +33,7 @@ import {
 } from 'lodash';
 import * as pathToRegexp from 'path-to-regexp';
 import { DECORATORS } from './constants';
+import { exploreApiCallbacksMetadata } from './explorers/api-callbacks.explorer';
 import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
 import {
@@ -108,6 +109,7 @@ export class SwaggerExplorer {
       ],
       security: [exploreApiSecurityMetadata],
       tags: [exploreApiTagsMetadata],
+      callbacks: [exploreApiCallbacksMetadata],
       responses: [exploreApiResponseMetadata.bind(null, this.schemas)]
     };
     return this.generateDenormalizedDocument(

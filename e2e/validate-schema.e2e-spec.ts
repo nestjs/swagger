@@ -111,6 +111,20 @@ describe('Validate OpenAPI schema', () => {
         api.info.version
       );
       expect(api.info.title).toEqual('Cats example');
+      expect(
+        api.paths['/api/cats']['post']['callbacks']['myEvent'][
+          '{$request.body#/callbackUrl}'
+        ]['post']['requestBody']['content']['application/json']['schema'][
+          'properties'
+        ]['breed']['type']
+      ).toEqual('string');
+      expect(
+        api.paths['/api/cats']['post']['callbacks']['mySecondEvent'][
+          '{$request.body#/callbackUrl}'
+        ]['post']['requestBody']['content']['application/json']['schema'][
+          'properties'
+        ]['breed']['type']
+      ).toEqual('string');
       expect(api.paths['/api/cats']['get']['x-codeSamples'][0]['lang']).toEqual(
         'JavaScript'
       );
