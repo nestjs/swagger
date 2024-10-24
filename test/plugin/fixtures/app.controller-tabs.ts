@@ -47,7 +47,7 @@ const common_1 = require(\"@nestjs/common\");
 const swagger_1 = require(\"@nestjs/swagger\");
 class Cat {
 }
-let AppController = exports.AppController = class AppController {
+let AppController = class AppController {
     onApplicationBootstrap() { }
     /**
      * create a Cat
@@ -68,6 +68,7 @@ let AppController = exports.AppController = class AppController {
      */
     async findAll() { }
 };
+exports.AppController = AppController;
 __decorate([
     openapi.ApiOperation({ summary: \"create a Cat\" }),
     (0, common_1.Post)(),

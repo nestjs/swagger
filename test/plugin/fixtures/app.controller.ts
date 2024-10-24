@@ -98,7 +98,7 @@ class PromiseCat {
 }
 class ObservableCat {
 }
-let AppController = exports.AppController = class AppController {
+let AppController = class AppController {
     onApplicationBootstrap() { }
     /**
      * create a Cat
@@ -155,6 +155,7 @@ let AppController = exports.AppController = class AppController {
      */
     async findAll() { }
 };
+exports.AppController = AppController;
 __decorate([
     openapi.ApiOperation({ summary: \"create a Cat\", description: \"Creating a test cat\" }),
     openapi.ApiResponse({ status: 500, description: "Something is wrong." }),
