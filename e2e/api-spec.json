@@ -257,7 +257,51 @@
           {
             "basic": []
           }
-        ]
+        ],
+        "callbacks": {
+          "myEvent": {
+            "{$request.body#/callbackUrl}": {
+              "post": {
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Cat"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Your server returns this code if it accepts the callback"
+                  }
+                }
+              }
+            }
+          },
+          "mySecondEvent": {
+            "{$request.body#/callbackUrl}": {
+              "post": {
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Cat"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Your server returns this code if it accepts the callback"
+                  }
+                }
+              }
+            }
+          }
+        }
       },
       "get": {
         "operationId": "CatsController_findAll",

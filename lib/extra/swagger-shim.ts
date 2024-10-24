@@ -215,6 +215,9 @@ export function ApiSecurity() {
 export function ApiTags() {
   return () => {};
 }
+export function ApiCallbacks() {
+  return () => {};
+}
 export function ApiExtension() {
   return () => {};
 }

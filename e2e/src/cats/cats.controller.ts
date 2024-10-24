@@ -10,7 +10,9 @@ import {
   ApiQuery,
   ApiResponse,
   ApiSecurity,
-  ApiTags
+  ApiTags,
+  ApiCallbacks,
+  getSchemaPath
 } from '../../../lib';
 import { CatsService } from './cats.service';
 import { Cat } from './classes/cat.class';
@@ -31,6 +33,28 @@ import { LettersEnum, PaginationQuery } from './dto/pagination-query.dto';
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}
 
+  @ApiCallbacks({
+    name: 'mySecondEvent',
+    callbackUrl: '{$request.body#/callbackUrl}',
+    method: 'post',
+    requestBody: {
+      type: Cat
+    },
+    expectedResponse: {
+      status: 200
+    }
+  })
+  @ApiCallbacks({
+    name: 'myEvent',
+    callbackUrl: '{$request.body#/callbackUrl}',
+    method: 'post',
+    requestBody: {
+      type: Cat
+    },
+    expectedResponse: {
+      status: 200
+    }
+  })
   @ApiTags('create cats')
   @Post()
   @ApiOperation({ summary: 'Create cat' })
