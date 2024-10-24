@@ -551,6 +551,14 @@
         "responses": {
           "200": {
             "description": "The found record",
+            "links": {
+              "CatsController_findOne_from_kittenIds": {
+                "operationId": "CatsController_findOne",
+                "parameters": {
+                  "id": "$response.body#/kittenIds"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -655,6 +663,14 @@
         "responses": {
           "200": {
             "description": "",
+            "links": {
+              "CatsController_findOne_from_kittenIds": {
+                "operationId": "CatsController_findOne",
+                "parameters": {
+                  "id": "$response.body#/kittenIds"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -775,6 +791,14 @@
         "responses": {
           "201": {
             "description": "The record has been successfully created.",
+            "links": {
+              "CatsController_findOne_from_kittenIds": {
+                "operationId": "CatsController_findOne",
+                "parameters": {
+                  "id": "$response.body#/kittenIds"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -1286,6 +1310,12 @@
               }
             ],
             "description": "Array of values that uses \"oneOf\""
+          },
+          "kittenIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -1299,7 +1329,8 @@
           "enum",
           "enumArr",
           "enumWithRef",
-          "oneOfExample"
+          "oneOfExample",
+          "kittenIds"
         ]
       },
       "Letter": {

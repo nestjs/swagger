@@ -48,6 +48,11 @@ The following decorators have been changed/renamed:
 - `@ApiOperation({ title: 'test' })` is now `@ApiOperation({ summary: 'test' })`
 - `@ApiUseTags` is now `@ApiTags`
 
+The following decorators have been added:
+
+- `@ApiDefaultGetter` to generate [link objects](https://swagger.io/docs/specification/links/) together with `@ApiProperty({link: () => Type})`
+- `@ApiLink` to directly generate link objects
+
 `DocumentBuilder` breaking changes (updated method signatures):
 
 - `addTag`
