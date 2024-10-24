@@ -30,13 +30,14 @@ export function ApiResponse(
   options: ApiResponseOptions,
   { overrideExisting } = { overrideExisting: true }
 ): MethodDecorator & ClassDecorator {
+  const apiResponseMetadata = options as ApiResponseMetadata;
   const [type, isArray] = getTypeIsArrayTuple(
-    (options as ApiResponseMetadata).type,
-    (options as ApiResponseMetadata).isArray
+    apiResponseMetadata.type,
+    apiResponseMetadata.isArray
   );
 
-  (options as ApiResponseMetadata).type = type;
-  (options as ApiResponseMetadata).isArray = isArray;
+  apiResponseMetadata.type = type;
+  apiResponseMetadata.isArray = isArray;
   options.description = options.description ? options.description : '';
 
   const groupedMetadata = {
