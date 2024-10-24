@@ -64,32 +64,39 @@ export class SchemaObjectFactory {
         return this.createQueryOrParamSchema(param, schemas);
       }
 
-      const modelName = this.exploreModelSchema(param.type, schemas);
-      const name = param.name || modelName;
-      const schema = {
-        ...((param as BaseParameterObject).schema || {}),
-        $ref: getSchemaPath(modelName)
-      };
-      const isArray = param.isArray;
-      param = omit(param, 'isArray');
+      return this.getCustomType(param, schemas);
+    });
+    return flatten(parameterObjects);
+  }
 
-      if (isArray) {
-        return {
-          ...param,
-          name,
-          schema: {
-            type: 'array',
-            items: schema
-          }
-        };
-      }
+  getCustomType(
+    param: ParamWithTypeMetadata,
+    schemas: Record<string, SchemaObject>
+  ) {
+    const modelName = this.exploreModelSchema(param.type, schemas);
+    const name = param.name || modelName;
+    const schema = {
+      ...((param as BaseParameterObject).schema || {}),
+      $ref: getSchemaPath(modelName)
+    };
+    const isArray = param.isArray;
+    param = omit(param, 'isArray');
+
+    if (isArray) {
       return {
         ...param,
         name,
-        schema
+        schema: {
+          type: 'array',
+          items: schema
+        }
       };
-    });
-    return flatten(parameterObjects);
+    }
+    return {
+      ...param,
+      name,
+      schema
+    };
   }
 
   private createQueryOrParamSchema(
@@ -111,23 +118,7 @@ export class SchemaObjectFactory {
       };
     }
     if (isFunction(param.type)) {
-      const propertiesWithType = this.extractPropertiesFromType(
-        param.type,
-        schemas
-      );
-      if (!propertiesWithType) {
-        return param;
-      }
-      return propertiesWithType.map(
-        (property: ParameterObject & ParamWithTypeMetadata) => {
-          const parameterObject = {
-            ...(omit(property, 'enumName') as ParameterObject),
-            in: param.in ?? 'query',
-            required: property.required ?? true
-          };
-          return parameterObject;
-        }
-      ) as ParameterObject[];
+      return this.getCustomType(param, schemas);
     }
     return param;
   }
