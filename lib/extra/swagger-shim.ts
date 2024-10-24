@@ -206,6 +206,9 @@ export function ApiHttpVersionNotSupportedResponse() {
 export function ApiDefaultResponse() {
   return () => {};
 }
+export function ApiSchema() {
+  return () => {};
+}
 export function ApiSecurity() {
   return () => {};
 }
