@@ -208,7 +208,13 @@ export class SchemaObjectFactory {
     const typeDefinition: SchemaObject = {
       type: 'object',
       properties: mapValues(keyBy(propertiesWithType, 'name'), (property) =>
-        omit(property, ['name', 'isArray', 'required', 'enumName'])
+        omit(property, [
+          'name',
+          'isArray',
+          'required',
+          'enumName',
+          'enumSchema'
+        ])
       ) as Record<string, SchemaObject | ReferenceObject>,
       ...extensionProperties
     };
@@ -296,8 +302,18 @@ export class SchemaObjectFactory {
             ? param.schema?.['items']?.['type']
             : param.schema?.['type']) ?? 'string',
         enum: _enum,
+        ...param.enumSchema,
         ...(param['x-enumNames'] ? { 'x-enumNames': param['x-enumNames'] } : {})
       };
+    } else {
+      // Enum type is already defined so grab it and
+      // assign additional metadata if specified
+      if (param.enumSchema) {
+        schemas[enumName] = {
+          ...schemas[enumName],
+          ...param.enumSchema
+        };
+      }
     }
 
     param.schema =
@@ -305,7 +321,14 @@ export class SchemaObjectFactory {
         ? { type: 'array', items: { $ref } }
         : { $ref };
 
-    return omit(param, ['isArray', 'items', 'enumName', 'enum', 'x-enumNames']);
+    return omit(param, [
+      'isArray',
+      'items',
+      'enumName',
+      'enum',
+      'x-enumNames',
+      'enumSchema'
+    ]);
   }
 
   createEnumSchemaType(
@@ -313,36 +336,36 @@ export class SchemaObjectFactory {
     metadata: SchemaObjectMetadata,
     schemas: Record<string, SchemaObject>
   ) {
-    if (!metadata.enumName) {
+    if (!('enumName' in metadata) || !metadata.enumName) {
       return {
         ...metadata,
         name: metadata.name || key
       };
     }
+
     const enumName = metadata.enumName;
     const $ref = getSchemaPath(enumName);
-
-    // Allow given fields to be part of the referenced enum schema
-    const additionalParams = ['description', 'deprecated', 'default'];
-    const additionalFields = additionalParams.reduce(
-      (acc, param) => ({
-        ...acc,
-        ...(metadata[param] && { [param]: metadata[param] })
-      }),
-      {}
-    );
 
     const enumType: string =
       (metadata.isArray ? metadata.items['type'] : metadata.type) ?? 'string';
 
-    schemas[enumName] = {
-      type: enumType,
-      ...additionalFields,
-      enum:
-        metadata.isArray && metadata.items
-          ? metadata.items['enum']
-          : metadata.enum
-    };
+    if (!schemas[enumName]) {
+      schemas[enumName] = {
+        type: enumType,
+        ...metadata.enumSchema,
+        enum:
+          metadata.isArray && metadata.items
+            ? metadata.items['enum']
+            : metadata.enum
+      };
+    } else {
+      if (metadata.enumSchema) {
+        schemas[enumName] = {
+          ...schemas[enumName],
+          ...metadata.enumSchema
+        };
+      }
+    }
 
     const _schemaObject = {
       ...metadata,
@@ -350,9 +373,11 @@ export class SchemaObjectFactory {
       type: metadata.isArray ? 'array' : 'string'
     };
 
-    const refHost = metadata.isArray ? { items: { $ref } } : { $ref };
+    const refHost = metadata.isArray
+      ? { items: { $ref } }
+      : { allOf: [{ $ref }] };
     const paramObject = { ..._schemaObject, ...refHost };
-    const pathsToOmit = ['enum', 'enumName', ...additionalParams];
+    const pathsToOmit = ['enum', 'enumName', 'enumSchema'];
 
     if (!metadata.isArray) {
       pathsToOmit.push('type');

@@ -84,16 +84,26 @@ describe('SwaggerExplorer', () => {
 
       @ApiProperty({
         enum: LettersEnum,
-        enumName: 'LettersEnum'
+        enumName: 'LettersEnum',
+        enumSchema: {
+          description: 'This is a description for the LettersEnum schema',
+          deprecated: true
+        },
+        description: "This is a description for 'enum' property",
+        deprecated: false,
+        default: LettersEnum.B
       })
       enum: LettersEnum;
 
       @ApiProperty({
         enum: LettersEnum,
         enumName: 'LettersEnum',
+        description: "This is a description for 'enumArr' property",
+        deprecated: false,
+        default: [LettersEnum.A],
         isArray: true
       })
-      enumArr: LettersEnum;
+      enumArr: LettersEnum[];
 
       @ApiProperty({
         enum: () => LettersEnum,
@@ -342,6 +352,8 @@ describe('SwaggerExplorer', () => {
           in: 'query',
           name: 'enum',
           required: true,
+          deprecated: false,
+          description: "This is a description for 'enum' property",
           schema: {
             $ref: '#/components/schemas/LettersEnum'
           }
@@ -350,6 +362,8 @@ describe('SwaggerExplorer', () => {
           in: 'query',
           name: 'enumArr',
           required: true,
+          deprecated: false,
+          description: "This is a description for 'enumArr' property",
           schema: {
             items: {
               $ref: '#/components/schemas/LettersEnum'
