@@ -194,7 +194,7 @@ export class SwaggerModule {
        */
     }
 
-    httpAdapter.get(finalPath, (_, res) => {
+    function serveSwaggerHtml(_: any, res: any) {
       res.type('text/html');
 
       if (!swaggerUiHtml) {
@@ -202,19 +202,14 @@ export class SwaggerModule {
       }
 
       res.send(swaggerUiHtml);
-    });
+    }
+
+    httpAdapter.get(finalPath, serveSwaggerHtml);
+    httpAdapter.get(`${finalPath}/index.html`, serveSwaggerHtml);
 
     // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
     try {
-      httpAdapter.get(normalizeRelPath(`${finalPath}/`), (_, res) => {
-        res.type('text/html');
-
-        if (!swaggerUiHtml) {
-          swaggerUiHtml = buildSwaggerHTML(baseUrlForSwaggerUI, swaggerOptions);
-        }
-
-        res.send(swaggerUiHtml);
-      });
+      httpAdapter.get(normalizeRelPath(`${finalPath}/`), serveSwaggerHtml);
     } catch (err) {
       /**
        * When Fastify adapter is being used with the "ignoreTrailingSlash" configuration option set to "true",
