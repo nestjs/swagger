@@ -275,6 +275,13 @@ describe('SchemaObjectFactory', () => {
               { $ref: '#/components/schemas/Dog' }
             ],
             discriminator: { propertyName: 'pet_type' }
+          },
+          formatArray: {
+            type: 'array',
+            items: {
+              type: 'string',
+              format: 'uuid'
+            }
           }
         },
         required: [
@@ -290,7 +297,8 @@ describe('SchemaObjectFactory', () => {
           'allOf',
           'houses',
           'createdAt',
-          'amount'
+          'amount',
+          'formatArray'
         ]
       });
       expect(schemas['CreateProfileDto']).toEqual({
