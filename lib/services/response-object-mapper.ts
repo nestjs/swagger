@@ -1,4 +1,4 @@
-import { omit } from 'lodash';
+import { omit, pick } from 'lodash';
 import { ApiResponseMetadata, ApiResponseSchemaHost } from '../decorators';
 import { getSchemaPath } from '../utils';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper';
@@ -11,8 +11,9 @@ export class ResponseObjectMapper {
     name: string,
     produces: string[]
   ) {
+    const exampleKeys = ['example', 'examples'];
     return {
-      ...omit(response, 'example'),
+      ...omit(response, exampleKeys),
       ...this.mimetypeContentWrapper.wrap(produces, {
         schema: {
           type: 'array',
@@ -20,19 +21,20 @@ export class ResponseObjectMapper {
             $ref: getSchemaPath(name)
           }
         },
-        example: response.example
+        ...pick(response, exampleKeys)
       })
     };
   }
 
   toRefObject(response: Record<string, any>, name: string, produces: string[]) {
+    const exampleKeys = ['example', 'examples'];
     return {
-      ...omit(response, 'example'),
+      ...omit(response, exampleKeys),
       ...this.mimetypeContentWrapper.wrap(produces, {
         schema: {
           $ref: getSchemaPath(name)
         },
-        example: response.example
+        ...pick(response, exampleKeys)
       })
     };
   }
@@ -41,15 +43,20 @@ export class ResponseObjectMapper {
     response: ApiResponseSchemaHost & ApiResponseMetadata,
     produces: string[]
   ) {
-    if (!response.schema && !response.example) {
+    if (
+      !response.schema &&
+      !('example' in response) &&
+      !('examples' in response)
+    ) {
       return response;
     }
+    const exampleKeys = ['example', 'examples'];
     const content = this.mimetypeContentWrapper.wrap(produces, {
       schema: response.schema,
-      example: response.example
+      ...pick(response, exampleKeys)
     });
     return {
-      ...omit(response, ['schema', 'example']),
+      ...omit(response, exampleKeys),
       ...content
     };
   }

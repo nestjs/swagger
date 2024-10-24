@@ -100,6 +100,14 @@ describe('SwaggerExplorer', () => {
       formatArray: string[];
     }
 
+    class ErrorEntitiesDto {
+      @ApiProperty()
+      isError: boolean;
+
+      @ApiProperty()
+      reason: string;
+    }
+
     @Controller('')
     class FooController {
       @Post('foos')
@@ -110,6 +118,26 @@ describe('SwaggerExplorer', () => {
         example: {
           id: 'foo',
           name: 'Foo'
+        }
+      })
+      @ApiBadRequestResponse({
+        type: Foo,
+        description: 'Invalid parameter error',
+        examples: {
+          ParameterInvalidName: {
+            summary: 'failure create foo object (invalid name)',
+            value: {
+              isError: true,
+              reason: 'Foo parameter name is invalid'
+            }
+          },
+          ParameterInvalidEmail: {
+            summary: 'failure create foo object (invalid email)',
+            value: {
+              isError: true,
+              reason: 'Foo parameter email is invalid'
+            }
+          }
         }
       })
       create(
@@ -129,6 +157,30 @@ describe('SwaggerExplorer', () => {
         return Promise.resolve([]);
       }
     }
+
+    it('sees two examples for error responses by same response code', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+
+      expect(
+        (routes[0].responses['400'] as ResponseObject).content[
+          'application/json'
+        ].examples.ParameterInvalidName
+      ).toBeDefined();
+      expect(
+        (routes[0].responses['400'] as ResponseObject).content[
+          'application/json'
+        ].examples.ParameterInvalidEmail
+      ).toBeDefined();
+    });
 
     it('sees two controller operations and their responses', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
@@ -341,6 +393,7 @@ describe('SwaggerExplorer', () => {
         example: { id: 'foo', name: 'Foo' }
       });
       expect(createdResponse).not.toHaveProperty('example');
+      expect(createdResponse).not.toHaveProperty('examples');
 
       // GET
       expect(routes[1].root!.operationId).toEqual(operationPrefix + 'find[0]');
@@ -609,6 +662,14 @@ describe('SwaggerExplorer', () => {
 
     class CreateFoo {}
 
+    class ErrorEntitiesDto {
+      @ApiProperty()
+      isError: boolean;
+
+      @ApiProperty()
+      reason: string;
+    }
+
     @Controller('')
     class FooController {
       @ApiConsumes('application/xml')
@@ -619,6 +680,26 @@ describe('SwaggerExplorer', () => {
       @ApiCreatedResponse({
         type: Foo,
         description: 'Newly created Foo object'
+      })
+      @ApiBadRequestResponse({
+        type: Foo,
+        description: 'Invalid parameter error',
+        examples: {
+          ParameterInvalidName: {
+            summary: 'failure create foo object (invalid name)',
+            value: {
+              isError: true,
+              reason: 'Foo parameter name is invalid'
+            }
+          },
+          ParameterInvalidEmail: {
+            summary: 'failure create foo object (invalid email)',
+            value: {
+              isError: true,
+              reason: 'Foo parameter email is invalid'
+            }
+          }
+        }
       })
       create(): Promise<Foo> {
         return Promise.resolve({});
@@ -648,6 +729,31 @@ describe('SwaggerExplorer', () => {
       const operationPrefix = 'FooController_';
 
       validateRoutes(routes, operationPrefix);
+    });
+
+    it('sees two examples for error responses for the same response code', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        'modulePath',
+        'globalPrefix'
+      );
+
+      const badRequestResponse = routes[0].responses['400'] as ResponseObject;
+      expect(
+        badRequestResponse.content['application/xml'].examples
+          .ParameterInvalidName
+      ).toBeDefined();
+      expect(
+        badRequestResponse.content['application/xml'].examples
+          .ParameterInvalidEmail
+      ).toBeDefined();
+      expect(badRequestResponse).not.toHaveProperty('example');
+      expect(badRequestResponse).not.toHaveProperty('examples');
     });
 
     it('sees two controller operations and their responses with custom operationIdFactory to return methodKey', () => {

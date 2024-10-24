@@ -39,6 +39,7 @@ export class ResponseObjectFactory {
       const swaggerType =
         this.swaggerTypesMapper.mapTypeToOpenAPIType(typeName);
 
+      const exampleKeys = ['example', 'examples'];
       if (isArray) {
         const content = this.mimetypeContentWrapper.wrap(produces, {
           schema: {
@@ -49,17 +50,18 @@ export class ResponseObjectFactory {
           }
         });
         return {
-          ...omit(response, 'example'),
+          ...omit(response, exampleKeys),
           ...content
         };
       }
+
       const content = this.mimetypeContentWrapper.wrap(produces, {
         schema: {
           type: swaggerType
         }
       });
       return {
-        ...omit(response, 'example'),
+        ...omit(response, exampleKeys),
         ...content
       };
     }
