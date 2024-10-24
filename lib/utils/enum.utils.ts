@@ -43,8 +43,10 @@ export function getEnumType(values: (string | number)[]): 'string' | 'number' {
 }
 
 export function addEnumArraySchema(
-  paramDefinition: Partial<Record<'schema' | 'isArray' | 'enumName', any>>,
-  decoratorOptions: Partial<Record<'enum' | 'enumName', any>>
+  paramDefinition: Partial<
+    Record<'schema' | 'isArray' | 'enumName' | 'enumSchema', any>
+  >,
+  decoratorOptions: Partial<Record<'enum' | 'enumName' | 'enumSchema', any>>
 ) {
   const paramSchema: SchemaObject = paramDefinition.schema || {};
   paramDefinition.schema = paramSchema;
@@ -59,6 +61,10 @@ export function addEnumArraySchema(
 
   if (decoratorOptions.enumName) {
     paramDefinition.enumName = decoratorOptions.enumName;
+  }
+
+  if (decoratorOptions.enumSchema) {
+    paramDefinition.enumSchema = decoratorOptions.enumSchema;
   }
 }
 
@@ -75,6 +81,10 @@ export function addEnumSchema(
 
   if (decoratorOptions.enumName) {
     paramDefinition.enumName = decoratorOptions.enumName;
+  }
+
+  if (decoratorOptions.enumSchema) {
+    paramDefinition.enumSchema = decoratorOptions.enumSchema;
   }
 }
 

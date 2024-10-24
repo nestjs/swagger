@@ -1,14 +1,14 @@
 import { Type } from '@nestjs/common';
 import { DECORATORS } from '../constants';
+import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
 import { getEnumType, getEnumValues } from '../utils/enum.utils';
 import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers';
 
-export interface ApiPropertyOptions
+export interface ApiPropertyCommonOptions
   extends Omit<SchemaObjectMetadata, 'name' | 'enum'> {
   name?: string;
   enum?: any[] | Record<string, any> | (() => any[] | Record<string, any>);
-  enumName?: string;
   'x-enumNames'?: string[];
   /**
    * Lazy function returning the type for which the decorated property
@@ -21,6 +21,13 @@ export interface ApiPropertyOptions
    */
   link?: () => Type<unknown> | Function;
 }
+
+export type ApiPropertyOptions =
+  | ApiPropertyCommonOptions
+  | (ApiPropertyCommonOptions & {
+      enumName: string;
+      enumSchema?: EnumSchemaAttributes;
+    });
 
 const isEnumArray = (obj: ApiPropertyOptions): boolean =>
   obj.isArray && !!obj.enum;

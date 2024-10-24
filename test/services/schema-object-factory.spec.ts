@@ -107,7 +107,11 @@ describe('SchemaObjectFactory', () => {
         type: 'object',
         properties: {
           role: {
-            $ref: '#/components/schemas/Role'
+            allOf: [
+              {
+                $ref: '#/components/schemas/Role'
+              }
+            ]
           },
           roles: {
             type: 'array',
@@ -134,7 +138,11 @@ describe('SchemaObjectFactory', () => {
             type: 'array'
           },
           hairColour: {
-            $ref: '#/components/schemas/HairColour'
+            allOf: [
+              {
+                $ref: '#/components/schemas/HairColour'
+              }
+            ]
           }
         },
         required: [
@@ -157,7 +165,11 @@ describe('SchemaObjectFactory', () => {
             type: 'string'
           },
           role: {
-            $ref: '#/components/schemas/Role'
+            allOf: [
+              {
+                $ref: '#/components/schemas/Role'
+              }
+            ]
           }
         },
         required: ['name', 'role']

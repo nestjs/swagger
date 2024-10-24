@@ -52,7 +52,7 @@ export class Cat {
     enum: LettersEnum,
     isArray: true
   })
-  enumArr: LettersEnum;
+  enumArr: LettersEnum[];
 
   @ApiProperty({
     enum: LettersEnum,

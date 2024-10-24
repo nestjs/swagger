@@ -1,5 +1,6 @@
 import { Type } from '@nestjs/common';
 import { isNil, omit } from 'lodash';
+import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
 import {
   ParameterObject,
   ReferenceObject,
@@ -16,13 +17,19 @@ import { createParamDecorator, getTypeIsArrayTuple } from './helpers';
 
 type ParameterOptions = Omit<ParameterObject, 'in' | 'schema' | 'name'>;
 
-interface ApiQueryMetadata extends ParameterOptions {
+interface ApiQueryCommonMetadata extends ParameterOptions {
   name?: string;
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   enum?: SwaggerEnumType;
-  enumName?: string;
 }
+
+export type ApiQueryMetadata =
+  | ApiQueryCommonMetadata
+  | ({
+      enumName: string;
+      enumSchema?: EnumSchemaAttributes;
+    } & ApiQueryCommonMetadata);
 
 interface ApiQuerySchemaHost extends ParameterOptions {
   name?: string;
