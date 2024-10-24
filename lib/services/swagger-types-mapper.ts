@@ -1,4 +1,4 @@
-import { isFunction, isUndefined, omit, omitBy } from 'lodash';
+import { isFunction, isString, isUndefined, omit, omitBy, pick } from 'lodash';
 import { ApiPropertyOptions } from '../decorators';
 import {
   BaseParameterObject,
@@ -91,6 +91,7 @@ export class SwaggerTypesMapper {
     param: (ParamWithTypeMetadata & SchemaObject) | BaseParameterObject,
     keysToRemove: Array<keyof ApiPropertyOptions | '$ref'>
   ) {
+    const itemsModifierKeys = ['format', 'maximum', 'minimum', 'pattern'];
     const items =
       (param as SchemaObject).items ||
       omitBy(
@@ -101,12 +102,15 @@ export class SwaggerTypesMapper {
         },
         isUndefined
       );
+    const modifierProperties = pick(param, itemsModifierKeys);
     return {
       ...omit(param, keysToRemove),
       schema: {
-        ...this.getSchemaOptions(param),
+        ...omit(this.getSchemaOptions(param), [...itemsModifierKeys]),
         type: 'array',
-        items
+        items: isString((items as any).type)
+          ? { type: (items as any).type, ...modifierProperties }
+          : { ...(items as any).type, ...modifierProperties }
       }
     };
   }

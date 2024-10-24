@@ -95,6 +95,9 @@ describe('SwaggerExplorer', () => {
         enumName: 'LettersEnum'
       })
       enumFunction: LettersEnum;
+
+      @ApiProperty({ type: [String], format: 'uuid' })
+      formatArray: string[];
     }
 
     @Controller('')
@@ -247,7 +250,7 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root!.method).toEqual('post');
       expect(routes[0].root!.path).toEqual('/globalPrefix/modulePath/foos');
       expect(routes[0].root!.summary).toEqual('Create foo');
-      expect(routes[0].root!.parameters.length).toEqual(6);
+      expect(routes[0].root!.parameters.length).toEqual(7);
       expect(routes[0].root!.parameters).toEqual([
         {
           in: 'query',
@@ -303,6 +306,18 @@ describe('SwaggerExplorer', () => {
           required: true,
           schema: {
             $ref: '#/components/schemas/LettersEnum'
+          }
+        },
+        {
+          in: 'query',
+          name: 'formatArray',
+          required: true,
+          schema: {
+            type: 'array',
+            items: {
+              type: 'string',
+              format: 'uuid'
+            }
           }
         }
       ]);
