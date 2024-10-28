@@ -176,4 +176,18 @@ export class CatsController {
     }
   })
   getWithRandomQuery(@Query('type') type: string) {}
+
+  @Get('download')
+  @ApiOperation({
+    responses: {
+      '200': {
+        description: 'binary file for download',
+        content: {
+          'application/pdf': { schema: { type: 'string', format: 'binary' } },
+          'image/jpeg': { schema: { type: 'string', format: 'binary' } }
+        }
+      }
+    }
+  })
+  download() {}
 }

@@ -193,11 +193,51 @@
     },
     "/api/cats": {
       "post": {
-        "operationId": "CatsController_create",
-        "x-foo": {
-          "test": "bar "
+        "callbacks": {
+          "myEvent": {
+            "{$request.body#/callbackUrl}": {
+              "post": {
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Cat"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Your server returns this code if it accepts the callback"
+                  }
+                }
+              }
+            }
+          },
+          "mySecondEvent": {
+            "{$request.body#/callbackUrl}": {
+              "post": {
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Cat"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Your server returns this code if it accepts the callback"
+                  }
+                }
+              }
+            }
+          }
         },
-        "summary": "Create cat",
+        "operationId": "CatsController_create",
         "parameters": [
           {
             "name": "header",
@@ -242,10 +282,6 @@
             "description": "Forbidden."
           }
         },
-        "tags": [
-          "cats",
-          "create cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -258,62 +294,17 @@
             "basic": []
           }
         ],
-        "callbacks": {
-          "myEvent": {
-            "{$request.body#/callbackUrl}": {
-              "post": {
-                "requestBody": {
-                  "required": true,
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "$ref": "#/components/schemas/Cat"
-                      }
-                    }
-                  }
-                },
-                "responses": {
-                  "200": {
-                    "description": "Your server returns this code if it accepts the callback"
-                  }
-                }
-              }
-            }
-          },
-          "mySecondEvent": {
-            "{$request.body#/callbackUrl}": {
-              "post": {
-                "requestBody": {
-                  "required": true,
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "$ref": "#/components/schemas/Cat"
-                      }
-                    }
-                  }
-                },
-                "responses": {
-                  "200": {
-                    "description": "Your server returns this code if it accepts the callback"
-                  }
-                }
-              }
-            }
-          }
+        "summary": "Create cat",
+        "tags": [
+          "cats",
+          "create cats"
+        ],
+        "x-foo": {
+          "test": "bar "
         }
       },
       "get": {
         "operationId": "CatsController_findAll",
-        "x-multiple": {
-          "test": "test"
-        },
-        "x-codeSamples": [
-          {
-            "lang": "JavaScript",
-            "source": "console.log('Hello World');"
-          }
-        ],
         "parameters": [
           {
             "name": "header",
@@ -434,11 +425,6 @@
             "description": ""
           }
         },
-        "tags": [
-          "cats",
-          "tag2",
-          "tag1"
-        ],
         "security": [
           {
             "key2": [],
@@ -450,7 +436,21 @@
           {
             "basic": []
           }
-        ]
+        ],
+        "tags": [
+          "cats",
+          "tag2",
+          "tag1"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "JavaScript",
+            "source": "console.log('Hello World');"
+          }
+        ],
+        "x-multiple": {
+          "test": "test"
+        }
       }
     },
     "/api/cats/explicit-body": {
@@ -500,9 +500,6 @@
             "description": ""
           }
         },
-        "tags": [
-          "cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -514,13 +511,15 @@
           {
             "basic": []
           }
+        ],
+        "tags": [
+          "cats"
         ]
       }
     },
     "/api/cats/{id}": {
       "get": {
         "operationId": "CatsController_findOne",
-        "x-auth-type": "NONE",
         "parameters": [
           {
             "name": "header",
@@ -568,9 +567,6 @@
             }
           }
         },
-        "tags": [
-          "cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -582,7 +578,11 @@
           {
             "basic": []
           }
-        ]
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-auth-type": "NONE"
       }
     },
     "/api/cats/explicit-query": {
@@ -620,9 +620,6 @@
             "description": ""
           }
         },
-        "tags": [
-          "cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -634,13 +631,15 @@
           {
             "basic": []
           }
+        ],
+        "tags": [
+          "cats"
         ]
       }
     },
     "/api/cats/bulk": {
       "get": {
         "operationId": "CatsController_findAllBulk",
-        "summary": "Find all cats in bulk",
         "parameters": [
           {
             "name": "header",
@@ -683,9 +682,6 @@
             }
           }
         },
-        "tags": [
-          "cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -697,6 +693,10 @@
           {
             "basic": []
           }
+        ],
+        "summary": "Find all cats in bulk",
+        "tags": [
+          "cats"
         ]
       },
       "post": {
@@ -738,9 +738,6 @@
             "description": ""
           }
         },
-        "tags": [
-          "cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -752,13 +749,15 @@
           {
             "basic": []
           }
+        ],
+        "tags": [
+          "cats"
         ]
       }
     },
     "/api/cats/as-form-data": {
       "post": {
         "operationId": "CatsController_createAsFormData",
-        "summary": "Create cat",
         "parameters": [
           {
             "name": "header",
@@ -811,9 +810,6 @@
             "description": "Forbidden."
           }
         },
-        "tags": [
-          "cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -825,6 +821,10 @@
           {
             "basic": []
           }
+        ],
+        "summary": "Create cat",
+        "tags": [
+          "cats"
         ]
       }
     },
@@ -855,9 +855,6 @@
             "description": ""
           }
         },
-        "tags": [
-          "cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -869,6 +866,9 @@
           {
             "basic": []
           }
+        ],
+        "tags": [
+          "cats"
         ]
       }
     },
@@ -912,9 +912,6 @@
             "description": ""
           }
         },
-        "tags": [
-          "cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -926,6 +923,9 @@
           {
             "basic": []
           }
+        ],
+        "tags": [
+          "cats"
         ]
       }
     },
@@ -966,9 +966,6 @@
             "description": ""
           }
         },
-        "tags": [
-          "cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -980,6 +977,9 @@
           {
             "basic": []
           }
+        ],
+        "tags": [
+          "cats"
         ]
       }
     },
@@ -1032,9 +1032,6 @@
             "description": ""
           }
         },
-        "tags": [
-          "cats"
-        ],
         "security": [
           {
             "key2": [],
@@ -1046,6 +1043,68 @@
           {
             "basic": []
           }
+        ],
+        "tags": [
+          "cats"
+        ]
+      }
+    },
+    "/api/cats/download": {
+      "get": {
+        "operationId": "CatsController_download",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "test"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "binary file for download",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "cats"
         ]
       }
     }
