@@ -947,6 +947,8 @@
             "name": "type",
             "required": true,
             "in": "path",
+            "description": "This is a description for 'type' query parameter",
+            "deprecated": false,
             "schema": {
               "$ref": "#/components/schemas/Letter"
             }
@@ -1103,14 +1105,13 @@
       },
       "LettersEnum": {
         "type": "string",
-        "description": "A small assortment of letters?",
-        "deprecated": true,
-        "default": "A",
         "enum": [
           "A",
           "B",
           "C"
-        ]
+        ],
+        "description": "This is a description for the LettersEnum schema",
+        "deprecated": true
       },
       "TagDto": {
         "type": "object",
@@ -1177,16 +1178,28 @@
             "description": "Enum with description"
           },
           "enum": {
-            "$ref": "#/components/schemas/LettersEnum"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
+            ]
           },
           "enumArr": {
             "type": "array",
+            "description": "This is a description for the enumArr attribute",
             "items": {
               "$ref": "#/components/schemas/LettersEnum"
             }
           },
           "enumWithRef": {
-            "$ref": "#/components/schemas/LettersEnum"
+            "description": "A small assortment of letters (in DTO)?",
+            "default": "A",
+            "deprecated": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
+            ]
           },
           "tag": {
             "description": "tag",
@@ -1286,7 +1299,14 @@
             }
           },
           "enumWithRef": {
-            "$ref": "#/components/schemas/LettersEnum"
+            "description": "A small assortment of letters?",
+            "default": "A",
+            "deprecated": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
+            ]
           },
           "oneOfExample": {
             "oneOf": [
@@ -1339,7 +1359,9 @@
           "A",
           "B",
           "C"
-        ]
+        ],
+        "description": "This is a description for the Letters schema",
+        "deprecated": true
       },
       "PaginationQuery": {
         "type": "object",
@@ -1370,7 +1392,11 @@
             "type": "number"
           },
           "enum": {
-            "$ref": "#/components/schemas/LettersEnum"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
+            ]
           },
           "enumArr": {
             "type": "array",

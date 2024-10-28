@@ -57,16 +57,21 @@ export class CreateCatDto {
   @ApiProperty({
     enum: LettersEnum,
     enumName: 'LettersEnum',
-    isArray: true
+    isArray: true,
+    description: 'This is a description for the enumArr attribute'
   })
-  readonly enumArr: LettersEnum;
+  readonly enumArr: LettersEnum[];
 
   @ApiProperty({
     enum: LettersEnum,
     enumName: 'LettersEnum',
-    description: 'A small assortment of letters?',
+    description: 'A small assortment of letters (in DTO)?',
     default: 'A',
-    deprecated: true
+    deprecated: true,
+    enumSchema: {
+      description: 'This is a description for the LettersEnum schema',
+      deprecated: true
+    }
   })
   readonly enumWithRef: LettersEnum;
 

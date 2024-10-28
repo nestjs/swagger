@@ -7,12 +7,19 @@ import {
 } from '../interfaces/open-api-spec.interface';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 
+type KeysToRemove =
+  | keyof ApiPropertyOptions
+  | '$ref'
+  | 'enumName'
+  | 'enumSchema';
+
 export class SwaggerTypesMapper {
-  private readonly keysToRemove: Array<keyof ApiPropertyOptions | '$ref'> = [
+  private readonly keysToRemove: Array<KeysToRemove> = [
     'type',
     'isArray',
     'enum',
     'enumName',
+    'enumSchema',
     'items',
     '$ref',
     ...this.getSchemaOptionsKeys()
@@ -73,10 +80,7 @@ export class SwaggerTypesMapper {
     return (type as string).charAt(0).toLowerCase() + (type as string).slice(1);
   }
 
-  mapEnumArrayType(
-    param: Record<string, any>,
-    keysToRemove: Array<keyof ApiPropertyOptions | '$ref'>
-  ) {
+  mapEnumArrayType(param: Record<string, any>, keysToRemove: KeysToRemove[]) {
     return {
       ...omit(param, keysToRemove),
       schema: {
@@ -89,7 +93,7 @@ export class SwaggerTypesMapper {
 
   mapArrayType(
     param: (ParamWithTypeMetadata & SchemaObject) | BaseParameterObject,
-    keysToRemove: Array<keyof ApiPropertyOptions | '$ref'>
+    keysToRemove: KeysToRemove[]
   ) {
     const itemsModifierKeys = ['format', 'maximum', 'minimum', 'pattern'];
     const items =

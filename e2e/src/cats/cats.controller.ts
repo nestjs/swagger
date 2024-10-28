@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiCallbacks,
   ApiConsumes,
   ApiDefaultGetter,
   ApiExtension,
@@ -11,9 +12,7 @@ import {
   ApiQuery,
   ApiResponse,
   ApiSecurity,
-  ApiTags,
-  ApiCallbacks,
-  getSchemaPath
+  ApiTags
 } from '../../../lib';
 import { CatsService } from './cats.service';
 import { Cat } from './classes/cat.class';
@@ -148,7 +147,13 @@ export class CatsController {
   @ApiParam({
     name: 'type',
     enum: LettersEnum,
-    enumName: 'Letter'
+    enumName: 'Letter',
+    enumSchema: {
+      description: 'This is a description for the Letters schema',
+      deprecated: true
+    },
+    description: "This is a description for 'type' query parameter",
+    deprecated: false
   })
   getWithEnumNamedParam(@Param('type') type: LettersEnum) {}
 
