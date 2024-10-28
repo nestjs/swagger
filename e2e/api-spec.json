@@ -387,6 +387,26 @@
             }
           },
           {
+            "name": "constrainedLimit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "oneOf": [
+                {
+                  "minimum": 0,
+                  "maximum": 10,
+                  "format": "int32"
+                },
+                {
+                  "minimum": 100,
+                  "maximum": 100,
+                  "format": "int32"
+                }
+              ],
+              "type": "number"
+            }
+          },
+          {
             "name": "enum",
             "required": true,
             "in": "query",
@@ -1535,6 +1555,20 @@
           "limit": {
             "type": "number"
           },
+          "constrainedLimit": {
+            "oneOf": [
+              {
+                "minimum": 0,
+                "maximum": 10,
+                "format": "int32"
+              },
+              {
+                "minimum": 100,
+                "maximum": 100,
+                "format": "int32"
+              }
+            ]
+          },
           "enum": {
             "allOf": [
               {
@@ -1575,6 +1609,7 @@
           "page",
           "_sortBy",
           "limit",
+          "constrainedLimit",
           "enum",
           "enumArr",
           "letters",

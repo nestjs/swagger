@@ -174,7 +174,9 @@ export class SwaggerTypesMapper {
       'pattern',
       'nullable',
       'default',
-      'example'
+      'example',
+      'oneOf',
+      'anyOf'
     ];
   }
 }
