@@ -1008,6 +1008,18 @@
             }
           },
           {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
             "name": "x-tenant-id",
             "in": "header",
             "schema": {

@@ -163,6 +163,17 @@ export class CatsController {
     type: String,
     minLength: 10,
     maxLength: 100
-  } as any)
+  })
+  @ApiQuery({
+    name: 'filter',
+    required: false,
+    content: {
+      'application/json': {
+        schema: {
+          type: 'string'
+        }
+      }
+    }
+  })
   getWithRandomQuery(@Query('type') type: string) {}
 }

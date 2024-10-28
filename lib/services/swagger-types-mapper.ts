@@ -30,7 +30,10 @@ export class SwaggerTypesMapper {
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
   ) {
     return parameters.map((param) => {
-      if (this.hasSchemaDefinition(param as BaseParameterObject)) {
+      if (
+        this.hasSchemaDefinition(param as BaseParameterObject) ||
+        this.hasRawContentDefinition(param)
+      ) {
         return this.omitParamKeys(param);
       }
       const { type } = param as ParamWithTypeMetadata;
@@ -140,6 +143,10 @@ export class SwaggerTypesMapper {
     param: BaseParameterObject
   ): param is BaseParameterObject {
     return !!param.schema;
+  }
+
+  private hasRawContentDefinition(param: BaseParameterObject) {
+    return 'content' in param;
   }
 
   private omitParamKeys(param: ParamWithTypeMetadata | BaseParameterObject) {

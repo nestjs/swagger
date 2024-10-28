@@ -274,6 +274,7 @@ export class SchemaObjectFactory {
           'link'
         ) || {};
     }
+
     if (this.isLazyTypeFunc(metadata.type as Function)) {
       metadata.type = (metadata.type as Function)();
       [metadata.type, metadata.isArray] = getTypeIsArrayTuple(
@@ -732,5 +733,9 @@ export class SchemaObjectFactory {
       'pattern'
     ];
     return [pick(metadata, modifierKeys), modifierKeys];
+  }
+
+  private hasRawContent(metadata: SchemaObjectMetadata) {
+    return 'content' in metadata;
   }
 }
