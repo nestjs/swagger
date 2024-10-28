@@ -206,10 +206,22 @@ export function ApiHttpVersionNotSupportedResponse() {
 export function ApiDefaultResponse() {
   return () => {};
 }
+export function ApiSchema() {
+  return () => {};
+}
 export function ApiSecurity() {
   return () => {};
 }
 export function ApiTags() {
+  return () => {};
+}
+export function ApiCallbacks() {
+  return () => {};
+}
+export function ApiLink() {
+  return () => {};
+}
+export function ApiDefaultGetter() {
   return () => {};
 }
 export function ApiExtension() {

@@ -144,10 +144,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const apiResponseDecoratorsArray = this.createApiResponseDecorator(
       factory,
       compilerNode,
-      decorators,
       options,
-      sourceFile,
-      typeChecker,
       metadata
     );
 
@@ -212,7 +209,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!options.introspectComments) {
       return [];
     }
-    const keyToGenerate = options.controllerKeyOfComment;
+
     const apiOperationDecorator = getDecoratorOrUndefinedByNames(
       [ApiOperation.name],
       decorators,
@@ -236,26 +233,49 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!extractedComments) {
       return [];
     }
-    const tags = getTsDocTagsOfNode(node, typeChecker);
-
     const properties = [
-      factory.createPropertyAssignment(
-        keyToGenerate,
-        factory.createStringLiteral(extractedComments)
-      ),
       ...(apiOperationExistingProps ?? factory.createNodeArray())
     ];
 
+    const tags = getTsDocTagsOfNode(node, typeChecker);
     const hasRemarksKey = hasPropertyKey(
       'description',
       factory.createNodeArray(apiOperationExistingProps)
     );
     if (!hasRemarksKey && tags.remarks) {
+      // When the @remarks tag is used in the comment, it will be added to the description property of the @ApiOperation decorator.
+      // In this case, even when the "controllerKeyOfComment" option is set to "description", the "summary" property will be used.
       const remarksPropertyAssignment = factory.createPropertyAssignment(
         'description',
         createLiteralFromAnyValue(factory, tags.remarks)
       );
       properties.push(remarksPropertyAssignment);
+
+      if (options.controllerKeyOfComment === 'description') {
+        properties.unshift(
+          factory.createPropertyAssignment(
+            'summary',
+            factory.createStringLiteral(extractedComments)
+          )
+        );
+      } else {
+        const keyToGenerate = options.controllerKeyOfComment;
+        properties.unshift(
+          factory.createPropertyAssignment(
+            keyToGenerate,
+            factory.createStringLiteral(extractedComments)
+          )
+        );
+      }
+    } else {
+      // No @remarks tag was found in the comment so use the attribute set by the user
+      const keyToGenerate = options.controllerKeyOfComment;
+      properties.unshift(
+        factory.createPropertyAssignment(
+          keyToGenerate,
+          factory.createStringLiteral(extractedComments)
+        )
+      );
     }
 
     const hasDeprecatedKey = hasPropertyKey(
@@ -318,30 +338,11 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   createApiResponseDecorator(
     factory: ts.NodeFactory,
     node: ts.MethodDeclaration,
-    decorators: readonly ts.Decorator[],
     options: PluginOptions,
-    sourceFile: ts.SourceFile,
-    typeChecker: ts.TypeChecker,
     metadata: ClassMetadata
   ) {
     if (!options.introspectComments) {
       return [];
-    }
-    const apiResponseDecorator = getDecoratorOrUndefinedByNames(
-      [ApiResponse.name],
-      decorators,
-      factory
-    );
-    let apiResponseExistingProps:
-      | ts.NodeArray<ts.PropertyAssignment>
-      | undefined = undefined;
-
-    if (apiResponseDecorator && !options.readonly) {
-      const apiResponseExpr = head(getDecoratorArguments(apiResponseDecorator));
-      if (apiResponseExpr) {
-        apiResponseExistingProps =
-          apiResponseExpr.properties as ts.NodeArray<ts.PropertyAssignment>;
-      }
     }
 
     const tags = getTsDocErrorsOfNode(node);
@@ -350,9 +351,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     }
 
     return tags.map((tag) => {
-      const properties = [
-        ...(apiResponseExistingProps ?? factory.createNodeArray())
-      ];
+      const properties = [];
       properties.push(
         factory.createPropertyAssignment(
           'status',

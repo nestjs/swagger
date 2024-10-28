@@ -1,5 +1,6 @@
 import { Type } from '@nestjs/common';
-import { isNil, omit } from 'lodash';
+import { omit } from 'lodash';
+import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
 import {
   ParameterObject,
   ReferenceObject,
@@ -16,13 +17,20 @@ import { createParamDecorator, getTypeIsArrayTuple } from './helpers';
 
 type ParameterOptions = Omit<ParameterObject, 'in' | 'schema' | 'name'>;
 
-interface ApiQueryMetadata extends ParameterOptions {
-  name?: string;
+interface ApiQueryCommonMetadata extends ParameterOptions {
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   enum?: SwaggerEnumType;
-  enumName?: string;
 }
+
+export type ApiQueryMetadata =
+  | ApiQueryCommonMetadata
+  | ({ name: string } & ApiQueryCommonMetadata & Omit<SchemaObject, 'required'>)
+  | ({
+      name?: string;
+      enumName: string;
+      enumSchema?: EnumSchemaAttributes;
+    } & ApiQueryCommonMetadata);
 
 interface ApiQuerySchemaHost extends ParameterOptions {
   name?: string;
@@ -31,7 +39,7 @@ interface ApiQuerySchemaHost extends ParameterOptions {
 
 export type ApiQueryOptions = ApiQueryMetadata | ApiQuerySchemaHost;
 
-const defaultQueryOptions: ApiQueryOptions = {
+const defaultQueryOptions = {
   name: '',
   required: true
 };
@@ -44,8 +52,9 @@ export function ApiQuery(
     apiQueryMetadata.type,
     apiQueryMetadata.isArray
   );
+
   const param: ApiQueryMetadata & Record<string, any> = {
-    name: isNil(options.name) ? defaultQueryOptions.name : options.name,
+    name: 'name' in options ? options.name : defaultQueryOptions.name,
     in: 'query',
     ...omit(options, 'enum'),
     type

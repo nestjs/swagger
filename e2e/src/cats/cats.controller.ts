@@ -2,7 +2,9 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiCallbacks,
   ApiConsumes,
+  ApiDefaultGetter,
   ApiExtension,
   ApiHeader,
   ApiOperation,
@@ -31,6 +33,28 @@ import { LettersEnum, PaginationQuery } from './dto/pagination-query.dto';
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}
 
+  @ApiCallbacks({
+    name: 'mySecondEvent',
+    callbackUrl: '{$request.body#/callbackUrl}',
+    method: 'post',
+    requestBody: {
+      type: Cat
+    },
+    expectedResponse: {
+      status: 200
+    }
+  })
+  @ApiCallbacks({
+    name: 'myEvent',
+    callbackUrl: '{$request.body#/callbackUrl}',
+    method: 'post',
+    requestBody: {
+      type: Cat
+    },
+    expectedResponse: {
+      status: 200
+    }
+  })
   @ApiTags('create cats')
   @Post()
   @ApiOperation({ summary: 'Create cat' })
@@ -70,6 +94,7 @@ export class CatsController {
     type: Cat
   })
   @ApiExtension('x-auth-type', 'NONE')
+  @ApiDefaultGetter(Cat, 'id')
   findOne(@Param('id') id: string): Cat {
     return this.catsService.findOne(+id);
   }
@@ -122,7 +147,13 @@ export class CatsController {
   @ApiParam({
     name: 'type',
     enum: LettersEnum,
-    enumName: 'Letter'
+    enumName: 'Letter',
+    enumSchema: {
+      description: 'This is a description for the Letters schema',
+      deprecated: true
+    },
+    description: "This is a description for 'type' query parameter",
+    deprecated: false
   })
   getWithEnumNamedParam(@Param('type') type: LettersEnum) {}
 
@@ -132,7 +163,18 @@ export class CatsController {
     type: String,
     minLength: 10,
     maxLength: 100
-  } as any)
+  })
+  @ApiQuery({
+    name: 'filter',
+    required: false,
+    content: {
+      'application/json': {
+        schema: {
+          type: 'string'
+        }
+      }
+    }
+  })
   getWithRandomQuery(@Query('type') type: string) {}
 
   @Get('download')

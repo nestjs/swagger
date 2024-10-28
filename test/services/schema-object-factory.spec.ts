@@ -1,4 +1,4 @@
-import { ApiExtension, ApiProperty } from '../../lib/decorators';
+import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
 import {
   BaseParameterObject,
   SchemasObject
@@ -107,7 +107,11 @@ describe('SchemaObjectFactory', () => {
         type: 'object',
         properties: {
           role: {
-            $ref: '#/components/schemas/Role'
+            allOf: [
+              {
+                $ref: '#/components/schemas/Role'
+              }
+            ]
           },
           roles: {
             type: 'array',
@@ -134,7 +138,11 @@ describe('SchemaObjectFactory', () => {
             type: 'array'
           },
           hairColour: {
-            $ref: '#/components/schemas/HairColour'
+            allOf: [
+              {
+                $ref: '#/components/schemas/HairColour'
+              }
+            ]
           }
         },
         required: [
@@ -157,7 +165,11 @@ describe('SchemaObjectFactory', () => {
             type: 'string'
           },
           role: {
-            $ref: '#/components/schemas/Role'
+            allOf: [
+              {
+                $ref: '#/components/schemas/Role'
+              }
+            ]
           }
         },
         required: ['name', 'role']
@@ -318,6 +330,32 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should purge linked types from properties', () => {
+      class Human {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty({ link: () => Human })
+        spouseId: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(Human, schemas);
+      expect(schemas[Human.name]).toEqual({
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string'
+          },
+          spouseId: {
+            type: 'string'
+          }
+        },
+        required: ['id', 'spouseId']
+      });
+    });
+
     it('should override base class metadata', () => {
       class CreatUserDto {
         @ApiProperty({ minLength: 0, required: true })
@@ -344,6 +382,34 @@ describe('SchemaObjectFactory', () => {
         type: 'object',
         properties: { name: { type: 'string', minLength: 1 } }
       });
+    });
+
+    it('should use schema name instead of class name', () => {
+      @ApiSchema({
+        name: 'CreateUser'
+      })
+      class CreateUserDto {}
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(CreateUserDto, schemas);
+
+      expect(Object.keys(schemas)).toContain('CreateUser');
+    });
+
+    it('should not use schema name of base class', () => {
+      @ApiSchema({
+        name: 'CreateUser'
+      })
+      class CreateUserDto {}
+
+      class UpdateUserDto extends CreateUserDto {}
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+
+      expect(Object.keys(schemas)).toContain('UpdateUserDto');
     });
 
     it('should include extension properties', () => {
@@ -417,7 +483,7 @@ describe('SchemaObjectFactory', () => {
         enum: [1, 2, 3],
         enumName: 'MyEnum',
         isArray: false
-      };
+      } as const;
       const schemas = {};
 
       schemaObjectFactory.createEnumSchemaType('field', metadata, schemas);

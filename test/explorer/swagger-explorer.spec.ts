@@ -12,21 +12,26 @@ import {
 import { VERSION_NEUTRAL, VersionValue } from '@nestjs/common/interfaces';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
+import { upperFirst } from 'lodash';
 import {
   ApiBadRequestResponse,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
+  ApiDefaultGetter,
   ApiDefaultResponse,
   ApiExcludeController,
   ApiExtraModels,
   ApiHeader,
+  ApiLink,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiProduces,
   ApiProperty,
-  ApiQuery
+  ApiPropertyOptional,
+  ApiQuery,
+  ApiSchema
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
@@ -79,16 +84,26 @@ describe('SwaggerExplorer', () => {
 
       @ApiProperty({
         enum: LettersEnum,
-        enumName: 'LettersEnum'
+        enumName: 'LettersEnum',
+        enumSchema: {
+          description: 'This is a description for the LettersEnum schema',
+          deprecated: true
+        },
+        description: "This is a description for 'enum' property",
+        deprecated: false,
+        default: LettersEnum.B
       })
       enum: LettersEnum;
 
       @ApiProperty({
         enum: LettersEnum,
         enumName: 'LettersEnum',
+        description: "This is a description for 'enumArr' property",
+        deprecated: false,
+        default: [LettersEnum.A],
         isArray: true
       })
-      enumArr: LettersEnum;
+      enumArr: LettersEnum[];
 
       @ApiProperty({
         enum: () => LettersEnum,
@@ -337,6 +352,8 @@ describe('SwaggerExplorer', () => {
           in: 'query',
           name: 'enum',
           required: true,
+          deprecated: false,
+          description: "This is a description for 'enum' property",
           schema: {
             $ref: '#/components/schemas/LettersEnum'
           }
@@ -345,6 +362,8 @@ describe('SwaggerExplorer', () => {
           in: 'query',
           name: 'enumArr',
           required: true,
+          deprecated: false,
+          description: "This is a description for 'enumArr' property",
           schema: {
             items: {
               $ref: '#/components/schemas/LettersEnum'
@@ -1946,6 +1965,141 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when custom schema names are used', () => {
+    @ApiSchema({
+      name: 'Foo'
+    })
+    class FooDto {}
+
+    @ApiSchema({
+      name: 'CreateFoo'
+    })
+    class CreateFooDto {}
+
+    @Controller('')
+    class FooController {
+      @Post('foos')
+      @ApiBody({ type: CreateFooDto })
+      @ApiOperation({ summary: 'Create foo' })
+      @ApiCreatedResponse({
+        type: FooDto,
+        description: 'Newly created Foo object'
+      })
+      create(@Body() createFoo: CreateFooDto): Promise<FooDto> {
+        return Promise.resolve({});
+      }
+
+      @Get('foos/:objectId')
+      @ApiParam({ name: 'objectId', type: 'string' })
+      @ApiQuery({ name: 'page', type: 'string' })
+      @ApiOperation({ summary: 'List all Foos' })
+      @ApiOkResponse({ type: [FooDto] })
+      @ApiDefaultResponse({ type: [FooDto] })
+      find(
+        @Param('objectId') objectId: string,
+        @Query('page') q: string
+      ): Promise<FooDto[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    it('sees two controller operations and their responses', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        'path'
+      );
+
+      expect(routes.length).toEqual(2);
+
+      // POST
+      expect(routes[0].root.operationId).toEqual('FooController_create');
+      expect(routes[0].root.method).toEqual('post');
+      expect(routes[0].root.path).toEqual('/path/foos');
+      expect(routes[0].root.summary).toEqual('Create foo');
+      expect(routes[0].root.parameters.length).toEqual(0);
+      expect(routes[0].root.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/CreateFoo'
+            }
+          }
+        }
+      });
+
+      expect(
+        (routes[0].responses['201'] as ResponseObject).description
+      ).toEqual('Newly created Foo object');
+      expect(
+        (routes[0].responses['201'] as ResponseObject).content[
+          'application/json'
+        ]
+      ).toEqual({
+        schema: {
+          $ref: '#/components/schemas/Foo'
+        }
+      });
+
+      // GET
+      expect(routes[1].root.operationId).toEqual('FooController_find');
+      expect(routes[1].root.method).toEqual('get');
+      expect(routes[1].root.path).toEqual('/path/foos/{objectId}');
+      expect(routes[1].root.summary).toEqual('List all Foos');
+      expect(routes[1].root.parameters.length).toEqual(2);
+      expect(routes[1].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string'
+          }
+        },
+        {
+          in: 'query',
+          name: 'page',
+          required: true,
+          schema: {
+            type: 'string'
+          }
+        }
+      ]);
+      expect(
+        (routes[1].responses['200'] as ResponseObject).description
+      ).toEqual('');
+      expect(
+        (routes[1].responses['200'] as ResponseObject).content[
+          'application/json'
+        ]
+      ).toEqual({
+        schema: {
+          type: 'array',
+          items: {
+            $ref: '#/components/schemas/Foo'
+          }
+        }
+      });
+      expect(
+        (routes[1].responses.default as ResponseObject).content[
+          'application/json'
+        ]
+      ).toEqual({
+        schema: {
+          type: 'array',
+          items: {
+            $ref: '#/components/schemas/Foo'
+          }
+        }
+      });
+    });
+  });
+
   describe('when global parameters are defined', () => {
     class Foo {}
 
@@ -1994,6 +2148,132 @@ describe('SwaggerExplorer', () => {
         }
       ]);
       GlobalParametersStorage.clear();
+    });
+  });
+
+  describe('when links are defined', () => {
+    class Human {
+      @ApiProperty()
+      id: string;
+
+      @ApiProperty({
+        link: () => Human,
+        example: ['a33d0f4b-aec2-4b07-b407-45d8e70332b2']
+      })
+      @ApiPropertyOptional()
+      spouseId?: string;
+
+      @ApiProperty({
+        link: () => Human,
+        example: [
+          '5593519b-b830-4c5a-b5f6-3cbbfbecbd1b',
+          '8044bf32-5485-42c4-b481-d6ef1ae89163'
+        ]
+      })
+      parentIds: string[];
+    }
+
+    @Controller('')
+    class HumanController {
+      @ApiDefaultGetter(Human, 'id')
+      @Get(':id')
+      @ApiOkResponse({
+        type: Human,
+        description: 'Human corresponding to `id`'
+      })
+      getHuman(@Param('id') id: string): Promise<Human> {
+        const human = new Human();
+        human.id = id;
+        return Promise.resolve(human);
+      }
+
+      @Get(':id/children')
+      @ApiLink({ from: Human, routeParam: 'id' })
+      @ApiOkResponse({
+        type: [Human],
+        description: 'Children of human with id `id`'
+      })
+      getChildren(@Param('id') id: string): Promise<Human[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    it('should generate open api link objects', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+
+      const routes = explorer.exploreController(
+        {
+          instance: new HumanController(),
+          metatype: HumanController
+        } as InstanceWrapper<HumanController>,
+        new ApplicationConfig(),
+        'path'
+      );
+
+      expect((routes[0].responses['200'] as ResponseObject).links).toEqual({
+        HumanController_getHuman_from_spouseId: {
+          operationId: 'HumanController_getHuman',
+          parameters: {
+            id: '$response.body#/spouseId'
+          }
+        },
+        HumanController_getHuman_from_parentIds: {
+          operationId: 'HumanController_getHuman',
+          parameters: {
+            id: '$response.body#/parentIds'
+          }
+        },
+        HumanController_getChildren_from_id: {
+          operationId: 'HumanController_getChildren',
+          parameters: {
+            id: '$response.body#/id'
+          }
+        }
+      });
+
+      expect((routes[1].responses['200'] as ResponseObject).links).toEqual(
+        (routes[0].responses['200'] as ResponseObject).links
+      );
+    });
+
+    it('should generate open api link objects with custom linkNameFactory', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+
+      const routes = explorer.exploreController(
+        {
+          instance: new HumanController(),
+          metatype: HumanController
+        } as InstanceWrapper<HumanController>,
+        new ApplicationConfig(),
+        'path',
+        undefined,
+        undefined,
+        (controllerKey, methodKey, paramKey) =>
+          paramKey === 'id'
+            ? methodKey.replace(/^get/, '')
+            : upperFirst(paramKey.replace(/Id(s)?$/, '$1'))
+      );
+
+      expect((routes[0].responses['200'] as ResponseObject).links).toEqual({
+        Spouse: {
+          operationId: 'HumanController_getHuman',
+          parameters: {
+            id: '$response.body#/spouseId'
+          }
+        },
+        Parents: {
+          operationId: 'HumanController_getHuman',
+          parameters: {
+            id: '$response.body#/parentIds'
+          }
+        },
+        Children: {
+          operationId: 'HumanController_getChildren',
+          parameters: {
+            id: '$response.body#/id'
+          }
+        }
+      });
     });
   });
 

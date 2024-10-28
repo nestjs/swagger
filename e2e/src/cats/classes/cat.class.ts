@@ -44,6 +44,22 @@ export class Cat {
   options?: Record<string, any>[];
 
   @ApiProperty({
+    type: 'object',
+    properties: {
+      name: {
+        type: 'string',
+        example: 'ErrorName'
+      },
+      status: {
+        type: 'number',
+        example: '400'
+      }
+    },
+    required: ['name', 'status']
+  })
+  rawDefinition?: Record<string, any>;
+
+  @ApiProperty({
     enum: LettersEnum
   })
   enum: LettersEnum;
@@ -52,7 +68,7 @@ export class Cat {
     enum: LettersEnum,
     isArray: true
   })
-  enumArr: LettersEnum;
+  enumArr: LettersEnum[];
 
   @ApiProperty({
     enum: LettersEnum,
@@ -72,4 +88,7 @@ export class Cat {
     description: 'Array of values that uses "oneOf"'
   })
   oneOfExample?: string[] | number[] | boolean[];
+
+  @ApiProperty({ type: [String], link: () => Cat })
+  kittenIds?: string[];
 }

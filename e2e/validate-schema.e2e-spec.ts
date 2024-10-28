@@ -58,7 +58,14 @@ describe('Validate OpenAPI schema', () => {
               Cat: {
                 tags: {
                   description: 'Tags of the cat',
-                  example: ['tag1', 'tag2']
+                  example: ['tag1', 'tag2'],
+                  required: false
+                },
+                siblings: {
+                  required: false,
+                  type: () => ({
+                    ids: { required: true, type: () => Number }
+                  })
                 }
               }
             }
@@ -111,6 +118,20 @@ describe('Validate OpenAPI schema', () => {
         api.info.version
       );
       expect(api.info.title).toEqual('Cats example');
+      expect(
+        api.paths['/api/cats']['post']['callbacks']['myEvent'][
+          '{$request.body#/callbackUrl}'
+        ]['post']['requestBody']['content']['application/json']['schema'][
+          'properties'
+        ]['breed']['type']
+      ).toEqual('string');
+      expect(
+        api.paths['/api/cats']['post']['callbacks']['mySecondEvent'][
+          '{$request.body#/callbackUrl}'
+        ]['post']['requestBody']['content']['application/json']['schema'][
+          'properties'
+        ]['breed']['type']
+      ).toEqual('string');
       expect(api.paths['/api/cats']['get']['x-codeSamples'][0]['lang']).toEqual(
         'JavaScript'
       );

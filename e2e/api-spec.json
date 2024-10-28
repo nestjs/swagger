@@ -257,7 +257,51 @@
           {
             "basic": []
           }
-        ]
+        ],
+        "callbacks": {
+          "myEvent": {
+            "{$request.body#/callbackUrl}": {
+              "post": {
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Cat"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Your server returns this code if it accepts the callback"
+                  }
+                }
+              }
+            }
+          },
+          "mySecondEvent": {
+            "{$request.body#/callbackUrl}": {
+              "post": {
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Cat"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Your server returns this code if it accepts the callback"
+                  }
+                }
+              }
+            }
+          }
+        }
       },
       "get": {
         "operationId": "CatsController_findAll",
@@ -507,6 +551,14 @@
         "responses": {
           "200": {
             "description": "The found record",
+            "links": {
+              "CatsController_findOne_from_kittenIds": {
+                "operationId": "CatsController_findOne",
+                "parameters": {
+                  "id": "$response.body#/kittenIds"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -611,6 +663,14 @@
         "responses": {
           "200": {
             "description": "",
+            "links": {
+              "CatsController_findOne_from_kittenIds": {
+                "operationId": "CatsController_findOne",
+                "parameters": {
+                  "id": "$response.body#/kittenIds"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -731,6 +791,14 @@
         "responses": {
           "201": {
             "description": "The record has been successfully created.",
+            "links": {
+              "CatsController_findOne_from_kittenIds": {
+                "operationId": "CatsController_findOne",
+                "parameters": {
+                  "id": "$response.body#/kittenIds"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -879,6 +947,8 @@
             "name": "type",
             "required": true,
             "in": "path",
+            "description": "This is a description for 'type' query parameter",
+            "deprecated": false,
             "schema": {
               "$ref": "#/components/schemas/Letter"
             }
@@ -935,6 +1005,18 @@
               "minLength": 10,
               "maxLength": 100,
               "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
             }
           },
           {
@@ -1087,14 +1169,13 @@
       },
       "LettersEnum": {
         "type": "string",
-        "description": "A small assortment of letters?",
-        "deprecated": true,
-        "default": "A",
         "enum": [
           "A",
           "B",
           "C"
-        ]
+        ],
+        "description": "This is a description for the LettersEnum schema",
+        "deprecated": true
       },
       "TagDto": {
         "type": "object",
@@ -1161,16 +1242,28 @@
             "description": "Enum with description"
           },
           "enum": {
-            "$ref": "#/components/schemas/LettersEnum"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
+            ]
           },
           "enumArr": {
             "type": "array",
+            "description": "This is a description for the enumArr attribute",
             "items": {
               "$ref": "#/components/schemas/LettersEnum"
             }
           },
           "enumWithRef": {
-            "$ref": "#/components/schemas/LettersEnum"
+            "description": "A small assortment of letters (in DTO)?",
+            "default": "A",
+            "deprecated": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
+            ]
           },
           "tag": {
             "description": "tag",
@@ -1250,6 +1343,23 @@
               }
             }
           },
+          "rawDefinition": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "ErrorName"
+              },
+              "status": {
+                "type": "number",
+                "example": "400"
+              }
+            },
+            "required": [
+              "name",
+              "status"
+            ]
+          },
           "enum": {
             "type": "string",
             "enum": [
@@ -1270,7 +1380,14 @@
             }
           },
           "enumWithRef": {
-            "$ref": "#/components/schemas/LettersEnum"
+            "description": "A small assortment of letters?",
+            "default": "A",
+            "deprecated": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
+            ]
           },
           "oneOfExample": {
             "oneOf": [
@@ -1294,20 +1411,37 @@
               }
             ],
             "description": "Array of values that uses \"oneOf\""
+          },
+          "kittenIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "siblings": {
+            "type": "object",
+            "properties": {
+              "ids": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "ids"
+            ]
           }
         },
         "required": [
           "name",
           "age",
           "breed",
-          "_tags",
           "createdAt",
           "urls",
           "_options",
           "enum",
           "enumArr",
           "enumWithRef",
-          "oneOfExample"
+          "oneOfExample",
+          "kittenIds"
         ]
       },
       "Letter": {
@@ -1316,7 +1450,9 @@
           "A",
           "B",
           "C"
-        ]
+        ],
+        "description": "This is a description for the Letters schema",
+        "deprecated": true
       },
       "PaginationQuery": {
         "type": "object",
@@ -1347,7 +1483,11 @@
             "type": "number"
           },
           "enum": {
-            "$ref": "#/components/schemas/LettersEnum"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
+            ]
           },
           "enumArr": {
             "type": "array",

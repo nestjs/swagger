@@ -1,5 +1,6 @@
 import { Type } from '@nestjs/common';
 import { isNil, omit } from 'lodash';
+import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
 import {
   ParameterObject,
   SchemaObject
@@ -10,12 +11,20 @@ import { createParamDecorator } from './helpers';
 
 type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
 
-interface ApiParamMetadata extends ParameterOptions {
+interface ApiParamCommonMetadata extends ParameterOptions {
   type?: Type<unknown> | Function | [Function] | string;
   format?: string;
   enum?: SwaggerEnumType;
   enumName?: string;
+  enumSchema?: EnumSchemaAttributes;
 }
+
+type ApiParamMetadata =
+  | ApiParamCommonMetadata
+  | (ApiParamCommonMetadata & {
+      enumName: string;
+      enumSchema?: EnumSchemaAttributes;
+    });
 
 interface ApiParamSchemaHost extends ParameterOptions {
   schema: SchemaObject;

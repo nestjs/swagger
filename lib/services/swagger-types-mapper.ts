@@ -7,12 +7,20 @@ import {
 } from '../interfaces/open-api-spec.interface';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 
+type KeysToRemove =
+  | keyof ApiPropertyOptions
+  | '$ref'
+  | 'properties'
+  | 'enumName'
+  | 'enumSchema';
+
 export class SwaggerTypesMapper {
-  private readonly keysToRemove: Array<keyof ApiPropertyOptions | '$ref'> = [
+  private readonly keysToRemove: Array<KeysToRemove> = [
     'type',
     'isArray',
     'enum',
     'enumName',
+    'enumSchema',
     'items',
     '$ref',
     ...this.getSchemaOptionsKeys()
@@ -22,7 +30,10 @@ export class SwaggerTypesMapper {
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
   ) {
     return parameters.map((param) => {
-      if (this.hasSchemaDefinition(param as BaseParameterObject)) {
+      if (
+        this.hasSchemaDefinition(param as BaseParameterObject) ||
+        this.hasRawContentDefinition(param)
+      ) {
         return this.omitParamKeys(param);
       }
       const { type } = param as ParamWithTypeMetadata;
@@ -73,10 +84,7 @@ export class SwaggerTypesMapper {
     return (type as string).charAt(0).toLowerCase() + (type as string).slice(1);
   }
 
-  mapEnumArrayType(
-    param: Record<string, any>,
-    keysToRemove: Array<keyof ApiPropertyOptions | '$ref'>
-  ) {
+  mapEnumArrayType(param: Record<string, any>, keysToRemove: KeysToRemove[]) {
     return {
       ...omit(param, keysToRemove),
       schema: {
@@ -89,7 +97,7 @@ export class SwaggerTypesMapper {
 
   mapArrayType(
     param: (ParamWithTypeMetadata & SchemaObject) | BaseParameterObject,
-    keysToRemove: Array<keyof ApiPropertyOptions | '$ref'>
+    keysToRemove: KeysToRemove[]
   ) {
     const itemsModifierKeys = ['format', 'maximum', 'minimum', 'pattern'];
     const items =
@@ -135,6 +143,10 @@ export class SwaggerTypesMapper {
     param: BaseParameterObject
   ): param is BaseParameterObject {
     return !!param.schema;
+  }
+
+  private hasRawContentDefinition(param: BaseParameterObject) {
+    return 'content' in param;
   }
 
   private omitParamKeys(param: ParamWithTypeMetadata | BaseParameterObject) {
