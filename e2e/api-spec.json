@@ -17,7 +17,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/api/v2": {
@@ -36,7 +39,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/api/v1/alias1": {
@@ -55,7 +61,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/api/v1/alias2": {
@@ -74,7 +83,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/api/v2/alias1": {
@@ -93,7 +105,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/api/v2/alias2": {
@@ -112,7 +127,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/api/v1/express:colon:another/{prop}": {
@@ -131,7 +149,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/api/v2/express:colon:another/{prop}": {
@@ -150,7 +171,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/api/v1/fastify:{colon}:{another}/{prop}": {
@@ -169,7 +193,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/api/v2/fastify:{colon}:{another}/{prop}": {
@@ -188,7 +215,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/api/cats": {

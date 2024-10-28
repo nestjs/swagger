@@ -3,11 +3,11 @@ import {
   ExpressAdapter,
   NestExpressApplication
 } from '@nestjs/platform-express';
+import * as path from 'path';
 import * as request from 'supertest';
 import * as SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
-import * as path from 'path';
 
 describe('Express Swagger', () => {
   let app: NestExpressApplication;
@@ -269,6 +269,22 @@ describe('Express Swagger', () => {
 
       expect(response.status).toEqual(200);
       expect(response.text.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('API tags', () => {
+    it('should auto generate tags for controllers', async () => {
+      const document = SwaggerModule.createDocument(app, builder.build());
+      const doc = JSON.stringify(document, null, 2);
+
+      try {
+        const api = await SwaggerParser.validate(document as any);
+        const postPath = api.paths['/'].get;
+        expect(postPath.tags).toEqual(['App']);
+      } catch (err) {
+        console.log(doc);
+        expect(err).toBeUndefined();
+      }
     });
   });
 

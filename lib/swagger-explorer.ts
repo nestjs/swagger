@@ -105,7 +105,8 @@ export class SwaggerExplorer {
       controllerKey: string,
       methodKey: string,
       fieldKey: string
-    ) => string
+    ) => string,
+    autoTagControllers?: boolean
   ) {
     this.routePathFactory = new RoutePathFactory(applicationConfig);
     if (operationIdFactory) {
@@ -139,8 +140,11 @@ export class SwaggerExplorer {
       instance,
       documentResolvers,
       applicationConfig,
-      modulePath,
-      globalPrefix
+      {
+        modulePath,
+        globalPrefix,
+        autoTagControllers
+      }
     );
   }
 
@@ -154,8 +158,11 @@ export class SwaggerExplorer {
     instance: object,
     documentResolvers: DenormalizedDocResolvers,
     applicationConfig: ApplicationConfig,
-    modulePath?: string,
-    globalPrefix?: string
+    options: {
+      modulePath?: string;
+      globalPrefix?: string;
+      autoTagControllers?: boolean;
+    }
   ): DenormalizedDoc[] {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
@@ -164,7 +171,9 @@ export class SwaggerExplorer {
     if (excludeController) {
       return [];
     }
-    const globalMetadata = this.exploreGlobalMetadata(metatype);
+    const globalMetadata = this.exploreGlobalMetadata(metatype, {
+      autoTagControllers: options.autoTagControllers
+    });
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);
 
@@ -196,9 +205,10 @@ export class SwaggerExplorer {
             prototype,
             targetCallback,
             metatype,
-            globalPrefix,
-            modulePath,
-            applicationConfig
+            options.globalPrefix,
+            options.modulePath,
+            applicationConfig,
+            options.autoTagControllers
           );
           if (!exploredMetadata) {
             return metadata;
@@ -260,10 +270,13 @@ export class SwaggerExplorer {
   }
 
   private exploreGlobalMetadata(
-    metatype: Type<unknown>
+    metatype: Type<unknown>,
+    options: {
+      autoTagControllers?: boolean;
+    }
   ): Partial<OpenAPIObject> {
     const globalExplorers = [
-      exploreGlobalApiTagsMetadata,
+      exploreGlobalApiTagsMetadata(options.autoTagControllers),
       exploreGlobalApiSecurityMetadata,
       exploreGlobalApiResponseMetadata.bind(null, this.schemas),
       exploreGlobalApiHeaderMetadata
