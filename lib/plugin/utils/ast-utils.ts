@@ -1,10 +1,14 @@
+import {
+  DocComment,
+  DocExcerpt,
+  DocNode,
+  ParserContext,
+  TSDocParser
+} from '@microsoft/tsdoc';
 import * as ts from 'typescript';
 import {
   CallExpression,
-  CommentRange,
   Decorator,
-  getLeadingCommentRanges,
-  getTrailingCommentRanges,
   Identifier,
   LeftHandSideExpression,
   Node,
@@ -21,14 +25,6 @@ import {
   UnionTypeNode
 } from 'typescript';
 import { isDynamicallyAdded } from './plugin-utils';
-import {
-  DocNode,
-  DocExcerpt,
-  TSDocParser,
-  ParserContext,
-  DocComment,
-  DocBlock
-} from '@microsoft/tsdoc';
 
 export function renderDocNode(docNode: DocNode) {
   let result: string = '';
@@ -193,8 +189,14 @@ export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
       const blocks = docComment.customBlocks.filter(
         (block) => block.blockTag.tagName === `@${tag}`
       );
-      if (blocks.length === 0) continue;
-      if (repeatable && !tagResults[tag]) tagResults[tag] = [];
+      if (blocks.length === 0) {
+        continue;
+      }
+
+      if (repeatable && !tagResults[tag]) {
+        tagResults[tag] = [];
+      }
+
       const type = typeChecker.getTypeAtLocation(node);
       if (hasProperties) {
         blocks.forEach((block) => {

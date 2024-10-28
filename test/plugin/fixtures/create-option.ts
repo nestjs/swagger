@@ -14,7 +14,7 @@ export const mergedCliPluginMultiOption = {
   classValidatorShim: true,
   classTransformerShim: false,
   dtoKeyOfComment: 'description',
-  controllerKeyOfComment: 'description',
+  controllerKeyOfComment: 'summary',
   introspectComments: true,
   readonly: false,
   debug: false
@@ -26,7 +26,7 @@ export const mergedCliPluginSingleOption = {
   classValidatorShim: true,
   classTransformerShim: false,
   dtoKeyOfComment: 'description',
-  controllerKeyOfComment: 'description',
+  controllerKeyOfComment: 'summary',
   introspectComments: true,
   readonly: false,
   debug: false

@@ -21,7 +21,7 @@ const defaultOptions: PluginOptions = {
   classValidatorShim: true,
   classTransformerShim: false,
   dtoKeyOfComment: 'description',
-  controllerKeyOfComment: 'description',
+  controllerKeyOfComment: 'summary',
   introspectComments: false,
   readonly: false,
   debug: false

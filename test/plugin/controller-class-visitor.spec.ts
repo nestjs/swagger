@@ -29,12 +29,7 @@ describe('Controller methods', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [
-          before(
-            { controllerKeyOfComment: 'summary', introspectComments: true },
-            fakeProgram
-          )
-        ]
+        before: [before({ introspectComments: true }, fakeProgram)]
       }
     });
     expect(result.outputText).toEqual(appControllerTextTranspiled);
@@ -55,12 +50,7 @@ describe('Controller methods', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [
-          before(
-            { controllerKeyOfComment: 'summary', introspectComments: true },
-            fakeProgram
-          )
-        ]
+        before: [before({ introspectComments: true }, fakeProgram)]
       }
     });
     expect(result.outputText).toEqual(appControllerWithTabsTextTranspiled);
@@ -81,12 +71,7 @@ describe('Controller methods', () => {
       compilerOptions: options,
       fileName: filename,
       transformers: {
-        before: [
-          before(
-            { controllerKeyOfComment: 'summary', introspectComments: true },
-            fakeProgram
-          )
-        ]
+        before: [before({ introspectComments: true }, fakeProgram)]
       }
     });
     expect(result.outputText).toEqual(

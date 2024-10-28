@@ -28,11 +28,12 @@ function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
 
     methodKeys.forEach((key) => {
       const operationMeta = {};
-      const { summary, deprecated, tags } = metadata[key];
+      const { summary, deprecated, tags, description } = metadata[key];
 
       applyIfNotNil(operationMeta, 'summary', summary);
       applyIfNotNil(operationMeta, 'deprecated', deprecated);
       applyIfNotNil(operationMeta, 'tags', tags);
+      applyIfNotNil(operationMeta, 'description', description);
 
       if (Object.keys(operationMeta).length === 0) {
         return;

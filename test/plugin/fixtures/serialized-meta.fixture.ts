@@ -183,14 +183,14 @@ export default async () => {
           {
             AppController: {
               getHello: {
-                description: 'Says hello',
+                summary: 'Says hello',
                 deprecated: true,
                 type: String
               },
               withAliases: { type: String },
               withColonExpress: { type: String },
               withColonFastify: {
-                description: 'Returns information about the application',
+                summary: 'Returns information about the application',
                 type: String
               }
             }

@@ -1,5 +1,6 @@
 import * as ts from 'typescript';
 import { before } from '../../lib/plugin/compiler-plugin';
+import { pluginDebugLogger } from '../../lib/plugin/plugin-debug-logger';
 import {
   changedCatDtoText,
   changedCatDtoTextTranspiled,
@@ -14,6 +15,19 @@ import {
   createCatDtoTextAlt2Transpiled
 } from './fixtures/create-cat-alt2.dto';
 import {
+  createCatExcludeDtoText,
+  createCatExcludeDtoTextTranspiled,
+  createCatIgnoreExcludeDtoTextTranspiled
+} from './fixtures/create-cat-exclude.dto';
+import {
+  createCatExclusiveDtoText,
+  createCatExclusiveDtoTextTranspiled
+} from './fixtures/create-cat-exclusive.dto';
+import {
+  createCatPriorityDtoText,
+  createCatPriorityDtoTextTranspiled
+} from './fixtures/create-cat-priority.dto';
+import {
   createCatDtoText,
   createCatDtoTextTranspiled
 } from './fixtures/create-cat.dto';
@@ -27,27 +41,13 @@ import {
   nullableDtoTextTranspiled
 } from './fixtures/nullable.dto';
 import {
-  stringLiteralDtoText,
-  stringLiteralDtoTextTranspiled
-} from './fixtures/string-literal.dto';
-import {
   parameterPropertyDtoText,
   parameterPropertyDtoTextTranspiled
 } from './fixtures/parameter-property.dto';
 import {
-  createCatExcludeDtoText,
-  createCatExcludeDtoTextTranspiled,
-  createCatIgnoreExcludeDtoTextTranspiled
-} from './fixtures/create-cat-exclude.dto';
-import {
-  createCatExclusiveDtoText,
-  createCatExclusiveDtoTextTranspiled
-} from './fixtures/create-cat-exclusive.dto';
-import {
-  createCatPriorityDtoText,
-  createCatPriorityDtoTextTranspiled
-} from './fixtures/create-cat-priority.dto';
-import { pluginDebugLogger } from '../../lib/plugin/plugin-debug-logger';
+  stringLiteralDtoText,
+  stringLiteralDtoTextTranspiled
+} from './fixtures/string-literal.dto';
 
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {

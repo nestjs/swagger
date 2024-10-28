@@ -23,6 +23,7 @@ export class AppController {
    * @returns {Promise<Cat>}
    * @memberof AppController
    */
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Post()
   async create(): Promise<Cat> {}
 
@@ -161,6 +162,7 @@ __decorate([
     openapi.ApiResponse({ status: 500, description: "Something is wrong." }),
     openapi.ApiResponse({ status: 400, description: "Bad Request." }),
     openapi.ApiResponse({ status: 400, description: "Missing parameters." }),
+    ApiResponse({ status: 403, description: 'Forbidden.' }),
     (0, common_1.Post)(),
     openapi.ApiResponse({ status: 201, type: Cat })
 ], AppController.prototype, \"create\", null);
