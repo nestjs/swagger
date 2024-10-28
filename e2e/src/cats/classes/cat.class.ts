@@ -52,7 +52,7 @@ export class Cat {
       },
       status: {
         type: 'number',
-        example: '400'
+        example: 400
       }
     },
     required: ['name', 'status']
