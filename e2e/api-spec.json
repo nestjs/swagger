@@ -443,6 +443,22 @@
             }
           },
           {
+            "name": "catBreeds",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "persian",
+                  "siamese",
+                  "maine-coon"
+                ]
+              }
+            }
+          },
+          {
             "name": "x-tenant-id",
             "in": "header",
             "schema": {

@@ -18,6 +18,7 @@ import { CatsService } from './cats.service';
 import { Cat } from './classes/cat.class';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { LettersEnum, PaginationQuery } from './dto/pagination-query.dto';
+import { CatBreed } from './enums/cat-breed.enum';
 
 @ApiSecurity('basic')
 @ApiBearerAuth()
@@ -104,6 +105,11 @@ export class CatsController {
     { lang: 'JavaScript', source: "console.log('Hello World');" }
   ])
   @ApiExtension('x-multiple', { test: 'test' })
+  @ApiQuery({
+    name: 'catBreeds',
+    enum: CatBreed,
+    isArray: true
+  })
   @ApiTags('tag1')
   @ApiTags('tag2')
   findAll(@Query() paginationQuery: PaginationQuery) {}
