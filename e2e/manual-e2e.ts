@@ -1,16 +1,16 @@
-import { NestFactory } from '@nestjs/core';
-import { ApplicationModule } from './src/app.module';
-import { DocumentBuilder, SwaggerModule } from '../lib';
-import {
-  FastifyAdapter,
-  NestFastifyApplication
-} from '@nestjs/platform-fastify';
 import { INestApplication, Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import {
   ExpressAdapter,
   NestExpressApplication
 } from '@nestjs/platform-express';
+import {
+  FastifyAdapter,
+  NestFastifyApplication
+} from '@nestjs/platform-fastify';
 import { join } from 'path';
+import { DocumentBuilder, SwaggerModule } from '../lib';
+import { ApplicationModule } from './src/app.module';
 
 const port = 4001;
 const host = 'localhost';
@@ -95,6 +95,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerSettings, {
     deepScanRoutes: true,
     ignoreGlobalPrefix: false,
+    autoTagControllers: true,
     extraModels: [] // add DTOs that are not explicitly registered here (like PaginatedDto, etc)
   });
 
@@ -123,7 +124,7 @@ async function bootstrap() {
     }
   });
 
-  SwaggerModule.setup("/:tenantId/api-docs", app, document, {
+  SwaggerModule.setup('/:tenantId/api-docs', app, document, {
     patchDocumentOnRequest: (req, res, document1) => ({
       ...document1,
       info: {
@@ -131,7 +132,7 @@ async function bootstrap() {
         title: `${(req as Record<string, any>).params.tenantId}'s API document`
       }
     })
-  })
+  });
 
   USE_FASTIFY
     ? (app as NestFastifyApplication).useStaticAssets({
