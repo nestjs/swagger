@@ -483,7 +483,7 @@ describe('SchemaObjectFactory', () => {
         enum: [1, 2, 3],
         enumName: 'MyEnum',
         isArray: false
-      };
+      } as const;
       const schemas = {};
 
       schemaObjectFactory.createEnumSchemaType('field', metadata, schemas);

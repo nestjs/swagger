@@ -10,6 +10,7 @@ import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 type KeysToRemove =
   | keyof ApiPropertyOptions
   | '$ref'
+  | 'properties'
   | 'enumName'
   | 'enumSchema';
 

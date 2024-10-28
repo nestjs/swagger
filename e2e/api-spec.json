@@ -1279,6 +1279,23 @@
               }
             }
           },
+          "rawDefinition": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "ErrorName"
+              },
+              "status": {
+                "type": "number",
+                "example": "400"
+              }
+            },
+            "required": [
+              "name",
+              "status"
+            ]
+          },
           "enum": {
             "type": "string",
             "enum": [
@@ -1336,13 +1353,23 @@
             "items": {
               "type": "string"
             }
+          },
+          "siblings": {
+            "type": "object",
+            "properties": {
+              "ids": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "ids"
+            ]
           }
         },
         "required": [
           "name",
           "age",
           "breed",
-          "_tags",
           "createdAt",
           "urls",
           "_options",

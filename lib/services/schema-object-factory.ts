@@ -205,21 +205,33 @@ export class SchemaObjectFactory {
     }
     const extensionProperties =
       Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
+
     const typeDefinition: SchemaObject = {
       type: 'object',
-      properties: mapValues(keyBy(propertiesWithType, 'name'), (property) =>
-        omit(property, [
+      properties: mapValues(keyBy(propertiesWithType, 'name'), (property) => {
+        const keysToOmit = [
           'name',
           'isArray',
-          'required',
           'enumName',
-          'enumSchema'
-        ])
-      ) as Record<string, SchemaObject | ReferenceObject>,
+          'enumSchema',
+          'selfRequired'
+        ];
+
+        if ('required' in property && Array.isArray(property.required)) {
+          return omit(property, keysToOmit);
+        }
+
+        return omit(property, [...keysToOmit, 'required']);
+      }) as Record<string, SchemaObject | ReferenceObject>,
       ...extensionProperties
     };
+
     const typeDefinitionRequiredFields = propertiesWithType
-      .filter((property) => property.required != false)
+      .filter(
+        (property) =>
+          (property.required != false && !Array.isArray(property.required)) ||
+          ('selfRequired' in property && property.selfRequired != false)
+      )
       .map((property) => property.name);
 
     if (typeDefinitionRequiredFields.length > 0) {
@@ -250,7 +262,11 @@ export class SchemaObjectFactory {
     schemas: Record<string, SchemaObject>,
     pendingSchemaRefs: string[],
     metadata?: SchemaObjectMetadata
-  ): SchemaObjectMetadata | ReferenceObject | ParameterObject {
+  ):
+    | SchemaObjectMetadata
+    | ReferenceObject
+    | ParameterObject
+    | (SchemaObject & { selfRequired?: boolean }) {
     if (!metadata) {
       metadata =
         omit(
@@ -335,7 +351,7 @@ export class SchemaObjectFactory {
     key: string,
     metadata: SchemaObjectMetadata,
     schemas: Record<string, SchemaObject>
-  ) {
+  ): SchemaObjectMetadata {
     if (!('enumName' in metadata) || !metadata.enumName) {
       return {
         ...metadata,
@@ -383,7 +399,7 @@ export class SchemaObjectFactory {
       pathsToOmit.push('type');
     }
 
-    return omit(paramObject, pathsToOmit);
+    return omit(paramObject, pathsToOmit) as SchemaObjectMetadata;
   }
 
   createNotBuiltInTypeReference(
@@ -473,6 +489,8 @@ export class SchemaObjectFactory {
   ) {
     const objLiteralKeys = Object.keys(literalObj);
     const properties = {};
+    const required = [];
+
     objLiteralKeys.forEach((key) => {
       const propertyCompilerMetadata = literalObj[key];
       if (isEnumArray<Record<string, any>>(propertyCompilerMetadata)) {
@@ -497,15 +515,22 @@ export class SchemaObjectFactory {
         [],
         propertyCompilerMetadata
       );
-      const keysToRemove = ['isArray', 'name'];
+
+      if ('required' in propertyMetadata && propertyMetadata.required) {
+        required.push(key);
+      }
+      const keysToRemove = ['isArray', 'name', 'required'];
       const validMetadataObject = omit(propertyMetadata, keysToRemove);
       properties[key] = validMetadataObject;
     });
-    return {
+
+    const schema = {
       name: key,
       type: 'object',
-      properties
+      properties,
+      required
     };
+    return schema;
   }
 
   createFromNestedArray(
@@ -542,14 +567,22 @@ export class SchemaObjectFactory {
     schemas: Record<string, SchemaObject>,
     pendingSchemaRefs: string[],
     nestedArrayType?: unknown
-  ) {
+  ):
+    | SchemaObjectMetadata
+    | ReferenceObject
+    | ParameterObject
+    | (SchemaObject & { selfRequired?: boolean }) {
     const typeRef = nestedArrayType || metadata.type;
     if (this.isObjectLiteral(typeRef as Record<string, any>)) {
-      return this.createFromObjectLiteral(
+      const schemaFromObjectLiteral = this.createFromObjectLiteral(
         key,
         typeRef as Record<string, any>,
         schemas
       );
+      return {
+        ...schemaFromObjectLiteral,
+        selfRequired: metadata.required as boolean
+      };
     }
 
     if (isString(typeRef)) {
@@ -577,7 +610,7 @@ export class SchemaObjectFactory {
         ...metadata,
         type: 'string',
         name: metadata.name || key
-      };
+      } as SchemaObjectMetadata;
     }
     if (this.isBigInt(typeRef as Function)) {
       return {
@@ -585,7 +618,7 @@ export class SchemaObjectFactory {
         ...metadata,
         type: 'integer',
         name: metadata.name || key
-      };
+      } as SchemaObjectMetadata;
     }
     if (!isBuiltInType(typeRef as Function)) {
       return this.createNotBuiltInTypeReference(
@@ -639,7 +672,7 @@ export class SchemaObjectFactory {
       ...metadata,
       name: metadata.name || key,
       type: itemType
-    };
+    } as SchemaObjectMetadata;
   }
 
   private isArrayCtor(type: Type<unknown> | string): boolean {

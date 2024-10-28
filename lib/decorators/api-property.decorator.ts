@@ -1,14 +1,14 @@
 import { Type } from '@nestjs/common';
 import { DECORATORS } from '../constants';
 import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
-import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
+import {
+  EnumAllowedTypes,
+  SchemaObjectMetadata
+} from '../interfaces/schema-object-metadata.interface';
 import { getEnumType, getEnumValues } from '../utils/enum.utils';
 import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers';
 
-export interface ApiPropertyCommonOptions
-  extends Omit<SchemaObjectMetadata, 'name' | 'enum'> {
-  name?: string;
-  enum?: any[] | Record<string, any> | (() => any[] | Record<string, any>);
+export type ApiPropertyCommonOptions = SchemaObjectMetadata & {
   'x-enumNames'?: string[];
   /**
    * Lazy function returning the type for which the decorated property
@@ -20,7 +20,7 @@ export interface ApiPropertyCommonOptions
    * @see [Swagger link objects](https://swagger.io/docs/specification/links/)
    */
   link?: () => Type<unknown> | Function;
-}
+};
 
 export type ApiPropertyOptions =
   | ApiPropertyCommonOptions
@@ -29,8 +29,14 @@ export type ApiPropertyOptions =
       enumSchema?: EnumSchemaAttributes;
     });
 
-const isEnumArray = (obj: ApiPropertyOptions): boolean =>
-  obj.isArray && !!obj.enum;
+const isEnumArray = (
+  opts: ApiPropertyOptions
+): opts is {
+  isArray: true;
+  enum: EnumAllowedTypes;
+  type: any;
+  items: any;
+} => opts.isArray && 'enum' in opts;
 
 export function ApiProperty(
   options: ApiPropertyOptions = {}
@@ -47,7 +53,7 @@ export function createApiPropertyDecorator(
     ...options,
     type,
     isArray
-  };
+  } as ApiPropertyOptions;
 
   if (isEnumArray(options)) {
     options.type = 'array';
@@ -58,7 +64,7 @@ export function createApiPropertyDecorator(
       enum: enumValues
     };
     delete options.enum;
-  } else if (options.enum) {
+  } else if ('enum' in options) {
     const enumValues = getEnumValues(options.enum);
 
     options.enum = enumValues;
@@ -88,17 +94,17 @@ export function ApiPropertyOptional(
   return ApiProperty({
     ...options,
     required: false
-  });
+  } as ApiPropertyOptions);
 }
 
 export function ApiResponseProperty(
   options: Pick<
     ApiPropertyOptions,
-    'type' | 'example' | 'format' | 'enum' | 'deprecated'
+    'type' | 'example' | 'format' | 'deprecated' | 'enum'
   > = {}
 ): PropertyDecorator {
   return ApiProperty({
     readOnly: true,
     ...options
-  });
+  } as ApiPropertyOptions);
 }
