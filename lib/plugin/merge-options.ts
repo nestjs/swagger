@@ -1,4 +1,5 @@
 import { isString } from '@nestjs/common/utils/shared.utils';
+import { pluginDebugLogger } from './plugin-debug-logger';
 
 export interface PluginOptions {
   dtoFileNameSuffix?: string | string[];
@@ -34,6 +35,17 @@ export const mergePluginOptions = (
   }
   if (isString(options.controllerFileNameSuffix)) {
     options.controllerFileNameSuffix = [options.controllerFileNameSuffix];
+  }
+  for (const key of ['dtoFileNameSuffix', 'controllerFileNameSuffix']) {
+    if (options[key] && options[key].includes('.ts')) {
+      pluginDebugLogger.warn(
+        `Skipping ${key} option ".ts" because it can cause unwanted behaviour.`
+      );
+      options[key] = options[key].filter((pattern) => pattern !== '.ts');
+      if (options[key].length == 0) {
+        delete options[key];
+      }
+    }
   }
   return {
     ...defaultOptions,
