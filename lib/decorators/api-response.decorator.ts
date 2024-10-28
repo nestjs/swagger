@@ -37,6 +37,15 @@ export interface ApiResponseSchemaHost
 
 export type ApiResponseOptions = ApiResponseMetadata | ApiResponseSchemaHost;
 
+export type ApiResponseNoStatusOptions =
+  | (Omit<ApiResponseCommonMetadata, 'status'> & {
+      example?: ApiResponseExampleValue;
+    })
+  | (Omit<ApiResponseCommonMetadata, 'status'> & {
+      examples?: { [key: string]: ApiResponseExamples };
+    })
+  | Omit<ApiResponseSchemaHost, 'status'>;
+
 export function ApiResponse(
   options: ApiResponseOptions,
   { overrideExisting } = { overrideExisting: true }
@@ -101,7 +110,7 @@ interface HttpStatusInfo {
 
 const decorators: {
   [key: string]: (
-    options?: ApiResponseOptions
+    options?: ApiResponseNoStatusOptions
   ) => MethodDecorator & ClassDecorator;
 } = {};
 
@@ -122,10 +131,12 @@ const statusList: HttpStatusInfo[] = Object.keys(HttpStatus)
   });
 
 statusList.forEach(({ code, functionName }) => {
-  decorators[functionName] = function (options: ApiResponseOptions = {}) {
+  decorators[functionName] = function (
+    options: ApiResponseNoStatusOptions = {}
+  ) {
     return ApiResponse({
       ...options,
-      status: code // Convert status to number
+      status: code
     });
   };
 });
@@ -181,7 +192,7 @@ export const {
   ApiHttpVersionNotSupportedResponse
 } = decorators;
 
-export const ApiDefaultResponse = (options: ApiResponseOptions = {}) =>
+export const ApiDefaultResponse = (options: ApiResponseNoStatusOptions = {}) =>
   ApiResponse({
     ...options,
     status: 'default'
