@@ -94,5 +94,16 @@
       "pre-commit": "lint-staged",
       "commit-msg": "commitlint -c .commitlintrc.json -E HUSKY_GIT_PARAMS"
     }
+  },
+  "changelog": {
+    "labels": {
+      "feature": "Features",
+      "bug": "Bug fixes",
+      "enhancement": "Enhancements",
+      "docs": "Docs",
+      "dependencies": "Dependencies",
+      "type: code style": "Code style tweaks",
+      "breaking change": "Breaking changes"
+    }
   }
 }
