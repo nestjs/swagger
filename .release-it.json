@@ -4,7 +4,7 @@
   },
   "github": {
     "release": true,
-    "releaseNotes": "npx lerna-changelog --from ${latestTag} --to ${tagName}",
+    "releaseNotes": "npx lerna-changelog --from ${latestTag}",
     "web": true
   }
 }
