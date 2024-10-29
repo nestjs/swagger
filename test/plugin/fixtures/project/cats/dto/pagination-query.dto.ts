@@ -30,6 +30,22 @@ export class PaginationQuery {
   limit: number;
 
   @ApiProperty({
+    oneOf: [
+      {
+        minimum: 0,
+        maximum: 10,
+        format: 'int32'
+      },
+      {
+        minimum: 100,
+        maximum: 100,
+        format: 'int32'
+      }
+    ],
+  })
+  constrainedLimit?: number;
+
+  @ApiProperty({
     enum: LettersEnum,
     enumName: 'LettersEnum'
   })

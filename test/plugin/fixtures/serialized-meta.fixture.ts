@@ -18,6 +18,7 @@ export default async () => {
               page: { required: true, type: () => Number },
               sortBy: { required: true, type: () => [String] },
               limit: { required: true, type: () => Number },
+              constrainedLimit: { required: false, type: () => Number },
               enum: {
                 required: true,
                 enum: t['./cats/dto/pagination-query.dto'].LettersEnum
