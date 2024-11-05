@@ -119,7 +119,47 @@ export class SchemaObjectFactory {
       };
     }
     if (isFunction(param.type)) {
-      return this.getCustomType(param, schemas);
+      if (param.name) {
+        // We should not spread parameters that have a name
+        // Just generate the schema for the type instead and link it with ref if needed
+        return this.getCustomType(param, schemas);
+      }
+
+      const propertiesWithType = this.extractPropertiesFromType(
+        param.type,
+        schemas
+      );
+      if (!propertiesWithType) {
+        return param;
+      }
+
+      return propertiesWithType.map(
+        (property: ParameterObject & ParamWithTypeMetadata) => {
+          const keysToOmit = [
+            'isArray',
+            'enumName',
+            'enumSchema',
+            'selfRequired'
+          ];
+          const parameterObject = {
+            ...(omit(property, keysToOmit) as ParameterObject),
+            in: 'query',
+            required: property.required ?? true
+          };
+
+          const keysToMoveToSchema = [
+            ...this.swaggerTypesMapper.getSchemaOptionsKeys(),
+            'allOf'
+          ];
+          return keysToMoveToSchema.reduce((acc, key) => {
+            if (key in property) {
+              acc.schema = { ...acc.schema, [key]: property[key] };
+              delete acc[key];
+            }
+            return acc;
+          }, parameterObject);
+        }
+      ) as ParameterObject[];
     }
     return param;
   }
@@ -733,9 +773,5 @@ export class SchemaObjectFactory {
       'pattern'
     ];
     return [pick(metadata, modifierKeys), modifierKeys];
-  }
-
-  private hasRawContent(metadata: SchemaObjectMetadata) {
-    return 'content' in metadata;
   }
 }

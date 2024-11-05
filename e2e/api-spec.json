@@ -666,11 +666,109 @@
             }
           },
           {
-            "name": "PaginationQuery",
-            "required": true,
+            "name": "page",
             "in": "query",
+            "required": true,
             "schema": {
-              "$ref": "#/components/schemas/PaginationQuery"
+              "minimum": 0,
+              "maximum": 10000,
+              "exclusiveMaximum": true,
+              "exclusiveMinimum": true,
+              "title": "Page",
+              "format": "int32",
+              "default": 0,
+              "example": 123
+            }
+          },
+          {
+            "name": "_sortBy",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "nullable": true,
+              "example": [
+                "sort1",
+                "sort2"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "constrainedLimit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "oneOf": [
+                {
+                  "minimum": 0,
+                  "maximum": 10,
+                  "format": "int32"
+                },
+                {
+                  "minimum": 100,
+                  "maximum": 100,
+                  "format": "int32"
+                }
+              ]
+            }
+          },
+          {
+            "name": "enum",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/LettersEnum"
+                }
+              ]
+            }
+          },
+          {
+            "name": "enumArr",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array"
+            }
+          },
+          {
+            "name": "letters",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array"
+            }
+          },
+          {
+            "name": "beforeDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "age": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": true
             }
           },
           {
@@ -1526,96 +1624,6 @@
         ],
         "description": "This is a description for the Letters schema",
         "deprecated": true
-      },
-      "PaginationQuery": {
-        "type": "object",
-        "properties": {
-          "page": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 10000,
-            "title": "Page",
-            "exclusiveMaximum": true,
-            "exclusiveMinimum": true,
-            "format": "int32",
-            "default": 0,
-            "example": 123
-          },
-          "_sortBy": {
-            "nullable": true,
-            "example": [
-              "sort1",
-              "sort2"
-            ],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "limit": {
-            "type": "number"
-          },
-          "constrainedLimit": {
-            "oneOf": [
-              {
-                "minimum": 0,
-                "maximum": 10,
-                "format": "int32"
-              },
-              {
-                "minimum": 100,
-                "maximum": 100,
-                "format": "int32"
-              }
-            ]
-          },
-          "enum": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LettersEnum"
-              }
-            ]
-          },
-          "enumArr": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LettersEnum"
-            }
-          },
-          "letters": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Letter"
-            }
-          },
-          "beforeDate": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "filter": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "age": {
-                "type": "number"
-              }
-            },
-            "additionalProperties": true
-          }
-        },
-        "required": [
-          "page",
-          "_sortBy",
-          "limit",
-          "constrainedLimit",
-          "enum",
-          "enumArr",
-          "letters",
-          "beforeDate",
-          "filter"
-        ]
       }
     }
   },

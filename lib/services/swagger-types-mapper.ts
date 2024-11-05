@@ -123,6 +123,33 @@ export class SwaggerTypesMapper {
     };
   }
 
+  getSchemaOptionsKeys(): Array<keyof SchemaObject> {
+    return [
+      'properties',
+      'patternProperties',
+      'additionalProperties',
+      'minimum',
+      'maximum',
+      'maxProperties',
+      'minItems',
+      'minProperties',
+      'maxItems',
+      'minLength',
+      'maxLength',
+      'exclusiveMaximum',
+      'exclusiveMinimum',
+      'uniqueItems',
+      'title',
+      'format',
+      'pattern',
+      'nullable',
+      'default',
+      'example',
+      'oneOf',
+      'anyOf'
+    ];
+  }
+
   private getSchemaOptions(param: Record<string, any>): Partial<SchemaObject> {
     const schemaKeys = this.getSchemaOptionsKeys();
     const optionsObject: Partial<SchemaObject> = schemaKeys.reduce(
@@ -151,32 +178,5 @@ export class SwaggerTypesMapper {
 
   private omitParamKeys(param: ParamWithTypeMetadata | BaseParameterObject) {
     return omit(param, this.keysToRemove);
-  }
-
-  private getSchemaOptionsKeys(): Array<keyof SchemaObject> {
-    return [
-      'properties',
-      'patternProperties',
-      'additionalProperties',
-      'minimum',
-      'maximum',
-      'maxProperties',
-      'minItems',
-      'minProperties',
-      'maxItems',
-      'minLength',
-      'maxLength',
-      'exclusiveMaximum',
-      'exclusiveMinimum',
-      'uniqueItems',
-      'title',
-      'format',
-      'pattern',
-      'nullable',
-      'default',
-      'example',
-      'oneOf',
-      'anyOf'
-    ];
   }
 }
