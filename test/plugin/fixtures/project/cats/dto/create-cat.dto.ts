@@ -13,6 +13,8 @@ import { ApiExtraModels, ApiProperty } from '../../../../lib';
 import { ExtraModel } from './extra-model.dto';
 import { LettersEnum } from './pagination-query.dto';
 import { TagDto } from './tag.dto';
+import { Owner } from '@package-a/owner';
+import { AbsoluteOwner } from 'different-cats/dto/absolute-owner.dto';
 
 enum NonExportedEnum {
   YES = 'YES',
@@ -104,6 +106,18 @@ export class CreateCatDto {
     enumName: 'HttpStatus'
   })
   externalEnum: HttpStatus;
+
+  @ApiProperty({
+    enum: Owner,
+    enumName: 'Owner'
+  })
+  customPathImportOwner: Owner;
+
+  @ApiProperty({
+    enum: AbsoluteOwner,
+    enumName: 'AbsoluteOwner'
+  })
+  absoluteImportOwner: AbsoluteOwner;
 
   /**
    * Available language in the application
