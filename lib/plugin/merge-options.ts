@@ -13,6 +13,10 @@ export interface PluginOptions {
   pathToSource?: string;
   debug?: boolean;
   parameterProperties?: boolean;
+  /**
+   * Skip auto-annotating controller methods with HTTP status codes (e.g., @HttpCode(201))
+   */
+  skipAutoHttpCode?: boolean;
 }
 
 const defaultOptions: PluginOptions = {
