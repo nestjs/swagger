@@ -398,7 +398,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   ): ts.ObjectLiteralExpression {
     let properties = [];
 
-    if (!options.readonly && options.skipAutoHttpCode) {
+    if (!options.readonly && !options.skipAutoHttpCode) {
       properties = properties.concat(
         existingProperties,
         this.createStatusPropertyAssignment(factory, node, existingProperties)
