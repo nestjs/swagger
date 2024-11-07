@@ -397,12 +397,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     compilerOptionsPaths: ts.MapLike<string[]>
   ): ts.ObjectLiteralExpression {
     let properties = [];
-    if (!options.readonly) {
+
+    if (!options.readonly && !options.skipAutoHttpCode) {
       properties = properties.concat(
         existingProperties,
         this.createStatusPropertyAssignment(factory, node, existingProperties)
       );
     }
+
     properties = properties.concat([
       this.createTypePropertyAssignment(
         factory,
