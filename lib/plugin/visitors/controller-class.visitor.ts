@@ -14,6 +14,7 @@ import {
 } from '../utils/ast-utils';
 import {
   convertPath,
+  getAbsoluteCompilerOptionsPaths,
   getDecoratorOrUndefinedByNames,
   getTypeReferenceAsString,
   hasPropertyKey
@@ -58,7 +59,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     options: PluginOptions
   ) {
     const typeChecker = program.getTypeChecker();
-    const compilerOptionsPaths = program.getCompilerOptions().paths ?? {};
+    const compilerOptionsPaths = getAbsoluteCompilerOptionsPaths(program);
     if (!options.readonly) {
       sourceFile = this.updateImports(sourceFile, ctx.factory, program);
     }
