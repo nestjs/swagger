@@ -55,8 +55,10 @@ export class ResponseObjectMapper {
       schema: response.schema,
       ...pick(response, exampleKeys)
     });
+
+    const keysToOmit = [...exampleKeys, 'schema'];
     return {
-      ...omit(response, exampleKeys),
+      ...omit(response, keysToOmit),
       ...content
     };
   }

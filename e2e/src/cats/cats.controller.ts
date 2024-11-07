@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Query
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -12,7 +20,8 @@ import {
   ApiQuery,
   ApiResponse,
   ApiSecurity,
-  ApiTags
+  ApiTags,
+  getSchemaPath
 } from '../../../lib';
 import { CatsService } from './cats.service';
 import { Cat } from './classes/cat.class';
@@ -196,4 +205,31 @@ export class CatsController {
     }
   })
   download() {}
+
+  @Get('raw-schema-response')
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'The paginated response',
+
+    schema: {
+      type: 'object',
+
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: getSchemaPath(Cat) }
+        },
+        pageInfo: {
+          type: 'object',
+          properties: {
+            hasPreviousPage: { type: 'boolean' },
+            hasNextPage: { type: 'boolean' },
+            startCursor: { type: 'string' },
+            endCursor: { type: 'string' }
+          }
+        }
+      }
+    }
+  })
+  rawSchemaResponse() {}
 }
