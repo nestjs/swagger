@@ -1677,6 +1677,12 @@
             ]
           }
         },
+        "x-schema-extension-multiple": {
+          "test": "test"
+        },
+        "x-schema-extension": {
+          "test": "test"
+        },
         "required": [
           "name",
           "age",

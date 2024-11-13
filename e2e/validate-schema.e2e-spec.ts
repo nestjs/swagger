@@ -111,13 +111,21 @@ describe('Validate OpenAPI schema', () => {
     writeFileSync(join(__dirname, 'api-spec.json'), doc);
 
     try {
-      const api = await SwaggerParser.validate(document as any);
+      const api = (await SwaggerParser.validate(
+        document as any
+      )) as OpenAPIV3.Document;
       console.log(
         'API name: %s, Version: %s',
         api.info.title,
         api.info.version
       );
       expect(api.info.title).toEqual('Cats example');
+      expect(
+        api.components.schemas['Cat']['x-schema-extension']['test']
+      ).toEqual('test');
+      expect(
+        api.components.schemas['Cat']['x-schema-extension-multiple']['test']
+      ).toEqual('test');
       expect(
         api.paths['/api/cats']['post']['callbacks']['myEvent'][
           '{$request.body#/callbackUrl}'
@@ -204,6 +212,6 @@ describe('Validate OpenAPI schema', () => {
           'image/jpeg': { schema: { type: 'string', format: 'binary' } }
         }
       }
-    })
+    });
   });
 });
