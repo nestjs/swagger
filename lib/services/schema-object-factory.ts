@@ -292,7 +292,7 @@ export class SchemaObjectFactory {
       return type.name;
     }
 
-    const schemaName = customSchema[0].name;
+    const schemaName = customSchema[customSchema.length - 1].name;
     return schemaName ?? type.name;
   }
 
