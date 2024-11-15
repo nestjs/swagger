@@ -13,8 +13,7 @@ export function typeReferenceToIdentifier(
   options: PluginOptions,
   factory: ts.NodeFactory,
   type: ts.Type,
-  typeImports: Record<string, string>,
-  compilerOptionsPaths: ts.MapLike<string[]>
+  typeImports: Record<string, string>
 ) {
   if (options.readonly) {
     assertReferenceableType(
@@ -28,8 +27,7 @@ export function typeReferenceToIdentifier(
   const { typeReference, importPath, typeName } = replaceImportPath(
     typeReferenceDescriptor.typeName,
     hostFilename,
-    options,
-    compilerOptionsPaths
+    options
   );
 
   let identifier: ts.Identifier;
