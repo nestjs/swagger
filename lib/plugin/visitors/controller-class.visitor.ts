@@ -58,7 +58,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     options: PluginOptions
   ) {
     const typeChecker = program.getTypeChecker();
-    const compilerOptionsPaths = program.getCompilerOptions().paths ?? {};
     if (!options.readonly) {
       sourceFile = this.updateImports(sourceFile, ctx.factory, program);
     }
@@ -73,8 +72,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
             typeChecker,
             options,
             sourceFile,
-            metadata,
-            compilerOptionsPaths
+            metadata
           );
           if (!options.readonly) {
             return updatedNode;
@@ -123,8 +121,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     options: PluginOptions,
     sourceFile: ts.SourceFile,
-    metadata: ClassMetadata,
-    compilerOptionsPaths: ts.MapLike<string[]>
+    metadata: ClassMetadata
   ): ts.MethodDeclaration {
     const hostFilename = sourceFile.fileName;
     const decorators =
@@ -168,8 +165,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       factory.createNodeArray(),
       hostFilename,
       metadata,
-      options,
-      compilerOptionsPaths
+      options
     );
     const updatedDecorators = [
       ...apiOperationDecoratorsArray,
@@ -393,8 +389,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     existingProperties: ts.NodeArray<ts.PropertyAssignment> = factory.createNodeArray(),
     hostFilename: string,
     metadata: ClassMetadata,
-    options: PluginOptions,
-    compilerOptionsPaths: ts.MapLike<string[]>
+    options: PluginOptions
   ): ts.ObjectLiteralExpression {
     let properties = [];
 
@@ -412,8 +407,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         typeChecker,
         existingProperties,
         hostFilename,
-        options,
-        compilerOptionsPaths
+        options
       )
     ]);
     const objectLiteralExpr = factory.createObjectLiteralExpression(
@@ -443,8 +437,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string,
-    options: PluginOptions,
-    compilerOptionsPaths: ts.MapLike<string[]>
+    options: PluginOptions
   ) {
     if (hasPropertyKey('type', existingProperties)) {
       return undefined;
@@ -467,8 +460,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       options,
       factory,
       type,
-      this._typeImports,
-      compilerOptionsPaths
+      this._typeImports
     );
     return factory.createPropertyAssignment('type', identifier);
   }

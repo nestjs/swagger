@@ -11,11 +11,7 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
-    "skipLibCheck": true,
-    "paths": {
-      "@package-a/owner": ["package-a/owner"],
-      "different-cats/*": ["./cats/*"]
-    }
+    "skipLibCheck": true
   },
   "include": ["./**/*"]
 }

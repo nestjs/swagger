@@ -4,10 +4,6 @@ export default async () => {
     ['./cats/dto/pagination-query.dto']: await import(
       './cats/dto/pagination-query.dto'
     ),
-    ['./package-a/owner']: await import('./package-a/owner'),
-    ['./cats/dto/absolute-owner.dto']: await import(
-      './cats/dto/absolute-owner.dto'
-    ),
     ['./cats/dto/create-cat.dto']: await import('./cats/dto/create-cat.dto'),
     ['./cats/dto/tag.dto']: await import('./cats/dto/tag.dto'),
     ['./cats/classes/cat.class']: await import('./cats/classes/cat.class')
@@ -146,14 +142,6 @@ export default async () => {
               externalEnum: {
                 required: true,
                 enum: require('@nestjs/common').HttpStatus
-              },
-              customPathImportOwner: {
-                required: true,
-                enum: t['./package-a/owner'].Owner
-              },
-              absoluteImportOwner: {
-                required: true,
-                enum: t['./cats/dto/absolute-owner.dto'].AbsoluteOwner
               },
               state: {
                 required: false,
