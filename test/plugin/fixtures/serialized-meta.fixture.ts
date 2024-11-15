@@ -139,10 +139,6 @@ export default async () => {
                 required: true,
                 enum: t['./cats/dto/pagination-query.dto'].LettersEnum
               },
-              externalEnum: {
-                required: true,
-                enum: require('@nestjs/common').HttpStatus
-              },
               state: {
                 required: false,
                 description: 'Available language in the application',
