@@ -21,7 +21,7 @@ function getSchemaNameByClass(target: Function): string {
     return target.name;
   }
 
-  return customSchema[0].name ?? target.name;
+  return customSchema[customSchema.length - 1].name ?? target.name;
 }
 
 export function refs(...models: Function[]) {

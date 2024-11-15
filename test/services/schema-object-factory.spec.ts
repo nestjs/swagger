@@ -412,6 +412,24 @@ describe('SchemaObjectFactory', () => {
       expect(Object.keys(schemas)).toContain('UpdateUserDto');
     });
 
+    it('should override the schema name of base class', () => {
+      @ApiSchema({
+        name: 'CreateUser'
+      })
+      class CreateUserDto {}
+
+      @ApiSchema({
+        name: 'UpdateUser'
+      })
+      class UpdateUserDto extends CreateUserDto {}
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+
+      expect(Object.keys(schemas)).toContain('UpdateUser');
+    });
+
     it('should include extension properties', () => {
       @ApiExtension('x-test', 'value')
       class CreatUserDto {
