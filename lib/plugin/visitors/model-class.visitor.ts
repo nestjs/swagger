@@ -28,7 +28,6 @@ import {
   canReferenceNode,
   convertPath,
   extractTypeArgumentIfArray,
-  getAbsoluteCompilerOptionsPaths,
   getDecoratorOrUndefinedByNames,
   getTypeReferenceAsString,
   hasPropertyKey,
@@ -73,7 +72,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   ) {
     const externalImports = getExternalImports(sourceFile);
     const typeChecker = program.getTypeChecker();
-    const compilerOptionsPaths = getAbsoluteCompilerOptionsPaths(program);
+    const compilerOptionsPaths = program.getCompilerOptions().paths ?? {};
     sourceFile = this.updateImports(sourceFile, ctx.factory, program);
 
     const propertyNodeVisitorFactory =
