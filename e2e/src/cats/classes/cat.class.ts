@@ -57,7 +57,8 @@ export class Cat {
         example: 400
       }
     },
-    required: ['name', 'status']
+    required: ['name', 'status'],
+    selfRequired: true
   })
   rawDefinition?: Record<string, any>;
 
