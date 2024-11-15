@@ -171,13 +171,15 @@ export function replaceImportPath(
       ? convertPath(options.pathToSource)
       : posix.dirname(convertPath(fileName));
 
-    for (const [optionName, optionPaths] of Object.entries(
-      compilerOptionsPaths
-    )) {
-      if (importPath.includes(optionName)) {
-        const optionPath = optionPaths[0];
-        typeReference = typeReference.replace(optionName, optionPath);
-        importPath = importPath.replace(optionName, optionPath);
+    for (const [key, value] of Object.entries(compilerOptionsPaths)) {
+      const keyToMatch = key.replace('*', '');
+      if (importPath.includes(keyToMatch)) {
+        const newImportPath = posix.join(
+          from,
+          importPath.replace(keyToMatch, value[0].replace('*', ''))
+        );
+        typeReference = typeReference.replace(importPath, newImportPath);
+        importPath = newImportPath;
         break;
       }
     }
@@ -208,6 +210,7 @@ export function replaceImportPath(
     }
 
     typeReference = typeReference.replace(importPath, relativePath);
+
     if (options.readonly) {
       const { typeName, typeImportStatement } =
         convertToAsyncImport(typeReference);
@@ -393,37 +396,4 @@ export function canReferenceNode(node: ts.Node, options: PluginOptions) {
     return true;
   }
   return false;
-}
-
-/**
- * Get modifies compiler options paths where
- *
- * - all `*` are removed from the aliases and paths
- * - all paths are resolved to absolute paths
- *
- * If both `baseUrl` and `pathsBasePath` are not set, the current
- * compilation directory is used as the base path for resolution.
- */
-export function getAbsoluteCompilerOptionsPaths(
-  program: ts.Program
-): ts.MapLike<string[]> {
-  const compilerOptions = program.getCompilerOptions();
-  const { paths } = compilerOptions;
-  if (!paths) {
-    return {};
-  }
-
-  const base =
-    (compilerOptions.pathsBasePath as string | undefined) ||
-    compilerOptions.baseUrl ||
-    program.getCurrentDirectory();
-
-  const result: ts.MapLike<string[]> = {};
-  for (const [key, list] of Object.entries(paths)) {
-    result[key.replace('/*', '')] = list.map((item) => {
-      const path = item.replace('/*', '');
-      return isAbsolute(path) ? path : posix.join(base, path);
-    });
-  }
-  return result;
 }
