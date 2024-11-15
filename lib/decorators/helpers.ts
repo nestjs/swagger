@@ -114,7 +114,16 @@ export function createMixedDecorator<T = any>(
       Reflect.defineMetadata(metakey, metadatas, descriptor.value);
       return descriptor;
     }
-    Reflect.defineMetadata(metakey, metadata, target);
+
+    let metadatas: any;
+    if (Array.isArray(metadata)) {
+      const previousMetadata = Reflect.getMetadata(metakey, target) || [];
+      metadatas = [...previousMetadata, ...metadata];
+    } else {
+      const previousMetadata = Reflect.getMetadata(metakey, target) || {};
+      metadatas = Object.assign(Object.assign({}, previousMetadata), metadata);
+    }
+    Reflect.defineMetadata(metakey, metadatas, target);
     return target;
   };
 }
