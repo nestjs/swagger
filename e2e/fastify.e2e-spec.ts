@@ -3,11 +3,11 @@ import {
   FastifyAdapter,
   NestFastifyApplication
 } from '@nestjs/platform-fastify';
+import * as path from 'path';
 import * as request from 'supertest';
 import * as SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
-import * as path from 'path';
 
 describe('Fastify Swagger', () => {
   let app: NestFastifyApplication;
@@ -84,11 +84,11 @@ describe('Fastify Swagger', () => {
     beforeEach(async () => {
       const swaggerDocument = SwaggerModule.createDocument(
         app,
-        builder.build(),
+        builder.build()
       );
       SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
         // to showcase that in new implementation u can use custom swagger-ui path. Useful when using e.g. webpack
-        customSwaggerUiPath: path.resolve(`./node_modules/swagger-ui-dist`),
+        customSwaggerUiPath: path.resolve(`./node_modules/swagger-ui-dist`)
       });
 
       await app.init();
@@ -115,6 +115,93 @@ describe('Fastify Swagger', () => {
 
       expect(response.status).toEqual(200);
     });
+  });
+
+  describe('disabled Swagger Documents(JSON, YAML) but served Swagger UI', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
+        documentsEnabled: false
+      });
+
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('should not serve the JSON definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-json`
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it('should not serve the YAML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-yaml`
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it.each([SWAGGER_RELATIVE_URL, `${SWAGGER_RELATIVE_URL}/`])(
+      'should serve Swagger UI at "%s"',
+      async (url) => {
+        const response = await request(app.getHttpServer()).get(url);
+        expect(response.status).toEqual(200);
+      }
+    );
+  });
+
+  describe('disabled Both Swagger UI AND Swagger Documents(JSON, YAML)', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
+        swaggerUiEnabled: false,
+        documentsEnabled: false
+      });
+
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('should not serve the JSON definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-json`
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it('should not serve the YAML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-yaml`
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it.each([SWAGGER_RELATIVE_URL, `${SWAGGER_RELATIVE_URL}/`])(
+      'should not serve Swagger UI at "%s"',
+      async (url) => {
+        const response = await request(app.getHttpServer()).get(url);
+        expect(response.status).toEqual(404);
+      }
+    );
   });
 
   describe('custom documents endpoints', () => {
@@ -158,7 +245,7 @@ describe('Fastify Swagger', () => {
         `${JSON_CUSTOM_URL}?description=My%20custom%20description`
       );
 
-      expect(response.body.info.description).toBe("My custom description");
+      expect(response.body.info.description).toBe('My custom description');
     });
 
     it('yaml document should be server in the custom url', async () => {
@@ -172,7 +259,7 @@ describe('Fastify Swagger', () => {
       const response = await request(app.getHttpServer()).get(
         `${YAML_CUSTOM_URL}?description=My%20custom%20description`
       );
-      expect(response.text).toContain("My custom description");
+      expect(response.text).toContain('My custom description');
     });
   });
 
@@ -310,7 +397,7 @@ describe('Fastify Swagger', () => {
 
     it('should patch the OpenAPI document', async function () {
       const response: Response = await request(app.getHttpServer()).get(
-        "/custom/swagger-ui-init.js?description=Custom%20Swagger%20description%20passed%20by%20query%20param"
+        '/custom/swagger-ui-init.js?description=Custom%20Swagger%20description%20passed%20by%20query%20param'
       );
       expect(response.text).toContain(
         `"description": "Custom Swagger description passed by query param"`
@@ -330,24 +417,30 @@ describe('Fastify Swagger', () => {
       );
 
       SwaggerModule.setup('/:tenantId/', app, swaggerDocument, {
-        patchDocumentOnRequest<ExpressRequest, ExpressResponse> (req, res, document) {
+        patchDocumentOnRequest<ExpressRequest, ExpressResponse>(
+          req,
+          res,
+          document
+        ) {
           return {
             ...document,
             info: {
               description: `${req.params.tenantId}'s API documentation`
             }
-          }
+          };
         }
       });
 
       await app.init();
       await app.getHttpAdapter().getInstance().ready();
 
-      const response: Response = await request(app.getHttpServer()).get('/tenant-1/swagger-ui-init.js');
+      const response: Response = await request(app.getHttpServer()).get(
+        '/tenant-1/swagger-ui-init.js'
+      );
 
       await app.close();
       expect(response.text).toContain("tenant-1's API documentation");
-    })
+    });
 
     afterEach(async () => {
       await app.close();

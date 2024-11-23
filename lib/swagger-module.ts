@@ -86,6 +86,7 @@ export class SwaggerModule {
     documentOrFactory: OpenAPIObject | (() => OpenAPIObject),
     options: {
       swaggerUiEnabled: boolean;
+      documentsEnabled: boolean;
       jsonDocumentUrl: string;
       yamlDocumentUrl: string;
       swaggerOptions: SwaggerCustomOptions;
@@ -112,7 +113,11 @@ export class SwaggerModule {
         options.swaggerOptions
       );
     }
-    this.serveDefinitions(httpAdapter, getBuiltDocument, options);
+
+    // Skip registering JSON/YAML endpoints if documentsEnabled is false
+    if (options.documentsEnabled) {
+      this.serveDefinitions(httpAdapter, getBuiltDocument, options);
+    }
   }
 
   protected static serveSwaggerUi(
@@ -283,6 +288,7 @@ export class SwaggerModule {
       : `${finalPath}-yaml`;
 
     const swaggerUiEnabled = options?.swaggerUiEnabled ?? true;
+    const documentsEnabled = options?.documentsEnabled ?? true;
 
     const httpAdapter = app.getHttpAdapter();
 
@@ -293,6 +299,7 @@ export class SwaggerModule {
       documentOrFactory,
       {
         swaggerUiEnabled,
+        documentsEnabled,
         jsonDocumentUrl: finalJSONDocumentPath,
         yamlDocumentUrl: finalYAMLDocumentPath,
         swaggerOptions: options || {}
