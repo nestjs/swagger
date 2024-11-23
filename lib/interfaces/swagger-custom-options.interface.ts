@@ -1,5 +1,5 @@
-import { SwaggerUiOptions } from './swagger-ui-options.interface';
 import { OpenAPIObject } from './open-api-spec.interface';
+import { SwaggerUiOptions } from './swagger-ui-options.interface';
 
 export interface SwaggerCustomOptions {
   /**
@@ -10,11 +10,19 @@ export interface SwaggerCustomOptions {
   useGlobalPrefix?: boolean;
 
   /**
-   * If `false`, only API definitions (JSON and YAML) will be served (on `/{path}-json` and `/{path}-yaml`).
-   * This is particularly useful if you are already hosting a Swagger UI somewhere else and just want to serve API definitions.
+   * If `false`, the Swagger UI will not be served. Only API definitions (JSON and YAML)
+   * will be accessible (on `/{path}-json` and `/{path}-yaml`).
+   * To fully disable both the Swagger UI and API definitions, use `documentsEnabled: false`.
    * Default: `true`.
    */
   swaggerUiEnabled?: boolean;
+
+  /**
+   * If `false`, both the Swagger UI and API definitions (JSON and YAML) will be disabled.
+   * Use this option when you want to completely hide all Swagger-related endpoints.
+   * Default: `true`.
+   */
+  documentsEnabled?: boolean;
 
   /**
    * Url point the API definition to load in Swagger UI.
@@ -103,5 +111,4 @@ export interface SwaggerCustomOptions {
    * @deprecated This property has no effect.
    */
   urls?: Record<'url' | 'name', string>[];
-
 }
