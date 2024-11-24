@@ -41,7 +41,9 @@ export class SwaggerScanner {
       ignoreGlobalPrefix = false,
       operationIdFactory,
       linkNameFactory,
-      autoTagControllers = true
+      autoTagControllers = true,
+      recursiveModuleScan = false,
+      maxScanDepth = Infinity
     } = options;
 
     const container = (app as any).container as NestContainer;
@@ -55,34 +57,55 @@ export class SwaggerScanner {
       ? stripLastSlash(getGlobalPrefix(app))
       : '';
 
+    const processedModules = new Set<string>();
+
     const denormalizedPaths = modules.map(
       ({ controllers, metatype, imports }) => {
         let result: ModuleRoute[] = [];
 
         if (deepScanRoutes) {
-          // Only load submodules routes if explicitly enabled
-          const isGlobal = (module: Type<any>) =>
-            !container.isGlobalModule(module);
+          if (!recursiveModuleScan) {
+            // Only load submodules routes if explicitly enabled
+            const isGlobal = (module: Type<any>) =>
+              !container.isGlobalModule(module);
 
-          Array.from(imports.values())
-            .filter(isGlobal as any)
-            .forEach(({ metatype, controllers }) => {
-              const modulePath = this.getModulePathMetadata(
+            Array.from(imports.values())
+              .filter(isGlobal as any)
+              .forEach(({ metatype, controllers }) => {
+                const modulePath = this.getModulePathMetadata(
+                  container,
+                  metatype
+                );
+                result = result.concat(
+                  this.scanModuleControllers(
+                    controllers,
+                    modulePath,
+                    globalPrefix,
+                    internalConfigRef,
+                    operationIdFactory,
+                    linkNameFactory,
+                    autoTagControllers
+                  )
+                );
+              });
+          } else {
+            result = result.concat(
+              this.scanModuleImportsRecursively(
+                imports,
                 container,
-                metatype
-              );
-              result = result.concat(
-                this.scanModuleControllers(
-                  controllers,
-                  modulePath,
+                0,
+                maxScanDepth,
+                processedModules,
+                {
                   globalPrefix,
                   internalConfigRef,
                   operationIdFactory,
                   linkNameFactory,
-                  autoTagControllers
-                )
-              );
-            });
+                  autoTagControllers,
+                }
+              )
+            );
+          }
         }
         const modulePath = this.getModulePathMetadata(container, metatype);
         result = result.concat(
@@ -169,5 +192,72 @@ export class SwaggerScanner {
       metatype
     );
     return modulePath ?? Reflect.getMetadata(MODULE_PATH, metatype);
+  }
+
+  private scanModuleImportsRecursively(
+    imports: Set<Module>,
+    container: NestContainer,
+    currentDepth: number,
+    maxDepth: number | undefined,
+    processedModules: Set<string>,
+    options: {
+      globalPrefix: string;
+      internalConfigRef: ApplicationConfig;
+      operationIdFactory?: OperationIdFactory;
+      linkNameFactory?: (
+        controllerKey: string,
+        methodKey: string,
+        fieldKey: string
+      ) => string;
+      autoTagControllers?: boolean;
+    }
+  ): ModuleRoute[] {
+    let result: ModuleRoute[] = [];
+
+    for (const { metatype, controllers, imports: subImports } of imports.values()) {
+      // Skip if module has already been processed
+      const moduleId = this.getModuleId(metatype);
+      if (processedModules.has(moduleId) || container.isGlobalModule(metatype) || (maxDepth !== undefined && currentDepth > maxDepth)) {
+        continue;
+      }
+      processedModules.add(moduleId);
+
+      // Scan current module's controllers
+      const modulePath = this.getModulePathMetadata(container, metatype);
+      result = result.concat(
+        this.scanModuleControllers(
+          controllers,
+          modulePath,
+          options.globalPrefix,
+          options.internalConfigRef,
+          options.operationIdFactory,
+          options.linkNameFactory,
+          options.autoTagControllers
+        )
+      );
+
+      // Process sub-imports if any
+      if (subImports.size > 0) {
+        const nextDepth = currentDepth + 1;
+        if (maxDepth === undefined || nextDepth < maxDepth) {
+          result = result.concat(
+            this.scanModuleImportsRecursively(
+              subImports,
+              container,
+              nextDepth,
+              maxDepth,
+              processedModules,
+              options
+            )
+          );
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private getModuleId(metatype: Type<any>): string {
+    return metatype.name || Math.random().toString(36).substring(2);
   }
 }
