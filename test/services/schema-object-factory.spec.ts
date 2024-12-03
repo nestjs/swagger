@@ -384,7 +384,7 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
-    describe('Handling of @ApiSchema', () => {
+    describe('@ApiSchema', () => {
       it('should use the class name when no options object was passed', () => {
         @ApiSchema()
         class CreateUserDto {}
