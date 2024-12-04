@@ -12,7 +12,7 @@ export interface SwaggerCustomOptions {
   /**
    * If `false`, the Swagger UI will not be served. Only API definitions (JSON and YAML)
    * will be accessible (on `/{path}-json` and `/{path}-yaml`).
-   * To fully disable both the Swagger UI and API definitions, use `documentsEnabled: false`.
+   * To fully disable both the Swagger UI and API definitions, use `raw: false`.
    * Default: `true`.
    */
   swaggerUiEnabled?: boolean;
