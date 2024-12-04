@@ -86,6 +86,7 @@ export class SwaggerModule {
     documentOrFactory: OpenAPIObject | (() => OpenAPIObject),
     options: {
       swaggerUiEnabled: boolean;
+      raw: boolean | Array<'json' | 'yaml'>;
       jsonDocumentUrl: string;
       yamlDocumentUrl: string;
       swaggerOptions: SwaggerCustomOptions;
@@ -112,7 +113,25 @@ export class SwaggerModule {
         options.swaggerOptions
       );
     }
-    this.serveDefinitions(httpAdapter, getBuiltDocument, options);
+
+    /**
+     * Serve JSON/YAML definitions based on the `raw` option:
+     * - `true`: Serve both JSON and YAML definitions.
+     * - `false`: Skip registering both JSON and YAML definitions.
+     * - `Array<'json' | 'yaml'>`: Serve only the specified formats (e.g., `['json']` to serve only JSON).
+     */
+    if (
+      options.raw === true ||
+      (Array.isArray(options.raw) && options.raw.length > 0)
+    ) {
+      const serveJson = options.raw === true || options.raw.includes('json');
+      const serveYaml = options.raw === true || options.raw.includes('yaml');
+
+      this.serveDefinitions(httpAdapter, getBuiltDocument, options, {
+        serveJson,
+        serveYaml
+      });
+    }
   }
 
   protected static serveSwaggerUi(
@@ -227,33 +246,40 @@ export class SwaggerModule {
       jsonDocumentUrl: string;
       yamlDocumentUrl: string;
       swaggerOptions: SwaggerCustomOptions;
-    }
+    },
+    serveOptions: { serveJson: boolean; serveYaml: boolean }
   ) {
-    httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
-      res.type('application/json');
-      const document = getBuiltDocument();
+    if (serveOptions.serveJson) {
+      httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
+        res.type('application/json');
+        const document = getBuiltDocument();
 
-      const documentToSerialize = options.swaggerOptions.patchDocumentOnRequest
-        ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
-        : document;
+        const documentToSerialize = options.swaggerOptions
+          .patchDocumentOnRequest
+          ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
+          : document;
 
-      res.send(JSON.stringify(documentToSerialize));
-    });
-
-    httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
-      res.type('text/yaml');
-      const document = getBuiltDocument();
-
-      const documentToSerialize = options.swaggerOptions.patchDocumentOnRequest
-        ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
-        : document;
-
-      const yamlDocument = jsyaml.dump(documentToSerialize, {
-        skipInvalid: true,
-        noRefs: true
+        res.send(JSON.stringify(documentToSerialize));
       });
-      res.send(yamlDocument);
-    });
+    }
+
+    if (serveOptions.serveYaml) {
+      httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
+        res.type('text/yaml');
+        const document = getBuiltDocument();
+
+        const documentToSerialize = options.swaggerOptions
+          .patchDocumentOnRequest
+          ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
+          : document;
+
+        const yamlDocument = jsyaml.dump(documentToSerialize, {
+          skipInvalid: true,
+          noRefs: true
+        });
+        res.send(yamlDocument);
+      });
+    }
   }
 
   public static setup(
@@ -283,6 +309,7 @@ export class SwaggerModule {
       : `${finalPath}-yaml`;
 
     const swaggerUiEnabled = options?.swaggerUiEnabled ?? true;
+    const raw = options?.raw ?? true;
 
     const httpAdapter = app.getHttpAdapter();
 
@@ -293,6 +320,7 @@ export class SwaggerModule {
       documentOrFactory,
       {
         swaggerUiEnabled,
+        raw,
         jsonDocumentUrl: finalJSONDocumentPath,
         yamlDocumentUrl: finalYAMLDocumentPath,
         swaggerOptions: options || {}
