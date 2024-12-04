@@ -1365,6 +1365,7 @@
             "type": "number"
           }
         },
+        "description": "ExtraModel description",
         "required": [
           "one",
           "two"

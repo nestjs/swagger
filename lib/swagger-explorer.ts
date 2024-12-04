@@ -352,12 +352,19 @@ export class SwaggerExplorer {
         );
         if (requestMethod === RequestMethod.ALL) {
           // Workaround for the invalid "ALL" Method
-          const validMethods = Object.values(RequestMethod).filter(
-            (meth) => meth !== 'ALL' && typeof meth === 'string'
-          ) as string[];
+          const validMethods = [
+            'get',
+            'post',
+            'put',
+            'delete',
+            'patch',
+            'options',
+            'head',
+            'search'
+          ];
 
           return validMethods.map((requestMethod) => ({
-            method: requestMethod.toLowerCase(),
+            method: requestMethod,
             path: fullPath === '' ? '/' : fullPath,
             operationId: `${this.getOperationId(
               instance,

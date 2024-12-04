@@ -1,7 +1,8 @@
 import { ApiProperty, ApiSchema } from '../../../../lib';
 
 @ApiSchema({
-  name: 'ExtraModel'
+  name: 'ExtraModel',
+  description: 'ExtraModel description'
 })
 export class ExtraModelDto {
   @ApiProperty()
