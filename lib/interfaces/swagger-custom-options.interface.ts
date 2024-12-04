@@ -18,11 +18,13 @@ export interface SwaggerCustomOptions {
   swaggerUiEnabled?: boolean;
 
   /**
-   * If `false`, both the Swagger UI and API definitions (JSON and YAML) will be disabled.
-   * Use this option when you want to completely hide all Swagger-related endpoints.
+   * If `true`, raw definitions for all formats will be served.
+   * Alternatively, you can pass an array to specify the formats to be served, e.g., `raw: ['json']` to serve only JSON definitions.
+   * If omitted or set to an empty array, no definitions (JSON or YAML) will be served.
+   * Use this option to control the availability of Swagger-related endpoints.
    * Default: `true`.
    */
-  documentsEnabled?: boolean;
+  raw?: boolean | Array<'json' | 'yaml'>;
 
   /**
    * Url point the API definition to load in Swagger UI.
