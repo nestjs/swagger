@@ -148,8 +148,8 @@ export class CatsController {
     return this.catsService.create(createCatDto);
   }
 
-  @Get('site*')
-  getSite() {}
+  @Get('wildcard/*')
+  getWildcard() {}
 
   @Get('with-enum/:type')
   @ApiParam({

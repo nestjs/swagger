@@ -1,7 +1,5 @@
-import { INestApplication } from '@nestjs/common';
 import { filter, groupBy, keyBy, mapValues, omit } from 'lodash';
 import { OpenAPIObject } from './interfaces';
-import { ModuleRoute } from './interfaces/module-route.interface';
 import { sortObjectLexicographically } from './utils/sort-object-lexicographically';
 
 export class SwaggerTransformer {
@@ -29,24 +27,5 @@ export class SwaggerTransformer {
     return {
       paths
     };
-  }
-
-  public unescapeColonsInPath(
-    app: INestApplication,
-    moduleRoutes: ModuleRoute[]
-  ): ModuleRoute[] {
-    const httpAdapter = app.getHttpAdapter();
-    const usingFastify = httpAdapter && httpAdapter.getType() === 'fastify';
-    const unescapeColon = usingFastify
-      ? (path: string) => path.replace(/:\{([^}]+)\}/g, ':$1')
-      : (path: string) => path.replace(/\[:\]/g, ':');
-
-    return moduleRoutes.map((moduleRoute) => ({
-      ...moduleRoute,
-      root: {
-        ...moduleRoute.root,
-        path: unescapeColon(moduleRoute.root.path)
-      }
-    }));
   }
 }

@@ -85,7 +85,7 @@ export class SwaggerScanner {
             });
         }
         const modulePath = this.getModulePathMetadata(container, metatype);
-        result = result.concat(
+        return result.concat(
           this.scanModuleControllers(
             controllers,
             modulePath,
@@ -96,7 +96,6 @@ export class SwaggerScanner {
             autoTagControllers
           )
         );
-        return this.transformer.unescapeColonsInPath(app, result);
       }
     );
 

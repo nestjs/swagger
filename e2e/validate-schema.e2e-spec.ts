@@ -13,15 +13,23 @@ import {
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
+import { ExpressController } from './src/express.controller';
 
 describe('Validate OpenAPI schema', () => {
   let app: INestApplication;
   let options: Omit<OpenAPIObject, 'paths'>;
 
   beforeEach(async () => {
-    app = await NestFactory.create(ApplicationModule, {
-      logger: false
-    });
+    app = await NestFactory.create(
+      {
+        module: class {},
+        imports: [ApplicationModule],
+        controllers: [ExpressController]
+      },
+      {
+        logger: false
+      }
+    );
     app.setGlobalPrefix('api/');
     app.enableVersioning();
 

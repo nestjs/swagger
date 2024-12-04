@@ -13,14 +13,4 @@ export class AppController {
   withAliases(): string {
     return 'Hello world!';
   }
-
-  @Get('express[:]colon[:]another/:prop')
-  withColonExpress(): string {
-    return 'Hello world!';
-  }
-
-  @Get('fastify::colon::another/:prop')
-  withColonFastify(): string {
-    return 'Hello world!';
-  }
 }

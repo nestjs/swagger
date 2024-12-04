@@ -8,6 +8,7 @@ import * as request from 'supertest';
 import * as SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
+import { ExpressController } from './src/express.controller';
 
 describe('Express Swagger', () => {
   let app: NestExpressApplication;
@@ -15,7 +16,11 @@ describe('Express Swagger', () => {
 
   beforeEach(async () => {
     app = await NestFactory.create<NestExpressApplication>(
-      ApplicationModule,
+      {
+        module: class {},
+        imports: [ApplicationModule],
+        controllers: [ExpressController]
+      },
       new ExpressAdapter(),
       { logger: false }
     );
