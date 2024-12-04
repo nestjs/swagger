@@ -457,10 +457,7 @@ export class SwaggerExplorer {
       }
     } catch (err) {
       // TODO: add error logging
-      console.error(err);
-      console.log('faiel to parse path', {
-        path
-      });
+      console.error({ err, path });
       return '';
     }
     return pathWithParams === '/' ? '' : addLeadingSlash(pathWithParams);
