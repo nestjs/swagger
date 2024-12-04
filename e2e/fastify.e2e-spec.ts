@@ -169,7 +169,7 @@ describe('Fastify Swagger', () => {
         builder.build()
       );
       SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
-        swaggerUiEnabled: false,
+        ui: false,
         raw: false
       });
 

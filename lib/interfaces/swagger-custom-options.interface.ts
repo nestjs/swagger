@@ -11,11 +11,18 @@ export interface SwaggerCustomOptions {
 
   /**
    * If `false`, the Swagger UI will not be served. Only API definitions (JSON and YAML)
-   * will be accessible (on `/{path}-json` and `/{path}-yaml`).
-   * To fully disable both the Swagger UI and API definitions, use `raw: false`.
+   * will be accessible (on `/{path}-json` and `/{path}-yaml`). To fully disable both the Swagger UI and API definitions, use `raw: false`.
    * Default: `true`.
+   * @deprecated Use `ui` instead.
    */
   swaggerUiEnabled?: boolean;
+
+  /**
+   * If `false`, the Swagger UI will not be served. Only API definitions (JSON and YAML)
+   * will be accessible (on `/{path}-json` and `/{path}-yaml`). To fully disable both the Swagger UI and API definitions, use `raw: false`.
+   * Default: `true`.
+   */
+  ui?: boolean;
 
   /**
    * If `true`, raw definitions for all formats will be served.

@@ -85,7 +85,7 @@ export class SwaggerModule {
     httpAdapter: HttpServer,
     documentOrFactory: OpenAPIObject | (() => OpenAPIObject),
     options: {
-      swaggerUiEnabled: boolean;
+      ui: boolean;
       raw: boolean | Array<'json' | 'yaml'>;
       jsonDocumentUrl: string;
       yamlDocumentUrl: string;
@@ -104,7 +104,7 @@ export class SwaggerModule {
       return document;
     };
 
-    if (options.swaggerUiEnabled) {
+    if (options.ui) {
       this.serveSwaggerUi(
         finalPath,
         urlLastSubdirectory,
@@ -308,7 +308,7 @@ export class SwaggerModule {
       ? `${validatedGlobalPrefix}${validatePath(options.yamlDocumentUrl)}`
       : `${finalPath}-yaml`;
 
-    const swaggerUiEnabled = options?.swaggerUiEnabled ?? true;
+    const ui = options?.ui ?? options?.swaggerUiEnabled ?? true;
     const raw = options?.raw ?? true;
 
     const httpAdapter = app.getHttpAdapter();
@@ -319,7 +319,7 @@ export class SwaggerModule {
       httpAdapter,
       documentOrFactory,
       {
-        swaggerUiEnabled,
+        ui,
         raw,
         jsonDocumentUrl: finalJSONDocumentPath,
         yamlDocumentUrl: finalYAMLDocumentPath,
@@ -327,7 +327,7 @@ export class SwaggerModule {
       }
     );
 
-    if (swaggerUiEnabled) {
+    if (ui) {
       SwaggerModule.serveStatic(finalPath, app, options?.customSwaggerUiPath);
       /**
        * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.

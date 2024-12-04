@@ -123,7 +123,7 @@ describe('Express Swagger', () => {
         builder.build()
       );
       SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
-        swaggerUiEnabled: false
+        ui: false
       });
 
       await app.init();
@@ -216,7 +216,7 @@ describe('Express Swagger', () => {
         builder.build()
       );
       SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
-        swaggerUiEnabled: false,
+        ui: false,
         raw: false
       });
 
