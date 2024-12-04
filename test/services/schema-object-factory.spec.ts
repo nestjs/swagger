@@ -384,50 +384,109 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
-    it('should use schema name instead of class name', () => {
-      @ApiSchema({
-        name: 'CreateUser'
-      })
-      class CreateUserDto {}
+    describe('@ApiSchema', () => {
+      it('should use the class name when no options object was passed', () => {
+        @ApiSchema()
+        class CreateUserDto {}
 
-      const schemas: Record<string, SchemasObject> = {};
+        const schemas: Record<string, SchemasObject> = {};
 
-      schemaObjectFactory.exploreModelSchema(CreateUserDto, schemas);
+        schemaObjectFactory.exploreModelSchema(CreateUserDto, schemas);
 
-      expect(Object.keys(schemas)).toContain('CreateUser');
-    });
+        expect(Object.keys(schemas)).toContain('CreateUserDto');
+      });
 
-    it('should not use schema name of base class', () => {
-      @ApiSchema({
-        name: 'CreateUser'
-      })
-      class CreateUserDto {}
+      it('should use the class name when the options object is empty', () => {
+        @ApiSchema({})
+        class CreateUserDto {}
 
-      class UpdateUserDto extends CreateUserDto {}
+        const schemas: Record<string, SchemasObject> = {};
 
-      const schemas: Record<string, SchemasObject> = {};
+        schemaObjectFactory.exploreModelSchema(CreateUserDto, schemas);
 
-      schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+        expect(Object.keys(schemas)).toContain('CreateUserDto');
+      });
 
-      expect(Object.keys(schemas)).toContain('UpdateUserDto');
-    });
+      it('should use the schema name instead of class name', () => {
+        @ApiSchema({
+          name: 'CreateUser'
+        })
+        class CreateUserDto {}
 
-    it('should override the schema name of base class', () => {
-      @ApiSchema({
-        name: 'CreateUser'
-      })
-      class CreateUserDto {}
+        const schemas: Record<string, SchemasObject> = {};
 
-      @ApiSchema({
-        name: 'UpdateUser'
-      })
-      class UpdateUserDto extends CreateUserDto {}
+        schemaObjectFactory.exploreModelSchema(CreateUserDto, schemas);
 
-      const schemas: Record<string, SchemasObject> = {};
+        expect(Object.keys(schemas)).toContain('CreateUser');
+      });
 
-      schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+      it('should not use the schema name of the base class', () => {
+        @ApiSchema({
+          name: 'CreateUser'
+        })
+        class CreateUserDto {}
 
-      expect(Object.keys(schemas)).toContain('UpdateUser');
+        class UpdateUserDto extends CreateUserDto {}
+
+        const schemas: Record<string, SchemasObject> = {};
+
+        schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+
+        expect(Object.keys(schemas)).toContain('UpdateUserDto');
+      });
+
+      it('should override the schema name of the base class', () => {
+        @ApiSchema({
+          name: 'CreateUser'
+        })
+        class CreateUserDto {}
+
+        @ApiSchema({
+          name: 'UpdateUser'
+        })
+        class UpdateUserDto extends CreateUserDto {}
+
+        const schemas: Record<string, SchemasObject> = {};
+
+        schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+
+        expect(Object.keys(schemas)).toContain('UpdateUser');
+      });
+
+      it('should use the the description if provided', () => {
+        @ApiSchema({
+          description: 'Represents a user.'
+        })
+        class CreateUserDto {}
+
+        const schemas: Record<string, SchemasObject> = {};
+
+        schemaObjectFactory.exploreModelSchema(CreateUserDto, schemas);
+
+        expect(schemas[CreateUserDto.name].description).toEqual(
+          'Represents a user.'
+        );
+      });
+
+      it('should not use the the description of the base class', () => {
+        @ApiSchema({
+          description: 'Represents a user.'
+        })
+        class CreateUserDto {}
+
+        @ApiSchema({
+          description: 'Represents a user update.'
+        })
+        class UpdateUserDto extends CreateUserDto {}
+
+        const schemas: Record<string, SchemasObject> = {};
+
+        schemaObjectFactory.exploreModelSchema(UpdateUserDto, schemas);
+
+        expect(schemas[UpdateUserDto.name].description).toEqual(
+          'Represents a user update.'
+        );
+      });
     });
 
     it('should include extension properties', () => {

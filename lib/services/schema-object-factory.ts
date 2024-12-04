@@ -246,6 +246,8 @@ export class SchemaObjectFactory {
     const extensionProperties =
       Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
 
+    const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
+
     const typeDefinition: SchemaObject = {
       type: 'object',
       properties: mapValues(keyBy(propertiesWithType, 'name'), (property) => {
@@ -263,7 +265,8 @@ export class SchemaObjectFactory {
 
         return omit(property, [...keysToOmit, 'required']);
       }) as Record<string, SchemaObject | ReferenceObject>,
-      ...extensionProperties
+      ...extensionProperties,
+      ...schemaProperties
     };
 
     const typeDefinitionRequiredFields = propertiesWithType
@@ -277,23 +280,15 @@ export class SchemaObjectFactory {
     if (typeDefinitionRequiredFields.length > 0) {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
-    const schemaName = this.getSchemaName(type);
     schemas[schemaName] = typeDefinition;
     return schemaName;
   }
 
-  getSchemaName(type: Function | Type<unknown>) {
-    const customSchema: ApiSchemaOptions[] = Reflect.getOwnMetadata(
-      DECORATORS.API_SCHEMA,
-      type
-    );
-
-    if (!customSchema || customSchema.length === 0) {
-      return type.name;
-    }
-
-    const schemaName = customSchema[customSchema.length - 1].name;
-    return schemaName ?? type.name;
+  getSchemaMetadata(type: Function | Type<unknown>) {
+    const schemas: ApiSchemaOptions[] =
+      Reflect.getOwnMetadata(DECORATORS.API_SCHEMA, type) ?? [];
+    const { name, ...schemaProperties } = schemas[schemas.length - 1] ?? {};
+    return { schemaName: name ?? type.name, schemaProperties };
   }
 
   mergePropertyWithMetadata(
