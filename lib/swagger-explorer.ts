@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common/interfaces';
 import {
   addLeadingSlash,
-  isString,
   isUndefined
 } from '@nestjs/common/utils/shared.utils';
 import { ApplicationConfig, MetadataScanner } from '@nestjs/core';
@@ -31,7 +30,7 @@ import {
   omitBy,
   pick
 } from 'lodash';
-import * as pathToRegexp from 'path-to-regexp';
+import { parse } from 'path-to-regexp';
 import { DECORATORS } from './constants';
 import { exploreApiCallbacksMetadata } from './explorers/api-callbacks.explorer';
 import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer';
@@ -430,8 +429,32 @@ export class SwaggerExplorer {
       path = head(path);
     }
     let pathWithParams = '';
-    for (const item of pathToRegexp.parse(path)) {
-      pathWithParams += isString(item) ? item : `${item.prefix}{${item.name}}`;
+
+    try {
+      let normalizedPath = path.endsWith('*')
+        ? path.replace(/\*$/, '*splat')
+        : path;
+
+      normalizedPath = normalizedPath.replace(/::/g, '\\:');
+      normalizedPath = normalizedPath.replace(/\[:\]/g, '\\:');
+
+      const { tokens } = parse(normalizedPath);
+      for (const item of tokens) {
+        if (item.type === 'text') {
+          pathWithParams += item.value;
+        } else if (item.type === 'param') {
+          pathWithParams += `{${item.name}}`;
+        } else if (item.type === 'wildcard') {
+          pathWithParams += `{splat}`;
+        }
+      }
+    } catch (err) {
+      // TODO: add error logging
+      console.error(err);
+      console.log('faiel to parse path', {
+        path
+      });
+      return '';
     }
     return pathWithParams === '/' ? '' : addLeadingSlash(pathWithParams);
   }
