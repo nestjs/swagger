@@ -53,4 +53,20 @@ export interface SwaggerDocumentOptions {
    * @default true
    */
   autoTagControllers?: boolean;
+
+  /**
+   * If `true`, swagger will recursively scan all nested imported by `include` modules.
+   * When enabled, this overrides the default behavior of `deepScanRoutes` to scan all depths.
+   *
+   * @default false
+   */
+  recursiveModuleScan?: boolean;
+
+  /**
+   * Maximum depth level for recursive module scanning.
+   * Only applies when `recursiveModuleScan` is `true`.
+   *
+   * @default Infinity
+   */
+  maxScanDepth?: number;
 }
