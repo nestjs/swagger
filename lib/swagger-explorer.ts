@@ -339,7 +339,7 @@ export class SwaggerExplorer {
         globalPrefix,
         controllerVersion,
         ctrlPath: this.reflectControllerPath(metatype),
-        versioningOptions: applicationConfig.getVersioning()
+        versioningOptions
       },
       requestMethod
     );
@@ -364,6 +364,8 @@ export class SwaggerExplorer {
               instance,
               method.name
             )}_${requestMethod.toLowerCase()}`,
+            versions,
+            versionType: versioningOptions?.type,
             ...apiExtension
           }));
         }
@@ -378,6 +380,8 @@ export class SwaggerExplorer {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,
           operationId: this.getOperationId(instance, methodKey, pathVersion),
+          versions,
+          versionType: versioningOptions?.type,
           ...apiExtension
         };
       })
@@ -402,7 +406,7 @@ export class SwaggerExplorer {
   ) {
     let versions: string[] = [];
 
-    if (!versionValue || versioningOptions?.type !== VersioningType.URI) {
+    if (!versionValue) {
       return versions;
     }
 
@@ -410,6 +414,10 @@ export class SwaggerExplorer {
       versions = versionValue.filter((v) => v !== VERSION_NEUTRAL) as string[];
     } else if (versionValue !== VERSION_NEUTRAL) {
       versions = [versionValue];
+    }
+
+    if (!versioningOptions) {
+      return versions;
     }
 
     const prefix = this.routePathFactory.getVersionPrefix(versioningOptions);
@@ -548,7 +556,7 @@ export class SwaggerExplorer {
     metatype: Type<unknown> | Function,
     versioningOptions: VersioningOptions | undefined
   ): VersionValue | undefined {
-    if (versioningOptions?.type === VersioningType.URI) {
+    if (versioningOptions) {
       return (
         Reflect.getMetadata(VERSION_METADATA, metatype) ??
         versioningOptions.defaultVersion
