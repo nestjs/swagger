@@ -128,4 +128,47 @@ describe('Validate header-based versioned OpenAPI schema', () => {
       api.paths['/api/dogs version: v2']['post']['responses']['200']['content']['application/json']['schema']['type']
     ).toBe('array');
   });
+
+  it('should support filtering to subset of versions', async () => {
+    const api = SwaggerModule.createDocument(app, options, { includeVersions: ['v1', 'v2'] });
+    console.log(
+      'API name: %s, Version: %s',
+      api.info.title,
+      api.info.version
+    );
+    expect(api.info.title).toEqual('Dogs example');
+
+    expect(api.paths['/api/dogs']['get']).toBeDefined();
+
+    expect(api.paths['/api/dogs version: v0']).toBeUndefined();
+
+    expect(api.paths['/api/dogs version: v1']['post']['operationId']).toBe('DogsController_createNewV1');
+    expect(
+      api.paths['/api/dogs version: v1']['post']['responses']['200']['content']['application/json']['schema']['type']
+    ).toBe('string');
+
+    expect(api.paths['/api/dogs version: v2']['post']['operationId']).toBe('DogsController_createNewV2');
+    expect(
+      api.paths['/api/dogs version: v2']['post']['responses']['200']['content']['application/json']['schema']['type']
+    ).toBe('array');
+  });
+  
+  it('should support filtering to a single version', async () => {
+    const api = SwaggerModule.createDocument(app, options, { includeVersions: ['v2'] });
+    console.log(
+      'API name: %s, Version: %s',
+      api.info.title,
+      api.info.version
+    );
+    expect(api.info.title).toEqual('Dogs example');
+
+    expect(api.paths['/api/dogs']['get']).toBeDefined();
+    expect(api.paths['/api/dogs version: v0']).toBeUndefined();
+    expect(api.paths['/api/dogs version: v1']).toBeUndefined();
+    expect(api.paths['/api/dogs version: v2']).toBeUndefined();
+    expect(api.paths['/api/dogs']['post']['operationId']).toBe('DogsController_createNewV2');
+    expect(
+      api.paths['/api/dogs']['post']['responses']['200']['content']['application/json']['schema']['type']
+    ).toBe('array');
+  });
 });
