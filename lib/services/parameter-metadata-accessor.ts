@@ -24,7 +24,7 @@ export interface ParamWithTypeMetadata {
   in?: ParameterLocation | 'body' | typeof PARAM_TOKEN_PLACEHOLDER;
   isArray?: boolean;
   items?: SchemaObject;
-  required: true;
+  required?: boolean;
   enum?: unknown[];
   enumName?: string;
   enumSchema?: EnumSchemaAttributes;
