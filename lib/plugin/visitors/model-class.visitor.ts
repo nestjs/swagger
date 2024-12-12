@@ -223,7 +223,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         ts.isParameter(node) &&
         node.modifiers != null &&
         node.modifiers.some(
-          (modifier: ts.Modifier) =>
+          (modifier: ts.ModifierLike) =>
             modifier.kind === ts.SyntaxKind.ReadonlyKeyword ||
             modifier.kind === ts.SyntaxKind.PrivateKeyword ||
             modifier.kind === ts.SyntaxKind.PublicKeyword ||
