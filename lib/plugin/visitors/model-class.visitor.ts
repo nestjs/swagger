@@ -160,7 +160,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     metadata: ClassMetadata
   ) {
     const isPropertyStatic = (node.modifiers || []).some(
-      (modifier: ts.Modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword
+      (modifier: ts.ModifierLike) => modifier.kind === ts.SyntaxKind.StaticKeyword
     );
     if (isPropertyStatic) {
       return node;
