@@ -24,7 +24,7 @@ export interface ParamWithTypeMetadata {
   in?: ParameterLocation | 'body' | typeof PARAM_TOKEN_PLACEHOLDER;
   isArray?: boolean;
   items?: SchemaObject;
-  required: true;
+  required?: boolean;
   enum?: unknown[];
   enumName?: string;
   enumSchema?: EnumSchemaAttributes;
@@ -57,7 +57,7 @@ export class ParameterMetadataAccessor {
         type: types[param.index],
         name: param.data,
         required: true
-      })
+      }) as unknown as ParamsWithType
     );
     const excludePredicate = (val: ParamWithTypeMetadata) =>
       val.in === PARAM_TOKEN_PLACEHOLDER || (val.name && val.in === 'body');
