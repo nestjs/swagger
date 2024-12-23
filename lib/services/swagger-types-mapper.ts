@@ -16,12 +16,10 @@ type KeysToRemove =
 
 export class SwaggerTypesMapper {
   private readonly keysToRemove: Array<KeysToRemove> = [
-    'type',
     'isArray',
     'enum',
     'enumName',
     'enumSchema',
-    'items',
     '$ref',
     ...this.getSchemaOptionsKeys()
   ];
@@ -146,7 +144,9 @@ export class SwaggerTypesMapper {
       'default',
       'example',
       'oneOf',
-      'anyOf'
+      'anyOf',
+      'type',
+      'items'
     ];
   }
 
