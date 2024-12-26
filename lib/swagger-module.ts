@@ -149,7 +149,7 @@ export class SwaggerModule {
     httpAdapter.get(
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
       (req, res) => {
-        res.type('application/javascript');
+        httpAdapter.type(res, 'application/javascript');
         const document = getBuiltDocument();
 
         if (swaggerOptions.patchDocumentOnRequest) {
@@ -162,14 +162,14 @@ export class SwaggerModule {
             documentToSerialize,
             swaggerOptions
           );
-          return res.send(swaggerInitJsPerRequest);
+          return httpAdapter.send(res, swaggerInitJsPerRequest);
         }
 
         if (!swaggerUiInitJS) {
           swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
         }
 
-        res.send(swaggerUiInitJS);
+        httpAdapter.send(res, swaggerUiInitJS);
       }
     );
 
@@ -183,7 +183,7 @@ export class SwaggerModule {
           `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
         ),
         (req, res) => {
-          res.type('application/javascript');
+          httpAdapter.type(res, 'application/javascript');
           const document = getBuiltDocument();
 
           if (swaggerOptions.patchDocumentOnRequest) {
@@ -196,14 +196,14 @@ export class SwaggerModule {
               documentToSerialize,
               swaggerOptions
             );
-            return res.send(swaggerInitJsPerRequest);
+            return httpAdapter.send(res, swaggerInitJsPerRequest);
           }
 
           if (!swaggerUiInitJS) {
             swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
           }
 
-          res.send(swaggerUiInitJS);
+          httpAdapter.send(res, swaggerUiInitJS);
         }
       );
     } catch (err) {
@@ -214,13 +214,13 @@ export class SwaggerModule {
     }
 
     function serveSwaggerHtml(_: any, res: any) {
-      res.type('text/html');
+      httpAdapter.type(res, 'text/html');
 
       if (!swaggerUiHtml) {
         swaggerUiHtml = buildSwaggerHTML(baseUrlForSwaggerUI, swaggerOptions);
       }
 
-      res.send(swaggerUiHtml);
+      httpAdapter.send(res, swaggerUiHtml);
     }
 
     httpAdapter.get(finalPath, serveSwaggerHtml);
@@ -251,7 +251,7 @@ export class SwaggerModule {
   ) {
     if (serveOptions.serveJson) {
       httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
-        res.type('application/json');
+        httpAdapter.type(res, 'application/json');
         const document = getBuiltDocument();
 
         const documentToSerialize = options.swaggerOptions
@@ -259,13 +259,13 @@ export class SwaggerModule {
           ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
           : document;
 
-        res.send(JSON.stringify(documentToSerialize));
+        httpAdapter.send(res, JSON.stringify(documentToSerialize));
       });
     }
 
     if (serveOptions.serveYaml) {
       httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
-        res.type('text/yaml');
+        httpAdapter.type(res, 'text/yaml');
         const document = getBuiltDocument();
 
         const documentToSerialize = options.swaggerOptions
@@ -277,7 +277,7 @@ export class SwaggerModule {
           skipInvalid: true,
           noRefs: true
         });
-        res.send(yamlDocument);
+        httpAdapter.send(res, yamlDocument);
       });
     }
   }
