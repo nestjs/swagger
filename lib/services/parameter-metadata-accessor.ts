@@ -54,7 +54,7 @@ export class ParameterMetadataAccessor {
     const parametersWithType: ParamsWithType = mapValues(
       reverseObjectKeys(routeArgsMetadata),
       (param: ParamMetadata) => ({
-        type: types[param.index],
+        type: types && types[param.index] ? types[param.index] : 'string',
         name: param.data,
         required: true
       }) as unknown as ParamsWithType
