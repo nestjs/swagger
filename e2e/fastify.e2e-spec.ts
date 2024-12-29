@@ -126,7 +126,7 @@ describe('Fastify Swagger', () => {
         builder.build()
       );
       SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
-        documentsEnabled: false
+        raw: false
       });
 
       await app.init();
@@ -169,8 +169,8 @@ describe('Fastify Swagger', () => {
         builder.build()
       );
       SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
-        swaggerUiEnabled: false,
-        documentsEnabled: false
+        ui: false,
+        raw: false
       });
 
       await app.init();
@@ -200,6 +200,134 @@ describe('Fastify Swagger', () => {
       async (url) => {
         const response = await request(app.getHttpServer()).get(url);
         expect(response.status).toEqual(404);
+      }
+    );
+  });
+
+  describe('Serve only JSON definition when raw is ["json"]', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
+        raw: ['json']
+      });
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('should serve only the JSON definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-json`
+      );
+      expect(response.status).toEqual(200);
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
+
+    it('should not serve the YAML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-yaml`
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it.each([SWAGGER_RELATIVE_URL, `${SWAGGER_RELATIVE_URL}/`])(
+      'should serve Swagger UI at "%s"',
+      async (url) => {
+        const response = await request(app.getHttpServer()).get(url);
+        expect(response.status).toEqual(200);
+      }
+    );
+  });
+
+  describe('Serve only YAML definition when raw is ["yaml"]', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
+        raw: ['yaml']
+      });
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('should not serve the JSON definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-json`
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it('should serve only the YAML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-yaml`
+      );
+      expect(response.status).toEqual(200);
+      expect(response.text.length).toBeGreaterThan(0);
+    });
+
+    it.each([SWAGGER_RELATIVE_URL, `${SWAGGER_RELATIVE_URL}/`])(
+      'should serve Swagger UI at "%s"',
+      async (url) => {
+        const response = await request(app.getHttpServer()).get(url);
+        expect(response.status).toEqual(200);
+      }
+    );
+  });
+
+  describe('Serve no definitions when raw is an empty array', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
+        raw: []
+      });
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('should not serve the JSON definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-json`
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it('should not serve the YAML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-yaml`
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it.each([SWAGGER_RELATIVE_URL, `${SWAGGER_RELATIVE_URL}/`])(
+      'should serve Swagger UI at "%s"',
+      async (url) => {
+        const response = await request(app.getHttpServer()).get(url);
+        expect(response.status).toEqual(200);
       }
     );
   });

@@ -6,9 +6,14 @@ export interface ApiSchemaOptions extends Pick<SchemaObjectMetadata, 'name'> {
   /**
    * Name of the schema.
    */
-  name: string;
+  name?: string;
+
+  /**
+   * Description of the schema.
+   */
+  description?: string;
 }
 
-export function ApiSchema(options: ApiSchemaOptions): ClassDecorator {
+export function ApiSchema(options?: ApiSchemaOptions): ClassDecorator {
   return createClassDecorator(DECORATORS.API_SCHEMA, [options]);
 }
