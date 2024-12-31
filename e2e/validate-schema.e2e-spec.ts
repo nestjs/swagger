@@ -214,4 +214,15 @@ describe('Validate OpenAPI schema', () => {
       }
     });
   });
+
+  it('should support filtering to a single version', async () => {
+    const api = SwaggerModule.createDocument(app, options, { includeVersions: ['v2'] });
+    console.log(
+      'API name: %s, Version: %s',
+      api.info.title,
+      api.info.version
+    );
+    expect(api.paths['/api/v1/alias1']).toBeUndefined();
+    expect(api.paths['/api/v2/alias1']).toBeDefined();
+  });
 });
