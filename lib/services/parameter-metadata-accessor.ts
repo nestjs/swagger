@@ -44,6 +44,9 @@ export class ParameterMetadataAccessor {
       instance,
       method.name
     );
+    if (!types?.length) {
+      return undefined;
+    }
     const routeArgsMetadata: ParamsMetadata =
       Reflect.getMetadata(
         ROUTE_ARGS_METADATA,
