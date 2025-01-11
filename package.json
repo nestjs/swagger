@@ -47,7 +47,7 @@
     "@typescript-eslint/parser": "8.19.1",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
-    "eslint": "9.17.0",
+    "eslint": "9.18.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-import": "2.31.0",
     "express": "4.21.2",
