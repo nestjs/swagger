@@ -48,7 +48,7 @@
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
     "eslint": "9.18.0",
-    "eslint-config-prettier": "9.1.0",
+    "eslint-config-prettier": "10.0.1",
     "eslint-plugin-import": "2.31.0",
     "express": "4.21.2",
     "husky": "9.1.7",
