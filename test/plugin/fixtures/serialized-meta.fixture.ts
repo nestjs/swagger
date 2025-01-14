@@ -1,12 +1,14 @@
 // @ts-nocheck
 export default async () => {
   const t = {
-    ['./cats/dto/pagination-query.dto']: await import(
-      './cats/dto/pagination-query.dto'
+    ['./cats/dto/pagination-query.dto.js']: await import(
+      './cats/dto/pagination-query.dto.js'
     ),
-    ['./cats/dto/create-cat.dto']: await import('./cats/dto/create-cat.dto'),
-    ['./cats/dto/tag.dto']: await import('./cats/dto/tag.dto'),
-    ['./cats/classes/cat.class']: await import('./cats/classes/cat.class')
+    ['./cats/dto/create-cat.dto.js']: await import(
+      './cats/dto/create-cat.dto.js'
+    ),
+    ['./cats/dto/tag.dto.js']: await import('./cats/dto/tag.dto.js'),
+    ['./cats/classes/cat.class.js']: await import('./cats/classes/cat.class.js')
   };
   return {
     '@nestjs/swagger': {
@@ -21,16 +23,16 @@ export default async () => {
               constrainedLimit: { required: false, type: () => Number },
               enum: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum
+                enum: t['./cats/dto/pagination-query.dto.js'].LettersEnum
               },
               enumArr: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum,
+                enum: t['./cats/dto/pagination-query.dto.js'].LettersEnum,
                 isArray: true
               },
               letters: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum,
+                enum: t['./cats/dto/pagination-query.dto.js'].LettersEnum,
                 isArray: true
               },
               beforeDate: { required: true, type: () => Date },
@@ -60,11 +62,11 @@ export default async () => {
               options: { required: false, type: () => [Object] },
               enum: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum
+                enum: t['./cats/dto/pagination-query.dto.js'].LettersEnum
               },
               enumArr: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum
+                enum: t['./cats/dto/pagination-query.dto.js'].LettersEnum
               },
               uppercaseString: { required: true, type: () => String },
               lowercaseString: { required: true, type: () => String },
@@ -137,30 +139,30 @@ export default async () => {
               options: { required: false, type: () => [Object] },
               enum: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum
+                enum: t['./cats/dto/pagination-query.dto.js'].LettersEnum
               },
               state: {
                 required: false,
                 description: 'Available language in the application',
                 example: 'FR',
-                enum: t['./cats/dto/create-cat.dto'].CategoryState
+                enum: t['./cats/dto/create-cat.dto.js'].CategoryState
               },
               enumArr: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum
+                enum: t['./cats/dto/pagination-query.dto.js'].LettersEnum
               },
               enumArr2: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum,
+                enum: t['./cats/dto/pagination-query.dto.js'].LettersEnum,
                 isArray: true
               },
               tag: {
                 required: true,
-                type: () => t['./cats/dto/tag.dto'].TagDto
+                type: () => t['./cats/dto/tag.dto.js'].TagDto
               },
               multipleTags: {
                 required: true,
-                type: () => [t['./cats/dto/tag.dto'].TagDto]
+                type: () => [t['./cats/dto/tag.dto.js'].TagDto]
               },
               nested: {
                 required: true,
@@ -197,11 +199,11 @@ export default async () => {
           import('./cats/cats.controller'),
           {
             CatsController: {
-              create: { type: t['./cats/classes/cat.class'].Cat },
-              findOne: { type: t['./cats/classes/cat.class'].Cat },
+              create: { type: t['./cats/classes/cat.class.js'].Cat },
+              findOne: { type: t['./cats/classes/cat.class.js'].Cat },
               findAll: {},
-              createBulk: { type: t['./cats/classes/cat.class'].Cat },
-              createAsFormData: { type: t['./cats/classes/cat.class'].Cat },
+              createBulk: { type: t['./cats/classes/cat.class.js'].Cat },
+              createAsFormData: { type: t['./cats/classes/cat.class.js'].Cat },
               getWithEnumParam: {},
               getWithRandomQuery: {}
             }

@@ -29,7 +29,7 @@ export class ParameterPropertyDto {
         this.protectedValue = protectedValue;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { readonlyValue: { required: false, type: () => String }, privateValue: { required: true, type: () => String, nullable: true }, publicValue: { required: true, type: () => [require("./parameter-property.dto").ItemDto] }, protectedValue: { required: true, type: () => String, default: "1234" } };
+        return { readonlyValue: { required: false, type: () => String }, privateValue: { required: true, type: () => String, nullable: true }, publicValue: { required: true, type: () => [require("./parameter-property.dto.js").ItemDto] }, protectedValue: { required: true, type: () => String, default: "1234" } };
     }
 }
 export var LettersEnum;
@@ -43,7 +43,7 @@ export class ItemDto {
         this.enumValue = enumValue;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { enumValue: { required: true, enum: require("./parameter-property.dto").LettersEnum } };
+        return { enumValue: { required: true, enum: require("./parameter-property.dto.js").LettersEnum } };
     }
 }
 `;
