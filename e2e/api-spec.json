@@ -1,6 +1,50 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/api/v1/express:colon:another/{prop}": {
+      "get": {
+        "operationId": "ExpressController_withColons_v1",
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Express"
+        ]
+      }
+    },
+    "/api/v2/express:colon:another/{prop}": {
+      "get": {
+        "operationId": "ExpressController_withColons_v2",
+        "parameters": [
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Express"
+        ]
+      }
+    },
     "/api/v1": {
       "get": {
         "operationId": "AppController_getHello_v1",
@@ -114,94 +158,6 @@
     "/api/v2/alias2": {
       "get": {
         "operationId": "AppController_withAliases[3]_v2",
-        "parameters": [
-          {
-            "name": "x-tenant-id",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "App"
-        ]
-      }
-    },
-    "/api/v1/express:colon:another/{prop}": {
-      "get": {
-        "operationId": "AppController_withColonExpress_v1",
-        "parameters": [
-          {
-            "name": "x-tenant-id",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "App"
-        ]
-      }
-    },
-    "/api/v2/express:colon:another/{prop}": {
-      "get": {
-        "operationId": "AppController_withColonExpress_v2",
-        "parameters": [
-          {
-            "name": "x-tenant-id",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "App"
-        ]
-      }
-    },
-    "/api/v1/fastify:{colon}:{another}/{prop}": {
-      "get": {
-        "operationId": "AppController_withColonFastify_v1",
-        "parameters": [
-          {
-            "name": "x-tenant-id",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "App"
-        ]
-      }
-    },
-    "/api/v2/fastify:{colon}:{another}/{prop}": {
-      "get": {
-        "operationId": "AppController_withColonFastify_v2",
         "parameters": [
           {
             "name": "x-tenant-id",
@@ -677,7 +633,8 @@
               "title": "Page",
               "format": "int32",
               "default": 0,
-              "example": 123
+              "example": 123,
+              "type": "number"
             }
           },
           {
@@ -689,7 +646,11 @@
               "example": [
                 "sort1",
                 "sort2"
-              ]
+              ],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           {
@@ -736,7 +697,10 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "array"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
             }
           },
           {
@@ -744,7 +708,10 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "array"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Letter"
+              }
             }
           },
           {
@@ -752,7 +719,8 @@
             "in": "query",
             "required": true,
             "schema": {
-              "format": "date-time"
+              "format": "date-time",
+              "type": "string"
             }
           },
           {
@@ -768,7 +736,8 @@
                   "type": "number"
                 }
               },
-              "additionalProperties": true
+              "additionalProperties": true,
+              "type": "object"
             }
           },
           {
@@ -992,9 +961,9 @@
         ]
       }
     },
-    "/api/cats/site*": {
+    "/api/cats/wildcard/{path}": {
       "get": {
-        "operationId": "CatsController_getSite",
+        "operationId": "CatsController_getWildcard",
         "parameters": [
           {
             "name": "header",
