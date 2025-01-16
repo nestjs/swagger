@@ -64,7 +64,7 @@ export function createApiPropertyDecorator(
       enum: enumValues
     };
     delete options.enum;
-  } else if ('enum' in options) {
+  } else if ('enum' in options && options.enum !== undefined) {
     const enumValues = getEnumValues(options.enum);
 
     options.enum = enumValues;
