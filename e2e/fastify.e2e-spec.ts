@@ -8,6 +8,7 @@ import * as request from 'supertest';
 import * as SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
+import { FastifyController } from './src/fastify.controller';
 
 describe('Fastify Swagger', () => {
   let app: NestFastifyApplication;
@@ -15,7 +16,11 @@ describe('Fastify Swagger', () => {
 
   beforeEach(async () => {
     app = await NestFactory.create<NestFastifyApplication>(
-      ApplicationModule,
+      {
+        module: class {},
+        imports: [ApplicationModule],
+        controllers: [FastifyController]
+      },
       new FastifyAdapter(),
       { logger: false }
     );
