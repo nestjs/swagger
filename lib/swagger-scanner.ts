@@ -41,7 +41,8 @@ export class SwaggerScanner {
       ignoreGlobalPrefix = false,
       operationIdFactory,
       linkNameFactory,
-      autoTagControllers = true
+      autoTagControllers = true,
+      includeVersions
     } = options;
 
     const container = (app as any).container as NestContainer;
@@ -104,7 +105,10 @@ export class SwaggerScanner {
     this.addExtraModels(schemas, extraModels);
 
     return {
-      ...this.transformer.normalizePaths(flatten(denormalizedPaths)),
+      ...this.transformer.normalizePaths(
+        flatten(denormalizedPaths),
+        includeVersions
+      ),
       components: {
         schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }
