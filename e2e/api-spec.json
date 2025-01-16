@@ -633,7 +633,8 @@
               "title": "Page",
               "format": "int32",
               "default": 0,
-              "example": 123
+              "example": 123,
+              "type": "number"
             }
           },
           {
@@ -645,7 +646,11 @@
               "example": [
                 "sort1",
                 "sort2"
-              ]
+              ],
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           {
@@ -692,7 +697,10 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "array"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
             }
           },
           {
@@ -700,7 +708,10 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "array"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Letter"
+              }
             }
           },
           {
@@ -708,7 +719,8 @@
             "in": "query",
             "required": true,
             "schema": {
-              "format": "date-time"
+              "format": "date-time",
+              "type": "string"
             }
           },
           {
@@ -724,7 +736,8 @@
                   "type": "number"
                 }
               },
-              "additionalProperties": true
+              "additionalProperties": true,
+              "type": "object"
             }
           },
           {
