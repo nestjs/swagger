@@ -948,7 +948,7 @@
         ]
       }
     },
-    "/api/cats/wildcard/{splat}": {
+    "/api/cats/wildcard/{path}": {
       "get": {
         "operationId": "CatsController_getWildcard",
         "parameters": [

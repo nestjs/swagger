@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common/utils/shared.utils';
 import { ApplicationConfig, MetadataScanner } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
+import { LegacyRouteConverter } from '@nestjs/core/router/legacy-route-converter';
 import { RoutePathFactory } from '@nestjs/core/router/route-path-factory';
 import {
   cloneDeep,
@@ -30,7 +31,7 @@ import {
   omitBy,
   pick
 } from 'lodash';
-import { parse } from 'path-to-regexp';
+import { parse, Wildcard } from 'path-to-regexp';
 import { DECORATORS } from './constants';
 import { exploreApiCallbacksMetadata } from './explorers/api-callbacks.explorer';
 import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer';
@@ -438,10 +439,8 @@ export class SwaggerExplorer {
     let pathWithParams = '';
 
     try {
-      let normalizedPath = path.endsWith('*')
-        ? path.replace(/\*$/, '*splat')
-        : path;
-
+      let normalizedPath = LegacyRouteConverter.tryConvert(path);
+      // Optional segment groups are not supported by
       normalizedPath = normalizedPath.replace(/::/g, '\\:');
       normalizedPath = normalizedPath.replace(/\[:\]/g, '\\:');
 
@@ -453,12 +452,23 @@ export class SwaggerExplorer {
           pathWithParams += `{${item.name}}`;
         } else if (item.type === 'wildcard') {
           pathWithParams += `{splat}`;
+        } else if (item.type === 'group') {
+          // Flatten the optional parameter groups to a single parameter
+          pathWithParams += item.tokens.reduce(
+            (acc, item) =>
+              acc +
+              (item.type === 'text'
+                ? item.value
+                : `{${(item as Wildcard).name}}`),
+            ''
+          );
         }
       }
     } catch (err) {
-      // TODO: add error logging
-      console.error({ err, path });
-      return '';
+      if (err instanceof TypeError) {
+        LegacyRouteConverter.printError(path);
+      }
+      throw err;
     }
     return pathWithParams === '/' ? '' : addLeadingSlash(pathWithParams);
   }
