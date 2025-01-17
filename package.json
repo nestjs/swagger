@@ -24,11 +24,11 @@
     "start:debug": "nest start --watch --debug"
   },
   "dependencies": {
-    "@microsoft/tsdoc": "^0.15.0",
+    "@microsoft/tsdoc": "0.15.0",
     "@nestjs/mapped-types": "2.1.0",
     "js-yaml": "4.1.0",
     "lodash": "4.17.21",
-    "path-to-regexp": "^8.2.0",
+    "path-to-regexp": "8.2.0",
     "swagger-ui-dist": "5.18.2"
   },
   "devDependencies": {
