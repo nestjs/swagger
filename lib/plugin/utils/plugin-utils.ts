@@ -137,16 +137,6 @@ export function hasPropertyKey(
     .some((item) => item.name.getText() === key);
 }
 
-function getOutputExtension(fileName: string): string {  
-  if (fileName.endsWith('.mts')) {
-    return '.mjs';
-  } else if (fileName.endsWith('.cts')) {
-    return '.cjs';
-  } else{
-    return ".js";
-  }
-}
-
 export function replaceImportPath(
   typeReference: string,
   fileName: string,
@@ -200,10 +190,6 @@ export function replaceImportPath(
       if (indexPos >= 0) {
         relativePath = relativePath.slice(0, indexPos);
       }
-    } else {
-      // Add appropriate extension for non-node_modules imports
-      const extension = getOutputExtension(fileName);
-      relativePath += extension;
     }
 
     typeReference = typeReference.replace(importPath, relativePath);
@@ -217,7 +203,6 @@ export function replaceImportPath(
         importPath: relativePath
       };
     }
-
     return {
       typeReference: typeReference.replace('import', 'require'),
       importPath: relativePath
