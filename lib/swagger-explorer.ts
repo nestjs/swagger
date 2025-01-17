@@ -451,7 +451,7 @@ export class SwaggerExplorer {
         } else if (item.type === 'param') {
           pathWithParams += `{${item.name}}`;
         } else if (item.type === 'wildcard') {
-          pathWithParams += `{splat}`;
+          pathWithParams += `{${item.name}}`;
         } else if (item.type === 'group') {
           // Flatten the optional parameter groups to a single parameter
           pathWithParams += item.tokens.reduce(
