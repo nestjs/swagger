@@ -2509,4 +2509,56 @@ describe('SwaggerExplorer', () => {
       ]);
     });
   });
+
+  it('should explore array query parameters with minLenght and maxLength', () => {
+    class FooDto {
+      @ApiProperty({
+        type: 'array',
+        isArray: true,
+        items: {
+          type: 'string',
+          minLength: 1,
+          maxLength: 10
+        },
+        example: ['a', 'b', 'c'],
+        minItems: 5,
+        maxItems: 50
+      })
+      field: string[];
+    }
+
+    class FooController {
+      @Get('/route1')
+      route1(@Query() fooDto: FooDto) {}
+    }
+
+    const explorer = new SwaggerExplorer(schemaObjectFactory);
+    const routes = explorer.exploreController(
+      {
+        instance: new FooController(),
+        metatype: FooController
+      } as InstanceWrapper<FooController>,
+      new ApplicationConfig(),
+      'path'
+    );
+
+    expect(routes[0].root.parameters).toEqual([
+      {
+        name: 'field',
+        required: true,
+        in: 'query',
+        example: ['a', 'b', 'c'],
+        schema: {
+          type: 'array',
+          items: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 10
+          },
+          minItems: 5,
+          maxItems: 50
+        }
+      }
+    ]);
+  });
 });
