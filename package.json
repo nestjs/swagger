@@ -24,7 +24,7 @@
     "start:debug": "nest start --watch --debug"
   },
   "dependencies": {
-    "@microsoft/tsdoc": "0.15.0",
+    "@microsoft/tsdoc": "0.15.1",
     "@nestjs/mapped-types": "2.1.0",
     "js-yaml": "4.1.0",
     "lodash": "4.17.21",
