@@ -15,7 +15,6 @@ import {
   ObjectFlags,
   ObjectType,
   PropertyAccessExpression,
-  SourceFile,
   SyntaxKind,
   Type,
   TypeChecker,
@@ -141,10 +140,8 @@ export function getDocComment(node: Node): DocComment {
   );
   return parserContext.docComment;
 }
-export function getMainCommentOfNode(
-  node: Node,
-  sourceFile: SourceFile
-): string {
+
+export function getMainCommentOfNode(node: Node): string {
   const docComment = getDocComment(node);
   return renderDocNode(docComment.summarySection).trim();
 }
@@ -155,7 +152,9 @@ export function parseCommentDocValue(docValue: string, type: ts.Type) {
   if (!type || !isString(type)) {
     try {
       value = JSON.parse(value);
-    } catch {}
+    } catch {
+      // Do nothing
+    }
   } else if (isString(type)) {
     if (value.split(' ').length !== 1 && !value.startsWith('"')) {
       value = null;
@@ -252,7 +251,9 @@ export function getTsDocErrorsOfNode(node: Node) {
           status: match[1],
           description: `"${match[2]}"`
         });
-      } catch (err) {}
+      } catch {
+        // Do nothing
+      }
     });
   };
   introspectTsDocTags(docComment);

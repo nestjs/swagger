@@ -179,9 +179,7 @@ export class SchemaObjectFactory {
     if (!prototype) {
       return;
     }
-    const extraModels = exploreGlobalApiExtraModelsMetadata(
-      type as Type<unknown>
-    );
+    const extraModels = exploreGlobalApiExtraModelsMetadata(type);
     extraModels.forEach((item) =>
       this.exploreModelSchema(item, schemas, pendingSchemasRefs)
     );
@@ -341,12 +339,12 @@ export class SchemaObjectFactory {
       const _enum = param.enum
         ? param.enum
         : param.schema
-        ? param.schema['items']
-          ? param.schema['items']['enum']
-          : param.schema['enum']
-        : param.isArray && param.items
-        ? param.items.enum
-        : undefined;
+          ? param.schema['items']
+            ? param.schema['items']['enum']
+            : param.schema['enum']
+          : param.isArray && param.items
+            ? param.items.enum
+            : undefined;
 
       schemas[enumName] = {
         type:

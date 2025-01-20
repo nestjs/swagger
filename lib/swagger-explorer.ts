@@ -81,8 +81,8 @@ export class SwaggerExplorer {
         ? `${controllerKey}_${methodKey}_${version}`
         : `${methodKey}_${version}`
       : controllerKey
-      ? `${controllerKey}_${methodKey}`
-      : methodKey;
+        ? `${controllerKey}_${methodKey}`
+        : methodKey;
   private routePathFactory?: RoutePathFactory;
   private linkNameFactory = (
     controllerKey: string,
@@ -98,8 +98,8 @@ export class SwaggerExplorer {
   public exploreController(
     wrapper: InstanceWrapper<Controller>,
     applicationConfig: ApplicationConfig,
-    modulePath?: string | undefined,
-    globalPrefix?: string | undefined,
+    modulePath?: string,
+    globalPrefix?: string,
     operationIdFactory?: OperationIdFactory,
     linkNameFactory?: (
       controllerKey: string,
@@ -414,7 +414,7 @@ export class SwaggerExplorer {
     }
 
     if (Array.isArray(versionValue)) {
-      versions = versionValue.filter((v) => v !== VERSION_NEUTRAL) as string[];
+      versions = versionValue.filter((v) => v !== VERSION_NEUTRAL);
     } else if (versionValue !== VERSION_NEUTRAL) {
       versions = [versionValue];
     }

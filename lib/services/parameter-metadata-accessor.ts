@@ -56,11 +56,12 @@ export class ParameterMetadataAccessor {
 
     const parametersWithType: ParamsWithType = mapValues(
       reverseObjectKeys(routeArgsMetadata),
-      (param: ParamMetadata) => ({
-        type: types[param.index],
-        name: param.data,
-        required: true
-      }) as unknown as ParamsWithType
+      (param: ParamMetadata) =>
+        ({
+          type: types[param.index],
+          name: param.data,
+          required: true
+        }) as unknown as ParamsWithType
     );
     const excludePredicate = (val: ParamWithTypeMetadata) =>
       val.in === PARAM_TOKEN_PLACEHOLDER || (val.name && val.in === 'body');

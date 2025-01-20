@@ -206,7 +206,7 @@ export class SwaggerModule {
           res.send(swaggerUiInitJS);
         }
       );
-    } catch (err) {
+    } catch {
       /**
        * Error is expected when urlLastSubdirectory === ''
        * in that case that route is going to be duplicating the one above
@@ -229,7 +229,7 @@ export class SwaggerModule {
     // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
     try {
       httpAdapter.get(normalizeRelPath(`${finalPath}/`), serveSwaggerHtml);
-    } catch (err) {
+    } catch {
       /**
        * When Fastify adapter is being used with the "ignoreTrailingSlash" configuration option set to "true",
        * declaration of the route "finalPath/" will throw an error because of the following conflict:

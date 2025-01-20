@@ -3,6 +3,10 @@ import { posix } from 'path';
 import * as ts from 'typescript';
 import { factory, PropertyAssignment } from 'typescript';
 import { ApiHideProperty, ApiProperty } from '../../decorators';
+import {
+  decoratorsProperties,
+  decoratorsPropertiesMappingType
+} from '../../services/decorators-properties';
 import { PluginOptions } from '../merge-options';
 import { METADATA_FACTORY_NAME } from '../plugin-constants';
 import { pluginDebugLogger } from '../plugin-debug-logger';
@@ -28,10 +32,6 @@ import {
 } from '../utils/plugin-utils';
 import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util';
 import { AbstractFileVisitor } from './abstract.visitor';
-import {
-  decoratorsProperties,
-  decoratorsPropertiesMappingType
-} from '../../services/decorators-properties';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
@@ -160,7 +160,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     metadata: ClassMetadata
   ) {
     const isPropertyStatic = (node.modifiers || []).some(
-      (modifier: ts.ModifierLike) => modifier.kind === ts.SyntaxKind.StaticKeyword
+      (modifier: ts.ModifierLike) =>
+        modifier.kind === ts.SyntaxKind.StaticKeyword
     );
     if (isPropertyStatic) {
       return node;
@@ -850,7 +851,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return [];
     }
     const propertyAssignments = [];
-    const comments = getMainCommentOfNode(node, sourceFile);
+    const comments = getMainCommentOfNode(node);
     const tags = getTsDocTagsOfNode(node, typeChecker);
 
     const keyOfComment = options.dtoKeyOfComment;

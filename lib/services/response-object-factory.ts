@@ -41,7 +41,7 @@ export class ResponseObjectFactory {
     schemas: Record<string, SchemaObject>,
     factories: FactoriesNeededByResponseFactory
   ) {
-    const { type, isArray } = response as ApiResponseMetadata;
+    const { type, isArray } = response;
     response = omit(response, ['isArray']);
 
     if (!type) {

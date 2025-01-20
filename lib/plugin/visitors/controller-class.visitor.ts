@@ -229,7 +229,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       }
     }
 
-    const extractedComments = getMainCommentOfNode(node, sourceFile);
+    const extractedComments = getMainCommentOfNode(node);
     if (!extractedComments) {
       return [];
     }

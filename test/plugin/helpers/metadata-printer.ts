@@ -1,4 +1,4 @@
-import * as prettier from 'prettier';
+import * as prettier from 'prettier-v2';
 import * as ts from 'typescript';
 
 export class PluginMetadataPrinter {
