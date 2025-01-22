@@ -90,7 +90,7 @@ export const decoratorsProperties = [
   },
   {
     mappingType: decoratorsPropertiesMappingType.INDIRECT_VALUE,
-    decorator: 'IsUuid',
+    decorator: 'IsUUID',
     property: 'format',
     value: 'uuid'
   },
