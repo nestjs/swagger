@@ -56,7 +56,7 @@ export class CreateCatDto {
   response: Record<string, any>;
   @IsUrl()
   githubAccount: string;
-  @IsUuid()
+  @IsUUID()
   transactionId: string;
   @IsMobilePhone()
   phoneNumber: string;
@@ -177,7 +177,7 @@ __decorate([
     IsUrl()
 ], CreateCatDto.prototype, "githubAccount", void 0);
 __decorate([
-    IsUuid()
+    IsUUID()
 ], CreateCatDto.prototype, "transactionId", void 0);
 __decorate([
     IsMobilePhone()
