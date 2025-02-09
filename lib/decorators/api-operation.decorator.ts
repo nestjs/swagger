@@ -9,6 +9,9 @@ const defaultOperationOptions: ApiOperationOptions = {
   summary: ''
 };
 
+/**
+ * @publicApi
+ */
 export function ApiOperation(
   options: ApiOperationOptions,
   { overrideExisting } = { overrideExisting: true }

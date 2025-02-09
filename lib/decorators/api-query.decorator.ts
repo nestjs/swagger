@@ -44,6 +44,9 @@ const defaultQueryOptions = {
   required: true
 };
 
+/**
+ * @publicApi
+ */
 export function ApiQuery(
   options: ApiQueryOptions
 ): MethodDecorator & ClassDecorator {

@@ -12,6 +12,9 @@ import {
 } from './interfaces/open-api-spec.interface';
 import { GlobalParametersStorage } from './storages/global-parameters.storage';
 
+/**
+ * @publicApi
+ */
 export class DocumentBuilder {
   private readonly logger = new Logger(DocumentBuilder.name);
   private readonly document: Omit<OpenAPIObject, 'paths'> = buildDocumentBase();

@@ -3,6 +3,9 @@ import { DECORATORS } from '../constants';
 import { SecurityRequirementObject } from '../interfaces/open-api-spec.interface';
 import { extendMetadata } from '../utils/extend-metadata.util';
 
+/**
+ * @publicApi
+ */
 export function ApiSecurity(
   name: string | SecurityRequirementObject,
   requirements: string[] = []

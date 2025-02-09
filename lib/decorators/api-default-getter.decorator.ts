@@ -2,6 +2,8 @@ import { Type } from '@nestjs/common';
 import { DECORATORS } from '../constants';
 
 /**
+ * @publicApi
+ * 
  * Set the default getter for the given type to the decorated method
  *
  * This is to be used in conjunction with `ApiProperty({link: () => Type})` to generate link objects

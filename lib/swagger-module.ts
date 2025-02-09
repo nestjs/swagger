@@ -22,6 +22,9 @@ import { resolvePath } from './utils/resolve-path.util';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
 import { validatePath } from './utils/validate-path.util';
 
+/**
+ * @publicApi
+ */
 export class SwaggerModule {
   private static readonly metadataLoader = new MetadataLoader();
 

@@ -16,6 +16,8 @@ export interface ApiLinkOptions {
 }
 
 /**
+ * @publicApi
+ * 
  * Defines this route as a link between two types
  *
  * Typically used when the link between the types is not present in the `from` type,

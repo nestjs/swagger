@@ -13,6 +13,9 @@ import { clonePluginMetadataFactory } from './mapped-types.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
+/**
+ * @publicApi
+ */
 export function PickType<T, K extends keyof T>(
   classRef: Type<T>,
   keys: readonly K[]
