@@ -115,8 +115,8 @@ export class SwaggerTypesMapper {
         ...omit(this.getSchemaOptions(param), [...itemsModifierKeys]),
         type: 'array',
         items: isString((items as any).type)
-          ? { type: (items as any).type, ...modifierProperties }
-          : { ...(items as any).type, ...modifierProperties }
+          ? { type: (items as any).type, ...modifierProperties, ...items }
+          : { ...(items as any).type, ...modifierProperties, ...items }
       }
     };
   }
