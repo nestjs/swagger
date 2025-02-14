@@ -16,8 +16,6 @@ export interface ApiLinkOptions {
 }
 
 /**
- * @publicApi
- * 
  * Defines this route as a link between two types
  *
  * Typically used when the link between the types is not present in the `from` type,
@@ -48,6 +46,8 @@ export interface ApiLinkOptions {
  * @param parameter Name of the parameter in the route of the getter which corresponds to the id of the type
  *
  * @see [Swagger link objects](https://swagger.io/docs/specification/links/)
+ * 
+ * @publicApi
  */
 export function ApiLink({
   from,
