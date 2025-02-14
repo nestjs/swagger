@@ -1,6 +1,9 @@
 import { OpenAPIObject } from './open-api-spec.interface';
 import { SwaggerUiOptions } from './swagger-ui-options.interface';
 
+/**
+ * @publicApi
+ */
 export interface SwaggerCustomOptions {
   /**
    * If `true`, Swagger resources paths will be prefixed by the global prefix set through `setGlobalPrefix()`.

@@ -16,6 +16,9 @@ const defaultHeaderOptions: Partial<ApiHeaderOptions> = {
   name: ''
 };
 
+/**
+ * @publicApi
+ */
 export function ApiHeader(
   options: ApiHeaderOptions
 ): MethodDecorator & ClassDecorator {

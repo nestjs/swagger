@@ -46,6 +46,9 @@ export type ApiResponseNoStatusOptions =
     })
   | Omit<ApiResponseSchemaHost, 'status'>;
 
+/**
+ * @publicApi
+ */
 export function ApiResponse(
   options: ApiResponseOptions,
   { overrideExisting } = { overrideExisting: true }

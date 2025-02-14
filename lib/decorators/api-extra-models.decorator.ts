@@ -1,5 +1,8 @@
 import { DECORATORS } from '../constants';
 
+/**
+ * @publicApi
+ */
 export function ApiExtraModels(...models: Function[]) {
   return (
     target: object,

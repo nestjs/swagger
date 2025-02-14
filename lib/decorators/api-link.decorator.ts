@@ -46,6 +46,8 @@ export interface ApiLinkOptions {
  * @param parameter Name of the parameter in the route of the getter which corresponds to the id of the type
  *
  * @see [Swagger link objects](https://swagger.io/docs/specification/links/)
+ * 
+ * @publicApi
  */
 export function ApiLink({
   from,
