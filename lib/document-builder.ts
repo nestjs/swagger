@@ -3,14 +3,21 @@ import { clone, isString, isUndefined, negate, pickBy } from 'lodash';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {
+  ApiKeySchemeObject,
+  HttpSchemeObject,
+  OAuth2SchemeObject,
+  SecuritySchemeObject as SSObject,
   ExternalDocumentationObject,
   ParameterObject,
   SecurityRequirementObject,
-  SecuritySchemeObject,
   ServerVariableObject,
   TagObject
 } from './interfaces/open-api-spec.interface';
 import { GlobalParametersStorage } from './storages/global-parameters.storage';
+
+type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+
+type OptSObject<T extends Partial<SSObject>> = Partial<Optional<T, 'type'>>;
 
 export class DocumentBuilder {
   private readonly logger = new Logger(DocumentBuilder.name);
@@ -108,7 +115,7 @@ export class DocumentBuilder {
     return this;
   }
 
-  public addSecurity(name: string, options: SecuritySchemeObject): this {
+  public addSecurity(name: string, options: SSObject): this {
     this.document.components.securitySchemes = {
       ...(this.document.components.securitySchemes || {}),
       [name]: options
@@ -143,75 +150,138 @@ export class DocumentBuilder {
     return this;
   }
 
-  public addBearerAuth(
-    options: SecuritySchemeObject = {
-      type: 'http'
-    },
-    name = 'bearer'
+  public addBearerAuth<SO extends SSObject = HttpSchemeObject>(
+    name?: string,
+    options?: OptSObject<SO>
+  ): this;
+  /**
+   * @deprecated Use `addBearerAuth(name, options)` instead
+   */
+  public addBearerAuth<SO extends SSObject = HttpSchemeObject>(
+    options?: OptSObject<SO>,
+    name?: string
+  ): this;
+  public addBearerAuth<SO extends SSObject = HttpSchemeObject>(
+    nameOrOptions: string | OptSObject<SO> = 'bearer',
+    optionsOrName: string | OptSObject<SO> = {}
   ): this {
-    this.addSecurity(name, {
+    if (typeof nameOrOptions === 'object') {
+      [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
+    }
+    this.addSecurity(nameOrOptions as string, {
+      type: 'http',
       scheme: 'bearer',
       bearerFormat: 'JWT',
-      ...options
+      ...(optionsOrName as OptSObject<SO>)
     });
     return this;
   }
 
-  public addOAuth2(
-    options: SecuritySchemeObject = {
-      type: 'oauth2'
-    },
-    name = 'oauth2'
+  public addOAuth2<SO extends SSObject = OAuth2SchemeObject>(
+    name?: string,
+    options?: OptSObject<SO>
+  ): this;
+  /**
+   * @deprecated Use `addOAuth2(name, options)` instead
+   */
+  public addOAuth2<SO extends SSObject = OAuth2SchemeObject>(
+    options?: OptSObject<SO>,
+    name?: string
+  ): this;
+  public addOAuth2<SO extends SSObject = OAuth2SchemeObject>(
+    nameOrOptions: string | OptSObject<SO> = 'oauth2',
+    optionsOrName: string | OptSObject<SO> = {}
   ): this {
-    this.addSecurity(name, {
+    if (typeof nameOrOptions === 'object') {
+      [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
+    }
+    this.addSecurity(nameOrOptions as string, {
       type: 'oauth2',
       flows: {},
-      ...options
+      ...(optionsOrName as OptSObject<SO>)
     });
     return this;
   }
 
-  public addApiKey(
-    options: SecuritySchemeObject = {
-      type: 'apiKey'
-    },
-    name = 'api_key'
+  public addBasicAuth<SO extends SSObject = HttpSchemeObject>(
+    name?: string,
+    options?: OptSObject<SO>
+  ): this;
+  /**
+   * @deprecated Use `addBasicAuth(name, options)` instead
+   */
+  public addBasicAuth<SO extends SSObject = HttpSchemeObject>(
+    options?: OptSObject<SO>,
+    name?: string
+  ): this;
+  public addBasicAuth<SO extends SSObject = HttpSchemeObject>(
+    nameOrOptions: string | OptSObject<SO> = 'basic',
+    optionsOrName: string | OptSObject<SO> = {}
   ): this {
-    this.addSecurity(name, {
-      type: 'apiKey',
-      in: 'header',
-      name,
-      ...options
-    });
-    return this;
-  }
-
-  public addBasicAuth(
-    options: SecuritySchemeObject = {
-      type: 'http'
-    },
-    name = 'basic'
-  ): this {
-    this.addSecurity(name, {
+    if (typeof nameOrOptions === 'object') {
+      [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
+    }
+    this.addSecurity(nameOrOptions as string, {
       type: 'http',
       scheme: 'basic',
-      ...options
+      ...(optionsOrName as OptSObject<SO>)
     });
     return this;
   }
 
-  public addCookieAuth(
-    cookieName = 'connect.sid',
-    options: SecuritySchemeObject = {
-      type: 'apiKey'
-    },
-    securityName = 'cookie'
+  public addApiKey<SO extends SSObject = ApiKeySchemeObject>(
+    name?: string,
+    options?: OptSObject<SO>
+  ): this;
+  /**
+   * @deprecated Use `addApiKey(name, options)` instead
+   */
+  public addApiKey<SO extends SSObject = ApiKeySchemeObject>(
+    options?: OptSObject<SO>,
+    name?: string
+  ): this;
+  public addApiKey<SO extends SSObject = ApiKeySchemeObject>(
+    nameOrOptions: string | OptSObject<SO> = 'api_key',
+    optionsOrName: string | OptSObject<SO> = {}
   ): this {
-    this.addSecurity(securityName, {
+    if (typeof nameOrOptions === 'object') {
+      [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
+    }
+    this.addSecurity(nameOrOptions as string, {
+      type: 'apiKey',
+      in: 'header',
+      name: nameOrOptions as string,
+      ...(optionsOrName as OptSObject<SO>)
+    });
+    return this;
+  }
+
+  public addCookieAuth<SO extends SSObject = ApiKeySchemeObject>(
+    cookieName?: string,
+    name?: string,
+    options?: OptSObject<ApiKeySchemeObject>
+  ): this;
+  /**
+   * @deprecated Use `addCookieAuth(cookieName, name, options)` instead
+   */
+  public addCookieAuth<SO extends SSObject = ApiKeySchemeObject>(
+    cookieName: string,
+    options?: OptSObject<ApiKeySchemeObject>,
+    name?: string
+  ): this;
+  public addCookieAuth<SO extends SSObject = ApiKeySchemeObject>(
+    cookieName = 'connect.sid',
+    nameOrOptions: string | OptSObject<ApiKeySchemeObject> = 'cookie',
+    optionsOrName: string | OptSObject<ApiKeySchemeObject> = {}
+  ): this {
+    if (typeof nameOrOptions === 'object') {
+      [nameOrOptions, optionsOrName] = [optionsOrName, nameOrOptions];
+    }
+    this.addSecurity(nameOrOptions as string, {
       type: 'apiKey',
       in: 'cookie',
       name: cookieName,
-      ...options
+      ...(optionsOrName as OptSObject<SO>)
     });
     return this;
   }

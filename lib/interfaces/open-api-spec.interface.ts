@@ -250,17 +250,39 @@ export interface XmlObject {
 }
 
 export type SecuritySchemeType = 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
+export type ApiKeyLocation = 'query' | 'header' | 'cookie';
 
-export interface SecuritySchemeObject {
-  type: SecuritySchemeType;
+export type SecuritySchemeObject =
+  | ApiKeySchemeObject
+  | HttpSchemeObject
+  | OAuth2SchemeObject
+  | OpenIdConnectSchemeObject;
+
+export interface ApiKeySchemeObject {
+  type: 'apiKey';
   description?: string;
-  name?: string;
-  in?: string;
-  scheme?: string;
+  name: string;
+  in: ApiKeyLocation;
+}
+
+export interface HttpSchemeObject {
+  type: 'http';
+  description?: string;
+  scheme: string;
   bearerFormat?: string;
-  flows?: OAuthFlowsObject;
-  openIdConnectUrl?: string;
+}
+
+export interface OAuth2SchemeObject {
+  type: 'oauth2';
+  description?: string;
+  flows: OAuthFlowsObject;
   'x-tokenName'?: string;
+}
+
+export interface OpenIdConnectSchemeObject {
+  type: 'openIdConnect';
+  description?: string;
+  openIdConnectUrl: string;
 }
 
 export interface OAuthFlowsObject {
