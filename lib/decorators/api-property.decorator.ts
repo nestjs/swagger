@@ -38,6 +38,9 @@ const isEnumArray = (
   items: any;
 } => opts.isArray && 'enum' in opts;
 
+/**
+ * @publicApi
+ */
 export function ApiProperty(
   options: ApiPropertyOptions = {}
 ): PropertyDecorator {

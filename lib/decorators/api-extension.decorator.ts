@@ -2,6 +2,9 @@ import { DECORATORS } from '../constants';
 import { createMixedDecorator } from './helpers';
 import { clone } from 'lodash';
 
+/**
+ * @publicApi
+ */
 export function ApiExtension(extensionKey: string, extensionProperties: any) {
   if (!extensionKey.startsWith('x-')) {
     throw new Error(

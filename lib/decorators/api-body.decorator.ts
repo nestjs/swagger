@@ -35,6 +35,9 @@ const defaultBodyMetadata: ApiBodyMetadata = {
   required: true
 };
 
+/**
+ * @publicApi
+ */
 export function ApiBody(options: ApiBodyOptions): MethodDecorator {
   const [type, isArray] = getTypeIsArrayTuple(
     (options as ApiBodyMetadata).type,

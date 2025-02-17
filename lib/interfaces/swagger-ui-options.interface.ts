@@ -1,5 +1,7 @@
 /**
  * @see https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/
+ * 
+ * @publicApi
  */
 export interface SwaggerUiOptions {
   /**

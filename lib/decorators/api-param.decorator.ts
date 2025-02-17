@@ -37,6 +37,9 @@ const defaultParamOptions: ApiParamOptions = {
   required: true
 };
 
+/**
+ * @publicApi
+ */
 export function ApiParam(
   options: ApiParamOptions
 ): MethodDecorator & ClassDecorator {

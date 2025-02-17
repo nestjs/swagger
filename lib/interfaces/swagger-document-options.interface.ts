@@ -4,6 +4,9 @@ export type OperationIdFactory = (
   version?: string
 ) => string;
 
+/**
+ * @publicApi
+ */
 export interface SwaggerDocumentOptions {
   /**
    * List of modules to include in the specification
