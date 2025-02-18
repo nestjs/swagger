@@ -409,12 +409,12 @@ export class SchemaObjectFactory {
       schemas[enumName] = {
         type: enumType,
         ...metadata.enumSchema,
-        description: metadata.description,
+        description: metadata.description ?? undefined,
         enum:
           metadata.isArray && metadata.items
             ? metadata.items['enum']
             : metadata.enum,
-        'x-enumNames': metadata['x-enumNames'] ?? []
+        'x-enumNames': metadata['x-enumNames'] ?? undefined
       };
     } else {
       if (metadata.enumSchema) {
@@ -435,7 +435,9 @@ export class SchemaObjectFactory {
       type: metadata.isArray ? 'array' : 'string'
     };
 
-    const refHost = metadata.isArray ? { items: { $ref } } : { $ref };
+    const refHost = metadata.isArray
+      ? { items: { $ref } }
+      : { allOf: [{ $ref }] };
 
     const paramObject = { ..._schemaObject, ...refHost };
     const pathsToOmit = ['enum', 'enumName', 'enumSchema'];
