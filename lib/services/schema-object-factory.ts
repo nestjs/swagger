@@ -34,6 +34,7 @@ import { isDateCtor } from '../utils/is-date-ctor.util';
 import { ModelPropertiesAccessor } from './model-properties-accessor';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 import { SwaggerTypesMapper } from './swagger-types-mapper';
+import e = require('express');
 
 export class SchemaObjectFactory {
   constructor(
@@ -64,9 +65,9 @@ export class SchemaObjectFactory {
       if (!isBodyParameter(param)) {
         return this.createQueryOrParamSchema(param, schemas);
       }
-
       return this.getCustomType(param, schemas);
     });
+
     return flatten(parameterObjects);
   }
 
@@ -257,6 +258,10 @@ export class SchemaObjectFactory {
           'selfRequired'
         ];
 
+        if ('$ref' in property) {
+          return omit(pick(property, '$ref'), keysToOmit);
+        }
+
         if ('required' in property && Array.isArray(property.required)) {
           return omit(property, keysToOmit);
         }
@@ -279,6 +284,7 @@ export class SchemaObjectFactory {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
     schemas[schemaName] = typeDefinition;
+
     return schemaName;
   }
 
@@ -403,10 +409,12 @@ export class SchemaObjectFactory {
       schemas[enumName] = {
         type: enumType,
         ...metadata.enumSchema,
+        description: metadata.description,
         enum:
           metadata.isArray && metadata.items
             ? metadata.items['enum']
-            : metadata.enum
+            : metadata.enum,
+        'x-enumNames': metadata['x-enumNames'] ?? []
       };
     } else {
       if (metadata.enumSchema) {
@@ -414,6 +422,10 @@ export class SchemaObjectFactory {
           ...schemas[enumName],
           ...metadata.enumSchema
         };
+      }
+
+      if (metadata['x-enumNames']) {
+        schemas[enumName]['x-enumNames'] = metadata['x-enumNames'];
       }
     }
 
@@ -423,9 +435,8 @@ export class SchemaObjectFactory {
       type: metadata.isArray ? 'array' : 'string'
     };
 
-    const refHost = metadata.isArray
-      ? { items: { $ref } }
-      : { allOf: [{ $ref }] };
+    const refHost = metadata.isArray ? { items: { $ref } } : { $ref };
+
     const paramObject = { ..._schemaObject, ...refHost };
     const pathsToOmit = ['enum', 'enumName', 'enumSchema'];
 
@@ -619,10 +630,11 @@ export class SchemaObjectFactory {
       };
     }
 
+    if (isEnumMetadata(metadata)) {
+      return this.createEnumSchemaType(key, metadata, schemas);
+    }
+
     if (isString(typeRef)) {
-      if (isEnumMetadata(metadata)) {
-        return this.createEnumSchemaType(key, metadata, schemas);
-      }
       if (metadata.isArray) {
         return this.transformToArraySchemaProperty(metadata, key, typeRef);
       }
