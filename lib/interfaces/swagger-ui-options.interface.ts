@@ -18,5 +18,6 @@ export interface SwaggerUiOptions {
     useBasicAuthenticationWithAccessCodeGrant?: boolean;
     usePkceWithAuthorizationCodeGrant?: boolean;
   };
+  persistAuthorization?: boolean;
   [key: string]: any;
 }
