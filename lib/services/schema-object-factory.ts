@@ -34,7 +34,6 @@ import { isDateCtor } from '../utils/is-date-ctor.util';
 import { ModelPropertiesAccessor } from './model-properties-accessor';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 import { SwaggerTypesMapper } from './swagger-types-mapper';
-import e = require('express');
 
 export class SchemaObjectFactory {
   constructor(
@@ -409,11 +408,11 @@ export class SchemaObjectFactory {
       schemas[enumName] = {
         type: enumType,
         ...metadata.enumSchema,
-        description: metadata.description ?? undefined,
         enum:
           metadata.isArray && metadata.items
             ? metadata.items['enum']
             : metadata.enum,
+        description: metadata.description ?? undefined,
         'x-enumNames': metadata['x-enumNames'] ?? undefined
       };
     } else {
@@ -632,11 +631,10 @@ export class SchemaObjectFactory {
       };
     }
 
-    if (isEnumMetadata(metadata)) {
-      return this.createEnumSchemaType(key, metadata, schemas);
-    }
-
     if (isString(typeRef)) {
+      if (isEnumMetadata(metadata)) {
+        return this.createEnumSchemaType(key, metadata, schemas);
+      }
       if (metadata.isArray) {
         return this.transformToArraySchemaProperty(metadata, key, typeRef);
       }
