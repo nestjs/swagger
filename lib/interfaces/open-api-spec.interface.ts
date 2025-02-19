@@ -232,6 +232,7 @@ export interface SchemaObject {
   minProperties?: number;
   required?: string[];
   enum?: any[];
+  'x-enumNames'?: string[];
 }
 
 export type SchemasObject = Record<string, SchemaObject>;

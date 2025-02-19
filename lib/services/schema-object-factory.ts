@@ -64,9 +64,9 @@ export class SchemaObjectFactory {
       if (!isBodyParameter(param)) {
         return this.createQueryOrParamSchema(param, schemas);
       }
-
       return this.getCustomType(param, schemas);
     });
+
     return flatten(parameterObjects);
   }
 
@@ -279,6 +279,7 @@ export class SchemaObjectFactory {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
     schemas[schemaName] = typeDefinition;
+
     return schemaName;
   }
 
@@ -406,7 +407,9 @@ export class SchemaObjectFactory {
         enum:
           metadata.isArray && metadata.items
             ? metadata.items['enum']
-            : metadata.enum
+            : metadata.enum,
+        description: metadata.description ?? undefined,
+        'x-enumNames': metadata['x-enumNames'] ?? undefined
       };
     } else {
       if (metadata.enumSchema) {
@@ -414,6 +417,10 @@ export class SchemaObjectFactory {
           ...schemas[enumName],
           ...metadata.enumSchema
         };
+      }
+
+      if (metadata['x-enumNames']) {
+        schemas[enumName]['x-enumNames'] = metadata['x-enumNames'];
       }
     }
 
@@ -426,8 +433,9 @@ export class SchemaObjectFactory {
     const refHost = metadata.isArray
       ? { items: { $ref } }
       : { allOf: [{ $ref }] };
+
     const paramObject = { ..._schemaObject, ...refHost };
-    const pathsToOmit = ['enum', 'enumName', 'enumSchema'];
+    const pathsToOmit = ['enum', 'enumName', 'enumSchema', 'x-enumNames'];
 
     if (!metadata.isArray) {
       pathsToOmit.push('type');
