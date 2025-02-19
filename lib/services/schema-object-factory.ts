@@ -257,10 +257,6 @@ export class SchemaObjectFactory {
           'selfRequired'
         ];
 
-        if ('$ref' in property) {
-          return omit(pick(property, '$ref'), keysToOmit);
-        }
-
         if ('required' in property && Array.isArray(property.required)) {
           return omit(property, keysToOmit);
         }
@@ -439,7 +435,7 @@ export class SchemaObjectFactory {
       : { allOf: [{ $ref }] };
 
     const paramObject = { ..._schemaObject, ...refHost };
-    const pathsToOmit = ['enum', 'enumName', 'enumSchema'];
+    const pathsToOmit = ['enum', 'enumName', 'enumSchema', 'x-enumNames'];
 
     if (!metadata.isArray) {
       pathsToOmit.push('type');

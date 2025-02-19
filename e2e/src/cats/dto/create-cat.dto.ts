@@ -1,4 +1,5 @@
 import { ApiExtension, ApiExtraModels, ApiProperty } from '../../../../lib';
+import { XEnumTest } from '../enums/x-enum-test.enum';
 import { ExtraModelDto } from './extra-model.dto';
 import { LettersEnum } from './pagination-query.dto';
 import { TagDto } from './tag.dto';
@@ -82,4 +83,12 @@ export class CreateCatDto {
     first: string;
     second: number;
   };
+
+  @ApiProperty({
+    description: 'The x-enumNames test',
+    enum: XEnumTest,
+    enumName: 'XEnumTest',
+    'x-enumNames': ['APPROVED', 'PENDING', 'REJECTED']
+  })
+  xEnumTest: XEnumTest;
 }

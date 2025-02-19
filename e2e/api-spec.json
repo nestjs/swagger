@@ -1406,6 +1406,20 @@
           "name"
         ]
       },
+      "XEnumTest": {
+        "type": "number",
+        "enum": [
+          1,
+          2,
+          3
+        ],
+        "description": "The x-enumNames test",
+        "x-enumNames": [
+          "APPROVED",
+          "PENDING",
+          "REJECTED"
+        ]
+      },
       "CreateCatDto": {
         "type": "object",
         "properties": {
@@ -1489,6 +1503,14 @@
                 "$ref": "#/components/schemas/TagDto"
               }
             ]
+          },
+          "xEnumTest": {
+            "description": "The x-enumNames test",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/XEnumTest"
+              }
+            ]
           }
         },
         "x-tags": [
@@ -1506,7 +1528,8 @@
           "enumWithDescription",
           "enum",
           "enumArr",
-          "enumWithRef"
+          "enumWithRef",
+          "xEnumTest"
         ]
       },
       "Cat": {
