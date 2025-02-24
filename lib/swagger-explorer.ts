@@ -440,9 +440,11 @@ export class SwaggerExplorer {
 
     try {
       let normalizedPath = LegacyRouteConverter.tryConvert(path);
-      // Optional segment groups are not supported by
+      // Optional segment groups are not supported by Fastify
       normalizedPath = normalizedPath.replace(/::/g, '\\:');
       normalizedPath = normalizedPath.replace(/\[:\]/g, '\\:');
+      // Strip inline regexps (Fastify)
+      normalizedPath = normalizedPath.replace(/\(\^([^)]+)\)/g, '');
 
       const { tokens } = parse(normalizedPath);
       for (const item of tokens) {

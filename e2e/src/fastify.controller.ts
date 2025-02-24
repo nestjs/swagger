@@ -8,4 +8,9 @@ export class FastifyController {
   withColons(): string {
     return 'Hello world!';
   }
+
+  @Get('/example/:file(^\\d+).png')
+  withRegexp(): string {
+    return 'Hello world!';
+  }
 }
