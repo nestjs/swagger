@@ -167,6 +167,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return node;
     }
 
+    const isPrivateProperty = ts.isPrivateIdentifier(node.name);
+    if (isPrivateProperty) {
+      return node;
+    }
+
     const decorators = ts.canHaveDecorators(node) && ts.getDecorators(node);
 
     const classTransformerShim = options.classTransformerShim;
