@@ -60,7 +60,7 @@ export class Cat {
     required: ['name', 'status'],
     selfRequired: true
   })
-  rawDefinition?: Record<string, any>;
+  rawDefinition: Record<string, any>;
 
   @ApiProperty({
     enum: LettersEnum
