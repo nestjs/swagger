@@ -1618,6 +1618,12 @@
               "status"
             ]
           },
+          "optionalRawDefinition": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
           "enum": {
             "type": "string",
             "enum": [

@@ -10,6 +10,7 @@ import {
   OpenAPIObject,
   SwaggerModule
 } from '../lib';
+import { SchemaObject } from '../lib/interfaces/open-api-spec.interface';
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
@@ -221,5 +222,12 @@ describe('Validate OpenAPI schema', () => {
         }
       }
     });
+  });
+
+  it('should not add optional properties to required list', async () => {
+    const document = SwaggerModule.createDocument(app, options);
+    const required = (document.components?.schemas?.Cat as SchemaObject)
+      ?.required;
+    expect(required).not.toContain('optionalRawDefinition');
   });
 });

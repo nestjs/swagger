@@ -268,10 +268,10 @@ export class SchemaObjectFactory {
     };
 
     const typeDefinitionRequiredFields = propertiesWithType
-      .filter(
-        (property) =>
-          (property.required != false && !Array.isArray(property.required)) ||
-          ('selfRequired' in property && property.selfRequired != false)
+      .filter((property) =>
+        'selfRequired' in property
+          ? property.selfRequired != false
+          : property.required != false && !Array.isArray(property.required)
       )
       .map((property) => property.name);
 
