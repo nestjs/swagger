@@ -9,6 +9,7 @@ export interface PluginOptions {
   dtoKeyOfComment?: string;
   controllerKeyOfComment?: string;
   introspectComments?: boolean;
+  esmCompatible?: boolean;
   readonly?: boolean;
   pathToSource?: string;
   debug?: boolean;
@@ -27,6 +28,7 @@ const defaultOptions: PluginOptions = {
   dtoKeyOfComment: 'description',
   controllerKeyOfComment: 'summary',
   introspectComments: false,
+  esmCompatible: false,
   readonly: false,
   debug: false
 };
