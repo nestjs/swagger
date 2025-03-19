@@ -28,7 +28,7 @@ export class SwaggerScanner {
     new ModelPropertiesAccessor(),
     new SwaggerTypesMapper()
   );
-  private readonly explorer = new SwaggerExplorer(this.schemaObjectFactory);
+  private explorer: SwaggerExplorer | undefined;
 
   public scanApplication(
     app: INestApplication,
@@ -44,8 +44,11 @@ export class SwaggerScanner {
       autoTagControllers = true
     } = options;
 
-    const container = (app as any).container as NestContainer;
-    const internalConfigRef = (app as any).config as ApplicationConfig;
+    const untypedApp = app as any;
+    const container = untypedApp.container as NestContainer;
+    const internalConfigRef = untypedApp.config as ApplicationConfig;
+    const httpAdapterType = app.getHttpAdapter().getType();
+    this.initializeSwaggerExplorer(httpAdapterType);
 
     const modules: Module[] = this.getModules(
       container.getModules(),
@@ -168,5 +171,14 @@ export class SwaggerScanner {
       metatype
     );
     return modulePath ?? Reflect.getMetadata(MODULE_PATH, metatype);
+  }
+
+  private initializeSwaggerExplorer(httpAdapterType: string) {
+    if (this.explorer) {
+      return;
+    }
+    this.explorer = new SwaggerExplorer(this.schemaObjectFactory, {
+      httpAdapterType
+    });
   }
 }

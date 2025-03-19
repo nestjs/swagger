@@ -93,7 +93,12 @@ export class SwaggerExplorer {
       ? `${controllerKey}_${methodKey}_from_${fieldKey}`
       : `${methodKey}_from_${fieldKey}`;
 
-  constructor(private readonly schemaObjectFactory: SchemaObjectFactory) {}
+  constructor(
+    private readonly schemaObjectFactory: SchemaObjectFactory,
+    private readonly options: {
+      httpAdapterType?: string;
+    } = {}
+  ) {}
 
   public exploreController(
     wrapper: InstanceWrapper<Controller>,
@@ -439,7 +444,10 @@ export class SwaggerExplorer {
     let pathWithParams = '';
 
     try {
-      let normalizedPath = LegacyRouteConverter.tryConvert(path);
+      let normalizedPath = LegacyRouteConverter.tryConvert(path, {
+        // Skip logs for Fastify as it has different rules for wildcard routes
+        logs: this.options.httpAdapterType !== 'fastify'
+      });
       // Optional segment groups are not supported by Fastify
       normalizedPath = normalizedPath.replace(/::/g, '\\:');
       normalizedPath = normalizedPath.replace(/\[:\]/g, '\\:');
