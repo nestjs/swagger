@@ -60,7 +60,14 @@ export class Cat {
     required: ['name', 'status'],
     selfRequired: true
   })
-  rawDefinition?: Record<string, any>;
+  rawDefinition: Record<string, any>;
+
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: { type: 'boolean' },
+    selfRequired: false
+  })
+  optionalRawDefinition?: Record<string, boolean>;
 
   @ApiProperty({
     enum: LettersEnum

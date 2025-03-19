@@ -1463,6 +1463,23 @@
               }
             }
           },
+          "rawDefinition": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "ErrorName"
+              },
+              "status": {
+                "type": "number",
+                "example": 400
+              }
+            },
+            "required": [
+              "name",
+              "status"
+            ]
+          },
           "enumWithDescription": {
             "enum": [
               "A",
@@ -1525,6 +1542,7 @@
           "createdAt",
           "urls",
           "options",
+          "rawDefinition",
           "enumWithDescription",
           "enum",
           "enumArr",
@@ -1599,6 +1617,12 @@
               "name",
               "status"
             ]
+          },
+          "optionalRawDefinition": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
           },
           "enum": {
             "type": "string",
