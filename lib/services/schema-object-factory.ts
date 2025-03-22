@@ -453,7 +453,7 @@ export class SchemaObjectFactory {
   ): SchemaObjectMetadata {
     if (isUndefined(trueMetadataType)) {
       throw new Error(
-        `A circular dependency has been detected (property key: "${key}"). Please, make sure that each side of a bidirectional relationships are using lazy resolvers ("type: () => ClassType").`
+        `A circular dependency has been detected (property key: "${key}"${pendingSchemaRefs[0] ? ` on model ${pendingSchemaRefs[0]}` : ''}). Please, make sure that each side of a bidirectional relationships are using lazy resolvers ("type: () => ClassType").`
       );
     }
     let schemaObjectName = (trueMetadataType as Function).name;
