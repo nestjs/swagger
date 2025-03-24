@@ -64,7 +64,7 @@
     "release-it": "18.1.2",
     "supertest": "7.1.0",
     "swagger-parser": "10.0.3",
-    "ts-jest": "29.2.6",
+    "ts-jest": "29.3.0",
     "typescript": "5.8.2",
     "typescript-eslint": "8.27.0"
   },
