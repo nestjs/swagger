@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
-import { clone, isString, isUndefined, negate, pickBy } from 'lodash';
+import { clone, isString, isUndefined, negate, omit, pickBy } from 'lodash';
+import { ApiResponseOptions } from './decorators/api-response.decorator';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {
@@ -11,6 +12,7 @@ import {
   TagObject
 } from './interfaces/open-api-spec.interface';
 import { GlobalParametersStorage } from './storages/global-parameters.storage';
+import { GlobalResponsesStorage } from './storages/global-responses.storage';
 
 /**
  * @publicApi
@@ -116,6 +118,20 @@ export class DocumentBuilder {
       ...(this.document.components.securitySchemes || {}),
       [name]: options
     };
+    return this;
+  }
+
+  public addGlobalResponse(...respones: ApiResponseOptions[]): this {
+    const groupedByStatus = respones.reduce(
+      (acc, response) => {
+        const { status = 'default' } = response;
+        acc[status] = omit(response, 'status');
+        return acc;
+      },
+      {} as Record<string, Omit<ApiResponseOptions, 'status'>>
+    );
+
+    GlobalResponsesStorage.add(groupedByStatus);
     return this;
   }
 

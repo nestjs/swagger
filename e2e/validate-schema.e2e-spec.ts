@@ -14,6 +14,7 @@ import { SchemaObject } from '../lib/interfaces/open-api-spec.interface';
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
+import { ValidationErrorDto } from './src/common/dto/validation-error.dto';
 import { ExpressController } from './src/express.controller';
 
 describe('Validate OpenAPI schema', () => {
@@ -49,6 +50,15 @@ describe('Validate OpenAPI schema', () => {
       .addCookieAuth()
       .addSecurityRequirements('bearer')
       .addSecurityRequirements({ basic: [], cookie: [] })
+      .addGlobalResponse({
+        status: 500,
+        description: 'Internal server error'
+      })
+      .addGlobalResponse({
+        status: 400,
+        description: 'Bad request',
+        type: ValidationErrorDto
+      })
       .addGlobalParameters({
         name: 'x-tenant-id',
         in: 'header',
@@ -201,7 +211,7 @@ describe('Validate OpenAPI schema', () => {
       }
     });
 
-    let api = (await SwaggerParser.validate(
+    const api = (await SwaggerParser.validate(
       document as any
     )) as OpenAPIV3.Document;
     console.log('API name: %s, Version: %s', api.info.title, api.info.version);

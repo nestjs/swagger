@@ -75,29 +75,25 @@ export class SwaggerScanner {
                 metatype
               );
               result = result.concat(
-                this.scanModuleControllers(
-                  controllers,
+                this.scanModuleControllers(controllers, internalConfigRef, {
                   modulePath,
                   globalPrefix,
-                  internalConfigRef,
                   operationIdFactory,
                   linkNameFactory,
                   autoTagControllers
-                )
+                })
               );
             });
         }
         const modulePath = this.getModulePathMetadata(container, metatype);
         return result.concat(
-          this.scanModuleControllers(
-            controllers,
+          this.scanModuleControllers(controllers, internalConfigRef, {
             modulePath,
             globalPrefix,
-            internalConfigRef,
             operationIdFactory,
             linkNameFactory,
             autoTagControllers
-          )
+          })
         );
       }
     );
@@ -115,27 +111,21 @@ export class SwaggerScanner {
 
   public scanModuleControllers(
     controller: Map<InjectionToken, InstanceWrapper>,
-    modulePath: string | undefined,
-    globalPrefix: string | undefined,
     applicationConfig: ApplicationConfig,
-    operationIdFactory?: OperationIdFactory,
-    linkNameFactory?: (
-      controllerKey: string,
-      methodKey: string,
-      fieldKey: string
-    ) => string,
-    autoTagControllers?: boolean
+    options: {
+      modulePath: string | undefined;
+      globalPrefix: string | undefined;
+      operationIdFactory?: OperationIdFactory;
+      linkNameFactory?: (
+        controllerKey: string,
+        methodKey: string,
+        fieldKey: string
+      ) => string;
+      autoTagControllers?: boolean;
+    }
   ): ModuleRoute[] {
     const denormalizedArray = [...controller.values()].map((ctrl) =>
-      this.explorer.exploreController(
-        ctrl,
-        applicationConfig,
-        modulePath,
-        globalPrefix,
-        operationIdFactory,
-        linkNameFactory,
-        autoTagControllers
-      )
+      this.explorer.exploreController(ctrl, applicationConfig, options)
     );
     return flatten(denormalizedArray) as any;
   }
