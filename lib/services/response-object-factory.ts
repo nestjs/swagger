@@ -100,6 +100,9 @@ export class ResponseObjectFactory {
         parameter: string,
         field: string
       ) => {
+        if (!factories) {
+          return;
+        }
         const linkName = factories.linkName(
           controllerPrototype.constructor.name,
           method.name,

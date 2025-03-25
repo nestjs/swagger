@@ -10,6 +10,7 @@ import {
   FactoriesNeededByResponseFactory,
   ResponseObjectFactory
 } from '../services/response-object-factory';
+import { GlobalResponsesStorage } from '../storages/global-responses.storage';
 import { mergeAndUniq } from '../utils/merge-and-uniq.util';
 
 const responseObjectFactory = new ResponseObjectFactory();
@@ -23,17 +24,34 @@ export const exploreGlobalApiResponseMetadata = (
     DECORATORS.API_RESPONSE,
     metatype
   );
+  const globalResponses = GlobalResponsesStorage.getAll();
+  const mappedGlobalResponsesOrUndefined = globalResponses
+    ? mapResponsesToSwaggerResponses(
+        globalResponses,
+        schemas,
+        undefined,
+        factories
+      )
+    : undefined;
+
   const produces = Reflect.getMetadata(DECORATORS.API_PRODUCES, metatype);
   return responses
     ? {
-        responses: mapResponsesToSwaggerResponses(
-          responses,
-          schemas,
-          produces,
-          factories
-        )
+        responses: {
+          ...mappedGlobalResponsesOrUndefined,
+          ...mapResponsesToSwaggerResponses(
+            responses,
+            schemas,
+            produces,
+            factories
+          )
+        }
       }
-    : undefined;
+    : mappedGlobalResponsesOrUndefined
+      ? {
+          responses: mappedGlobalResponsesOrUndefined
+        }
+      : undefined;
 };
 
 export const exploreApiResponseMetadata = (
@@ -89,7 +107,7 @@ const getStatusCode = (method: Function) => {
 
 const omitParamType = (param: Record<string, any>) => omit(param, 'type');
 const mapResponsesToSwaggerResponses = (
-  responses: ApiResponseMetadata[],
+  responses: ApiResponseMetadata[] | Record<string, ApiResponseMetadata>,
   schemas: Record<string, SchemaObject>,
   produces: string[] = ['application/json'],
   factories: FactoriesNeededByResponseFactory

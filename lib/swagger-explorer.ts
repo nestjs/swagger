@@ -103,16 +103,20 @@ export class SwaggerExplorer {
   public exploreController(
     wrapper: InstanceWrapper<Controller>,
     applicationConfig: ApplicationConfig,
-    modulePath?: string,
-    globalPrefix?: string,
-    operationIdFactory?: OperationIdFactory,
-    linkNameFactory?: (
-      controllerKey: string,
-      methodKey: string,
-      fieldKey: string
-    ) => string,
-    autoTagControllers?: boolean
+    options: {
+      modulePath?: string;
+      globalPrefix?: string;
+      operationIdFactory?: OperationIdFactory;
+      linkNameFactory?: (
+        controllerKey: string,
+        methodKey: string,
+        fieldKey: string
+      ) => string;
+      autoTagControllers?: boolean;
+    }
   ) {
+    const { operationIdFactory, linkNameFactory } = options;
+
     this.routePathFactory = new RoutePathFactory(applicationConfig);
     if (operationIdFactory) {
       this.operationIdFactory = operationIdFactory;
@@ -145,11 +149,7 @@ export class SwaggerExplorer {
       instance,
       documentResolvers,
       applicationConfig,
-      {
-        modulePath,
-        globalPrefix,
-        autoTagControllers
-      }
+      options
     );
   }
 
