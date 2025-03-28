@@ -50,8 +50,8 @@ export class ReadonlyVisitor {
 
   collect() {
     return {
-      models: this.modelClassVisitor.collectedMetadata,
-      controllers: this.controllerClassVisitor.collectedMetadata
+      models: this.modelClassVisitor.collectedMetadata(this.options),
+      controllers: this.controllerClassVisitor.collectedMetadata(this.options)
     };
   }
 }

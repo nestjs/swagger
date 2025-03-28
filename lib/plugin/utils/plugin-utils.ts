@@ -140,6 +140,16 @@ export function hasPropertyKey(
     .some((item) => item.name.getText() === key);
 }
 
+export function getOutputExtension(fileName: string): string {
+  if (fileName.endsWith('.mts')) {
+    return '.mjs';
+  } else if (fileName.endsWith('.cts')) {
+    return '.cjs';
+  } else {
+    return '.js';
+  }
+}
+
 export function replaceImportPath(
   typeReference: string,
   fileName: string,
@@ -148,6 +158,14 @@ export function replaceImportPath(
   if (!typeReference.includes('import')) {
     return { typeReference, importPath: null };
   }
+
+  if (options.esmCompatible) {
+    typeReference = typeReference.replace(
+      ', { with: { "resolution-mode": "import" } }',
+      ''
+    );
+  }
+
   let importPath = /\(\"([^)]).+(\")/.exec(typeReference)[0];
   if (!importPath) {
     return { typeReference: undefined, importPath: null };
@@ -193,6 +211,10 @@ export function replaceImportPath(
       if (indexPos >= 0) {
         relativePath = relativePath.slice(0, indexPos);
       }
+    } else if (options.esmCompatible) {
+      // Add appropriate extension for non-node_modules imports
+      const extension = getOutputExtension(fileName);
+      relativePath += extension;
     }
 
     typeReference = typeReference.replace(importPath, relativePath);
@@ -206,6 +228,7 @@ export function replaceImportPath(
         importPath: relativePath
       };
     }
+
     return {
       typeReference: typeReference.replace('import', 'require'),
       importPath: relativePath
