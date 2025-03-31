@@ -453,6 +453,32 @@ describe('SchemaObjectFactory', () => {
         expect(Object.keys(schemas)).toContain('UpdateUser');
       });
 
+      it('should correctly handle recursive schema references in ApiSchema decorator', () => {
+        @ApiSchema({ name: 'MenuNode' })
+        class MenuNodeDto {
+          @ApiProperty({ type: () => MenuNodeDto })
+          childNode: MenuNodeDto;
+        }
+
+        @ApiSchema({ name: 'Menu' })
+        class MenuDto {
+          @ApiProperty({ type: () => MenuNodeDto })
+          rootNode: MenuNodeDto;
+        }
+
+        const schemas: Record<string, SchemasObject> = {};
+
+        schemaObjectFactory.exploreModelSchema(MenuDto, schemas);
+
+        expect(schemas['MenuNode'].properties['childNode']['$ref']).toEqual(
+          '#/components/schemas/MenuNode'
+        );
+
+        expect(schemas['Menu'].properties['rootNode']['$ref']).toEqual(
+          '#/components/schemas/MenuNode'
+        );
+      });
+
       it('should use the the description if provided', () => {
         @ApiSchema({
           description: 'Represents a user.'
