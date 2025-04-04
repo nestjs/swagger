@@ -456,7 +456,9 @@ export class SchemaObjectFactory {
         `A circular dependency has been detected (property key: "${key}"). Please, make sure that each side of a bidirectional relationships are using lazy resolvers ("type: () => ClassType").`
       );
     }
-    let schemaObjectName = (trueMetadataType as Function).name;
+    let { schemaName: schemaObjectName } = this.getSchemaMetadata(
+      trueMetadataType as Function | Type<unknown>
+    );
 
     if (
       !(schemaObjectName in schemas) &&
