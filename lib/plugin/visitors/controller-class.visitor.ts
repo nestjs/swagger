@@ -15,6 +15,7 @@ import {
 import {
   convertPath,
   getDecoratorOrUndefinedByNames,
+  getOutputExtension,
   getTypeReferenceAsString,
   hasPropertyKey
 } from '../utils/plugin-utils';
@@ -34,13 +35,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     return this._typeImports;
   }
 
-  get collectedMetadata(): Array<
-    [ts.CallExpression, Record<string, ClassMetadata>]
-  > {
+  collectedMetadata(
+    options: PluginOptions
+  ): Array<[ts.CallExpression, Record<string, ClassMetadata>]> {
     const metadataWithImports = [];
     Object.keys(this._collectedMetadata).forEach((filePath) => {
       const metadata = this._collectedMetadata[filePath];
-      const path = filePath.replace(/\.[jt]s$/, '');
+      const fileExt = options.esmCompatible ? getOutputExtension(filePath) : '';
+      const path = filePath.replace(/\.[jt]s$/, fileExt);
       const importExpr = ts.factory.createCallExpression(
         ts.factory.createToken(ts.SyntaxKind.ImportKeyword) as ts.Expression,
         undefined,
