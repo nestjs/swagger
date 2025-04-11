@@ -144,7 +144,12 @@ export class SchemaObjectFactory {
           const parameterObject = {
             ...(omit(property, keysToOmit) as ParameterObject),
             in: 'query',
-            required: property.required ?? true
+            required:
+              'selfRequired' in property
+                ? property.selfRequired
+                : typeof property.required === 'boolean'
+                  ? property.required
+                  : true
           };
 
           const keysToMoveToSchema = [
@@ -160,6 +165,33 @@ export class SchemaObjectFactory {
           }, parameterObject);
         }
       ) as ParameterObject[];
+    }
+    if (this.isObjectLiteral(param.type)) {
+      const schemaFromObjectLiteral = this.createFromObjectLiteral(
+        param.name as string,
+        param.type as Record<string, any>,
+        schemas
+      );
+
+      if (param.isArray) {
+        return {
+          ...param,
+          schema: {
+            type: 'array',
+            items: omit(schemaFromObjectLiteral, 'name')
+          },
+          selfRequired: param.required
+        };
+      }
+      return {
+        ...param,
+        schema: {
+          type: schemaFromObjectLiteral.type,
+          properties: schemaFromObjectLiteral.properties,
+          required: schemaFromObjectLiteral.required
+        },
+        selfRequired: param.required
+      };
     }
     return param;
   }
@@ -623,6 +655,15 @@ export class SchemaObjectFactory {
         typeRef as Record<string, any>,
         schemas
       );
+      if (metadata.isArray) {
+        return {
+          name: schemaFromObjectLiteral.name,
+          type: 'array',
+          items: omit(schemaFromObjectLiteral, 'name'),
+          selfRequired: metadata.required as boolean
+        };
+      }
+
       return {
         ...schemaFromObjectLiteral,
         selfRequired: metadata.required as boolean

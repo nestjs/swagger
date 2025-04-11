@@ -12,7 +12,8 @@ type KeysToRemove =
   | '$ref'
   | 'properties'
   | 'enumName'
-  | 'enumSchema';
+  | 'enumSchema'
+  | 'selfRequired';
 
 export class SwaggerTypesMapper {
   private readonly keysToRemove: Array<KeysToRemove> = [
@@ -21,6 +22,7 @@ export class SwaggerTypesMapper {
     'enumName',
     'enumSchema',
     '$ref',
+    'selfRequired',
     ...this.getSchemaOptionsKeys()
   ];
 
@@ -32,6 +34,13 @@ export class SwaggerTypesMapper {
         this.hasSchemaDefinition(param as BaseParameterObject) ||
         this.hasRawContentDefinition(param)
       ) {
+        if (Array.isArray(param.required) && 'schema' in param) {
+          (param.schema as SchemaObject).required = param.required;
+          delete param.required;
+        }
+        if ('selfRequired' in param) {
+          param.required = param.selfRequired;
+        }
         return this.omitParamKeys(param);
       }
       const { type } = param as ParamWithTypeMetadata;

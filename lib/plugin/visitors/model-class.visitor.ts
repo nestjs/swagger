@@ -410,7 +410,17 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
 
     if (node) {
-      if (ts.isTypeLiteralNode(node)) {
+      if (ts.isArrayTypeNode(node) && ts.isTypeLiteralNode(node.elementType)) {
+        const initializer = this.createInitializerForArrayLiteralTypeNode(
+          node,
+          factory,
+          typeChecker,
+          existingProperties,
+          hostFilename,
+          options
+        );
+        return [factory.createPropertyAssignment(key, initializer)];
+      } else if (ts.isTypeLiteralNode(node)) {
         const initializer = this.createInitializerForTypeLiteralNode(
           node,
           factory,
@@ -478,6 +488,46 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       identifier
     );
     return [factory.createPropertyAssignment(key, initializer)];
+  }
+
+  createInitializerForArrayLiteralTypeNode(
+    node: ts.ArrayTypeNode,
+    factory: ts.NodeFactory,
+    typeChecker: ts.TypeChecker,
+    existingProperties: ts.NodeArray<ts.PropertyAssignment>,
+    hostFilename: string,
+    options: PluginOptions
+  ) {
+    const elementType = node.elementType as ts.TypeLiteralNode;
+    const propertyAssignments = Array.from(elementType.members || []).map(
+      (member) => {
+        const literalExpr = this.createDecoratorObjectLiteralExpr(
+          factory,
+          member as ts.PropertySignature,
+          typeChecker,
+          existingProperties,
+          options,
+          hostFilename
+        );
+        return factory.createPropertyAssignment(
+          factory.createIdentifier(member.name.getText()),
+          literalExpr
+        );
+      }
+    );
+    const initializer = factory.createArrowFunction(
+      undefined,
+      undefined,
+      [],
+      undefined,
+      undefined,
+      factory.createArrayLiteralExpression([
+        factory.createParenthesizedExpression(
+          factory.createObjectLiteralExpression(propertyAssignments)
+        )
+      ])
+    );
+    return initializer;
   }
 
   createInitializerForTypeLiteralNode(

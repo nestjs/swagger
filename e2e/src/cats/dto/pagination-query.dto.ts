@@ -41,7 +41,7 @@ export class PaginationQuery {
         maximum: 100,
         format: 'int32'
       }
-    ],
+    ]
   })
   constrainedLimit?: number;
 
@@ -84,7 +84,16 @@ export class PaginationQuery {
 
   static _OPENAPI_METADATA_FACTORY() {
     return {
-      sortBy: { type: () => [String] }
+      sortBy: { type: () => [String] },
+      strArray: { required: true, type: () => [String] },
+      raw: {
+        required: true,
+        type: () => ({ foo: { required: true, type: () => String } })
+      },
+      rawArray: {
+        required: false,
+        type: () => [{ foo: { required: true, type: () => String } }]
+      }
     };
   }
 }
