@@ -29,6 +29,8 @@ export class CreateCatDto2 {
   numberAlias: NumberAlias;
   union: 1 | 2;
   intersection: Function & string;
+  str: string[];
+  rawArray: { foo: string }[];
   nested: {
       first: string,
       second: number,
@@ -37,8 +39,8 @@ export class CreateCatDto2 {
       nodes: Node[]
       alias: AliasedType,
       numberAlias: NumberAlias,
-  },
-  prop: {
+  };
+  prop:{
     [x: string]: string;
   }
   amount: bigint;
@@ -61,7 +63,7 @@ export class CreateCatDto2 {
         _CreateCatDto2_privateProperty.set(this, void 0);
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number, description: "NumberAlias" }, union: { required: true, type: () => Object }, intersection: { required: true, type: () => Object }, nested: { required: true, type: () => ({ first: { required: true, type: () => String }, second: { required: true, type: () => Number }, status: { required: true, enum: Status }, tags: { required: true, type: () => [String] }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number } }) }, amount: { required: true, type: () => BigInt } };
+        return { name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3 }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, breed: { required: false, type: () => String }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number, description: "NumberAlias" }, union: { required: true, type: () => Object }, intersection: { required: true, type: () => Object }, str: { required: true, type: () => [String] }, rawArray: { required: true, type: () => [({ foo: { required: true, type: () => String } })] }, nested: { required: true, type: () => ({ first: { required: true, type: () => String }, second: { required: true, type: () => Number }, status: { required: true, enum: Status }, tags: { required: true, type: () => [String] }, nodes: { required: true, type: () => [Object] }, alias: { required: true, type: () => Object }, numberAlias: { required: true, type: () => Number } }) }, amount: { required: true, type: () => BigInt } };
     }
 }
 _CreateCatDto2_privateProperty = new WeakMap();

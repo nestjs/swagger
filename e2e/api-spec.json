@@ -536,6 +536,52 @@
             }
           },
           {
+            "name": "strArray",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "raw",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "foo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "foo"
+              ]
+            }
+          },
+          {
+            "name": "rawArray",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "foo": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "foo"
+                ]
+              }
+            }
+          },
+          {
             "name": "catBreeds",
             "required": true,
             "in": "query",
@@ -894,6 +940,49 @@
               },
               "additionalProperties": true,
               "type": "object"
+            }
+          },
+          {
+            "required": true,
+            "name": "strArray",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "raw",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "properties": {
+                "foo": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          {
+            "name": "rawArray",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "foo": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "foo"
+                ]
+              }
             }
           },
           {

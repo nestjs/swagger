@@ -28,6 +28,7 @@ export interface ParamWithTypeMetadata {
   enum?: unknown[];
   enumName?: string;
   enumSchema?: EnumSchemaAttributes;
+  selfRequired?: boolean;
 }
 export type ParamsWithType = Record<string, ParamWithTypeMetadata>;
 
