@@ -287,7 +287,26 @@ describe('API model properties', () => {
         ]
       }
     });
-    expect(result.outputText).toEqual(parameterPropertyDtoTextTranspiled);
+    expect(result.outputText).toEqual(parameterPropertyDtoTextTranspiled());
+
+    const esmResult = ts.transpileModule(parameterPropertyDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              introspectComments: true,
+              esmCompatible: true,
+              classValidatorShim: true,
+              parameterProperties: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(esmResult.outputText).toEqual(parameterPropertyDtoTextTranspiled(true));
   });
 
   it('should ignore Exclude decorator', () => {

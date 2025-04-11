@@ -5,6 +5,8 @@
   "author": "Kamil Mysliwiec",
   "license": "MIT",
   "repository": "https://github.com/nestjs/swagger",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "format": "prettier \"lib/**/*.ts\" --write",
@@ -13,6 +15,7 @@
     "publish:next": "npm publish --access public --tag next",
     "prepublish:npm": "npm run build",
     "publish:npm": "npm publish --access public",
+    "prepare": "npm run build",
     "test": "jest",
     "test:dev": "jest --watch",
     "test:e2e": "jest --config e2e/jest-e2e.json",

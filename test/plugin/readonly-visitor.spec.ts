@@ -23,6 +23,14 @@ describe('Readonly visitor', () => {
     classValidatorShim: true,
     debug: true
   });
+  const esmVisitor = new ReadonlyVisitor({
+    pathToSource: join(__dirname, 'fixtures', 'project'),
+    introspectComments: true,
+    esmCompatible: true,
+    dtoFileNameSuffix: ['.dto.ts', '.model.ts', '.class.ts'],
+    classValidatorShim: true,
+    debug: true
+  });
   const metadataPrinter = new PluginMetadataPrinter();
 
   it('should generate a serialized metadata', () => {
@@ -60,6 +68,38 @@ describe('Readonly visitor', () => {
     //   result,
     //   'utf-8'
     // );
+
+    expect(result).toEqual(expectedOutput);
+  });
+
+  it('should generate a serialized metadata esm', () => {
+    const tsconfigPath = join(
+      __dirname,
+      'fixtures',
+      'project',
+      'tsconfig.json'
+    );
+    const program = createTsProgram(tsconfigPath);
+
+    for (const sourceFile of program.getSourceFiles()) {
+      if (!sourceFile.isDeclarationFile) {
+        esmVisitor.visit(program, sourceFile);
+      }
+    }
+
+    const result = metadataPrinter.print(
+      {
+        [esmVisitor.key]: esmVisitor.collect()
+      },
+      esmVisitor.typeImports
+    );
+
+    const expectedOutput = readFileSync(
+      join(__dirname, 'fixtures', 'serialized-meta-esm.fixture.ts'),
+      'utf-8'
+    )
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
 
     expect(result).toEqual(expectedOutput);
   });

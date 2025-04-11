@@ -16,6 +16,7 @@ export const mergedCliPluginMultiOption = {
   dtoKeyOfComment: 'description',
   controllerKeyOfComment: 'summary',
   introspectComments: true,
+  esmCompatible: false,
   readonly: false,
   debug: false
 };
@@ -28,6 +29,7 @@ export const mergedCliPluginSingleOption = {
   dtoKeyOfComment: 'description',
   controllerKeyOfComment: 'summary',
   introspectComments: true,
+  esmCompatible: false,
   readonly: false,
   debug: false
 };
