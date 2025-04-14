@@ -267,8 +267,6 @@ export class SchemaObjectFactory {
       type = (type as Function)();
     }
 
-    const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
-
     const propertiesWithType = this.extractPropertiesFromType(
       type as Type<unknown>,
       schemas,
@@ -279,6 +277,8 @@ export class SchemaObjectFactory {
     }
     const extensionProperties =
       Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
+
+    const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
 
     const typeDefinition: SchemaObject = {
       type: 'object',
