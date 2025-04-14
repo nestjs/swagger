@@ -266,7 +266,6 @@ export class SchemaObjectFactory {
     if (this.isLazyTypeFunc(type as Function)) {
       type = (type as Function)();
     }
-
     const propertiesWithType = this.extractPropertiesFromType(
       type as Type<unknown>,
       schemas,
