@@ -2,6 +2,7 @@ import { Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils';
 import {
   flatten,
+  isEqual,
   isFunction,
   isString,
   keyBy,
@@ -268,13 +269,6 @@ export class SchemaObjectFactory {
 
     const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
 
-    if (schemas[schemaName]) {
-      throw new Error(
-        `Duplicate DTO detected: "${schemaName}" is defined multiple times with different schemas.\n` +
-          `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.`
-      );
-    }
-
     const propertiesWithType = this.extractPropertiesFromType(
       type as Type<unknown>,
       schemas,
@@ -285,7 +279,6 @@ export class SchemaObjectFactory {
     }
     const extensionProperties =
       Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
-
 
     const typeDefinition: SchemaObject = {
       type: 'object',
@@ -319,6 +312,14 @@ export class SchemaObjectFactory {
     if (typeDefinitionRequiredFields.length > 0) {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
+
+    if (schemas[schemaName] && !isEqual(schemas[schemaName], typeDefinition)) {
+      throw new Error(
+        `Duplicate DTO detected: "${schemaName}" is defined multiple times with different schemas.\n` +
+          `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.`
+      );
+    }
+
     schemas[schemaName] = typeDefinition;
 
     return schemaName;

@@ -206,6 +206,33 @@ describe('SchemaObjectFactory', () => {
       );
     });
 
+    it('should not throw an error when detecting duplicate DTOs with the same schemas', () => {
+      const schemas: Record<string, SchemasObject> = {};
+
+      class DuplicateDTO {
+        @ApiProperty()
+        property1: string;
+      }
+
+      schemaObjectFactory.exploreModelSchema(DuplicateDTO, schemas);
+
+      class DuplicateDTOWithSameSchema {
+        @ApiProperty()
+        property1: string;
+      }
+
+      Object.defineProperty(DuplicateDTOWithSameSchema, 'name', {
+        value: 'DuplicateDTO'
+      });
+
+      expect(() =>
+        schemaObjectFactory.exploreModelSchema(
+          DuplicateDTOWithSameSchema,
+          schemas
+        )
+      ).not.toThrow();
+    });
+
     it('should create openapi schema', () => {
       const schemas: Record<string, SchemasObject> = {};
       const schemaKey = schemaObjectFactory.exploreModelSchema(
