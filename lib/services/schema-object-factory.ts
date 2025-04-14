@@ -265,6 +265,16 @@ export class SchemaObjectFactory {
     if (this.isLazyTypeFunc(type as Function)) {
       type = (type as Function)();
     }
+
+    const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
+
+    if (schemas[schemaName]) {
+      throw new Error(
+        `Duplicate DTO detected: "${schemaName}" is defined multiple times with different schemas.\n` +
+          `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.`
+      );
+    }
+
     const propertiesWithType = this.extractPropertiesFromType(
       type as Type<unknown>,
       schemas,
@@ -276,7 +286,6 @@ export class SchemaObjectFactory {
     const extensionProperties =
       Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
 
-    const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
 
     const typeDefinition: SchemaObject = {
       type: 'object',
