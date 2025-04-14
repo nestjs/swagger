@@ -177,8 +177,12 @@ export function replaceImportPath(
     if (isAbsolute(importPath)) {
       throw {};
     }
+
     require.resolve(importPath);
-    typeReference = typeReference.replace('import', 'require');
+    if (!options.esmCompatible) {
+      typeReference = typeReference.replace('import', 'require');
+    }
+
     return {
       typeReference,
       importPath: null
@@ -229,8 +233,12 @@ export function replaceImportPath(
       };
     }
 
+    if (!options.esmCompatible) {
+      typeReference = typeReference.replace('import', 'require');
+    }
+
     return {
-      typeReference: typeReference.replace('import', 'require'),
+      typeReference,
       importPath: relativePath
     };
   }
