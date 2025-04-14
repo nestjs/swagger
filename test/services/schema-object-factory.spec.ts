@@ -1,4 +1,5 @@
 import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
+import { Logger } from '@nestjs/common';
 import {
   BaseParameterObject,
   SchemasObject
@@ -177,7 +178,7 @@ describe('SchemaObjectFactory', () => {
     });
 
     it('should log an error when detecting duplicate DTOs with different schemas', () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const loggerErrorSpy = jest.spyOn(Logger, 'error').mockImplementation();
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -201,17 +202,17 @@ describe('SchemaObjectFactory', () => {
         schemas
       );
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
         `Duplicate DTO detected: "DuplicateDTO" is defined multiple times with different schemas.\n` +
           `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
           `Note: This will throw an error in the next major version.`
       );
 
-      consoleErrorSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
 
     it('should not throw an error or log error when detecting duplicate DTOs with the same schemas', () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const loggerErrorSpy = jest.spyOn(Logger, 'error').mockImplementation();
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -235,9 +236,9 @@ describe('SchemaObjectFactory', () => {
         schemas
       );
 
-      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      expect(loggerErrorSpy).not.toHaveBeenCalled();
 
-      consoleErrorSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
 
     it('should create openapi schema', () => {
