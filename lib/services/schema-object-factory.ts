@@ -313,9 +313,10 @@ export class SchemaObjectFactory {
     }
 
     if (schemas[schemaName] && !isEqual(schemas[schemaName], typeDefinition)) {
-      throw new Error(
+      console.error(
         `Duplicate DTO detected: "${schemaName}" is defined multiple times with different schemas.\n` +
-          `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.`
+          `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
+          `Note: This will throw an error in the next major version.`
       );
     }
 

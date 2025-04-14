@@ -176,7 +176,8 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
-    it('should throw an error when detecting duplicate DTOs with different schemas', () => {
+    it('should log an error when detecting duplicate DTOs with different schemas', () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -195,18 +196,22 @@ describe('SchemaObjectFactory', () => {
         value: 'DuplicateDTO'
       });
 
-      expect(() =>
-        schemaObjectFactory.exploreModelSchema(
-          DuplicateDTOWithDifferentSchema,
-          schemas
-        )
-      ).toThrow(
-        'Duplicate DTO detected: "DuplicateDTO" is defined multiple times with different schemas.\n' +
-          'Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.'
+      schemaObjectFactory.exploreModelSchema(
+        DuplicateDTOWithDifferentSchema,
+        schemas
       );
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        `Duplicate DTO detected: "DuplicateDTO" is defined multiple times with different schemas.\n` +
+          `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
+          `Note: This will throw an error in the next major version.`
+      );
+
+      consoleErrorSpy.mockRestore();
     });
 
-    it('should not throw an error when detecting duplicate DTOs with the same schemas', () => {
+    it('should not throw an error or log error when detecting duplicate DTOs with the same schemas', () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -225,12 +230,14 @@ describe('SchemaObjectFactory', () => {
         value: 'DuplicateDTO'
       });
 
-      expect(() =>
-        schemaObjectFactory.exploreModelSchema(
-          DuplicateDTOWithSameSchema,
-          schemas
-        )
-      ).not.toThrow();
+      schemaObjectFactory.exploreModelSchema(
+        DuplicateDTOWithSameSchema,
+        schemas
+      );
+
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      consoleErrorSpy.mockRestore();
     });
 
     it('should create openapi schema', () => {
