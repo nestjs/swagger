@@ -1,7 +1,8 @@
-import { Type } from '@nestjs/common';
+import { Logger, Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils';
 import {
   flatten,
+  isEqual,
   isFunction,
   isString,
   keyBy,
@@ -310,6 +311,15 @@ export class SchemaObjectFactory {
     if (typeDefinitionRequiredFields.length > 0) {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
+
+    if (schemas[schemaName] && !isEqual(schemas[schemaName], typeDefinition)) {
+      Logger.error(
+        `Duplicate DTO detected: "${schemaName}" is defined multiple times with different schemas.\n` +
+          `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
+          `Note: This will throw an error in the next major version.`
+      );
+    }
+
     schemas[schemaName] = typeDefinition;
 
     return schemaName;

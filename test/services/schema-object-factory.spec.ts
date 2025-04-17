@@ -1,4 +1,5 @@
 import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
+import { Logger } from '@nestjs/common';
 import {
   BaseParameterObject,
   SchemasObject
@@ -174,6 +175,70 @@ describe('SchemaObjectFactory', () => {
         },
         required: ['name', 'role']
       });
+    });
+
+    it('should log an error when detecting duplicate DTOs with different schemas', () => {
+      const loggerErrorSpy = jest.spyOn(Logger, 'error').mockImplementation();
+      const schemas: Record<string, SchemasObject> = {};
+
+      class DuplicateDTO {
+        @ApiProperty()
+        property1: string;
+      }
+
+      schemaObjectFactory.exploreModelSchema(DuplicateDTO, schemas);
+
+      class DuplicateDTOWithDifferentSchema {
+        @ApiProperty()
+        property2: string;
+      }
+
+      Object.defineProperty(DuplicateDTOWithDifferentSchema, 'name', {
+        value: 'DuplicateDTO'
+      });
+
+      schemaObjectFactory.exploreModelSchema(
+        DuplicateDTOWithDifferentSchema,
+        schemas
+      );
+
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        `Duplicate DTO detected: "DuplicateDTO" is defined multiple times with different schemas.\n` +
+          `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
+          `Note: This will throw an error in the next major version.`
+      );
+
+      loggerErrorSpy.mockRestore();
+    });
+
+    it('should not throw an error or log error when detecting duplicate DTOs with the same schemas', () => {
+      const loggerErrorSpy = jest.spyOn(Logger, 'error').mockImplementation();
+      const schemas: Record<string, SchemasObject> = {};
+
+      class DuplicateDTO {
+        @ApiProperty()
+        property1: string;
+      }
+
+      schemaObjectFactory.exploreModelSchema(DuplicateDTO, schemas);
+
+      class DuplicateDTOWithSameSchema {
+        @ApiProperty()
+        property1: string;
+      }
+
+      Object.defineProperty(DuplicateDTOWithSameSchema, 'name', {
+        value: 'DuplicateDTO'
+      });
+
+      schemaObjectFactory.exploreModelSchema(
+        DuplicateDTOWithSameSchema,
+        schemas
+      );
+
+      expect(loggerErrorSpy).not.toHaveBeenCalled();
+
+      loggerErrorSpy.mockRestore();
     });
 
     it('should create openapi schema', () => {
