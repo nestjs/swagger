@@ -233,12 +233,17 @@ export function replaceImportPath(
       };
     }
 
-    if (!options.esmCompatible) {
-      typeReference = typeReference.replace('import', 'require');
+    if (options.esmCompatible) {
+      const { typeName, typeImportStatement } =
+        convertToAsyncImport(typeReference);
+      return {
+        typeReference: `(${typeImportStatement}).${typeName}`,
+        importPath: relativePath
+      };
     }
 
     return {
-      typeReference,
+      typeReference: typeReference.replace('import', 'require'),
       importPath: relativePath
     };
   }
