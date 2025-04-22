@@ -25,7 +25,7 @@ export class ItemDto {
 export const parameterPropertyDtoTextTranspiled = (esmCompatible?: boolean) => {
   const fileName = 'parameter-property.dto';
   const fileImport = esmCompatible
-    ? `import("./${fileName}${getOutputExtension(fileName)}")`
+    ? `(await import("./${fileName}${getOutputExtension(fileName)}"))`
     : `require("./${fileName}")`;
 
   return `import * as openapi from "@nestjs/swagger";
