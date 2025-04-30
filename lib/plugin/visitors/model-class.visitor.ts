@@ -656,6 +656,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     options: PluginOptions
   ) {
     const key = 'default';
+    /**
+     * Skip add default for properties that do not specify default values.
+     */
+    if (options.skipDefaultValues) {
+      return undefined;
+    }
     if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }

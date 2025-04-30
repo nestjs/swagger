@@ -18,7 +18,8 @@ export const mergedCliPluginMultiOption = {
   introspectComments: true,
   esmCompatible: false,
   readonly: false,
-  debug: false
+  debug: false,
+  skipDefaultValues: false
 };
 
 export const mergedCliPluginSingleOption = {
@@ -31,5 +32,6 @@ export const mergedCliPluginSingleOption = {
   introspectComments: true,
   esmCompatible: false,
   readonly: false,
-  debug: false
+  debug: false,
+  skipDefaultValues: false
 };
