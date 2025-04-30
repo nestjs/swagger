@@ -280,3 +280,5 @@ export interface OAuthFlowObject {
 
 export type ScopesObject = Record<string, any>;
 export type SecurityRequirementObject = Record<string, string[]>;
+
+export type ExtensionLocation = 'root' | 'info';
