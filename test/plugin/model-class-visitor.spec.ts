@@ -306,7 +306,9 @@ describe('API model properties', () => {
         ]
       }
     });
-    expect(esmResult.outputText).toEqual(parameterPropertyDtoTextTranspiled(true));
+    expect(esmResult.outputText).toEqual(
+      parameterPropertyDtoTextTranspiled(true)
+    );
   });
 
   it('should ignore Exclude decorator', () => {
@@ -441,5 +443,58 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(createCatExclusiveDtoTextTranspiled);
+  });
+
+  it('should skip default property when skipDefaultValues is true', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'default-value.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const defaultValueDtoText = `
+      import { ApiProperty } from '../../decorators';
+      export class DefaultValueDto {
+        @ApiProperty()
+        count: number = 5;
+      }
+    `;
+
+    const resultWithoutSkip = ts.transpileModule(defaultValueDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(resultWithoutSkip.outputText).toContain(`default: 5`);
+
+    const resultWithSkip = ts.transpileModule(defaultValueDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              introspectComments: true,
+              classValidatorShim: true,
+              skipDefaultValues: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(resultWithSkip.outputText).not.toContain(`default: 5`);
   });
 });

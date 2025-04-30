@@ -18,6 +18,10 @@ export interface PluginOptions {
    * Skip auto-annotating controller methods with HTTP status codes (e.g., @HttpCode(201))
    */
   skipAutoHttpCode?: boolean;
+  /**
+   * Skip add default for properties that do not specify default values.
+   */
+  skipDefaultValues?: boolean;
 }
 
 const defaultOptions: PluginOptions = {
@@ -30,7 +34,8 @@ const defaultOptions: PluginOptions = {
   introspectComments: false,
   esmCompatible: false,
   readonly: false,
-  debug: false
+  debug: false,
+  skipDefaultValues: false
 };
 
 export const mergePluginOptions = (
