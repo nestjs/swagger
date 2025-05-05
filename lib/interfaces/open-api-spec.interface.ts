@@ -262,6 +262,13 @@ export interface SecuritySchemeObject {
   flows?: OAuthFlowsObject;
   openIdConnectUrl?: string;
   'x-tokenName'?: string;
+
+  /**
+   * SecuritySchemes Additional extension properties
+   * @issue https://github.com/nestjs/swagger/issues/3179
+   * @see https://swagger.io/docs/specification/v3_0/openapi-extensions/
+   */
+  [extension: `x-${string}`]: any;
 }
 
 export interface OAuthFlowsObject {
