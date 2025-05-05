@@ -1684,7 +1684,10 @@
     "title": "Cats example",
     "description": "The cats API description",
     "version": "1.0",
-    "contact": {}
+    "contact": {},
+    "x-logo": {
+      "url": "https://example.com/logo.png"
+    }
   },
   "tags": [
     {
@@ -2114,5 +2117,8 @@
       "basic": [],
       "cookie": []
     }
-  ]
+  ],
+  "x-test": {
+    "test": "test"
+  }
 }

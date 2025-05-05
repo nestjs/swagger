@@ -4,6 +4,7 @@ import { ApiResponseOptions } from './decorators/api-response.decorator';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
 import {
+  ExtensionLocation,
   ExternalDocumentationObject,
   ParameterObject,
   SecurityRequirementObject,
@@ -76,6 +77,9 @@ export class DocumentBuilder {
     return this;
   }
 
+  /**
+   * @deprecated Use `addServer` method to set up multiple different paths. The `setBasePath` method has been deprecated. Now, a global prefix is populated automatically. If you want to ignore it, take a look here: https://docs.nestjs.com/recipes/swagger#global-prefix.
+   */
   public setBasePath(path: string) {
     this.logger.warn(
       'The "setBasePath" method has been deprecated. Now, a global prefix is populated automatically. If you want to ignore it, take a look here: https://docs.nestjs.com/recipes/swagger#global-prefix. Alternatively, you can use "addServer" method to set up multiple different paths.'
@@ -101,14 +105,22 @@ export class DocumentBuilder {
     return this;
   }
 
-  public addExtension(extensionKey: string, extensionProperties: any): this {
+  public addExtension(
+    extensionKey: string,
+    extensionProperties: any,
+    location: ExtensionLocation = 'root'
+  ): this {
     if (!extensionKey.startsWith('x-')) {
       throw new Error(
         'Extension key is not prefixed. Please ensure you prefix it with `x-`.'
       );
     }
 
-    this.document[extensionKey] = clone(extensionProperties);
+    if (location === 'root') {
+      this.document[extensionKey] = clone(extensionProperties);
+    } else {
+      this.document[location][extensionKey] = clone(extensionProperties);
+    }
 
     return this;
   }

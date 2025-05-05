@@ -64,6 +64,8 @@ describe('Validate OpenAPI schema', () => {
         in: 'header',
         schema: { type: 'string' }
       })
+      .addExtension('x-test', { test: 'test' })
+      .addExtension('x-logo', { url: 'https://example.com/logo.png' }, 'info')
       .build();
   });
 
@@ -219,7 +221,7 @@ describe('Validate OpenAPI schema', () => {
     expect(api.components.schemas).toHaveProperty('Cat');
   });
 
-  it('should consider explicit config over auto-detected schema', async () => {
+  it('should consider explicit config over auto-detected schema', () => {
     const document = SwaggerModule.createDocument(app, options);
     expect(document.paths['/api/cats/download'].get.responses).toEqual({
       '200': {
@@ -234,10 +236,30 @@ describe('Validate OpenAPI schema', () => {
     });
   });
 
-  it('should not add optional properties to required list', async () => {
+  it('should not add optional properties to required list', () => {
     const document = SwaggerModule.createDocument(app, options);
     const required = (document.components?.schemas?.Cat as SchemaObject)
       ?.required;
     expect(required).not.toContain('optionalRawDefinition');
+  });
+
+  it('should fail if extension is not prefixed with x-', () => {
+    expect(() =>
+      new DocumentBuilder().addExtension('test', { test: 'test' }).build()
+    ).toThrow(
+      'Extension key is not prefixed. Please ensure you prefix it with `x-`.'
+    );
+  });
+
+  it('should add extension to root', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    expect(document['x-test']).toEqual({ test: 'test' });
+  });
+
+  it('should add extension to info', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    expect(document.info['x-logo']).toEqual({
+      url: 'https://example.com/logo.png'
+    });
   });
 });
