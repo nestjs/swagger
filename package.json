@@ -54,7 +54,7 @@
     "eslint-config-prettier": "10.1.5",
     "eslint-plugin-prettier": "5.4.0",
     "express": "5.1.0",
-    "fastify": "5.3.2",
+    "fastify": "5.3.3",
     "globals": "16.1.0",
     "husky": "9.1.7",
     "jest": "29.7.0",
