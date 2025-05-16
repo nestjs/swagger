@@ -1382,6 +1382,16 @@ describe('SwaggerExplorer', () => {
       create(): Promise<any> {
         return Promise.resolve();
       }
+
+      @ApiHeader({
+        name: 'X-API-Version',
+        description: 'API version',
+        example: '2025-05-16'
+      })
+      @Get('foos')
+      find2(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
     }
 
     it('should properly define headers', () => {
@@ -1425,6 +1435,26 @@ describe('SwaggerExplorer', () => {
           schema: {
             default: 'default token',
             type: 'string'
+          }
+        }
+      ]);
+      expect(routes[2].root.parameters).toEqual([
+        {
+          description: 'auth token',
+          name: 'Authorization',
+          in: 'header',
+          schema: {
+            default: 'default token',
+            type: 'string'
+          }
+        },
+        {
+          description: 'API version',
+          name: 'X-API-Version',
+          in: 'header',
+          schema: {
+            type: 'string',
+            example: '2025-05-16'
           }
         }
       ]);
