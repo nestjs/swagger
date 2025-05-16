@@ -169,6 +169,17 @@ describe('Validate OpenAPI schema', () => {
       );
       expect(api.paths['/api/cats']['get']['tags']).toContain('tag1');
       expect(api.paths['/api/cats']['get']['tags']).toContain('tag2');
+      expect(api.paths['/api/cats']['get']['parameters'][0]).toEqual({
+        name: 'header',
+        in: 'header',
+        description: 'Test',
+        required: false,
+        schema: {
+          type: 'string',
+          example: 'test',
+          default: 'test'
+        }
+      });
     } catch (err) {
       console.log(doc);
       expect(err).toBeUndefined();
