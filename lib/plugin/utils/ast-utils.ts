@@ -46,6 +46,38 @@ export function isArray(type: Type) {
   return symbol.getName() === 'Array' && getTypeArguments(type).length === 1;
 }
 
+export function isGeneric(type: Type) {
+  const typeArguments = getTypeArguments(type);
+  return typeArguments.length > 0;
+}
+
+export function isGenericType(
+  type: Type,
+  typeChecker: TypeChecker,
+  arrayDepth: number = 0
+): boolean {
+  if (isArray(type)) {
+    const elementType = getTypeArguments(type)[0];
+    return isGenericType(elementType, typeChecker, arrayDepth + 1);
+  }
+  if (isBoolean(type)) return false;
+  if (isNumber(type)) return false;
+  if (isBigInt(type)) return false;
+  if (isString(type)) return false;
+  if (isStringLiteral(type)) return false;
+  if (isStringMapping(type)) return false;
+
+  // Promise나 Observable 타입 체크
+  const typeText = getText(type, typeChecker);
+  if (typeText.includes('Promise<') || typeText.includes('Observable<')) {
+    const elementType = getTypeArguments(type)[0];
+    return isGenericType(elementType, typeChecker, arrayDepth + 1);
+  }
+
+  if (isGeneric(type)) return true;
+  return false;
+}
+
 export function getTypeArguments(type: Type) {
   return (type as any).typeArguments || [];
 }

@@ -1,16 +1,20 @@
-import { compact, head } from 'lodash';
+import { compact, head, flatten } from 'lodash';
 import { posix } from 'path';
 import * as ts from 'typescript';
 import { ApiOperation, ApiResponse } from '../../decorators';
 import { PluginOptions } from '../merge-options';
-import { OPENAPI_NAMESPACE } from '../plugin-constants';
+import { OPENAPI_NAMESPACE, METADATA_FACTORY_NAME } from '../plugin-constants';
 import {
   createLiteralFromAnyValue,
   getDecoratorArguments,
   getDecoratorName,
   getMainCommentOfNode,
   getTsDocErrorsOfNode,
-  getTsDocTagsOfNode
+  getTsDocTagsOfNode,
+  isGeneric,
+  isGenericType,
+  getTypeArguments,
+  createBooleanLiteral
 } from '../utils/ast-utils';
 import {
   convertPath,
@@ -21,6 +25,7 @@ import {
 } from '../utils/plugin-utils';
 import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util';
 import { AbstractFileVisitor } from './abstract.visitor';
+import { ModelClassVisitor } from './model-class.visitor';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
@@ -30,6 +35,20 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     Record<string, ClassMetadata>
   > = {};
   private readonly _typeImports: Record<string, string> = {};
+  private readonly _generatedClasses: Map<
+    string,
+    { baseType: ts.Type; typeArguments: ts.Type[] }
+  > = new Map();
+  private readonly _modelClassVisitor: ModelClassVisitor;
+  private readonly _generatedClassMetadata: Record<
+    string,
+    Record<string, ts.ObjectLiteralExpression>
+  > = {};
+
+  constructor() {
+    super();
+    this._modelClassVisitor = new ModelClassVisitor();
+  }
 
   get typeImports() {
     return this._typeImports;
@@ -60,6 +79,10 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     options: PluginOptions
   ) {
     const typeChecker = program.getTypeChecker();
+
+    // 매번 visit할 때마다 생성된 클래스를 초기화
+    this._generatedClasses.clear();
+
     if (!options.readonly) {
       sourceFile = this.updateImports(sourceFile, ctx.factory, program);
     }
@@ -114,7 +137,22 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         return ts.visitEachChild(node, visitNode, ctx);
       }
     };
-    return ts.visitNode(sourceFile, visitNode);
+
+    const visitedSourceFile = ts.visitNode(
+      sourceFile,
+      visitNode
+    ) as ts.SourceFile;
+
+    // readonly 모드가 아닐 때만 임시 클래스들을 소스 파일에 추가
+    if (!options.readonly) {
+      return this.addTemporaryClassesToSourceFile(
+        visitedSourceFile,
+        ctx.factory,
+        typeChecker
+      );
+    }
+
+    return visitedSourceFile;
   }
 
   addDecoratorToNode(
@@ -402,16 +440,34 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       );
     }
 
-    properties = properties.concat([
-      this.createTypePropertyAssignment(
+    const signature = typeChecker.getSignatureFromDeclaration(node);
+    const type = typeChecker.getReturnTypeOfSignature(signature);
+
+    if (isGenericType(type, typeChecker, 0)) {
+      // 제네릭 타입 처리
+      const genericTypeProperty = this.createGenericTypePropertyAssignment(
         factory,
         node,
+        type,
         typeChecker,
-        existingProperties,
         hostFilename,
         options
-      )
-    ]);
+      );
+      if (genericTypeProperty) {
+        properties = properties.concat([genericTypeProperty]);
+      }
+    } else {
+      properties = properties.concat([
+        this.createTypePropertyAssignment(
+          factory,
+          node,
+          typeChecker,
+          existingProperties,
+          hostFilename,
+          options
+        )
+      ]);
+    }
     const objectLiteralExpr = factory.createObjectLiteralExpression(
       compact(properties)
     );
@@ -449,6 +505,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!type) {
       return undefined;
     }
+
     const typeReferenceDescriptor = getTypeReferenceAsString(type, typeChecker);
     if (!typeReferenceDescriptor.typeName) {
       return undefined;
@@ -464,6 +521,99 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       type,
       this._typeImports
     );
+    return factory.createPropertyAssignment('type', identifier);
+  }
+
+  createGenericTypePropertyAssignment(
+    factory: ts.NodeFactory,
+    node: ts.MethodDeclaration,
+    type: ts.Type,
+    typeChecker: ts.TypeChecker,
+    hostFilename: string,
+    options: PluginOptions
+  ) {
+    // Promise 타입인 경우 내부 타입을 추출
+    const typeSymbol = type.getSymbol();
+    if (!typeSymbol) {
+      return undefined;
+    }
+
+    const typeArguments = getTypeArguments(type);
+    if (typeArguments.length === 0) {
+      return undefined;
+    }
+
+    // Promise 타입인 경우 첫 번째 타입 인수를 사용
+    const baseTypeName = typeSymbol.getName();
+    if (baseTypeName === 'Promise' && typeArguments.length === 1) {
+      const promiseInnerType = typeArguments[0];
+      const innerTypeSymbol = promiseInnerType.getSymbol();
+
+      // Promise 내부 타입이 제네릭인지 확인
+      if (innerTypeSymbol && isGeneric(promiseInnerType)) {
+        const innerTypeArguments = getTypeArguments(promiseInnerType);
+        const innerBaseTypeName = innerTypeSymbol.getName();
+
+        // 내부 제네릭 타입의 타입 인수들의 이름 가져오기
+        const innerTypeArgumentNames = innerTypeArguments.map(
+          (argType: ts.Type) => {
+            const argSymbol = argType.getSymbol();
+            return argSymbol
+              ? argSymbol.getName()
+              : typeChecker.typeToString(argType);
+          }
+        );
+
+        // 임시 클래스 이름 생성 (예: GenericCat_Cat)
+        const temporaryClassName = `${innerBaseTypeName}_${innerTypeArgumentNames.join('_')}`;
+
+        // 생성된 클래스 정보 저장
+        this._generatedClasses.set(temporaryClassName, {
+          baseType: promiseInnerType,
+          typeArguments: innerTypeArguments
+        });
+
+        // TypeScript import에 추가
+        this._typeImports[temporaryClassName] = temporaryClassName;
+
+        // 임시 클래스 식별자 생성
+        const identifier = factory.createIdentifier(temporaryClassName);
+        return factory.createPropertyAssignment('type', identifier);
+      } else if (innerTypeSymbol) {
+        // Promise 내부 타입이 일반 타입인 경우 기존 로직 사용
+        return this.createTypePropertyAssignment(
+          factory,
+          node,
+          typeChecker,
+          factory.createNodeArray(),
+          hostFilename,
+          options
+        );
+      }
+    }
+
+    // 기타 제네릭 타입 처리
+    const typeArgumentNames = typeArguments.map((argType: ts.Type) => {
+      const argSymbol = argType.getSymbol();
+      return argSymbol
+        ? argSymbol.getName()
+        : typeChecker.typeToString(argType);
+    });
+
+    // 임시 클래스 이름 생성
+    const temporaryClassName = `${baseTypeName}_${typeArgumentNames.join('_')}`;
+
+    // 생성된 클래스 정보 저장
+    this._generatedClasses.set(temporaryClassName, {
+      baseType: type,
+      typeArguments: typeArguments
+    });
+
+    // TypeScript import에 추가
+    this._typeImports[temporaryClassName] = temporaryClassName;
+
+    // 임시 클래스 식별자 생성
+    const identifier = factory.createIdentifier(temporaryClassName);
     return factory.createPropertyAssignment('type', identifier);
   }
 
@@ -510,5 +660,316 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     );
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
     return relativePath;
+  }
+
+  /**
+   * 임시 제네릭 클래스 정의 생성
+   */
+  private createTemporaryClassDefinition(
+    factory: ts.NodeFactory,
+    className: string,
+    baseType: ts.Type,
+    typeArguments: ts.Type[],
+    typeChecker: ts.TypeChecker
+  ): ts.ClassDeclaration {
+    // 베이스 타입의 식별자 생성
+    const baseTypeSymbol = baseType.getSymbol();
+    if (!baseTypeSymbol) {
+      throw new Error('Base type symbol not found');
+    }
+
+    const baseTypeName = baseTypeSymbol.getName();
+    const baseTypeIdentifier = factory.createIdentifier(baseTypeName);
+
+    // 타입 인수들의 식별자 생성
+    const typeArgumentNodes = typeArguments.map((argType) => {
+      const argSymbol = argType.getSymbol();
+      const argTypeName = argSymbol
+        ? argSymbol.getName()
+        : typeChecker.typeToString(argType);
+      return factory.createTypeReferenceNode(
+        factory.createIdentifier(argTypeName),
+        undefined
+      );
+    });
+
+    // 상속 구문 생성 (GenericCat<Cat> 형태)
+    const heritageClause = factory.createHeritageClause(
+      ts.SyntaxKind.ExtendsKeyword,
+      [
+        factory.createExpressionWithTypeArguments(
+          baseTypeIdentifier,
+          typeArgumentNodes
+        )
+      ]
+    );
+
+    // 메타데이터 팩토리 메서드 생성
+    const metadataMethod = this.createMetadataFactoryMethod(
+      factory,
+      className,
+      baseType,
+      typeArguments,
+      typeChecker
+    );
+
+    // 클래스 정의 생성
+    const classDeclaration = factory.createClassDeclaration(
+      [factory.createModifier(ts.SyntaxKind.ExportKeyword)], // export 키워드 추가
+      factory.createIdentifier(className),
+      undefined, // 타입 매개변수 없음
+      [heritageClause], // 상속 구문
+      [metadataMethod] // 메타데이터 팩토리 메서드 포함
+    );
+
+    return classDeclaration;
+  }
+
+  /**
+   * 임시 클래스에 대한 메타데이터 팩토리 메서드 생성
+   */
+  private createMetadataFactoryMethod(
+    factory: ts.NodeFactory,
+    className: string,
+    baseType: ts.Type,
+    typeArguments: ts.Type[],
+    typeChecker: ts.TypeChecker
+  ): ts.MethodDeclaration {
+    // 베이스 타입의 메타데이터를 상속받거나 기본 메타데이터 생성
+    const baseTypeMetadata = this.createBaseTypeMetadata(
+      factory,
+      baseType,
+      typeArguments,
+      typeChecker
+    );
+
+    // 메타데이터 객체 생성
+    const returnValue = factory.createObjectLiteralExpression(baseTypeMetadata);
+
+    // static _OPENAPI_METADATA_FACTORY() 메서드 생성
+    return factory.createMethodDeclaration(
+      [factory.createModifier(ts.SyntaxKind.StaticKeyword)],
+      undefined,
+      factory.createIdentifier(METADATA_FACTORY_NAME),
+      undefined,
+      undefined,
+      [],
+      undefined,
+      factory.createBlock([factory.createReturnStatement(returnValue)], true)
+    );
+  }
+
+  /**
+   * 베이스 타입 기반 메타데이터 생성
+   */
+  private createBaseTypeMetadata(
+    factory: ts.NodeFactory,
+    baseType: ts.Type,
+    typeArguments: ts.Type[],
+    typeChecker: ts.TypeChecker
+  ): ts.PropertyAssignment[] {
+    const properties: ts.PropertyAssignment[] = [];
+
+    // 베이스 타입의 심볼 가져오기
+    const baseTypeSymbol = baseType.getSymbol();
+    if (!baseTypeSymbol || !baseTypeSymbol.valueDeclaration) {
+      return properties;
+    }
+
+    // 클래스 선언인지 확인
+    const classDeclaration = baseTypeSymbol.valueDeclaration;
+    if (!ts.isClassDeclaration(classDeclaration)) {
+      return properties;
+    }
+
+    // 타입 매개변수 맵 생성
+    const typeParameterMap = this.createTypeParameterMapForClass(
+      classDeclaration,
+      typeArguments,
+      typeChecker
+    );
+
+    // 클래스의 각 속성에 대해 메타데이터 생성
+    for (const member of classDeclaration.members) {
+      if (ts.isPropertyDeclaration(member)) {
+        const propertyName = member.name?.getText();
+        if (!propertyName) continue;
+
+        // 정적 속성은 제외
+        const isStatic = member.modifiers?.some(
+          (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword
+        );
+        if (isStatic) continue;
+
+        // private 속성은 제외
+        if (ts.isPrivateIdentifier(member.name)) continue;
+
+        // 속성의 메타데이터 생성
+        const propertyMetadata = this.createPropertyMetadata(
+          factory,
+          member,
+          typeChecker,
+          typeParameterMap
+        );
+
+        if (propertyMetadata) {
+          properties.push(
+            factory.createPropertyAssignment(
+              factory.createIdentifier(propertyName),
+              propertyMetadata
+            )
+          );
+        }
+      }
+    }
+
+    return properties;
+  }
+
+  /**
+   * 클래스의 타입 매개변수 맵 생성
+   */
+  private createTypeParameterMapForClass(
+    classDeclaration: ts.ClassDeclaration,
+    typeArguments: ts.Type[],
+    typeChecker: ts.TypeChecker
+  ): Map<string, string> {
+    const map = new Map<string, string>();
+
+    if (classDeclaration.typeParameters) {
+      classDeclaration.typeParameters.forEach((typeParam, index) => {
+        if (index < typeArguments.length) {
+          const paramName = typeParam.name.getText();
+          const argSymbol = typeArguments[index].getSymbol();
+          const argTypeName = argSymbol
+            ? argSymbol.getName()
+            : typeChecker.typeToString(typeArguments[index]);
+          map.set(paramName, argTypeName);
+        }
+      });
+    }
+
+    return map;
+  }
+
+  /**
+   * 속성별 메타데이터 생성
+   */
+  private createPropertyMetadata(
+    factory: ts.NodeFactory,
+    property: ts.PropertyDeclaration,
+    typeChecker: ts.TypeChecker,
+    typeParameterMap: Map<string, string>
+  ): ts.ObjectLiteralExpression | null {
+    const properties: ts.PropertyAssignment[] = [];
+
+    // required 속성 추가
+    const isRequired = !property.questionToken;
+    properties.push(
+      factory.createPropertyAssignment(
+        'required',
+        createBooleanLiteral(factory, isRequired)
+      )
+    );
+
+    // 타입 속성 추가
+    const typeProperty = this.createTypePropertyForProperty(
+      factory,
+      property,
+      typeChecker,
+      typeParameterMap
+    );
+
+    if (typeProperty) {
+      properties.push(typeProperty);
+    }
+
+    return factory.createObjectLiteralExpression(compact(properties));
+  }
+
+  /**
+   * 속성의 타입 정보 생성
+   */
+  private createTypePropertyForProperty(
+    factory: ts.NodeFactory,
+    property: ts.PropertyDeclaration,
+    typeChecker: ts.TypeChecker,
+    typeParameterMap: Map<string, string>
+  ): ts.PropertyAssignment | null {
+    if (!property.type) return null;
+
+    // 속성 타입을 실제 타입으로 치환
+    const resolvedTypeName = this.resolvePropertyType(
+      property.type,
+      typeParameterMap,
+      typeChecker
+    );
+
+    if (resolvedTypeName) {
+      const identifier = factory.createArrowFunction(
+        undefined,
+        undefined,
+        [],
+        undefined,
+        undefined,
+        factory.createIdentifier(resolvedTypeName)
+      );
+
+      return factory.createPropertyAssignment('type', identifier);
+    }
+
+    return null;
+  }
+
+  /**
+   * 속성 타입을 실제 타입으로 치환
+   */
+  private resolvePropertyType(
+    typeNode: ts.TypeNode,
+    typeParameterMap: Map<string, string>,
+    typeChecker: ts.TypeChecker
+  ): string | null {
+    if (ts.isTypeReferenceNode(typeNode)) {
+      const typeName = typeNode.typeName.getText();
+
+      // 타입 매개변수인 경우 치환
+      if (typeParameterMap.has(typeName)) {
+        return typeParameterMap.get(typeName)!;
+      }
+
+      return typeName;
+    }
+
+    // 기타 타입 노드 처리
+    return typeNode.getText();
+  }
+
+  /**
+   * 소스 파일에 임시 클래스들을 추가
+   */
+  private addTemporaryClassesToSourceFile(
+    sourceFile: ts.SourceFile,
+    factory: ts.NodeFactory,
+    typeChecker: ts.TypeChecker
+  ): ts.SourceFile {
+    if (this._generatedClasses.size === 0) {
+      return sourceFile;
+    }
+
+    const newStatements = [...sourceFile.statements];
+
+    // 생성된 각 클래스에 대해 클래스 정의 추가
+    this._generatedClasses.forEach(({ baseType, typeArguments }, className) => {
+      const classDeclaration = this.createTemporaryClassDefinition(
+        factory,
+        className,
+        baseType,
+        typeArguments,
+        typeChecker
+      );
+      newStatements.unshift(classDeclaration); // 파일 맨 앞에 추가
+    });
+
+    return factory.updateSourceFile(sourceFile, newStatements);
   }
 }

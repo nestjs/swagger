@@ -1,11 +1,17 @@
 export const appControllerText = `import { Controller, Post, HttpStatus } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 
-class Cat {}
+class Cat {
+    name: string;
+}
 
 class PromiseCat {}
 
 class ObservableCat {}
+
+class GenericCat<T> {
+  data: T;
+}
 
 @Controller('cats')
 export class AppController {
@@ -67,6 +73,15 @@ export class AppController {
   async testCreate4(): Promise<ObservableCat> {}
 
   /**
+   * create a test GenericCat
+   *
+   * @returns {Promise<GenericCat<Cat>>}
+   * @memberof AppController
+   */
+  @Post()
+  async testCreate5(): Promise<GenericCat<Cat>> {}
+
+  /**
    * find a Cat
    */
   @ApiOperation({})
@@ -89,7 +104,13 @@ export class AppController {
 
 export const appControllerTextTranspiled = `\"use strict\";
 Object.defineProperty(exports, \"__esModule\", { value: true });
-exports.AppController = void 0;
+exports.AppController = exports.GenericCat_Cat = void 0;
+class GenericCat_Cat extends GenericCat {
+    static _OPENAPI_METADATA_FACTORY() {
+        return { data: { required: true, type: () => Cat } };
+    }
+}
+exports.GenericCat_Cat = GenericCat_Cat;
 const openapi = require(\"@nestjs/swagger\");
 const common_1 = require(\"@nestjs/common\");
 const swagger_1 = require(\"@nestjs/swagger\");
@@ -98,6 +119,8 @@ class Cat {
 class PromiseCat {
 }
 class ObservableCat {
+}
+class GenericCat {
 }
 let AppController = class AppController {
     onApplicationBootstrap() { }
@@ -145,6 +168,13 @@ let AppController = class AppController {
      */
     async testCreate4() { }
     /**
+     * create a test GenericCat
+     *
+     * @returns {Promise<GenericCat<Cat>>}
+     * @memberof AppController
+     */
+    async testCreate5() { }
+    /**
      * find a Cat
      */
     async findOne() { }
@@ -186,6 +216,11 @@ __decorate([
     (0, common_1.Post)(),
     openapi.ApiResponse({ status: 201, type: ObservableCat })
 ], AppController.prototype, \"testCreate4\", null);
+__decorate([
+    openapi.ApiOperation({ summary: \"create a test GenericCat\" }),
+    (0, common_1.Post)(),
+    openapi.ApiResponse({ status: 201, type: GenericCat_Cat })
+], AppController.prototype, \"testCreate5\", null);
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: \"find a Cat\" }),
     Get(),
