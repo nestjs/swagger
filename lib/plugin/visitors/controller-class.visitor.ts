@@ -44,6 +44,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     string,
     Record<string, ts.ObjectLiteralExpression>
   > = {};
+  private _currentOptions: PluginOptions = {};
 
   constructor() {
     super();
@@ -79,6 +80,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     options: PluginOptions
   ) {
     const typeChecker = program.getTypeChecker();
+
+    // 현재 options 저장
+    this._currentOptions = options;
 
     // 매번 visit할 때마다 생성된 클래스를 초기화
     this._generatedClasses.clear();
@@ -670,7 +674,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     className: string,
     baseType: ts.Type,
     typeArguments: ts.Type[],
-    typeChecker: ts.TypeChecker
+    typeChecker: ts.TypeChecker,
+    hostFilename: string,
+    options: PluginOptions
   ): ts.ClassDeclaration {
     // 베이스 타입의 식별자 생성
     const baseTypeSymbol = baseType.getSymbol();
@@ -678,8 +684,18 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       throw new Error('Base type symbol not found');
     }
 
-    const baseTypeName = baseTypeSymbol.getName();
-    const baseTypeIdentifier = factory.createIdentifier(baseTypeName);
+    const typeReferenceDescriptor = getTypeReferenceAsString(
+      baseType,
+      typeChecker
+    );
+    const baseTypeIdentifier = typeReferenceToIdentifier(
+      typeReferenceDescriptor,
+      hostFilename,
+      options,
+      factory,
+      baseType,
+      this._typeImports
+    );
 
     // 타입 인수들의 식별자 생성
     const typeArgumentNodes = typeArguments.map((argType) => {
@@ -710,7 +726,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       className,
       baseType,
       typeArguments,
-      typeChecker
+      typeChecker,
+      hostFilename,
+      options
     );
 
     // 클래스 정의 생성
@@ -733,14 +751,18 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     className: string,
     baseType: ts.Type,
     typeArguments: ts.Type[],
-    typeChecker: ts.TypeChecker
+    typeChecker: ts.TypeChecker,
+    hostFilename: string,
+    options: PluginOptions
   ): ts.MethodDeclaration {
     // 베이스 타입의 메타데이터를 상속받거나 기본 메타데이터 생성
     const baseTypeMetadata = this.createBaseTypeMetadata(
       factory,
       baseType,
       typeArguments,
-      typeChecker
+      typeChecker,
+      hostFilename,
+      options
     );
 
     // 메타데이터 객체 생성
@@ -766,7 +788,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     factory: ts.NodeFactory,
     baseType: ts.Type,
     typeArguments: ts.Type[],
-    typeChecker: ts.TypeChecker
+    typeChecker: ts.TypeChecker,
+    hostFilename: string,
+    options: PluginOptions
   ): ts.PropertyAssignment[] {
     const properties: ts.PropertyAssignment[] = [];
 
@@ -809,7 +833,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
           factory,
           member,
           typeChecker,
-          typeParameterMap
+          typeParameterMap,
+          hostFilename,
+          options
         );
 
         if (propertyMetadata) {
@@ -859,7 +885,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     factory: ts.NodeFactory,
     property: ts.PropertyDeclaration,
     typeChecker: ts.TypeChecker,
-    typeParameterMap: Map<string, string>
+    typeParameterMap: Map<string, string>,
+    hostFilename: string,
+    options: PluginOptions
   ): ts.ObjectLiteralExpression | null {
     const properties: ts.PropertyAssignment[] = [];
 
@@ -877,7 +905,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       factory,
       property,
       typeChecker,
-      typeParameterMap
+      typeParameterMap,
+      hostFilename,
+      options
     );
 
     if (typeProperty) {
@@ -894,11 +924,17 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     factory: ts.NodeFactory,
     property: ts.PropertyDeclaration,
     typeChecker: ts.TypeChecker,
-    typeParameterMap: Map<string, string>
+    typeParameterMap: Map<string, string>,
+    hostFilename: string,
+    options: PluginOptions
   ): ts.PropertyAssignment | null {
     if (!property.type) return null;
 
-    // 속성 타입을 실제 타입으로 치환
+    // 속성의 타입을 가져오기
+    const type = typeChecker.getTypeAtLocation(property.type);
+    if (!type) return null;
+
+    // 타입 매개변수 치환 후 타입 참조 문자열 생성
     const resolvedTypeName = this.resolvePropertyType(
       property.type,
       typeParameterMap,
@@ -906,16 +942,81 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     );
 
     if (resolvedTypeName) {
-      const identifier = factory.createArrowFunction(
-        undefined,
-        undefined,
-        [],
-        undefined,
-        undefined,
-        factory.createIdentifier(resolvedTypeName)
+      // 치환된 타입의 실제 타입 정보 찾기
+      let targetType = type;
+      const typeSymbol = type.getSymbol();
+
+      if (typeParameterMap.has(resolvedTypeName) && typeSymbol) {
+        // 타입 매개변수가 치환된 경우, 치환된 타입의 실제 심볼 찾기
+        const resolvedSymbolName = typeParameterMap.get(resolvedTypeName)!;
+
+        // 글로벌 스코프에서 해당 타입 찾기 시도
+        const sourceFile = property.getSourceFile();
+        const checker = typeChecker;
+
+        // 소스 파일의 모든 import에서 해당 타입 찾기
+        for (const statement of sourceFile.statements) {
+          if (
+            ts.isImportDeclaration(statement) &&
+            statement.importClause?.namedBindings
+          ) {
+            if (ts.isNamedImports(statement.importClause.namedBindings)) {
+              for (const element of statement.importClause.namedBindings
+                .elements) {
+                if (element.name.text === resolvedSymbolName) {
+                  const importedType = checker.getTypeAtLocation(element);
+                  if (importedType) {
+                    targetType = importedType;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // getTypeReferenceAsString을 사용하여 올바른 타입 참조 생성
+      const typeReferenceDescriptor = getTypeReferenceAsString(
+        targetType,
+        typeChecker
       );
 
-      return factory.createPropertyAssignment('type', identifier);
+      if (typeReferenceDescriptor.typeName) {
+        // ModelClassVisitor와 같은 방식으로 식별자 생성
+        const identifier = typeReferenceToIdentifier(
+          typeReferenceDescriptor,
+          hostFilename,
+          options,
+          factory,
+          targetType,
+          this._typeImports
+        );
+
+        const initializer = factory.createArrowFunction(
+          undefined,
+          undefined,
+          [],
+          undefined,
+          undefined,
+          identifier
+        );
+
+        return factory.createPropertyAssignment('type', initializer);
+      } else {
+        // fallback: 단순한 타입 이름 사용
+        return factory.createPropertyAssignment(
+          'type',
+          factory.createArrowFunction(
+            undefined,
+            undefined,
+            [],
+            undefined,
+            undefined,
+            factory.createIdentifier(resolvedTypeName)
+          )
+        );
+      }
     }
 
     return null;
@@ -956,19 +1057,41 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       return sourceFile;
     }
 
-    const newStatements = [...sourceFile.statements];
+    const statements = [...sourceFile.statements];
 
-    // 생성된 각 클래스에 대해 클래스 정의 추가
+    // 임포트문의 마지막 인덱스 찾기
+    let lastImportIndex = -1;
+    for (let i = 0; i < statements.length; i++) {
+      if (ts.isImportDeclaration(statements[i])) {
+        lastImportIndex = i;
+      } else if (lastImportIndex >= 0) {
+        // 임포트문이 아닌 다른 문을 만나면 중단
+        break;
+      }
+    }
+
+    // 임시 클래스들 생성
+    const temporaryClasses: ts.ClassDeclaration[] = [];
     this._generatedClasses.forEach(({ baseType, typeArguments }, className) => {
       const classDeclaration = this.createTemporaryClassDefinition(
         factory,
         className,
         baseType,
         typeArguments,
-        typeChecker
+        typeChecker,
+        sourceFile.fileName,
+        this._currentOptions
       );
-      newStatements.unshift(classDeclaration); // 파일 맨 앞에 추가
+      temporaryClasses.push(classDeclaration);
     });
+
+    // 임포트문 뒤에 임시 클래스들 삽입
+    const insertIndex = lastImportIndex + 1;
+    const newStatements = [
+      ...statements.slice(0, insertIndex),
+      ...temporaryClasses,
+      ...statements.slice(insertIndex)
+    ];
 
     return factory.updateSourceFile(sourceFile, newStatements);
   }

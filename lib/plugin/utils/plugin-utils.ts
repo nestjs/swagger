@@ -10,6 +10,7 @@ import {
   isBigInt,
   isBoolean,
   isEnum,
+  isGeneric,
   isInterface,
   isNumber,
   isString,
@@ -77,6 +78,16 @@ export function getTypeReferenceAsString(
       arrayDepth
     );
     return elementType;
+  }
+  if (isGeneric(type)) {
+    const fullTypeName = getText(type, typeChecker);
+    if (fullTypeName && fullTypeName.includes('<')) {
+      const baseTypeName = fullTypeName.split('<')[0].trim();
+      if (baseTypeName) {
+        return { typeName: baseTypeName, arrayDepth };
+      }
+    }
+    return { typeName: fullTypeName || 'Object', arrayDepth };
   }
   if (type.isClass()) {
     return { typeName: getText(type, typeChecker), arrayDepth };
