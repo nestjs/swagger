@@ -14,7 +14,9 @@ import {
   isGeneric,
   isGenericType,
   getTypeArguments,
-  createBooleanLiteral
+  createBooleanLiteral,
+  isTypeParameter,
+  getText
 } from '../utils/ast-utils';
 import {
   convertPath,
@@ -817,6 +819,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     for (const member of classDeclaration.members) {
       if (ts.isPropertyDeclaration(member)) {
         const propertyName = member.name?.getText();
+        console.log(propertyName);
         if (!propertyName) continue;
 
         // 정적 속성은 제외
@@ -859,18 +862,19 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     classDeclaration: ts.ClassDeclaration,
     typeArguments: ts.Type[],
     typeChecker: ts.TypeChecker
-  ): Map<string, string> {
-    const map = new Map<string, string>();
+  ): Map<string, { typeName: string }> {
+    const map = new Map<string, { typeName: string }>();
 
     if (classDeclaration.typeParameters) {
       classDeclaration.typeParameters.forEach((typeParam, index) => {
         if (index < typeArguments.length) {
           const paramName = typeParam.name.getText();
-          const argSymbol = typeArguments[index].getSymbol();
-          const argTypeName = argSymbol
-            ? argSymbol.getName()
-            : typeChecker.typeToString(typeArguments[index]);
-          map.set(paramName, argTypeName);
+          const typeDescriptor = getTypeReferenceAsString(
+            typeArguments[index],
+            typeChecker
+          );
+          const argTypeName = typeDescriptor.typeName;
+          map.set(paramName, typeDescriptor);
         }
       });
     }
@@ -885,7 +889,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     factory: ts.NodeFactory,
     property: ts.PropertyDeclaration,
     typeChecker: ts.TypeChecker,
-    typeParameterMap: Map<string, string>,
+    typeParameterMap: Map<string, { typeName: string }>,
     hostFilename: string,
     options: PluginOptions
   ): ts.ObjectLiteralExpression | null {
@@ -924,7 +928,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     factory: ts.NodeFactory,
     property: ts.PropertyDeclaration,
     typeChecker: ts.TypeChecker,
-    typeParameterMap: Map<string, string>,
+    typeParameterMap: Map<string, { typeName: string }>,
     hostFilename: string,
     options: PluginOptions
   ): ts.PropertyAssignment | null {
@@ -944,43 +948,11 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (resolvedTypeName) {
       // 치환된 타입의 실제 타입 정보 찾기
       let targetType = type;
-      const typeSymbol = type.getSymbol();
-
-      if (typeParameterMap.has(resolvedTypeName) && typeSymbol) {
-        // 타입 매개변수가 치환된 경우, 치환된 타입의 실제 심볼 찾기
-        const resolvedSymbolName = typeParameterMap.get(resolvedTypeName)!;
-
-        // 글로벌 스코프에서 해당 타입 찾기 시도
-        const sourceFile = property.getSourceFile();
-        const checker = typeChecker;
-
-        // 소스 파일의 모든 import에서 해당 타입 찾기
-        for (const statement of sourceFile.statements) {
-          if (
-            ts.isImportDeclaration(statement) &&
-            statement.importClause?.namedBindings
-          ) {
-            if (ts.isNamedImports(statement.importClause.namedBindings)) {
-              for (const element of statement.importClause.namedBindings
-                .elements) {
-                if (element.name.text === resolvedSymbolName) {
-                  const importedType = checker.getTypeAtLocation(element);
-                  if (importedType) {
-                    targetType = importedType;
-                    break;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
 
       // getTypeReferenceAsString을 사용하여 올바른 타입 참조 생성
-      const typeReferenceDescriptor = getTypeReferenceAsString(
-        targetType,
-        typeChecker
-      );
+      const typeReferenceDescriptor = typeParameterMap.has(resolvedTypeName)
+        ? typeParameterMap.get(resolvedTypeName)!
+        : getTypeReferenceAsString(targetType, typeChecker);
 
       if (typeReferenceDescriptor.typeName) {
         // ModelClassVisitor와 같은 방식으로 식별자 생성
@@ -1027,15 +999,15 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
    */
   private resolvePropertyType(
     typeNode: ts.TypeNode,
-    typeParameterMap: Map<string, string>,
+    typeParameterMap: Map<string, { typeName: string }>,
     typeChecker: ts.TypeChecker
   ): string | null {
     if (ts.isTypeReferenceNode(typeNode)) {
       const typeName = typeNode.typeName.getText();
 
       // 타입 매개변수인 경우 치환
-      if (typeParameterMap.has(typeName)) {
-        return typeParameterMap.get(typeName)!;
+      if (typeName in typeParameterMap) {
+        return typeParameterMap.get(typeName)!.typeName;
       }
 
       return typeName;

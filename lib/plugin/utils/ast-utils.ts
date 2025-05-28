@@ -129,6 +129,10 @@ export function isEnum(type: Type) {
   return valueDeclaration.kind === SyntaxKind.EnumDeclaration;
 }
 
+export function isTypeParameter(type: Type) {
+  return hasFlag(type, TypeFlags.TypeParameter);
+}
+
 export function isEnumLiteral(type: Type) {
   return hasFlag(type, TypeFlags.EnumLiteral) && !type.isUnion();
 }
