@@ -891,11 +891,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const type = typeChecker.getTypeAtLocation(property.type);
     if (!type) return null;
 
-    const resolvedTypeName = this.resolvePropertyType(
-      property.type,
-      typeParameterMap,
-      typeChecker
-    );
+    const resolvedTypeName = this.resolvePropertyType(property.type);
 
     if (resolvedTypeName) {
       let targetType = type;
@@ -945,17 +941,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   /**
    * 속성 타입을 실제 타입으로 치환
    */
-  private resolvePropertyType(
-    typeNode: ts.TypeNode,
-    typeParameterMap: Map<string, { typeName: string }>,
-    typeChecker: ts.TypeChecker
-  ): string | null {
+  private resolvePropertyType(typeNode: ts.TypeNode): string | null {
     if (ts.isTypeReferenceNode(typeNode)) {
       const typeName = typeNode.typeName.getText();
-
-      if (typeParameterMap.has(typeName)) {
-        return typeParameterMap.get(typeName)!.typeName;
-      }
 
       return typeName;
     }
