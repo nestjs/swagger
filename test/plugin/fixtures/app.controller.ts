@@ -108,7 +108,7 @@ exports.AppController = exports.GenericCat_Cat = void 0;
 const openapi = require(\"@nestjs/swagger\");
 const common_1 = require(\"@nestjs/common\");
 const swagger_1 = require(\"@nestjs/swagger\");
-class GenericCat_Cat extends GenericCat {
+class GenericCat_Cat {
     static _OPENAPI_METADATA_FACTORY() {
         return { data: { required: true, type: () => Cat } };
     }

@@ -711,17 +711,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       );
     });
 
-    // 상속 구문 생성 (GenericCat<Cat> 형태)
-    const heritageClause = factory.createHeritageClause(
-      ts.SyntaxKind.ExtendsKeyword,
-      [
-        factory.createExpressionWithTypeArguments(
-          baseTypeIdentifier,
-          typeArgumentNodes
-        )
-      ]
-    );
-
     // 메타데이터 팩토리 메서드 생성
     const metadataMethod = this.createMetadataFactoryMethod(
       factory,
@@ -738,7 +727,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       [factory.createModifier(ts.SyntaxKind.ExportKeyword)], // export 키워드 추가
       factory.createIdentifier(className),
       undefined, // 타입 매개변수 없음
-      [heritageClause], // 상속 구문
+      [], // 상속 구문
       [metadataMethod] // 메타데이터 팩토리 메서드 포함
     );
 
@@ -819,7 +808,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     for (const member of classDeclaration.members) {
       if (ts.isPropertyDeclaration(member)) {
         const propertyName = member.name?.getText();
-        console.log(propertyName);
         if (!propertyName) continue;
 
         // 정적 속성은 제외
