@@ -67,7 +67,6 @@ export function isGenericType(
   if (isStringLiteral(type)) return false;
   if (isStringMapping(type)) return false;
 
-  // Promise나 Observable 타입 체크
   const typeText = getText(type, typeChecker);
   if (typeText.includes('Promise<') || typeText.includes('Observable<')) {
     const elementType = getTypeArguments(type)[0];

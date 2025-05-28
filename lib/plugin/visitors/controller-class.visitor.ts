@@ -83,10 +83,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   ) {
     const typeChecker = program.getTypeChecker();
 
-    // 현재 options 저장
     this._currentOptions = options;
 
-    // 매번 visit할 때마다 생성된 클래스를 초기화
     this._generatedClasses.clear();
 
     if (!options.readonly) {
@@ -149,7 +147,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       visitNode
     ) as ts.SourceFile;
 
-    // readonly 모드가 아닐 때만 임시 클래스들을 소스 파일에 추가
     if (!options.readonly) {
       return this.addTemporaryClassesToSourceFile(
         visitedSourceFile,
@@ -450,7 +447,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const type = typeChecker.getReturnTypeOfSignature(signature);
 
     if (isGenericType(type, typeChecker, 0)) {
-      // 제네릭 타입 처리
       const genericTypeProperty = this.createGenericTypePropertyAssignment(
         factory,
         node,
@@ -538,7 +534,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     hostFilename: string,
     options: PluginOptions
   ) {
-    // Promise 타입인 경우 내부 타입을 추출
     const typeSymbol = type.getSymbol();
     if (!typeSymbol) {
       return undefined;
@@ -549,18 +544,15 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       return undefined;
     }
 
-    // Promise 타입인 경우 첫 번째 타입 인수를 사용
     const baseTypeName = typeSymbol.getName();
     if (baseTypeName === 'Promise' && typeArguments.length === 1) {
       const promiseInnerType = typeArguments[0];
       const innerTypeSymbol = promiseInnerType.getSymbol();
 
-      // Promise 내부 타입이 제네릭인지 확인
       if (innerTypeSymbol && isGeneric(promiseInnerType)) {
         const innerTypeArguments = getTypeArguments(promiseInnerType);
         const innerBaseTypeName = innerTypeSymbol.getName();
 
-        // 내부 제네릭 타입의 타입 인수들의 이름 가져오기
         const innerTypeArgumentNames = innerTypeArguments.map(
           (argType: ts.Type) => {
             const argSymbol = argType.getSymbol();
@@ -570,23 +562,18 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
           }
         );
 
-        // 임시 클래스 이름 생성 (예: GenericCat_Cat)
         const temporaryClassName = `${innerBaseTypeName}_${innerTypeArgumentNames.join('_')}`;
 
-        // 생성된 클래스 정보 저장
         this._generatedClasses.set(temporaryClassName, {
           baseType: promiseInnerType,
           typeArguments: innerTypeArguments
         });
 
-        // TypeScript import에 추가
         this._typeImports[temporaryClassName] = temporaryClassName;
 
-        // 임시 클래스 식별자 생성
         const identifier = factory.createIdentifier(temporaryClassName);
         return factory.createPropertyAssignment('type', identifier);
       } else if (innerTypeSymbol) {
-        // Promise 내부 타입이 일반 타입인 경우 기존 로직 사용
         return this.createTypePropertyAssignment(
           factory,
           node,
@@ -598,7 +585,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       }
     }
 
-    // 기타 제네릭 타입 처리
     const typeArgumentNames = typeArguments.map((argType: ts.Type) => {
       const argSymbol = argType.getSymbol();
       return argSymbol
@@ -606,19 +592,15 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         : typeChecker.typeToString(argType);
     });
 
-    // 임시 클래스 이름 생성
     const temporaryClassName = `${baseTypeName}_${typeArgumentNames.join('_')}`;
 
-    // 생성된 클래스 정보 저장
     this._generatedClasses.set(temporaryClassName, {
       baseType: type,
       typeArguments: typeArguments
     });
 
-    // TypeScript import에 추가
     this._typeImports[temporaryClassName] = temporaryClassName;
 
-    // 임시 클래스 식별자 생성
     const identifier = factory.createIdentifier(temporaryClassName);
     return factory.createPropertyAssignment('type', identifier);
   }
@@ -680,7 +662,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     hostFilename: string,
     options: PluginOptions
   ): ts.ClassDeclaration {
-    // 베이스 타입의 식별자 생성
     const baseTypeSymbol = baseType.getSymbol();
     if (!baseTypeSymbol) {
       throw new Error('Base type symbol not found');
@@ -699,7 +680,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       this._typeImports
     );
 
-    // 타입 인수들의 식별자 생성
     const typeArgumentNodes = typeArguments.map((argType) => {
       const argSymbol = argType.getSymbol();
       const argTypeName = argSymbol
@@ -711,7 +691,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       );
     });
 
-    // 메타데이터 팩토리 메서드 생성
     const metadataMethod = this.createMetadataFactoryMethod(
       factory,
       className,
@@ -722,13 +701,12 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       options
     );
 
-    // 클래스 정의 생성
     const classDeclaration = factory.createClassDeclaration(
-      [factory.createModifier(ts.SyntaxKind.ExportKeyword)], // export 키워드 추가
+      [factory.createModifier(ts.SyntaxKind.ExportKeyword)],
       factory.createIdentifier(className),
-      undefined, // 타입 매개변수 없음
-      [], // 상속 구문
-      [metadataMethod] // 메타데이터 팩토리 메서드 포함
+      undefined,
+      [],
+      [metadataMethod]
     );
 
     return classDeclaration;
@@ -746,7 +724,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     hostFilename: string,
     options: PluginOptions
   ): ts.MethodDeclaration {
-    // 베이스 타입의 메타데이터를 상속받거나 기본 메타데이터 생성
     const baseTypeMetadata = this.createBaseTypeMetadata(
       factory,
       baseType,
@@ -756,10 +733,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       options
     );
 
-    // 메타데이터 객체 생성
     const returnValue = factory.createObjectLiteralExpression(baseTypeMetadata);
 
-    // static _OPENAPI_METADATA_FACTORY() 메서드 생성
     return factory.createMethodDeclaration(
       [factory.createModifier(ts.SyntaxKind.StaticKeyword)],
       undefined,
@@ -785,41 +760,34 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   ): ts.PropertyAssignment[] {
     const properties: ts.PropertyAssignment[] = [];
 
-    // 베이스 타입의 심볼 가져오기
     const baseTypeSymbol = baseType.getSymbol();
     if (!baseTypeSymbol || !baseTypeSymbol.valueDeclaration) {
       return properties;
     }
 
-    // 클래스 선언인지 확인
     const classDeclaration = baseTypeSymbol.valueDeclaration;
     if (!ts.isClassDeclaration(classDeclaration)) {
       return properties;
     }
 
-    // 타입 매개변수 맵 생성
     const typeParameterMap = this.createTypeParameterMapForClass(
       classDeclaration,
       typeArguments,
       typeChecker
     );
 
-    // 클래스의 각 속성에 대해 메타데이터 생성
     for (const member of classDeclaration.members) {
       if (ts.isPropertyDeclaration(member)) {
         const propertyName = member.name?.getText();
         if (!propertyName) continue;
 
-        // 정적 속성은 제외
         const isStatic = member.modifiers?.some(
           (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword
         );
         if (isStatic) continue;
 
-        // private 속성은 제외
         if (ts.isPrivateIdentifier(member.name)) continue;
 
-        // 속성의 메타데이터 생성
         const propertyMetadata = this.createPropertyMetadata(
           factory,
           member,
@@ -883,7 +851,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   ): ts.ObjectLiteralExpression | null {
     const properties: ts.PropertyAssignment[] = [];
 
-    // required 속성 추가
     const isRequired = !property.questionToken;
     properties.push(
       factory.createPropertyAssignment(
@@ -892,7 +859,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       )
     );
 
-    // 타입 속성 추가
     const typeProperty = this.createTypePropertyForProperty(
       factory,
       property,
@@ -922,11 +888,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   ): ts.PropertyAssignment | null {
     if (!property.type) return null;
 
-    // 속성의 타입을 가져오기
     const type = typeChecker.getTypeAtLocation(property.type);
     if (!type) return null;
 
-    // 타입 매개변수 치환 후 타입 참조 문자열 생성
     const resolvedTypeName = this.resolvePropertyType(
       property.type,
       typeParameterMap,
@@ -934,16 +898,13 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     );
 
     if (resolvedTypeName) {
-      // 치환된 타입의 실제 타입 정보 찾기
       let targetType = type;
 
-      // getTypeReferenceAsString을 사용하여 올바른 타입 참조 생성
       const typeReferenceDescriptor = typeParameterMap.has(resolvedTypeName)
         ? typeParameterMap.get(resolvedTypeName)!
         : getTypeReferenceAsString(targetType, typeChecker);
 
       if (typeReferenceDescriptor.typeName) {
-        // ModelClassVisitor와 같은 방식으로 식별자 생성
         const identifier = typeReferenceToIdentifier(
           typeReferenceDescriptor,
           hostFilename,
@@ -964,7 +925,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
         return factory.createPropertyAssignment('type', initializer);
       } else {
-        // fallback: 단순한 타입 이름 사용
         return factory.createPropertyAssignment(
           'type',
           factory.createArrowFunction(
@@ -993,15 +953,13 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (ts.isTypeReferenceNode(typeNode)) {
       const typeName = typeNode.typeName.getText();
 
-      // 타입 매개변수인 경우 치환
-      if (typeName in typeParameterMap) {
+      if (typeParameterMap.has(typeName)) {
         return typeParameterMap.get(typeName)!.typeName;
       }
 
       return typeName;
     }
 
-    // 기타 타입 노드 처리
     return typeNode.getText();
   }
 
@@ -1019,18 +977,15 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
     const statements = [...sourceFile.statements];
 
-    // 임포트문의 마지막 인덱스 찾기
     let lastImportIndex = -1;
     for (let i = 0; i < statements.length; i++) {
       if (ts.isImportDeclaration(statements[i])) {
         lastImportIndex = i;
       } else if (lastImportIndex >= 0) {
-        // 임포트문이 아닌 다른 문을 만나면 중단
         break;
       }
     }
 
-    // 임시 클래스들 생성
     const temporaryClasses: ts.ClassDeclaration[] = [];
     this._generatedClasses.forEach(({ baseType, typeArguments }, className) => {
       const classDeclaration = this.createTemporaryClassDefinition(
@@ -1045,7 +1000,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       temporaryClasses.push(classDeclaration);
     });
 
-    // 임포트문 뒤에 임시 클래스들 삽입
     const insertIndex = lastImportIndex + 1;
     const newStatements = [
       ...statements.slice(0, insertIndex),
