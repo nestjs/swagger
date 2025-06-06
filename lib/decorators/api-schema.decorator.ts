@@ -9,6 +9,11 @@ export interface ApiSchemaOptions extends Pick<SchemaObjectMetadata, 'name'> {
   name?: string;
 
   /**
+   * Title of the schema.
+   */
+  title?: string;
+
+  /**
    * Description of the schema.
    */
   description?: string;
