@@ -1,4 +1,4 @@
-import { head } from 'lodash';
+import { head } from 'es-toolkit/compat';
 import { isAbsolute, posix } from 'path';
 import * as ts from 'typescript';
 import { PluginOptions } from '../merge-options';

@@ -10,7 +10,7 @@ import {
   omit,
   omitBy,
   pick
-} from 'lodash';
+} from 'es-toolkit/compat';
 import { DECORATORS } from '../constants';
 import { ApiSchemaOptions } from '../decorators';
 import { getTypeIsArrayTuple } from '../decorators/helpers';

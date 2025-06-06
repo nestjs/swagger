@@ -30,7 +30,7 @@ import {
   omit,
   omitBy,
   pick
-} from 'lodash';
+} from 'es-toolkit/compat';
 import { parse, Wildcard } from 'path-to-regexp';
 import { DECORATORS } from './constants';
 import { exploreApiCallbacksMetadata } from './explorers/api-callbacks.explorer';

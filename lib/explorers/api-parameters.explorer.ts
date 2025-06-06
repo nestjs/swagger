@@ -1,5 +1,13 @@
 import { Type } from '@nestjs/common';
-import { assign, find, isNil, map, omitBy, some, unionWith } from 'lodash';
+import {
+  assign,
+  find,
+  isNil,
+  map,
+  omitBy,
+  some,
+  unionWith
+} from 'es-toolkit/compat';
 import { DECORATORS } from '../constants';
 import { SchemaObject } from '../interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
@@ -84,10 +92,7 @@ function removeBodyMetadataIfExplicitExists(
   const isBodyReflected = some(properties, (p) => p.in === 'body');
   const isBodyDefinedExplicitly = some(explicitParams, (p) => p.in === 'body');
   if (isBodyReflected && isBodyDefinedExplicitly) {
-    return omitBy(
-      properties,
-      (p) => p.in === 'body'
-    ) as ParamWithTypeMetadata[];
+    return omitBy(properties, (p) => p.in === 'body');
   }
   return properties;
 }

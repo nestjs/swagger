@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { isNil, omit } from 'lodash';
+import { isNil, omit } from 'es-toolkit/compat';
 import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
 import {
   ParameterObject,
