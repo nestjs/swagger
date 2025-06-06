@@ -1,4 +1,4 @@
-import { isNil, isUndefined, negate, pickBy } from 'lodash';
+import { isNil, isUndefined, negate, pickBy } from 'es-toolkit/compat';
 import { DECORATORS } from '../constants';
 import {
   ParameterLocation,

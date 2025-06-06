@@ -1,4 +1,4 @@
-import { compact, head } from 'lodash';
+import { compact, head } from 'es-toolkit/compat';
 import { posix } from 'path';
 import * as ts from 'typescript';
 import { ApiOperation, ApiResponse } from '../../decorators';
