@@ -31,6 +31,7 @@ export function ApiHeader(
       examples: options.examples,
       schema: {
         type: 'string',
+        ...(options.example ? { example: options.example } : {}),
         ...(options.schema || {})
       }
     },
