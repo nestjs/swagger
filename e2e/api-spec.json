@@ -403,7 +403,7 @@
           "create cats"
         ],
         "x-foo": {
-          "test": "bar "
+          "from-method": "bar"
         }
       },
       "get": {
@@ -646,6 +646,9 @@
             "source": "console.log('Hello World');"
           }
         ],
+        "x-foo": {
+          "from-controller": true
+        },
         "x-multiple": {
           "test": "test"
         }
@@ -725,7 +728,10 @@
         ],
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       }
     },
     "/api/cats/{id}": {
@@ -806,7 +812,10 @@
         "tags": [
           "cats"
         ],
-        "x-auth-type": "NONE"
+        "x-auth-type": "NONE",
+        "x-foo": {
+          "from-controller": true
+        }
       }
     },
     "/api/cats/explicit-query": {
@@ -1025,7 +1034,10 @@
         ],
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       }
     },
     "/api/cats/bulk": {
@@ -1101,7 +1113,10 @@
         "summary": "Find all cats in bulk",
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       },
       "post": {
         "operationId": "CatsController_createBulk",
@@ -1169,7 +1184,10 @@
         ],
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       }
     },
     "/api/cats/as-form-data": {
@@ -1255,7 +1273,10 @@
         "summary": "Create cat",
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       }
     },
     "/api/cats/wildcard/{path}": {
@@ -1312,7 +1333,10 @@
         ],
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       }
     },
     "/api/cats/with-enum/{type}": {
@@ -1382,7 +1406,10 @@
         ],
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       }
     },
     "/api/cats/with-enum-named/{type}": {
@@ -1449,7 +1476,10 @@
         ],
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       }
     },
     "/api/cats/with-random-query": {
@@ -1528,7 +1558,10 @@
         ],
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       }
     },
     "/api/cats/download": {
@@ -1587,7 +1620,10 @@
         "summary": "",
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       }
     },
     "/api/cats/raw-schema-response": {
@@ -1676,7 +1712,10 @@
         ],
         "tags": [
           "cats"
-        ]
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
       }
     }
   },
@@ -2076,10 +2115,10 @@
             ]
           }
         },
-        "x-schema-extension-multiple": {
+        "x-schema-extension": {
           "test": "test"
         },
-        "x-schema-extension": {
+        "x-schema-extension-multiple": {
           "test": "test"
         },
         "required": [

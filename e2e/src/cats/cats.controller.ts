@@ -39,6 +39,7 @@ import { CatBreed } from './enums/cat-breed.enum';
   description: 'Test',
   schema: { default: 'test' }
 })
+@ApiExtension('x-foo', { 'from-controller': true })
 @Controller('cats')
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}
@@ -74,7 +75,7 @@ export class CatsController {
     type: () => Cat
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
-  @ApiExtension('x-foo', { test: 'bar ' })
+  @ApiExtension('x-foo', { 'from-method': 'bar' })
   async create(@Body() createCatDto: CreateCatDto): Promise<Cat> {
     return this.catsService.create(createCatDto);
   }
