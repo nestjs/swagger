@@ -146,7 +146,7 @@ describe('Validate OpenAPI schema', () => {
       ).toEqual('test');
       expect(
         api.components.schemas['Cat']['x-schema-extension-multiple']['test']
-      ).toEqual('test');
+      ).toEqual('test*2');
       expect(
         api.paths['/api/cats']['post']['callbacks']['myEvent'][
           '{$request.body#/callbackUrl}'

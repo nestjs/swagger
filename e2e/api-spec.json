@@ -2119,7 +2119,7 @@
           "test": "test"
         },
         "x-schema-extension-multiple": {
-          "test": "test"
+          "test": "test*2"
         },
         "required": [
           "name",
