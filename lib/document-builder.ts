@@ -1,5 +1,12 @@
 import { Logger } from '@nestjs/common';
-import { clone, isString, isUndefined, negate, omit, pickBy } from 'lodash';
+import {
+  clone,
+  isString,
+  isUndefined,
+  negate,
+  omit,
+  pickBy
+} from 'es-toolkit/compat';
 import { ApiResponseOptions } from './decorators/api-response.decorator';
 import { buildDocumentBase } from './fixtures/document.base';
 import { OpenAPIObject } from './interfaces';
