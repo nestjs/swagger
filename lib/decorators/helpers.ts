@@ -1,4 +1,4 @@
-import { isArray, isUndefined, negate, pickBy } from 'lodash';
+import { isArray, isUndefined, negate, pickBy } from 'es-toolkit/compat';
 import { DECORATORS } from '../constants';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 import { METHOD_METADATA } from '@nestjs/common/constants';

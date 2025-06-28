@@ -1,4 +1,4 @@
-import { isUndefined, negate, pickBy } from 'lodash';
+import { isUndefined, negate, pickBy } from 'es-toolkit/compat';
 import { DECORATORS } from '../constants';
 import { OperationObject } from '../interfaces/open-api-spec.interface';
 import { createMethodDecorator } from './helpers';

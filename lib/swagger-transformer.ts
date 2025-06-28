@@ -1,4 +1,4 @@
-import { filter, groupBy, keyBy, mapValues, omit } from 'lodash';
+import { filter, groupBy, keyBy, mapValues, omit } from 'es-toolkit/compat';
 import { OpenAPIObject } from './interfaces';
 import { sortObjectLexicographically } from './utils/sort-object-lexicographically';
 

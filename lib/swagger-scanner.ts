@@ -3,7 +3,7 @@ import { MODULE_PATH } from '@nestjs/common/constants';
 import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { Module } from '@nestjs/core/injector/module';
-import { flatten, isEmpty } from 'lodash';
+import { flatten, isEmpty } from 'es-toolkit/compat';
 import {
   OpenAPIObject,
   OperationIdFactory,

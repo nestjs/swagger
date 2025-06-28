@@ -4,7 +4,7 @@ import {
   ROUTE_ARGS_METADATA
 } from '@nestjs/common/constants';
 import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum';
-import { isEmpty, mapValues, omitBy } from 'lodash';
+import { isEmpty, mapValues, omitBy } from 'es-toolkit/compat';
 import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
 import {
   ParameterLocation,
