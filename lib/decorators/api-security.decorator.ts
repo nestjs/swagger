@@ -1,4 +1,4 @@
-import { isString } from 'lodash';
+import { isString } from 'es-toolkit/compat';
 import { DECORATORS } from '../constants';
 import { SecurityRequirementObject } from '../interfaces/open-api-spec.interface';
 import { extendMetadata } from '../utils/extend-metadata.util';

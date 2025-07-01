@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { omit } from 'lodash';
+import { omit } from 'es-toolkit/compat';
 import {
   ExamplesObject,
   ReferenceObject,

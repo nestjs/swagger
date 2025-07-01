@@ -1,4 +1,4 @@
-import { isEmpty, isFunction, omit } from 'lodash';
+import { isEmpty, isFunction, omit } from 'es-toolkit/compat';
 import { DECORATORS } from '../constants';
 import {
   ApiPropertyOptions,

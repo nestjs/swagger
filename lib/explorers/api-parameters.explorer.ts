@@ -1,5 +1,13 @@
 import { Type } from '@nestjs/common';
-import { assign, find, isNil, map, omitBy, some, unionWith } from 'lodash';
+import {
+  assign,
+  find,
+  isNil,
+  map,
+  omitBy,
+  some,
+  unionWith
+} from 'es-toolkit/compat';
 import { DECORATORS } from '../constants';
 import { SchemaObject } from '../interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
@@ -54,11 +62,10 @@ export const exploreApiParametersMetadata = (
     const mergeImplicitAndExplicit = (item: ParamWithTypeMetadata) =>
       assign(item, find(explicitParameters, ['name', item.name]));
 
-    properties = removeBodyMetadataIfExplicitExists(
-      properties,
-      explicitParameters
+    properties = map(
+      removeBodyMetadataIfExplicitExists(properties, explicitParameters),
+      mergeImplicitAndExplicit
     );
-    properties = map(properties, mergeImplicitAndExplicit);
     properties = unionWith(
       properties,
       explicitParameters,
@@ -84,10 +91,7 @@ function removeBodyMetadataIfExplicitExists(
   const isBodyReflected = some(properties, (p) => p.in === 'body');
   const isBodyDefinedExplicitly = some(explicitParams, (p) => p.in === 'body');
   if (isBodyReflected && isBodyDefinedExplicitly) {
-    return omitBy(
-      properties,
-      (p) => p.in === 'body'
-    ) as ParamWithTypeMetadata[];
+    return omitBy(properties, (p) => p.in === 'body');
   }
   return properties;
 }

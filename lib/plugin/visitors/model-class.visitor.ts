@@ -1,4 +1,4 @@
-import { compact, flatten, head } from 'lodash';
+import { compact, flatten, head } from 'es-toolkit/compat';
 import { posix } from 'path';
 import * as ts from 'typescript';
 import { factory, PropertyAssignment } from 'typescript';

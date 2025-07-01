@@ -1,6 +1,6 @@
 import { DECORATORS } from '../constants';
 import { createMixedDecorator } from './helpers';
-import { clone } from 'lodash';
+import { clone } from 'es-toolkit/compat';
 
 /**
  * @publicApi

@@ -1,4 +1,10 @@
-import { isFunction, isString, isUndefined, omit, omitBy, pick } from 'lodash';
+import {
+  isFunction,
+  isString,
+  isUndefined,
+  omit,
+  pick
+} from 'es-toolkit/compat';
 import { ApiPropertyOptions } from '../decorators';
 import {
   BaseParameterObject,
@@ -6,6 +12,7 @@ import {
   SchemaObject
 } from '../interfaces/open-api-spec.interface';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
+import { omitBy } from 'es-toolkit/compat';
 
 type KeysToRemove =
   | keyof ApiPropertyOptions
