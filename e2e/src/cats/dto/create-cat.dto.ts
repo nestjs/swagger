@@ -105,7 +105,16 @@ export class CreateCatDto {
     description: 'The x-enumNames test',
     enum: XEnumTest,
     enumName: 'XEnumTest',
-    'x-enumNames': ['APPROVED', 'PENDING', 'REJECTED']
+    'x-enumNames': ['APPROVED', 'PENDING', 'REJECTED'],
   })
   xEnumTest: XEnumTest;
+
+  @ApiProperty({
+    description: 'The x-enum-varnames and x-enum-descriptions test',
+    enum: XEnumTest,
+    enumName: 'XEnumVarnamesTest',
+    'x-enum-varnames': ['APPROVED', 'PENDING', 'REJECTED'],
+    'x-enum-descriptions': ['Approved State', 'Pending State', 'Rejected State']
+  })
+  xEnumVarnamesTest: XEnumTest;
 }
