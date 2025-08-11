@@ -69,7 +69,7 @@
     "swagger-parser": "10.0.3",
     "ts-jest": "29.4.1",
     "typescript": "5.9.2",
-    "typescript-eslint": "8.39.0"
+    "typescript-eslint": "8.39.1"
   },
   "peerDependencies": {
     "@fastify/static": "^8.0.0",
