@@ -68,7 +68,7 @@
     "supertest": "7.1.4",
     "swagger-parser": "10.0.3",
     "ts-jest": "29.4.4",
-    "typescript": "5.9.2",
+    "typescript": "5.9.3",
     "typescript-eslint": "8.45.0"
   },
   "peerDependencies": {
