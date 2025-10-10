@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, NotFoundException } from '@nestjs/common';
 import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -228,6 +228,9 @@ export class SwaggerModule {
 
     httpAdapter.get(finalPath, serveSwaggerHtml);
     httpAdapter.get(`${finalPath}/index.html`, serveSwaggerHtml);
+    httpAdapter.get(`${finalPath}/LICENSE`, () => {
+      throw new NotFoundException();
+    });
 
     // fastify doesn't resolve 'routePath/' -> 'routePath', that's why we handle it manually
     try {
@@ -336,14 +339,11 @@ export class SwaggerModule {
        * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
        * @see https://github.com/nestjs/swagger/issues/1976
        */
-      const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
-      /**
-       *  serveStaticSlashEndingPath === finalPath when path === '' || path === '/'
-       *  in that case we don't need to serve swagger assets on extra sub path
-       */
-      if (serveStaticSlashEndingPath !== finalPath) {
-        SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
+      if (finalPath === `/${urlLastSubdirectory}`) {
+        return;
       }
+      const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
+      SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
     }
   }
 }
