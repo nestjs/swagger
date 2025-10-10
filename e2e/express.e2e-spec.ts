@@ -210,6 +210,14 @@ describe('Express Swagger', () => {
         expect(response.status).toEqual(200);
       }
     );
+
+    it('should not serve pet store spec', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}/api`
+      );
+
+      expect(response.status).toEqual(404);
+    });
   });
 
   describe('disabled Both Swagger UI AND Swagger Documents(JSON, YAML)', () => {

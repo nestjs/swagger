@@ -336,14 +336,11 @@ export class SwaggerModule {
        * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
        * @see https://github.com/nestjs/swagger/issues/1976
        */
-      const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
-      /**
-       *  serveStaticSlashEndingPath === finalPath when path === '' || path === '/'
-       *  in that case we don't need to serve swagger assets on extra sub path
-       */
-      if (serveStaticSlashEndingPath !== finalPath) {
-        SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
+      if (finalPath === `/${urlLastSubdirectory}`) {
+        return;
       }
+      const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
+      SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
     }
   }
 }
