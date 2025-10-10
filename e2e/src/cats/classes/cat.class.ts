@@ -2,7 +2,7 @@ import { ApiExtension, ApiProperty } from '../../../../lib';
 import { LettersEnum } from '../dto/pagination-query.dto';
 
 @ApiExtension('x-schema-extension', { test: 'test' })
-@ApiExtension('x-schema-extension-multiple', { test: 'test' })
+@ApiExtension('x-schema-extension-multiple', { test: 'test*2' })
 export class Cat {
   @ApiProperty({ example: 'Kitty', description: 'The name of the Cat' })
   name: string;
