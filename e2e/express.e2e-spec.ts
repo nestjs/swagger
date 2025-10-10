@@ -218,6 +218,17 @@ describe('Express Swagger', () => {
 
       expect(response.status).toEqual(404);
     });
+
+    it('should not serve the LICENSE file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}/LICENSE`
+      );
+
+      expect(response.status).toEqual(404);
+      expect(response.text).toContain(
+        '{\"message\":\"Not Found\",\"statusCode\":404}'
+      );
+    });
   });
 
   describe('disabled Both Swagger UI AND Swagger Documents(JSON, YAML)', () => {
