@@ -664,6 +664,32 @@ describe('SchemaObjectFactory', () => {
         required: ['testString']
       });
     });
+
+    it('should not use undefined enum on array', () => {
+      class TestDto {
+        @ApiProperty({
+          type: 'string',
+          isArray: true,
+          enum: undefined
+        })
+        testStringArray: string[];
+      }
+
+      const schemas = {};
+      schemaObjectFactory.exploreModelSchema(TestDto, schemas);
+      expect(schemas[TestDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          testStringArray: {
+            type: 'array',
+            items: {
+              type: 'string'
+            }
+          }
+        },
+        required: ['testStringArray']
+      });
+    });
   });
 
   describe('createEnumSchemaType', () => {
