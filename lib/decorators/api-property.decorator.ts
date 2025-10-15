@@ -36,7 +36,7 @@ const isEnumArray = (
   enum: EnumAllowedTypes;
   type: any;
   items: any;
-} => opts.isArray && 'enum' in opts;
+} => opts.isArray && 'enum' in opts && opts.enum !== undefined;
 
 /**
  * @publicApi
