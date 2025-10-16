@@ -666,7 +666,6 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return undefined;
     }
 
-    // >>>>>>>>> ADDED: unwrap null/undefined from unions so enums are still detected
     if ((type.flags & ts.TypeFlags.Union) !== 0) {
       const union = type as ts.UnionOrIntersectionType;
       const nonNullish = union.types.filter(
