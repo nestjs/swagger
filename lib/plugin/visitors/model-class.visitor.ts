@@ -675,7 +675,6 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         type = nonNullish[0];
       }
     }
-    // <<<<<<<<< END ADD
 
     // Also handle cases where TypeScript emits an auto-generated union like `T | undefined`
     // (strict mode). In that case, pick the non-undefined member so enum detection works.
