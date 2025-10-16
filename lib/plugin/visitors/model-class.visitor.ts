@@ -73,36 +73,36 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
     const propertyNodeVisitorFactory =
       (metadata: ClassMetadata) =>
-      (node: ts.Node): ts.Node => {
-        const visit = () => {
-          if (ts.isPropertyDeclaration(node)) {
-            this.visitPropertyNodeDeclaration(
-              node,
-              ctx,
-              typeChecker,
-              options,
-              sourceFile,
-              metadata
-            );
-          } else if (
-            options.parameterProperties &&
-            ts.isConstructorDeclaration(node)
-          ) {
-            this.visitConstructorDeclarationNode(
-              node,
-              typeChecker,
-              options,
-              sourceFile,
-              metadata
-            );
+        (node: ts.Node): ts.Node => {
+          const visit = () => {
+            if (ts.isPropertyDeclaration(node)) {
+              this.visitPropertyNodeDeclaration(
+                node,
+                ctx,
+                typeChecker,
+                options,
+                sourceFile,
+                metadata
+              );
+            } else if (
+              options.parameterProperties &&
+              ts.isConstructorDeclaration(node)
+            ) {
+              this.visitConstructorDeclarationNode(
+                node,
+                typeChecker,
+                options,
+                sourceFile,
+                metadata
+              );
+            }
+            return node;
+          };
+          const visitedNode = visit();
+          if (!options.readonly) {
+            return visitedNode;
           }
-          return node;
         };
-        const visitedNode = visit();
-        if (!options.readonly) {
-          return visitedNode;
-        }
-      };
 
     const visitClassNode = (node: ts.Node): ts.Node => {
       if (ts.isClassDeclaration(node)) {
@@ -347,10 +347,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const properties = [
       ...existingProperties,
       !hasPropertyKey('required', existingProperties) &&
-        factory.createPropertyAssignment(
-          'required',
-          createBooleanLiteral(factory, isRequired)
-        ),
+      factory.createPropertyAssignment(
+        'required',
+        createBooleanLiteral(factory, isRequired)
+      ),
       ...this.createTypePropertyAssignments(
         factory,
         node.type,
@@ -397,6 +397,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
    * Returns an array with 0..2 "ts.PropertyAssignment"s.
    * The first one is the "type" property assignment, the second one is the "nullable" property assignment.
    * When type cannot be determined, an empty array is returned.
+   *
+   * Special handling:
+   * - For unions like `Enum | null` or `Enum | null | undefined` (and their array forms),
+   *   we DO NOT emit a lazy `type: () => ...`. The enum metadata is emitted elsewhere
+   *   by createEnumPropertyAssignment(). Here we only add `nullable: true` when needed.
+   *   This avoids circular dependency errors for optional+nullable enum properties.
    */
   private createTypePropertyAssignments(
     factory: ts.NodeFactory,
@@ -412,6 +418,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
 
     if (node) {
+      // Array of inline object literal
       if (ts.isArrayTypeNode(node) && ts.isTypeLiteralNode(node.elementType)) {
         const initializer = this.createInitializerForArrayLiteralTypeNode(
           node,
@@ -422,7 +429,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           options
         );
         return [factory.createPropertyAssignment(key, initializer)];
-      } else if (ts.isTypeLiteralNode(node)) {
+      }
+
+      // Inline object literal
+      if (ts.isTypeLiteralNode(node)) {
         const initializer = this.createInitializerForTypeLiteralNode(
           node,
           factory,
@@ -432,17 +442,59 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           options
         );
         return [factory.createPropertyAssignment(key, initializer)];
-      } else if (ts.isUnionTypeNode(node)) {
-        const { nullableType, isNullable } = this.isNullableUnion(node);
-        const remainingTypes = node.types.filter(
-          (item) => item !== nullableType
-        );
+      }
 
-        // TODO: When we have more than 1 type left, we could use "oneOf"
+      // Union types (where nullable/undefined might be part of the union)
+      if (ts.isUnionTypeNode(node)) {
+        const { nullableType, isNullable } = this.isNullableUnion(node);
+        const remainingTypes = node.types.filter((t) => t !== nullableType);
+
+        // If exactly one non-nullish type remains, we can reason about it.
         if (remainingTypes.length === 1) {
+          const nonNullishNode = remainingTypes[0];
+
+          // Detect if the non-nullish side is (or resolves to) an enum (including array of enum).
+          // If yes, DO NOT emit a lazy `type`; only emit { nullable: true } if needed.
+          const resolved = typeChecker.getTypeAtLocation(nonNullishNode);
+          let candidateType = resolved;
+
+          // If it's an array (e.g., Status[] | null), drill into the element type
+          const arrayTuple = extractTypeArgumentIfArray(candidateType);
+          if (arrayTuple) {
+            candidateType = arrayTuple.type;
+          }
+
+          let isEnumType = false;
+          if (candidateType) {
+            if (isEnum(candidateType)) {
+              isEnumType = true;
+            } else {
+              // Handle auto-generated enum unions (string literal unions that represent an enum)
+              const maybeEnum = isAutoGeneratedEnumUnion(candidateType, typeChecker);
+              if (maybeEnum) {
+                isEnumType = true;
+              }
+            }
+          }
+
+          if (isEnumType) {
+            // For enums, skip returning a "type" property (avoid lazy resolver/circular deps).
+            // Only append { nullable: true } if the union contained `null`.
+            // The enum metadata will be added by createEnumPropertyAssignment().
+            return isNullable
+              ? [
+                factory.createPropertyAssignment(
+                  'nullable',
+                  createBooleanLiteral(factory, true)
+                )
+              ]
+              : [];
+          }
+
+          // Not an enum: keep existing behavior (recurse into the remaining node)
           const propertyAssignments = this.createTypePropertyAssignments(
             factory,
-            remainingTypes[0],
+            nonNullishNode,
             typeChecker,
             existingProperties,
             hostFilename,
@@ -459,10 +511,13 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             )
           ];
         }
+        // >1 remaining non-nullish types: fall through (no special handling here).
+        // (Potential future: oneOf support)
       }
     }
 
-    const type = typeChecker.getTypeAtLocation(node);
+    // Fallback: emit a lazy `type: () => Identifier` when we can resolve a referenceable type name
+    const type = typeChecker.getTypeAtLocation(node as any);
     if (!type) {
       return [];
     }
@@ -491,6 +546,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     );
     return [factory.createPropertyAssignment(key, initializer)];
   }
+
+
 
   createInitializerForArrayLiteralTypeNode(
     node: ts.ArrayTypeNode,
@@ -592,10 +649,43 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     if (hasPropertyKey(key, existingProperties)) {
       return undefined;
     }
-    let type = typeChecker.getTypeAtLocation(node);
+    // Prefer using the explicit TypeNode when available to get the declared type
+    // (this helps in cases like optional/nullable unions where the TypeNode reflects the union)
+    let type: ts.Type | undefined;
+    try {
+      if ((node as any).type) {
+        type = typeChecker.getTypeFromTypeNode((node as any).type as ts.TypeNode);
+      }
+    } catch (e) {
+      // fallthrough to getTypeAtLocation
+    }
+    if (!type) {
+      type = typeChecker.getTypeAtLocation(node as any);
+    }
     if (!type) {
       return undefined;
     }
+
+    if ((type.flags & ts.TypeFlags.Union) !== 0) {
+      const union = type as ts.UnionOrIntersectionType;
+      const nonNullish = union.types.filter(
+        (t) => (t.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined)) === 0
+      );
+      if (nonNullish.length === 1) {
+        type = nonNullish[0];
+      }
+    }
+
+    // Also handle cases where TypeScript emits an auto-generated union like `T | undefined`
+    // (strict mode). In that case, pick the non-undefined member so enum detection works.
+    if (isAutoGeneratedTypeUnion(type)) {
+      const types = (type as ts.UnionOrIntersectionType).types;
+      const nonUndefined = types.find((t: any) => t.intrinsicName !== 'undefined');
+      if (nonUndefined) {
+        type = nonUndefined as ts.Type;
+      }
+    }
+
     if (isAutoGeneratedTypeUnion(type)) {
       const types = (type as ts.UnionOrIntersectionType).types;
       type = types[types.length - 1];
