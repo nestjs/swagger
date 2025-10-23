@@ -536,8 +536,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       this._typeImports
     );
 
+    const modifiers = this.isAwaitImportReference(identifier)
+      ? [factory.createModifier(ts.SyntaxKind.AsyncKeyword)]
+      : undefined;
+
     const initializer = factory.createArrowFunction(
-      undefined,
+      modifiers,
       undefined,
       [],
       undefined,
@@ -1079,5 +1083,15 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return 'string';
     }
     return undefined;
+  }
+
+  /**
+   * Checks if an identifier contains references to await import statements.
+   * These references use the pattern t["path"].TypeName and need async arrow functions.
+   */
+  private isAwaitImportReference(identifier: ts.Identifier): boolean {
+    // Use .text property for factory-created identifiers instead of getText()
+    const text = identifier.text || '';
+    return text.includes('t["') || text.includes("t['");
   }
 }
