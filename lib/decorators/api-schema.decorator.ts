@@ -14,7 +14,6 @@ export interface ApiSchemaOptions extends Pick<SchemaObjectMetadata, 'name'> {
   description?: string;
 }
 
-
 /**
  * @publicApi
  */
