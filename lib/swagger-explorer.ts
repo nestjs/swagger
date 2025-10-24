@@ -36,6 +36,7 @@ import { DECORATORS } from './constants';
 import { exploreApiCallbacksMetadata } from './explorers/api-callbacks.explorer';
 import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer';
+import { exploreApiIncludeEndpointMetadata } from './explorers/api-include-endpoint.explorer';
 import {
   exploreApiExtraModelsMetadata,
   exploreGlobalApiExtraModelsMetadata
@@ -113,6 +114,7 @@ export class SwaggerExplorer {
         fieldKey: string
       ) => string;
       autoTagControllers?: boolean;
+      onlyIncludeDecoratedEndpoints?: boolean;
     }
   ) {
     const { operationIdFactory, linkNameFactory } = options;
@@ -167,6 +169,7 @@ export class SwaggerExplorer {
       modulePath?: string;
       globalPrefix?: string;
       autoTagControllers?: boolean;
+      onlyIncludeDecoratedEndpoints?: boolean;
     }
   ): DenormalizedDoc[] {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -187,6 +190,14 @@ export class SwaggerExplorer {
       DenormalizedDoc[]
     >(instance, prototype, (name) => {
       const targetCallback = prototype[name];
+      const includeEndpoint = exploreApiIncludeEndpointMetadata(
+        instance,
+        prototype,
+        targetCallback
+      );
+      if (options.onlyIncludeDecoratedEndpoints && !includeEndpoint) {
+        return;
+      }
       const excludeEndpoint = exploreApiExcludeEndpointMetadata(
         instance,
         prototype,
