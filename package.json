@@ -1,10 +1,10 @@
 {
-  "name": "@nestjs/swagger",
+  "name": "@TomSpott/nestjs-swagger-fork",
   "version": "11.2.1",
   "description": "Nest - modern, fast, powerful node.js web framework (@swagger)",
   "author": "Kamil Mysliwiec",
   "license": "MIT",
-  "repository": "https://github.com/nestjs/swagger",
+  "repository": "https://github.com/TomSpott/swagger-fork",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
