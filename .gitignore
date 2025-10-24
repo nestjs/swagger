@@ -16,7 +16,7 @@ npm-debug.log
 /.nyc_output
 
 # source
-dist
-index.js
-index.d.ts
+# dist
+# index.js
+# index.d.ts
 /sample
