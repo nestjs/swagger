@@ -37,7 +37,7 @@ export class ParameterPropertyDto {
         this.protectedValue = protectedValue;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { readonlyValue: { required: false, type: () => String }, privateValue: { required: true, type: () => String, nullable: true }, publicValue: { required: true, type: () => [${fileImport}.ItemDto] }, protectedValue: { required: true, type: () => String, default: "1234" } };
+        return { readonlyValue: { required: false, type: () => String }, privateValue: { required: true, type: () => String, nullable: true }, publicValue: { required: true, type: async () => [${fileImport}.ItemDto] }, protectedValue: { required: true, type: () => String, default: "1234" } };
     }
 }
 export var LettersEnum;
