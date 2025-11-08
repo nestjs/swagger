@@ -147,6 +147,7 @@ export class SwaggerModule {
     const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
 
     let swaggerUiHtml: string;
+    let swaggerUiHtmlForTrailingSlash: string;
     let swaggerUiInitJS: string;
 
     httpAdapter.get(
@@ -216,13 +217,28 @@ export class SwaggerModule {
        */
     }
 
-    function serveSwaggerHtml(_: any, res: any) {
-      res.type('text/html');
-
+    const getSwaggerHtml = () => {
       if (!swaggerUiHtml) {
         swaggerUiHtml = buildSwaggerHTML(baseUrlForSwaggerUI, swaggerOptions);
       }
+      return swaggerUiHtml;
+    };
 
+    const getTrailingSlashSwaggerHtml = () => {
+      if (!swaggerUiHtmlForTrailingSlash) {
+        swaggerUiHtmlForTrailingSlash = buildSwaggerHTML('./', swaggerOptions);
+      }
+      return swaggerUiHtmlForTrailingSlash;
+    };
+
+    function serveSwaggerHtml(req: any, res: any) {
+      res.type('text/html');
+
+      const url = httpAdapter.getRequestUrl(req);
+      const hasTrailingSlash = url.endsWith('/');
+      const swaggerUiHtml = hasTrailingSlash
+        ? getTrailingSlashSwaggerHtml()
+        : getSwaggerHtml();
       res.send(swaggerUiHtml);
     }
 
