@@ -9,8 +9,7 @@ import { getEnumType, getEnumValues } from '../utils/enum.utils';
 import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers';
 
 export type ApiPropertyCommonOptions = SchemaObjectMetadata & {
-  'x-enumNames'?: string[];
-  /**
+    /**
    * Lazy function returning the type for which the decorated property
    * can be used as an id
    *
