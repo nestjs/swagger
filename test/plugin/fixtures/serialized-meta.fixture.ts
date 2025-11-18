@@ -156,11 +156,11 @@ export default async () => {
               },
               tag: {
                 required: true,
-                type: async () => t['./cats/dto/tag.dto'].TagDto
+                type: () => t['./cats/dto/tag.dto'].TagDto
               },
               multipleTags: {
                 required: true,
-                type: async () => [t['./cats/dto/tag.dto'].TagDto]
+                type: () => [t['./cats/dto/tag.dto'].TagDto]
               },
               nested: {
                 required: true,
