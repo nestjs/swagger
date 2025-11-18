@@ -527,10 +527,6 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return [];
     }
 
-    const modifiers = typeReferenceDescriptor.typeName.includes('import(')
-      ? [factory.createModifier(ts.SyntaxKind.AsyncKeyword)]
-      : undefined;
-
     const identifier = typeReferenceToIdentifier(
       typeReferenceDescriptor,
       hostFilename,
@@ -541,7 +537,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     );
 
     const initializer = factory.createArrowFunction(
-      modifiers,
+      undefined,
       undefined,
       [],
       undefined,
