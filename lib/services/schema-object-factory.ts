@@ -547,9 +547,11 @@ export class SchemaObjectFactory {
       ...omit(metadata, [...keysToRemove, ...keysToMove]),
       name: metadata.name || key,
       type: 'array',
-      items: isString(type)
-        ? { type, ...movedProperties }
-        : { ...type, ...movedProperties }
+      items: metadata.items
+        ? { ...(metadata.items as Record<string, any>), ...movedProperties }
+        : isString(type)
+          ? { type, ...movedProperties }
+          : { ...type, ...movedProperties }
     };
     schemaHost.items = omitBy(schemaHost.items, isUndefined);
 
