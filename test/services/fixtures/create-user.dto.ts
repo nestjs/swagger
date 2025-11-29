@@ -99,6 +99,9 @@ export class CreateUserDto {
   @ApiProperty({ type: [String], format: 'uuid' })
   formatArray: string[];
 
+  @ApiProperty({ type: String, format: 'custom-format' })
+  customFormat: string;
+
   static _OPENAPI_METADATA_FACTORY() {
     return {
       tags: { type: () => [String] },

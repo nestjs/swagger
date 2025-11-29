@@ -359,6 +359,10 @@ describe('SchemaObjectFactory', () => {
               type: 'string',
               format: 'uuid'
             }
+          },
+          customFormat: {
+            type: 'string',
+            format: 'custom-format'
           }
         },
         required: [
@@ -375,7 +379,8 @@ describe('SchemaObjectFactory', () => {
           'houses',
           'createdAt',
           'amount',
-          'formatArray'
+          'formatArray',
+          'customFormat'
         ]
       });
       expect(schemas['CreateProfileDto']).toEqual({
