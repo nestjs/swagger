@@ -21,16 +21,16 @@ export default async () => {
               constrainedLimit: { required: false, type: () => Number },
               enum: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum
+                enum: () => t['./cats/dto/pagination-query.dto'].LettersEnum
               },
               enumArr: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum,
+                enum: () => t['./cats/dto/pagination-query.dto'].LettersEnum,
                 isArray: true
               },
               letters: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum,
+                enum: () => t['./cats/dto/pagination-query.dto'].LettersEnum,
                 isArray: true
               },
               beforeDate: { required: true, type: () => Date },
@@ -60,11 +60,11 @@ export default async () => {
               options: { required: false, type: () => [Object] },
               enum: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum
+                enum: () => t['./cats/dto/pagination-query.dto'].LettersEnum
               },
               enumArr: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum
+                enum: () => t['./cats/dto/pagination-query.dto'].LettersEnum
               },
               uppercaseString: { required: true, type: () => String },
               lowercaseString: { required: true, type: () => String },
@@ -137,21 +137,21 @@ export default async () => {
               options: { required: false, type: () => [Object] },
               enum: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum
+                enum: () => t['./cats/dto/pagination-query.dto'].LettersEnum
               },
               state: {
                 required: false,
                 description: 'Available language in the application',
                 example: 'FR',
-                enum: t['./cats/dto/create-cat.dto'].CategoryState
+                enum: () => t['./cats/dto/create-cat.dto'].CategoryState
               },
               enumArr: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum
+                enum: () => t['./cats/dto/pagination-query.dto'].LettersEnum
               },
               enumArr2: {
                 required: true,
-                enum: t['./cats/dto/pagination-query.dto'].LettersEnum,
+                enum: () => t['./cats/dto/pagination-query.dto'].LettersEnum,
                 isArray: true
               },
               tag: {
