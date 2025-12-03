@@ -706,6 +706,25 @@ describe('SchemaObjectFactory', () => {
 
       expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number' } });
     });
+
+    it('should create an enum schema definition with extended attributes', () => {
+
+      const extendedAttributes = {
+        'x-enum-varnames': ['APPROVED', 'PENDING', 'REJECTED'],
+        'x-enum-descriptions': ['Approved State', 'Pending State', 'Rejected State'],
+      }
+      const metadata = {
+        type: 'number',
+        enum: [1, 2, 3],
+        enumName: 'MyEnum',
+        isArray: false,
+        ...extendedAttributes
+      } as const;
+      const schemas = {};
+      schemaObjectFactory.createEnumSchemaType('field', metadata, schemas);
+
+      expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number', ...extendedAttributes } });
+    });
   });
 
   describe('createEnumParam', () => {
@@ -744,6 +763,29 @@ describe('SchemaObjectFactory', () => {
       expect(schemas['MyEnum']).toEqual({
         enum: ['a', 'b', 'c'],
         type: 'string'
+      });
+    });
+
+    it('should create an enum schema definition with extended attributes', () => {
+
+      const extendedAttributes = {
+        'x-enum-varnames': ['APPROVED', 'PENDING', 'REJECTED'],
+        'x-enum-descriptions': ['Approved State', 'Pending State', 'Rejected State'],
+      }
+      const params: ParamWithTypeMetadata & BaseParameterObject & { 'x-enum-varnames': string[], 'x-enum-descriptions': string[] } = {
+        required: true,
+        isArray: true,
+        enumName: 'MyEnum',
+        enum: [1, 2, 3],
+        ...extendedAttributes,
+      };
+      const schemas = {};
+      schemaObjectFactory.createEnumParam(params, schemas);
+
+      expect(schemas['MyEnum']).toEqual({
+        enum: [1, 2, 3],
+        type: 'string',
+        ...extendedAttributes
       });
     });
   });
