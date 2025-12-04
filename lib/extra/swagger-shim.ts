@@ -25,6 +25,9 @@ export function ApiCookieAuth() {
 export function ApiExcludeEndpoint() {
   return () => {};
 }
+export function ApiIncludeEndpoint() {
+  return () => {};
+}
 export function ApiExcludeController() {
   return () => {};
 }
