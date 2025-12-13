@@ -747,4 +747,76 @@ describe('SchemaObjectFactory', () => {
       });
     });
   });
+
+  describe('transformToArraySchemaProperty', () => {
+    it('should preserve items schema when metadata.items is already defined and type is string', () => {
+      const metadata = {
+        type: 'array',
+        isArray: true,
+        items: {
+          type: 'object',
+          additionalProperties: {
+            type: 'string',
+            enum: ['asc', 'desc']
+          }
+        },
+        example: [{ created_on: 'desc' }],
+        required: false
+      };
+
+      const result = schemaObjectFactory.transformToArraySchemaProperty(
+        metadata as any,
+        'sort',
+        'array'
+      );
+
+      expect(result.items).toEqual({
+        type: 'object',
+        additionalProperties: {
+          type: 'string',
+          enum: ['asc', 'desc']
+        }
+      });
+      expect(result.type).toBe('array');
+      expect(result.example).toEqual([{ created_on: 'desc' }]);
+    });
+
+    it('should use type parameter when metadata.items is not defined', () => {
+      const metadata = {
+        type: 'array',
+        isArray: true,
+        required: false
+      };
+
+      const result = schemaObjectFactory.transformToArraySchemaProperty(
+        metadata as any,
+        'items',
+        'string'
+      );
+
+      expect(result.items).toEqual({ type: 'string' });
+      expect(result.type).toBe('array');
+    });
+
+    it('should use type object when provided', () => {
+      const metadata = {
+        type: 'array',
+        isArray: true,
+        required: false
+      };
+
+      const result = schemaObjectFactory.transformToArraySchemaProperty(
+        metadata as any,
+        'items',
+        { type: 'object', properties: { name: { type: 'string' } } }
+      );
+
+      expect(result.items).toEqual({
+        type: 'object',
+        properties: { name: { type: 'string' } }
+      });
+      expect(result.type).toBe('array');
+    });
+  });
 });
+
