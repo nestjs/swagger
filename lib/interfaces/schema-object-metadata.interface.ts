@@ -25,6 +25,7 @@ export type SchemaObjectMetadata =
         | 'number'
         | 'boolean'
         | 'integer'
+        | 'file'
         | 'null';
       required?: boolean;
     })
