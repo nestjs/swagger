@@ -55,7 +55,7 @@
     "eslint-plugin-prettier": "5.5.4",
     "express": "5.2.1",
     "fastify": "5.6.2",
-    "globals": "16.5.0",
+    "globals": "17.0.0",
     "husky": "9.1.7",
     "jest": "30.2.0",
     "lerna-changelog": "2.2.0",
