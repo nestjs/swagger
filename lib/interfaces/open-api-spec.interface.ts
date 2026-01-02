@@ -105,6 +105,33 @@ export type ParameterStyle =
   | 'pipeDelimited'
   | 'deepObject';
 
+/**
+ * OpenAPI-defined standard format values and commonly used formats.
+ *
+ * The `format` property in OpenAPI is an "open value", allowing custom formats.
+ * This type provides IDE autocomplete for standard formats while still permitting custom values.
+ *
+ * @issue https://github.com/nestjs/swagger/issues/3508
+ * @see https://swagger.io/docs/specification/data-models/data-types/
+ */
+export type SchemaObjectFormat =
+  | 'int32'
+  | 'int64'
+  | 'float'
+  | 'double'
+  | 'byte'
+  | 'binary'
+  | 'date'
+  | 'date-time'
+  | 'password'
+  | 'email'
+  | 'uuid'
+  | 'uri'
+  | 'hostname'
+  | 'ipv4'
+  | 'ipv6'
+  | (string & {});
+
 export interface BaseParameterObject {
   description?: string;
   required?: boolean;
@@ -214,7 +241,7 @@ export interface SchemaObject {
   additionalProperties?: SchemaObject | ReferenceObject | boolean;
   patternProperties?: SchemaObject | ReferenceObject | any;
   description?: string;
-  format?: string;
+  format?: SchemaObjectFormat;
   default?: any;
   title?: string;
   multipleOf?: number;
