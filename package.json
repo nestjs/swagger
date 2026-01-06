@@ -64,7 +64,7 @@
     "prettier": "3.7.4",
     "prettier-v2": "npm:prettier@2.8.8",
     "reflect-metadata": "0.2.2",
-    "release-it": "19.2.2",
+    "release-it": "19.2.3",
     "supertest": "7.2.2",
     "swagger-parser": "10.0.3",
     "ts-jest": "29.4.6",
