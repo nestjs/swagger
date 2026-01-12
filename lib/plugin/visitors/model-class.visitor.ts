@@ -198,9 +198,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     ) {
       return node;
     } else if (annotatePropertyDecoratorExists && hidePropertyDecoratorExists) {
-      pluginDebugLogger.debug(
-        `"${node.parent.name.getText()}->${node.name.getText()}" has conflicting decorators, excluding as @ApiHideProperty() takes priority.`
-      );
+      if (options.debug) {
+        pluginDebugLogger.debug(
+          `"${node.parent.name.getText()}->${node.name.getText()}" has conflicting decorators, excluding as @ApiHideProperty() takes priority.`
+        );
+      }
       return node;
     }
 
@@ -769,11 +771,13 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       this.clonePrimitiveLiteral(factory, initializer) ?? initializer;
 
     if (!canReferenceNode(initializer, options)) {
-      const parentFilePath = node.getSourceFile().fileName;
-      const propertyName = node.name.getText();
-      pluginDebugLogger.debug(
-        `Skipping registering default value for "${propertyName}" property in "${parentFilePath}" file because it is not a referenceable value ("${initializer.getText()}").`
-      );
+      if (options.debug) {
+        const parentFilePath = node.getSourceFile().fileName;
+        const propertyName = node.name.getText();
+        pluginDebugLogger.debug(
+          `Skipping registering default value for "${propertyName}" property in "${parentFilePath}" file because it is not a referenceable value ("${initializer.getText()}").`
+        );
+      }
       return undefined;
     }
     return factory.createPropertyAssignment(key, initializer);
