@@ -467,6 +467,40 @@ describe('Fastify Swagger', () => {
     });
   });
 
+  describe('trailing slash static asset loading', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument);
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('should serve HTML with baseUrl "./apidoc/" when accessed without trailing slash', async () => {
+      const response = await request(app.getHttpServer()).get(
+        SWAGGER_RELATIVE_URL
+      );
+      expect(response.status).toEqual(200);
+      expect(response.text).toContain('href="./apidoc/swagger-ui.css"');
+    });
+
+    it('should serve HTML with baseUrl "./" when accessed with trailing slash', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}/`
+      );
+      expect(response.status).toEqual(200);
+      expect(response.text).toContain('href="./swagger-ui.css"');
+    });
+  });
+
   describe('custom swagger options', () => {
     const CUSTOM_CSS = 'body { background-color: hotpink !important }';
     const CUSTOM_JS = '/foo.js';
