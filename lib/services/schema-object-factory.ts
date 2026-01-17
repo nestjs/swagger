@@ -221,33 +221,41 @@ export class SchemaObjectFactory {
     const modelProperties =
       this.modelPropertiesAccessor.getModelProperties(prototype);
     const propertiesWithType = modelProperties.map((key) => {
-      const property = this.mergePropertyWithMetadata(
-        key,
-        prototype,
-        schemas,
-        pendingSchemasRefs
-      );
+      try {
+        const property = this.mergePropertyWithMetadata(
+          key,
+          prototype,
+          schemas,
+          pendingSchemasRefs
+        );
 
-      const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
-      const declaredSchemaCombinator = schemaCombinators.find(
-        (combinator) => combinator in property
-      );
-      if (declaredSchemaCombinator) {
-        const schemaObjectMetadata = property as SchemaObjectMetadata;
+        const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
+        const declaredSchemaCombinator = schemaCombinators.find(
+          (combinator) => combinator in property
+        );
+        if (declaredSchemaCombinator) {
+          const schemaObjectMetadata = property as SchemaObjectMetadata;
 
-        if (
-          schemaObjectMetadata?.type === 'array' ||
-          schemaObjectMetadata.isArray
-        ) {
-          schemaObjectMetadata.items = {};
-          schemaObjectMetadata.items[declaredSchemaCombinator] =
-            property[declaredSchemaCombinator];
-          delete property[declaredSchemaCombinator];
-        } else {
-          delete schemaObjectMetadata.type;
+          if (
+            schemaObjectMetadata?.type === 'array' ||
+            schemaObjectMetadata.isArray
+          ) {
+            schemaObjectMetadata.items = {};
+            schemaObjectMetadata.items[declaredSchemaCombinator] =
+              property[declaredSchemaCombinator];
+            delete property[declaredSchemaCombinator];
+          } else {
+            delete schemaObjectMetadata.type;
+          }
         }
+        return property as ParameterObject;
+      } catch (error) {
+        const className = type.name || 'Unknown';
+        if (error instanceof Error) {
+          error.message = `[${className}] ${error.message}`;
+        }
+        throw error;
       }
-      return property as ParameterObject;
     });
     return propertiesWithType;
   }
