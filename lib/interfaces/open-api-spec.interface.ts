@@ -214,7 +214,7 @@ export interface SchemaObject {
   additionalProperties?: SchemaObject | ReferenceObject | boolean;
   patternProperties?: SchemaObject | ReferenceObject | any;
   description?: string;
-  format?: string;
+  format?: OpenAPIFormat;
   default?: any;
   title?: string;
   multipleOf?: number;
@@ -289,3 +289,37 @@ export type ScopesObject = Record<string, any>;
 export type SecurityRequirementObject = Record<string, string[]>;
 
 export type ExtensionLocation = 'root' | 'info';
+
+/**
+ * OpenAPI format values as defined in the specification.
+ * @see https://spec.openapis.org/oas/v3.0.3#data-types
+ * @see https://datatracker.ietf.org/doc/html/draft-bhutton-json-schema-validation-00#section-7.3
+ */
+export type OpenAPIFormat =
+  | 'int32'
+  | 'int64'
+  | 'float'
+  | 'double'
+  | 'byte'
+  | 'binary'
+  | 'date'
+  | 'date-time'
+  | 'time'
+  | 'duration'
+  | 'password'
+  | 'email'
+  | 'idn-email'
+  | 'hostname'
+  | 'idn-hostname'
+  | 'ipv4'
+  | 'ipv6'
+  | 'uri'
+  | 'uri-reference'
+  | 'uri-template'
+  | 'iri'
+  | 'iri-reference'
+  | 'uuid'
+  | 'json-pointer'
+  | 'relative-json-pointer'
+  | 'regex'
+  | (string & {});
