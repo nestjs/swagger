@@ -818,5 +818,21 @@ describe('SchemaObjectFactory', () => {
       expect(result.type).toBe('array');
     });
   });
+
+  describe('circular dependency error message', () => {
+    it('should include class name in circular dependency error message', () => {
+      class CircularDto {
+        @ApiProperty()
+        name: string;
+
+        @ApiProperty({ type: () => undefined as any })
+        circular: any;
+      }
+
+      expect(() => {
+        schemaObjectFactory.exploreModelSchema(CircularDto, {});
+      }).toThrow(/\[CircularDto\].*circular dependency/i);
+    });
+  });
 });
 
