@@ -377,6 +377,11 @@ export class SchemaObjectFactory {
   ) {
     const enumName = param.enumName;
     const $ref = getSchemaPath(enumName);
+    const enumSchemaExtensions = [
+      'x-enumNames',
+      'x-enum-varnames',
+      'x-enum-descriptions'
+    ];
 
     if (!(enumName in schemas)) {
       const _enum = param.enum
@@ -396,7 +401,10 @@ export class SchemaObjectFactory {
             : param.schema?.['type']) ?? 'string',
         enum: _enum,
         ...param.enumSchema,
-        ...(param['x-enumNames'] ? { 'x-enumNames': param['x-enumNames'] } : {})
+        ...enumSchemaExtensions.reduce(
+          (acc, c) => ({ ...acc, ...(param[c] ? { [c]: param[c] } : {}) }),
+          {}
+        )
       };
     } else {
       // Enum type is already defined so grab it and
@@ -419,8 +427,8 @@ export class SchemaObjectFactory {
       'items',
       'enumName',
       'enum',
-      'x-enumNames',
-      'enumSchema'
+      'enumSchema',
+      ...enumSchemaExtensions
     ]);
   }
 
@@ -438,6 +446,11 @@ export class SchemaObjectFactory {
 
     const enumName = metadata.enumName;
     const $ref = getSchemaPath(enumName);
+    const enumSchemaExtensions = [
+      'x-enumNames',
+      'x-enum-varnames',
+      'x-enum-descriptions'
+    ];
 
     const enumType: string =
       (metadata.isArray ? metadata.items['type'] : metadata.type) ?? 'string';
@@ -451,7 +464,10 @@ export class SchemaObjectFactory {
             ? metadata.items['enum']
             : metadata.enum,
         description: metadata.description ?? undefined,
-        'x-enumNames': metadata['x-enumNames'] ?? undefined
+        ...enumSchemaExtensions.reduce(
+          (acc, c) => ({ ...acc, ...{ [c]: metadata[c] ?? undefined } }),
+          {}
+        )
       };
     } else {
       if (metadata.enumSchema) {
@@ -461,8 +477,10 @@ export class SchemaObjectFactory {
         };
       }
 
-      if (metadata['x-enumNames']) {
-        schemas[enumName]['x-enumNames'] = metadata['x-enumNames'];
+      for (const extension of enumSchemaExtensions) {
+        if (metadata[extension]) {
+          schemas[enumName][extension] = metadata[extension];
+        }
       }
     }
 
@@ -477,7 +495,12 @@ export class SchemaObjectFactory {
       : { allOf: [{ $ref }] };
 
     const paramObject = { ..._schemaObject, ...refHost };
-    const pathsToOmit = ['enum', 'enumName', 'enumSchema', 'x-enumNames'];
+    const pathsToOmit = [
+      'enum',
+      'enumName',
+      'enumSchema',
+      ...enumSchemaExtensions
+    ];
 
     if (!metadata.isArray) {
       pathsToOmit.push('type');
