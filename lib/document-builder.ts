@@ -68,10 +68,10 @@ export class DocumentBuilder {
     description?: string,
     variables?: Record<string, ServerVariableObject>,
     /**
-     * Any other field other than `url`, `description`, and `variables`
-     * to be added to the 'server' entry.
+     * Any other property other than `url`, `description`, and `variables`
+     * to be added to this 'server' entry.
      */
-    extraFields?: Record<string, any>
+    serverExtraProperties?: Record<string, any>
   ): this {
     const serverObjDef: OpenAPIObject['servers'][number] = {
       url,
@@ -79,14 +79,14 @@ export class DocumentBuilder {
       variables
     };
 
-    if (extraFields) {
+    if (serverExtraProperties) {
       const alreadyDefinedKeysForServerEntry = Object.keys(serverObjDef);
       // Merge any extra fields into the server object definition but ignoring the fields with keys `url`, `description`, and `variables`
-      for (const key in extraFields) {
+      for (const key in serverExtraProperties) {
         // Ignoring already defined keys
         if (alreadyDefinedKeysForServerEntry.includes(key)) continue;
 
-        const extraFieldValue = extraFields[key];
+        const extraFieldValue = serverExtraProperties[key];
         serverObjDef[key] = extraFieldValue;
       }
     }
