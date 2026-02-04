@@ -1734,7 +1734,22 @@
       "description": ""
     }
   ],
-  "servers": [],
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local server",
+      "variables": {
+        "someVariable": {
+          "default": "Variable default value here",
+          "description": "A variable description here"
+        }
+      },
+      "x-google-endpoint": {
+        "allowCors": true
+      },
+      "x-another-field": "another value"
+    }
+  ],
   "components": {
     "securitySchemes": {
       "basic": {
