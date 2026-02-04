@@ -66,6 +66,22 @@ describe('Validate OpenAPI schema', () => {
       })
       .addExtension('x-test', { test: 'test' })
       .addExtension('x-logo', { url: 'https://example.com/logo.png' }, 'info')
+      .addServer(
+        'http://localhost:3000',
+        'Local server',
+        {
+          someVariable: {
+            default: 'Variable default value here',
+            description: 'A variable description here'
+          }
+        },
+        {
+          'x-google-endpoint': {
+            allowCors: true
+          },
+          'x-another-field': 'another value'
+        }
+      )
       .build();
   });
 
@@ -96,9 +112,9 @@ describe('Validate OpenAPI schema', () => {
             {
               CreateCatDto: {
                 enumWithDescription: {
-                  enum: await import(
-                    './src/cats/dto/pagination-query.dto'
-                  ).then((f) => f.LettersEnum)
+                  enum: await import('./src/cats/dto/pagination-query.dto').then(
+                    (f) => f.LettersEnum
+                  )
                 },
                 name: {
                   description: 'Name of the cat'
@@ -260,6 +276,26 @@ describe('Validate OpenAPI schema', () => {
     const document = SwaggerModule.createDocument(app, options);
     expect(document.info['x-logo']).toEqual({
       url: 'https://example.com/logo.png'
+    });
+  });
+
+  it('should add server to the root', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    expect(document.servers).toBeDefined();
+    expect(document.servers).toHaveLength(1);
+    expect(document.servers?.[0]).toEqual({
+      url: 'http://localhost:3000',
+      description: 'Local server',
+      variables: {
+        someVariable: {
+          default: 'Variable default value here',
+          description: 'A variable description here'
+        }
+      },
+      'x-google-endpoint': {
+        allowCors: true
+      },
+      'x-another-field': 'another value'
     });
   });
 });
