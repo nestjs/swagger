@@ -113,14 +113,17 @@ export class DocumentBuilder {
   public addTag(
     name: string,
     description = '',
-    externalDocs?: ExternalDocumentationObject
+    externalDocs?: ExternalDocumentationObject,
+    options?: { parent?: string; kind?: 'navigation' | 'reference' }
   ): this {
     this.document.tags = this.document.tags.concat(
       pickBy(
         {
           name,
           description,
-          externalDocs
+          externalDocs,
+          parent: options?.parent,
+          kind: options?.kind
         },
         negate(isUndefined)
       ) as TagObject
