@@ -23,6 +23,7 @@ export class SwaggerTypesMapper {
     'enumSchema',
     '$ref',
     'selfRequired',
+    '_isFromDto' as any,
     ...this.getSchemaOptionsKeys()
   ];
 

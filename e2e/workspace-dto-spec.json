@@ -7,6 +7,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
+          "_isFromDto": true,
           "content": {
             "application/json": {
               "schema": {
@@ -86,6 +87,7 @@
         "name": "name",
         "required": true,
         "in": "query",
+        "_isFromDto": true,
         "schema": {
           "type": "string",
           "example": "my-workspace"
@@ -95,6 +97,7 @@
         "name": "slug",
         "required": false,
         "in": "query",
+        "_isFromDto": true,
         "schema": {
           "type": "string",
           "example": "acme-corp"
@@ -104,6 +107,7 @@
         "name": "memberCount",
         "required": false,
         "in": "query",
+        "_isFromDto": true,
         "schema": {
           "type": "number",
           "example": 10

@@ -332,21 +332,10 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root.parameters.length).toEqual(7);
       expect(routes[0].root.parameters).toEqual([
         {
-          in: 'query',
-          name: 'page',
-          required: true,
-          schema: {
-            minimum: 0,
-            type: 'number'
-          }
+          $ref: '#/components/parameters/QueryParam_page_query'
         },
         {
-          in: 'query',
-          name: 'order',
-          required: true,
-          schema: {
-            type: 'string'
-          }
+          $ref: '#/components/parameters/QueryParam_order_query'
         },
         {
           in: 'query',
@@ -2519,12 +2508,7 @@ describe('SwaggerExplorer', () => {
       ]);
       expect(routes[1].root.parameters).toEqual([
         {
-          name: 'field',
-          required: true,
-          in: 'query',
-          schema: {
-            type: 'string'
-          }
+          $ref: '#/components/parameters/QueryParam_field_query'
         },
         {
           name: 'nestedObject',

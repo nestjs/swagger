@@ -58,13 +58,17 @@ export class SchemaObjectFactory {
         return this.createEnumParam(param, schemas);
       }
       if (this.isPrimitiveType(param.type)) {
-        if (parametersRegistry && param.in === 'query' && param.name) {
+        const paramAsAny = param as any;
+        const hasEnum = paramAsAny.enum || paramAsAny.enumName;
+        const isArray = paramAsAny.isArray || (paramAsAny.schema && paramAsAny.schema.type === 'array');
+        const isFromDto = paramAsAny._isFromDto;
+
+        if (parametersRegistry && param.in === 'query' && param.name && !hasEnum && !isArray && isFromDto) {
           const dtoName = 'QueryParam';
           const paramKey = `${dtoName}_${param.name}_${param.in}`;
 
           if (!parametersRegistry[paramKey]) {
-            const paramAsAny = param as any;
-            const { type, example, ...rest } = paramAsAny;
+            const { type, example, _isFromDto, ...rest } = paramAsAny;
             const typeName =
               type && isFunction(type)
                 ? this.swaggerTypesMapper.mapTypeToOpenAPIType(type.name)

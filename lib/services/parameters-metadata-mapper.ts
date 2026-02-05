@@ -56,7 +56,8 @@ export class ParametersMetadataMapper {
     return {
       ...param,
       ...reflectedParam,
-      name: reflectedParam.name || key
-    };
+      name: reflectedParam.name || key,
+      _isFromDto: true
+    } as any;
   }
 }
