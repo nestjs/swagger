@@ -1,0 +1,114 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/workspace/body": {
+      "post": {
+        "operationId": "WorkspaceController_createWithBody",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "workspace"
+        ]
+      }
+    },
+    "/workspace/query": {
+      "get": {
+        "operationId": "WorkspaceController_searchWithQuery",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/QueryParam_name_query"
+          },
+          {
+            "$ref": "#/components/parameters/QueryParam_slug_query"
+          },
+          {
+            "$ref": "#/components/parameters/QueryParam_memberCount_query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "workspace"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Workspace API",
+    "description": "",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "WorkspaceDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "my-workspace"
+          },
+          "slug": {
+            "type": "string",
+            "example": "acme-corp"
+          },
+          "memberCount": {
+            "type": "number",
+            "example": 10
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    "parameters": {
+      "QueryParam_name_query": {
+        "name": "name",
+        "required": true,
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "example": "my-workspace"
+        }
+      },
+      "QueryParam_slug_query": {
+        "name": "slug",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "example": "acme-corp"
+        }
+      },
+      "QueryParam_memberCount_query": {
+        "name": "memberCount",
+        "required": false,
+        "in": "query",
+        "schema": {
+          "type": "number",
+          "example": 10
+        }
+      }
+    }
+  }
+}
