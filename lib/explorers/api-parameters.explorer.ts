@@ -25,6 +25,7 @@ const schemaObjectFactory = new SchemaObjectFactory(
 
 export const exploreApiParametersMetadata = (
   schemas: Record<string, SchemaObject>,
+  parametersRegistry: Record<string, any>,
   instance: object,
   prototype: Type<unknown>,
   method: Function
@@ -71,7 +72,8 @@ export const exploreApiParametersMetadata = (
 
   const paramsWithDefinitions = schemaObjectFactory.createFromModel(
     properties,
-    schemas
+    schemas,
+    parametersRegistry
   );
   const parameters = swaggerTypesMapper.mapParamTypes(paramsWithDefinitions);
   return parameters ? { parameters } : undefined;

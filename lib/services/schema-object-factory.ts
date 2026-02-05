@@ -44,7 +44,8 @@ export class SchemaObjectFactory {
 
   createFromModel(
     parameters: ParamWithTypeMetadata[],
-    schemas: Record<string, SchemaObject>
+    schemas: Record<string, SchemaObject>,
+    parametersRegistry?: Record<string, any>
   ): Array<ParamWithTypeMetadata | BaseParameterObject> {
     const parameterObjects = parameters.map((param) => {
       if (this.isLazyTypeFunc(param.type)) {
@@ -57,13 +58,40 @@ export class SchemaObjectFactory {
         return this.createEnumParam(param, schemas);
       }
       if (this.isPrimitiveType(param.type)) {
+        if (parametersRegistry && param.in === 'query' && param.name) {
+          const dtoName = 'QueryParam';
+          const paramKey = `${dtoName}_${param.name}_${param.in}`;
+
+          if (!parametersRegistry[paramKey]) {
+            const paramAsAny = param as any;
+            const { type, example, ...rest } = paramAsAny;
+            const typeName =
+              type && isFunction(type)
+                ? this.swaggerTypesMapper.mapTypeToOpenAPIType(type.name)
+                : this.swaggerTypesMapper.mapTypeToOpenAPIType(type);
+
+            parametersRegistry[paramKey] = {
+              ...rest,
+              schema: {
+                type: typeName,
+                ...(example !== undefined && { example })
+              }
+            };
+          }
+
+          return { $ref: `#/components/parameters/${paramKey}` };
+        }
         return param;
       }
       if (this.isArrayCtor(param.type)) {
         return this.mapArrayCtorParam(param);
       }
       if (!isBodyParameter(param)) {
-        return this.createQueryOrParamSchema(param, schemas);
+        return this.createQueryOrParamSchema(
+          param,
+          schemas,
+          parametersRegistry
+        );
       }
       return this.getCustomType(param, schemas);
     });
@@ -103,7 +131,8 @@ export class SchemaObjectFactory {
 
   private createQueryOrParamSchema(
     param: ParamWithTypeMetadata,
-    schemas: Record<string, SchemaObject>
+    schemas: Record<string, SchemaObject>,
+    parametersRegistry?: Record<string, any>
   ) {
     if (isDateCtor(param.type as Function)) {
       return {
@@ -157,13 +186,30 @@ export class SchemaObjectFactory {
             ...this.swaggerTypesMapper.getSchemaOptionsKeys(),
             'allOf'
           ];
-          return keysToMoveToSchema.reduce((acc, key) => {
+          const finalParameterObject = keysToMoveToSchema.reduce((acc, key) => {
             if (key in property) {
               acc.schema = { ...acc.schema, [key]: property[key] };
               delete acc[key];
             }
             return acc;
           }, parameterObject);
+
+          if (parametersRegistry) {
+            const dtoName = isFunction(param.type)
+              ? (param.type as any).name
+              : 'Unknown';
+            const paramName = finalParameterObject.name;
+            const paramIn = finalParameterObject.in;
+            const paramKey = `${dtoName}_${paramName}_${paramIn}`;
+
+            if (!parametersRegistry[paramKey]) {
+              parametersRegistry[paramKey] = finalParameterObject;
+            }
+
+            return { $ref: `#/components/parameters/${paramKey}` };
+          }
+
+          return finalParameterObject;
         }
       ) as ParameterObject[];
     }

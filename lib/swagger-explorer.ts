@@ -71,6 +71,7 @@ export class SwaggerExplorer {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
   private readonly metadataScanner = new MetadataScanner();
   private readonly schemas: Record<string, SchemaObject> = {};
+  private readonly parameters: Record<string, any> = {};
   private operationIdFactory: OperationIdFactory = (
     controllerKey: string,
     methodKey: string,
@@ -131,7 +132,7 @@ export class SwaggerExplorer {
       root: [
         this.exploreRoutePathAndMethod,
         exploreApiOperationMetadata,
-        exploreApiParametersMetadata.bind(null, this.schemas)
+        exploreApiParametersMetadata.bind(null, this.schemas, this.parameters)
       ],
       security: [exploreApiSecurityMetadata],
       tags: [exploreApiTagsMetadata],
@@ -155,6 +156,10 @@ export class SwaggerExplorer {
 
   public getSchemas(): Record<string, SchemaObject> {
     return this.schemas;
+  }
+
+  public getParameters(): Record<string, any> {
+    return this.parameters;
   }
 
   private generateDenormalizedDocument(

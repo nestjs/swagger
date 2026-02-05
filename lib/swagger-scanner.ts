@@ -101,10 +101,13 @@ export class SwaggerScanner {
     const schemas = this.explorer.getSchemas();
     this.addExtraModels(schemas, extraModels);
 
+    const parameters = this.explorer.getParameters();
+
     return {
       ...this.transformer.normalizePaths(flatten(denormalizedPaths)),
       components: {
-        schemas: schemas as Record<string, SchemaObject | ReferenceObject>
+        schemas: schemas as Record<string, SchemaObject | ReferenceObject>,
+        ...(Object.keys(parameters).length > 0 && { parameters })
       }
     };
   }

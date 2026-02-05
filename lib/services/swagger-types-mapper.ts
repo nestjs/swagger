@@ -30,6 +30,9 @@ export class SwaggerTypesMapper {
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
   ) {
     return parameters.map((param) => {
+      if ((param as ReferenceObject).$ref) {
+        return param;
+      }
       if (
         this.hasSchemaDefinition(param as BaseParameterObject) ||
         this.hasRawContentDefinition(param)
