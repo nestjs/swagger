@@ -1,6 +1,7 @@
 import { Type } from '@nestjs/common';
 import { omit } from 'lodash';
 import {
+  EncodingObject,
   ExamplesObject,
   ReferenceObject,
   RequestBodyObject,
@@ -26,6 +27,7 @@ interface ApiBodyMetadata extends RequestBodyOptions {
 interface ApiBodySchemaHost extends RequestBodyOptions {
   schema: SchemaObject | ReferenceObject;
   examples?: ExamplesObject;
+  encoding?: EncodingObject;
 }
 
 export type ApiBodyOptions = ApiBodyMetadata | ApiBodySchemaHost;

@@ -147,8 +147,10 @@ export interface EncodingPropertyObject {
   allowReserved?: boolean;
 }
 
-export interface ResponsesObject
-  extends Record<string, ResponseObject | ReferenceObject | undefined> {
+export interface ResponsesObject extends Record<
+  string,
+  ResponseObject | ReferenceObject | undefined
+> {
   default?: ResponseObject | ReferenceObject;
 }
 
