@@ -46,7 +46,7 @@ class UploadController {
   }
 }
 
-descibe('ApiBody encoding', () => {
+describe('ApiBody encoding', () => {
   let app: INestApplication;
   let document: ReturnType<typeof SwaggerModule.createDocument>;
 
