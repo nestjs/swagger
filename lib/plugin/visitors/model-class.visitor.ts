@@ -684,7 +684,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       const types = (type as ts.UnionOrIntersectionType).types;
       const nonUndefined = types.find((t: any) => t.intrinsicName !== 'undefined');
       if (nonUndefined) {
-        type = nonUndefined as ts.Type;
+        type = nonUndefined;
       }
     }
 
