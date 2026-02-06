@@ -1,0 +1,36 @@
+*** Begin Patch
+*** Update File: dist/swagger-scanner.js
+@@
+-            if (deepScanRoutes) {
+-                const isGlobal = (module) => !container.isGlobalModule(module); 
+-                Array.from(relatedModules.values())
+-                    .filter(isGlobal)
+-                    .forEach(({ metatype, routes }) => {
+-                    const modulePath = this.getModulePathMetadata(container, met
+-atype);                                                                                             result = result.concat(this.scanModuleRoutes(routes, moduleP
+-ath, globalPrefix, internalConfigRef, operationIdFactory));                                     });
++            if (deepScanRoutes) {
++                const isGlobal = (module) => !container.isGlobalModule(module); 
++                Array.from(relatedModules.values())
++                    .filter(isGlobal)
++                    .forEach(({ metatype, routes }) => {
++                        // skip related modules without routes metadata
++                        if (!routes || typeof routes.values !== 'function') {
++                            return;
++                        }
++                        const modulePath = this.getModulePathMetadata(container, metatype);
++                        result = result.concat(this.scanModuleRoutes(routes, modulePath, globalPrefix, internalConfigRef, operationIdFactory));
++                    });
+@@
+-    scanModuleRoutes(routes, modulePath, globalPrefix, applicationConfig, operat
+-ionIdFactory) {                                                                         const denormalizedArray = [...routes.values()].map((ctrl) => this.explor
+-er.exploreController(ctrl, applicationConfig, modulePath, globalPrefix, operationIdFactory));                                                                           return (0, lodash_1.flatten)(denormalizedArray);
+-    }
++    scanModuleRoutes(routes, modulePath, globalPrefix, applicationConfig, operationIdFactory) {
++        if (!routes || typeof routes.values !== 'function') {
++            return [];
++        }
++        const denormalizedArray = [...routes.values()].map((ctrl) => this.explorer.exploreController(ctrl, applicationConfig, modulePath, globalPrefix, operationIdFactory));
++        return (0, lodash_1.flatten)(denormalizedArray);
++    }
+*** End Patch
