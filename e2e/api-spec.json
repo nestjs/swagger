@@ -336,6 +336,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -416,6 +417,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -665,6 +667,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -745,6 +748,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -829,6 +833,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1051,6 +1056,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1128,6 +1134,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1201,6 +1208,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1290,6 +1298,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1350,6 +1359,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1423,6 +1433,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1493,6 +1504,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1575,6 +1587,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1637,6 +1650,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
