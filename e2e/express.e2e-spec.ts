@@ -156,6 +156,15 @@ describe('Express Swagger', () => {
       expect(response.text.length).toBeGreaterThan(0);
     });
 
+    it('should serve the TOML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-toml`
+      );
+
+      expect(response.status).toEqual(200);
+      expect(response.text.length).toBeGreaterThan(0);
+    });
+
     it.each([
       '/apidoc',
       '/apidoc/',
@@ -198,6 +207,14 @@ describe('Express Swagger', () => {
     it('should not serve the YAML definition file', async () => {
       const response = await request(app.getHttpServer()).get(
         `${SWAGGER_RELATIVE_URL}-yaml`
+      );
+
+      expect(response.status).toEqual(404);
+    });
+
+    it('should not serve the TOML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-toml`
       );
 
       expect(response.status).toEqual(404);
@@ -267,6 +284,14 @@ describe('Express Swagger', () => {
       expect(response.status).toEqual(404);
     });
 
+    it('should not serve the TOML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-toml`
+      );
+
+      expect(response.status).toEqual(404);
+    });
+
     it.each([SWAGGER_RELATIVE_URL, `${SWAGGER_RELATIVE_URL}/`])(
       'should not serve Swagger UI at "%s"',
       async (url) => {
@@ -305,6 +330,13 @@ describe('Express Swagger', () => {
     it('should not serve the YAML definition file', async () => {
       const response = await request(app.getHttpServer()).get(
         `${SWAGGER_RELATIVE_URL}-yaml`
+      );
+      expect(response.status).toEqual(404);
+    });
+
+    it('should not serve the TOML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-toml`
       );
       expect(response.status).toEqual(404);
     });
@@ -351,13 +383,12 @@ describe('Express Swagger', () => {
       expect(response.status).toEqual(404);
     });
 
-    it.each([SWAGGER_RELATIVE_URL, `${SWAGGER_RELATIVE_URL}/`])(
-      'should serve Swagger UI at "%s"',
-      async (url) => {
-        const response = await request(app.getHttpServer()).get(url);
-        expect(response.status).toEqual(200);
-      }
-    );
+    it('should not serve the TOML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-toml`
+      );
+      expect(response.status).toEqual(404);
+    });
   });
 
   describe('Serve no definitions when raw is an empty array', () => {
@@ -392,6 +423,13 @@ describe('Express Swagger', () => {
       expect(response.status).toEqual(404);
     });
 
+    it('should not serve the TOML definition file', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}-toml`
+      );
+      expect(response.status).toEqual(404);
+    });
+
     it.each([SWAGGER_RELATIVE_URL, `${SWAGGER_RELATIVE_URL}/`])(
       'should serve Swagger UI at "%s"',
       async (url) => {
@@ -404,6 +442,7 @@ describe('Express Swagger', () => {
   describe('custom documents endpoints', () => {
     const JSON_CUSTOM_URL = '/apidoc-json';
     const YAML_CUSTOM_URL = '/apidoc-yaml';
+    const TOML_CUSTOM_URL = '/apidoc-toml';
 
     beforeEach(async () => {
       const swaggerDocument = SwaggerModule.createDocument(
@@ -413,6 +452,7 @@ describe('Express Swagger', () => {
       SwaggerModule.setup('api', app, swaggerDocument, {
         jsonDocumentUrl: JSON_CUSTOM_URL,
         yamlDocumentUrl: YAML_CUSTOM_URL,
+        tomlDocumentUrl: TOML_CUSTOM_URL,
         patchDocumentOnRequest: (req, res, document) => ({
           ...document,
           info: {
@@ -457,6 +497,20 @@ describe('Express Swagger', () => {
       );
       expect(response.text).toContain('My custom description');
     });
+
+    it('toml document should be served in the custom url', async () => {
+      const response = await request(app.getHttpServer()).get(TOML_CUSTOM_URL);
+
+      expect(response.status).toEqual(200);
+      expect(response.text.length).toBeGreaterThan(0);
+    });
+
+    it('patched TOML document should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${TOML_CUSTOM_URL}?description=My%20custom%20description`
+      );
+      expect(response.text).toContain('My custom description');
+    });
   });
 
   describe('custom documents endpoints with global prefix', () => {
@@ -465,6 +519,7 @@ describe('Express Swagger', () => {
     const GLOBAL_PREFIX = '/v1';
     const JSON_CUSTOM_URL = '/apidoc-json';
     const YAML_CUSTOM_URL = '/apidoc-yaml';
+    const TOML_CUSTOM_URL = '/apidoc-toml';
 
     beforeEach(async () => {
       appGlobalPrefix = await NestFactory.create<NestExpressApplication>(
@@ -481,7 +536,8 @@ describe('Express Swagger', () => {
       SwaggerModule.setup('api', appGlobalPrefix, swaggerDocument, {
         useGlobalPrefix: true,
         jsonDocumentUrl: JSON_CUSTOM_URL,
-        yamlDocumentUrl: YAML_CUSTOM_URL
+        yamlDocumentUrl: YAML_CUSTOM_URL,
+        tomlDocumentUrl: TOML_CUSTOM_URL
       });
 
       await appGlobalPrefix.init();
@@ -503,6 +559,15 @@ describe('Express Swagger', () => {
     it('yaml document should be server in the custom url', async () => {
       const response = await request(appGlobalPrefix.getHttpServer()).get(
         `${GLOBAL_PREFIX}${YAML_CUSTOM_URL}`
+      );
+
+      expect(response.status).toEqual(200);
+      expect(response.text.length).toBeGreaterThan(0);
+    });
+
+    it('toml document should be served in the custom url', async () => {
+      const response = await request(appGlobalPrefix.getHttpServer()).get(
+        `${GLOBAL_PREFIX}${TOML_CUSTOM_URL}`
       );
 
       expect(response.status).toEqual(200);
