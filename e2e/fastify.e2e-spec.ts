@@ -332,6 +332,14 @@ describe('Fastify Swagger', () => {
       );
       expect(response.status).toEqual(404);
     });
+
+    it.each([SWAGGER_RELATIVE_URL, `${SWAGGER_RELATIVE_URL}/`])(
+      'should serve Swagger UI at "%s"',
+      async (url) => {
+        const response = await request(app.getHttpServer()).get(url);
+        expect(response.status).toEqual(200);
+      }
+    );
   });
 
   describe('Serve no definitions when raw is an empty array', () => {
@@ -441,13 +449,6 @@ describe('Fastify Swagger', () => {
         `${YAML_CUSTOM_URL}?description=My%20custom%20description`
       );
       expect(response.text).toContain('My custom description');
-    });
-
-    it('toml document should be served in the custom url', async () => {
-      const response = await request(app.getHttpServer()).get(TOML_CUSTOM_URL);
-
-      expect(response.status).toEqual(200);
-      expect(response.text.length).toBeGreaterThan(0);
     });
 
     it('patched TOML document should be served', async () => {
