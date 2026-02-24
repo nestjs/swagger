@@ -3,6 +3,7 @@ import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import * as jsyaml from 'js-yaml';
+import { stringify as tomlStringify } from 'smol-toml';
 import {
   OpenAPIObject,
   SwaggerCustomOptions,
@@ -89,9 +90,10 @@ export class SwaggerModule {
     documentOrFactory: OpenAPIObject | (() => OpenAPIObject),
     options: {
       ui: boolean;
-      raw: boolean | Array<'json' | 'yaml'>;
+      raw: boolean | Array<'json' | 'yaml' | 'toml'>;
       jsonDocumentUrl: string;
       yamlDocumentUrl: string;
+      tomlDocumentUrl: string;
       swaggerOptions: SwaggerCustomOptions;
     }
   ) {
@@ -118,10 +120,10 @@ export class SwaggerModule {
     }
 
     /**
-     * Serve JSON/YAML definitions based on the `raw` option:
-     * - `true`: Serve both JSON and YAML definitions.
-     * - `false`: Skip registering both JSON and YAML definitions.
-     * - `Array<'json' | 'yaml'>`: Serve only the specified formats (e.g., `['json']` to serve only JSON).
+     * Serve JSON/YAML/TOML definitions based on the `raw` option:
+     * - `true`: Serve JSON, YAML and TOML definitions.
+     * - `false`: Skip registering all definitions.
+     * - `Array<'json' | 'yaml' | 'toml'>`: Serve only the specified formats (e.g., `['json']` to serve only JSON).
      */
     if (
       options.raw === true ||
@@ -129,10 +131,12 @@ export class SwaggerModule {
     ) {
       const serveJson = options.raw === true || options.raw.includes('json');
       const serveYaml = options.raw === true || options.raw.includes('yaml');
+      const serveToml = options.raw === true || options.raw.includes('toml');
 
       this.serveDefinitions(httpAdapter, getBuiltDocument, options, {
         serveJson,
-        serveYaml
+        serveYaml,
+        serveToml
       });
     }
   }
@@ -267,9 +271,10 @@ export class SwaggerModule {
     options: {
       jsonDocumentUrl: string;
       yamlDocumentUrl: string;
+      tomlDocumentUrl: string;
       swaggerOptions: SwaggerCustomOptions;
     },
-    serveOptions: { serveJson: boolean; serveYaml: boolean }
+    serveOptions: { serveJson: boolean; serveYaml: boolean; serveToml: boolean }
   ) {
     if (serveOptions.serveJson) {
       httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
@@ -302,6 +307,21 @@ export class SwaggerModule {
         res.send(yamlDocument);
       });
     }
+
+    if (serveOptions.serveToml) {
+      httpAdapter.get(normalizeRelPath(options.tomlDocumentUrl), (req, res) => {
+        res.type('application/toml');
+        const document = getBuiltDocument();
+
+        const documentToSerialize = options.swaggerOptions
+          .patchDocumentOnRequest
+          ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
+          : document;
+
+        const tomlDocument = tomlStringify(documentToSerialize);
+        res.send(tomlDocument);
+      });
+    }
   }
 
   public static setup(
@@ -330,6 +350,10 @@ export class SwaggerModule {
       ? `${validatedGlobalPrefix}${validatePath(options.yamlDocumentUrl)}`
       : `${finalPath}-yaml`;
 
+    const finalTOMLDocumentPath = options?.tomlDocumentUrl
+      ? `${validatedGlobalPrefix}${validatePath(options.tomlDocumentUrl)}`
+      : `${finalPath}-toml`;
+
     const ui = options?.ui ?? options?.swaggerUiEnabled ?? true;
     const raw = options?.raw ?? true;
 
@@ -345,6 +369,7 @@ export class SwaggerModule {
         raw,
         jsonDocumentUrl: finalJSONDocumentPath,
         yamlDocumentUrl: finalYAMLDocumentPath,
+        tomlDocumentUrl: finalTOMLDocumentPath,
         swaggerOptions: options || {}
       }
     );
