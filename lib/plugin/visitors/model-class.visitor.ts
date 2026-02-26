@@ -538,8 +538,14 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       this._typeImports
     );
 
+    // Only add async modifier if the identifier contains await (for ESM dynamic imports)
+    const identifierText = identifier.text || '';
+    const modifiers = identifierText.includes('await ')
+      ? [factory.createModifier(ts.SyntaxKind.AsyncKeyword)]
+      : undefined;
+
     const initializer = factory.createArrowFunction(
-      undefined,
+      modifiers,
       undefined,
       [],
       undefined,
@@ -716,6 +722,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
 
     const typeReferenceDescriptor = { typeName: getText(type, typeChecker) };
+
     const enumIdentifier = typeReferenceToIdentifier(
       typeReferenceDescriptor,
       hostFilename,
@@ -725,7 +732,22 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       this._typeImports
     );
 
-    const enumProperty = factory.createPropertyAssignment(key, enumIdentifier);
+    // Only add async modifier if the identifier contains await (for ESM dynamic imports)
+    const enumIdentifierText = enumIdentifier.text || '';
+    const modifiers = enumIdentifierText.includes('await ')
+      ? [factory.createModifier(ts.SyntaxKind.AsyncKeyword)]
+      : undefined;
+
+    const initializer = factory.createArrowFunction(
+      modifiers,
+      undefined,
+      [],
+      undefined,
+      undefined,
+      enumIdentifier
+    );
+
+    const enumProperty = factory.createPropertyAssignment(key, initializer);
 
     if (isArrayType) {
       const isArrayKey = 'isArray';

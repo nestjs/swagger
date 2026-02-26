@@ -42,7 +42,7 @@ var Status;
 })(Status || (Status = {}));
 export class NullableDto {
     static _OPENAPI_METADATA_FACTORY() {
-        return { stringValue: { required: true, type: () => String, nullable: true }, stringArr: { required: true, type: () => [String], nullable: true }, optionalString: { required: false, type: () => String }, undefinedString: { required: true, type: () => String }, nullableEnumValue: { required: true, nullable: true, enum: OneValueEnum }, optionalEnumValue: { required: false, enum: OneValueEnum }, undefinedEnumValue: { required: true, enum: OneValueEnum }, enumValue: { required: true, nullable: true, enum: Status }, optionalNullableEnumValue: { required: false, nullable: true, enum: Status } };
+        return { stringValue: { required: true, type: () => String, nullable: true }, stringArr: { required: true, type: () => [String], nullable: true }, optionalString: { required: false, type: () => String }, undefinedString: { required: true, type: () => String }, nullableEnumValue: { required: true, nullable: true, enum: () => OneValueEnum }, optionalEnumValue: { required: false, enum: () => OneValueEnum }, undefinedEnumValue: { required: true, enum: () => OneValueEnum }, enumValue: { required: true, nullable: true, enum: () => Status }, optionalNullableEnumValue: { required: false, nullable: true, enum: () => Status } };
     }
 }
 __decorate([
