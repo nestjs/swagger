@@ -1856,6 +1856,25 @@
           "REJECTED"
         ]
       },
+      "XEnumVarnamesTest": {
+        "type": "number",
+        "enum": [
+          1,
+          2,
+          3
+        ],
+        "description": "The x-enum-varnames and x-enum-descriptions test",
+        "x-enum-varnames": [
+          "APPROVED",
+          "PENDING",
+          "REJECTED"
+        ],
+        "x-enum-descriptions": [
+          "Approved State",
+          "Pending State",
+          "Rejected State"
+        ]
+      },
       "CreateCatDto": {
         "type": "object",
         "properties": {
@@ -1964,6 +1983,14 @@
                 "$ref": "#/components/schemas/XEnumTest"
               }
             ]
+          },
+          "xEnumVarnamesTest": {
+            "description": "The x-enum-varnames and x-enum-descriptions test",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/XEnumVarnamesTest"
+              }
+            ]
           }
         },
         "x-tags": [
@@ -1983,7 +2010,8 @@
           "enum",
           "enumArr",
           "enumWithRef",
-          "xEnumTest"
+          "xEnumTest",
+          "xEnumVarnamesTest"
         ]
       },
       "Cat": {

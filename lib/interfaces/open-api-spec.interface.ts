@@ -233,6 +233,8 @@ export interface SchemaObject {
   required?: string[];
   enum?: any[];
   'x-enumNames'?: string[];
+  'x-enum-varnames'?: string[];
+  'x-enum-descriptions'?: string[];
 }
 
 export type SchemasObject = Record<string, SchemaObject>;
