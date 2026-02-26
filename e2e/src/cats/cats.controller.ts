@@ -37,7 +37,8 @@ import { CatBreed } from './enums/cat-breed.enum';
   name: 'header',
   required: false,
   description: 'Test',
-  schema: { default: 'test' }
+  schema: { default: 'test' },
+  example: 'test'
 })
 @ApiExtension('x-foo', { 'from-controller': true })
 @Controller('cats')
