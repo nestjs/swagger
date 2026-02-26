@@ -319,6 +319,11 @@ export class SwaggerExplorer {
       METHOD_METADATA,
       method
     ) as RequestMethod;
+    const webhookMetadata = Reflect.getMetadata(
+      DECORATORS.API_WEBHOOK,
+      method
+    ) as string | boolean | undefined;
+    const isWebhook = Boolean(webhookMetadata);
 
     const methodVersion: VersionValue | undefined = Reflect.getMetadata(
       VERSION_METADATA,
@@ -372,6 +377,15 @@ export class SwaggerExplorer {
           return validMethods.map((requestMethod) => ({
             method: requestMethod,
             path: fullPath === '' ? '/' : fullPath,
+            ...(isWebhook
+              ? {
+                  isWebhook: true,
+                  webhookName:
+                    typeof webhookMetadata === 'string'
+                      ? webhookMetadata
+                      : method.name
+                }
+              : {}),
             operationId: `${this.getOperationId(
               instance,
               method.name
@@ -389,6 +403,15 @@ export class SwaggerExplorer {
         return {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,
+          ...(isWebhook
+            ? {
+                isWebhook: true,
+                webhookName:
+                  typeof webhookMetadata === 'string'
+                    ? webhookMetadata
+                    : method.name
+              }
+            : {}),
           operationId: this.getOperationId(instance, methodKey, pathVersion),
           ...apiExtension
         };

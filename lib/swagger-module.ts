@@ -17,6 +17,7 @@ import {
 } from './swagger-ui';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
+import { isOas31OrLater } from './utils/is-oas31-or-later.util';
 import { normalizeRelPath } from './utils/normalize-rel-path';
 import { resolvePath } from './utils/resolve-path.util';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
@@ -28,6 +29,16 @@ import { validatePath } from './utils/validate-path.util';
 export class SwaggerModule {
   private static readonly metadataLoader = new MetadataLoader();
 
+  private static mergeWebhooks(
+    configWebhooks?: OpenAPIObject['webhooks'],
+    scannedWebhooks?: OpenAPIObject['webhooks']
+  ): OpenAPIObject['webhooks'] | undefined {
+    if (!configWebhooks && !scannedWebhooks) {
+      return undefined;
+    }
+    return assignTwoLevelsDeep({}, configWebhooks || {}, scannedWebhooks || {});
+  }
+
   public static createDocument(
     app: INestApplication,
     config: Omit<OpenAPIObject, 'paths'>,
@@ -35,18 +46,45 @@ export class SwaggerModule {
   ): OpenAPIObject {
     const swaggerScanner = new SwaggerScanner();
     const document = swaggerScanner.scanApplication(app, options);
+    const { webhooks: configWebhooks, ...configWithoutWebhooks } =
+      config as OpenAPIObject;
 
     document.components = assignTwoLevelsDeep(
       {},
       config.components,
       document.components
     );
-
-    return {
+    const {
+      webhooks: scannedWebhooks,
+      webhookPaths,
+      ...documentWithoutWebhooks
+    } = document as OpenAPIObject & {
+      webhookPaths?: OpenAPIObject['paths'];
+    };
+    const mergedWebhooks = SwaggerModule.mergeWebhooks(
+      configWebhooks,
+      scannedWebhooks
+    );
+    const shouldIncludeWebhooks = isOas31OrLater(config.openapi ?? '3.0.0');
+    const baseDocument: OpenAPIObject = {
       openapi: '3.0.0',
       paths: {},
-      ...config,
-      ...document
+      ...configWithoutWebhooks,
+      ...documentWithoutWebhooks
+    };
+
+    if (shouldIncludeWebhooks) {
+      return {
+        ...baseDocument,
+        ...(mergedWebhooks ? { webhooks: mergedWebhooks } : {})
+      };
+    }
+
+    return {
+      ...baseDocument,
+      paths: webhookPaths
+        ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
+        : baseDocument.paths
     };
   }
 

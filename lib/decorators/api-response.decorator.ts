@@ -14,8 +14,10 @@ export interface ApiResponseExamples {
   value: ApiResponseExampleValue;
 }
 
-export interface ApiResponseCommonMetadata
-  extends Omit<ResponseObject, 'description'> {
+export interface ApiResponseCommonMetadata extends Omit<
+  ResponseObject,
+  'description'
+> {
   status?: number | 'default' | '1XX' | '2XX' | '3XX' | '4XX' | '5XX';
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
@@ -28,8 +30,10 @@ export type ApiResponseMetadata =
       examples?: { [key: string]: ApiResponseExamples };
     });
 
-export interface ApiResponseSchemaHost
-  extends Omit<ResponseObject, 'description'> {
+export interface ApiResponseSchemaHost extends Omit<
+  ResponseObject,
+  'description'
+> {
   schema: SchemaObject & Partial<ReferenceObject>;
   status?: number | 'default' | '1XX' | '2XX' | '3XX' | '4XX' | '5XX';
   description?: string;
