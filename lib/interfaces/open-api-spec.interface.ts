@@ -186,6 +186,14 @@ export interface TagObject {
   name: string;
   description?: string;
   externalDocs?: ExternalDocumentationObject;
+  parent?: string;
+  kind?: 'navigation' | 'reference';
+}
+
+export interface ApiTagOptions {
+  name: string;
+  parent?: string;
+  kind?: 'navigation' | 'reference';
 }
 
 export type ExamplesObject = Record<string, ExampleObject | ReferenceObject>;
