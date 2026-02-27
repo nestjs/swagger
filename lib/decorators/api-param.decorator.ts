@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { isNil, omit } from 'lodash';
+import { isNil, omit, clone } from 'lodash';
 import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
 import {
   ParameterObject,
@@ -17,6 +17,8 @@ interface ApiParamCommonMetadata extends ParameterOptions {
   enum?: SwaggerEnumType;
   enumName?: string;
   enumSchema?: EnumSchemaAttributes;
+  // Allow passing custom OpenAPI extensions for parameters
+  extensions?: Record<string, any>;
 }
 
 type ApiParamMetadata =
@@ -46,11 +48,25 @@ export function ApiParam(
   const param: ApiParamMetadata & Record<string, any> = {
     name: isNil(options.name) ? defaultParamOptions.name : options.name,
     in: 'path',
-    ...omit(options, 'enum')
+    ...omit(options, ['enum', 'extensions'])
   };
 
   if (isEnumDefined(options)) {
     addEnumSchema(param, options);
+  }
+
+  // Merge custom OpenAPI extensions into parameter metadata.
+  // Accept an `extensions` bag on the options similar to how `@ApiExtension` works.
+  const extensions = (options as any).extensions as
+    | Record<string, any>
+    | undefined;
+  if (extensions && typeof extensions === 'object') {
+    const cloned = clone(extensions);
+    for (const [key, value] of Object.entries(cloned)) {
+      // Ensure extension keys are prefixed with 'x-'
+      const extKey = key.startsWith('x-') ? key : `x-${key}`;
+      param[extKey] = value;
+    }
   }
 
   return createParamDecorator(param, defaultParamOptions);
