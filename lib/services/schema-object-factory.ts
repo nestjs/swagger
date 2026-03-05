@@ -606,7 +606,7 @@ export class SchemaObjectFactory {
 
         const enumValues = getEnumValues(propertyCompilerMetadata.enum);
         propertyCompilerMetadata.items = {
-          type: getEnumType(enumValues),
+          type: propertyCompilerMetadata.items?.type ?? getEnumType(enumValues),
           enum: enumValues
         };
         delete propertyCompilerMetadata.enum;
@@ -614,7 +614,9 @@ export class SchemaObjectFactory {
         const enumValues = getEnumValues(propertyCompilerMetadata.enum);
 
         propertyCompilerMetadata.enum = enumValues;
-        propertyCompilerMetadata.type = getEnumType(enumValues);
+        if (!propertyCompilerMetadata.type) {
+          propertyCompilerMetadata.type = getEnumType(enumValues);
+        }
       }
       const propertyMetadata = this.mergePropertyWithMetadata(
         key,
