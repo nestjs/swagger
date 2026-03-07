@@ -5,10 +5,18 @@ import { sortObjectLexicographically } from './utils/sort-object-lexicographical
 export class SwaggerTransformer {
   public normalizePaths(
     denormalizedDoc: (Partial<OpenAPIObject> & Record<'root', any>)[]
-  ): Record<'paths', OpenAPIObject['paths']> {
+  ): Pick<OpenAPIObject, 'paths' | 'webhooks'> & {
+    webhookPaths?: OpenAPIObject['paths'];
+  } {
     const roots = filter(denormalizedDoc, (r) => r.root);
+    const webhookRoots = roots.filter(({ root }: Record<'root', any>) =>
+      Boolean(root?.isWebhook)
+    );
+    const pathRoots = roots.filter(
+      ({ root }: Record<'root', any>) => !root?.isWebhook
+    );
     const groupedByPath = groupBy(
-      roots,
+      pathRoots,
       ({ root }: Record<'root', any>) => root.path
     );
     const paths = mapValues(groupedByPath, (routes) => {
@@ -19,13 +27,50 @@ export class SwaggerTransformer {
       return mapValues(keyByMethod, (route: any) => {
         const mergedDefinition = {
           ...omit(route, 'root'),
-          ...omit(route.root, ['method', 'path'])
+          ...omit(route.root, ['method', 'path', 'isWebhook', 'webhookName'])
+        };
+        return sortObjectLexicographically(mergedDefinition);
+      });
+    });
+
+    const groupedByWebhookName = groupBy(
+      webhookRoots,
+      ({ root }: Record<'root', any>) => root.webhookName || root.path
+    );
+    const webhooks = mapValues(groupedByWebhookName, (routes) => {
+      const keyByMethod = keyBy(
+        routes,
+        ({ root }: Record<'root', any>) => root.method
+      );
+      return mapValues(keyByMethod, (route: any) => {
+        const mergedDefinition = {
+          ...omit(route, 'root'),
+          ...omit(route.root, ['method', 'path', 'isWebhook', 'webhookName'])
+        };
+        return sortObjectLexicographically(mergedDefinition);
+      });
+    });
+    const groupedByWebhookPath = groupBy(
+      webhookRoots,
+      ({ root }: Record<'root', any>) => root.path
+    );
+    const webhookPaths = mapValues(groupedByWebhookPath, (routes) => {
+      const keyByMethod = keyBy(
+        routes,
+        ({ root }: Record<'root', any>) => root.method
+      );
+      return mapValues(keyByMethod, (route: any) => {
+        const mergedDefinition = {
+          ...omit(route, 'root'),
+          ...omit(route.root, ['method', 'path', 'isWebhook', 'webhookName'])
         };
         return sortObjectLexicographically(mergedDefinition);
       });
     });
     return {
-      paths
+      paths,
+      ...(Object.keys(webhooks).length > 0 ? { webhooks } : {}),
+      ...(Object.keys(webhookPaths).length > 0 ? { webhookPaths } : {})
     };
   }
 }
