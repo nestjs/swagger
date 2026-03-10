@@ -57,7 +57,7 @@
     "fastify": "5.8.2",
     "globals": "17.4.0",
     "husky": "9.1.7",
-    "jest": "30.2.0",
+    "jest": "30.3.0",
     "lerna-changelog": "2.2.0",
     "lint-staged": "16.3.2",
     "openapi-types": "12.1.3",
