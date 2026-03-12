@@ -1,17 +1,21 @@
+import { Module } from '@nestjs/core/injector/module';
+
 export type OperationIdFactory = (
   controllerKey: string,
   methodKey: string,
   version?: string
 ) => string;
 
+export type SwaggerIncludeModuleFn = (type: Function) => boolean;
+
 /**
  * @publicApi
  */
 export interface SwaggerDocumentOptions {
   /**
-   * List of modules to include in the specification
+   * Modules to include in the specification. Can either be a list of modules or a predicate function.
    */
-  include?: Function[];
+  include?: SwaggerIncludeModuleFn | Function[];
 
   /**
    * Additional, extra models that should be inspected and included in the specification

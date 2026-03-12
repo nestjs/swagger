@@ -7,7 +7,8 @@ import { flatten, isEmpty } from 'lodash';
 import {
   OpenAPIObject,
   OperationIdFactory,
-  SwaggerDocumentOptions
+  SwaggerDocumentOptions,
+  SwaggerIncludeModuleFn
 } from './interfaces';
 import { ModuleRoute } from './interfaces/module-route.interface';
 import {
@@ -21,6 +22,8 @@ import { SwaggerExplorer } from './swagger-explorer';
 import { SwaggerTransformer } from './swagger-transformer';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { stripLastSlash } from './utils/strip-last-slash.util';
+
+type IncludeConfig = SwaggerDocumentOptions['include'];
 
 export class SwaggerScanner {
   private readonly transformer = new SwaggerTransformer();
@@ -36,7 +39,7 @@ export class SwaggerScanner {
   ): Omit<OpenAPIObject, 'openapi' | 'info'> {
     const {
       deepScanRoutes,
-      include: includedModules = [],
+      include = [],
       extraModels = [],
       ignoreGlobalPrefix = false,
       operationIdFactory,
@@ -50,10 +53,7 @@ export class SwaggerScanner {
     const httpAdapterType = app.getHttpAdapter().getType();
     this.initializeSwaggerExplorer(httpAdapterType);
 
-    const modules: Module[] = this.getModules(
-      container.getModules(),
-      includedModules
-    );
+    const modules: Module[] = this.getModules(container.getModules(), include);
     const globalPrefix = !ignoreGlobalPrefix
       ? stripLastSlash(getGlobalPrefix(app))
       : '';
@@ -132,14 +132,25 @@ export class SwaggerScanner {
 
   public getModules(
     modulesContainer: Map<string, Module>,
-    include: Function[]
+    include: IncludeConfig
   ): Module[] {
-    if (!include || isEmpty(include)) {
-      return [...modulesContainer.values()];
+    const fn =
+      typeof include === 'function'
+        ? include
+        : this.generateModuleIncludeFn(include);
+
+    return [...modulesContainer.values()].filter((o) => fn(o.metatype));
+  }
+
+  private generateModuleIncludeFn(
+    arr: readonly Function[]
+  ): SwaggerIncludeModuleFn {
+    if (arr.length === 0) {
+      return () => true;
     }
-    return [...modulesContainer.values()].filter(({ metatype }) =>
-      include.some((item) => item === metatype)
-    );
+
+    const set = new Set(arr);
+    return (metatype) => set.has(metatype);
   }
 
   public addExtraModels(
