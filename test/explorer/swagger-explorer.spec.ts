@@ -32,6 +32,7 @@ import {
   ApiPropertyOptional,
   ApiQuery,
   ApiResponse,
+  ApiWebhook,
   ApiSchema
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
@@ -2613,6 +2614,32 @@ describe('SwaggerExplorer', () => {
       ).toEqual('403 - global error response');
 
       GlobalParametersStorage.clear();
+    });
+  });
+
+  describe('when using ApiWebhook', () => {
+    @Controller()
+    class StripeWebhooksController {
+      @Post('stripe')
+      @ApiWebhook('stripeEvent')
+      stripe() {
+        return true;
+      }
+    }
+
+    it('marks routes as webhooks with a name', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new StripeWebhooksController(),
+          metatype: StripeWebhooksController
+        } as InstanceWrapper<StripeWebhooksController>,
+        new ApplicationConfig(),
+        { modulePath: 'modulePath' }
+      );
+
+      expect(routes[0].root.isWebhook).toBe(true);
+      expect(routes[0].root.webhookName).toBe('stripeEvent');
     });
   });
 });
