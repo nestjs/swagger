@@ -51,7 +51,14 @@ export function getTypeArguments(type: Type) {
 }
 
 export function isBoolean(type: Type) {
-  return hasFlag(type, TypeFlags.Boolean);
+  return (
+    hasFlag(type, TypeFlags.Boolean) ||
+    hasFlag(type, TypeFlags.BooleanLiteral)
+  );
+}
+
+export function isBooleanLiteral(type: Type) {
+  return hasFlag(type, TypeFlags.BooleanLiteral) && !type.isUnion();
 }
 
 export function isString(type: Type) {

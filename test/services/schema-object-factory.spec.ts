@@ -818,5 +818,70 @@ describe('SchemaObjectFactory', () => {
       expect(result.type).toBe('array');
     });
   });
+
+  describe('boolean enum and explicit type preservation', () => {
+    it('should produce type "boolean" with enum [true, false]', () => {
+      class BoolEnumDto {
+        @ApiProperty({ enum: [true, false] })
+        active: boolean;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(BoolEnumDto, schemas);
+
+      expect(schemas.BoolEnumDto).toBeDefined();
+      const props = schemas.BoolEnumDto.properties as any;
+      expect(props.active).toEqual({
+        type: 'boolean',
+        enum: [true, false]
+      });
+    });
+
+    it('should produce type "boolean" with enum [true]', () => {
+      class TrueLiteralDto {
+        @ApiProperty({ enum: [true] })
+        flag: boolean;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(TrueLiteralDto, schemas);
+
+      const props = schemas.TrueLiteralDto.properties as any;
+      expect(props.flag).toEqual({
+        type: 'boolean',
+        enum: [true]
+      });
+    });
+
+    it('should preserve explicit type when enum is also provided', () => {
+      class ExplicitTypeBoolDto {
+        @ApiProperty({ type: 'boolean', enum: [true] })
+        flag: boolean;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ExplicitTypeBoolDto, schemas);
+
+      const props = schemas.ExplicitTypeBoolDto.properties as any;
+      expect(props.flag).toEqual({
+        type: 'boolean',
+        enum: [true]
+      });
+    });
+
+    it('should preserve explicit type "string" even when enum values are numbers', () => {
+      class ExplicitTypeStringDto {
+        @ApiProperty({ type: 'string', enum: [1, 2, 3] })
+        code: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ExplicitTypeStringDto, schemas);
+
+      const props = schemas.ExplicitTypeStringDto.properties as any;
+      expect(props.code.type).toBe('string');
+      expect(props.code.enum).toEqual([1, 2, 3]);
+    });
+  });
 });
 
