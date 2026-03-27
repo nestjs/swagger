@@ -123,7 +123,44 @@ export class SchemaObjectFactory {
       if (param.name) {
         // We should not spread parameters that have a name
         // Just generate the schema for the type instead and link it with ref if needed
-        return this.getCustomType(param, schemas);
+        const customType = this.getCustomType(param, schemas);
+
+        // Move schema-level options (e.g., example) from the top level into the schema
+        // object so they are not lost when mapParamTypes strips top-level keys.
+        const schemaOptionsKeys =
+          this.swaggerTypesMapper.getSchemaOptionsKeys();
+        const schemaOptionsFromParam: Record<string, any> = {};
+        for (const key of schemaOptionsKeys) {
+          // Skip 'type' and 'items' as they are handled by getCustomType
+          if (key === 'type' || key === 'items') {
+            continue;
+          }
+          if (key in customType && !(key in (customType.schema || {}))) {
+            schemaOptionsFromParam[key] = (customType as any)[key];
+            delete (customType as any)[key];
+          }
+        }
+        if (Object.keys(schemaOptionsFromParam).length > 0) {
+          const existingSchema = (customType.schema || {}) as Record<
+            string,
+            any
+          >;
+          // When we have extra metadata alongside a $ref, use allOf pattern
+          if ('$ref' in existingSchema) {
+            const { $ref, ...restSchema } = existingSchema;
+            (customType as any).schema = {
+              ...restSchema,
+              ...schemaOptionsFromParam,
+              allOf: [{ $ref: $ref as string }]
+            };
+          } else {
+            (customType as any).schema = {
+              ...existingSchema,
+              ...schemaOptionsFromParam
+            };
+          }
+        }
+        return customType;
       }
 
       const propertiesWithType = this.extractPropertiesFromType(
