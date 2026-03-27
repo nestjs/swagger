@@ -243,7 +243,7 @@ export class SchemaObjectFactory {
           schemaObjectMetadata.items[declaredSchemaCombinator] =
             property[declaredSchemaCombinator];
           delete property[declaredSchemaCombinator];
-        } else {
+        } else if (!schemaObjectMetadata['nullable']) {
           delete schemaObjectMetadata.type;
         }
       }
@@ -525,6 +525,7 @@ export class SchemaObjectFactory {
         name: metadata.name || key,
         required: metadata.required,
         ...validMetadataObject,
+        ...(validMetadataObject['nullable'] ? { type: 'object' } : {}),
         allOf: [{ $ref }]
       } as SchemaObjectMetadata;
     }
