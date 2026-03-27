@@ -173,12 +173,17 @@ export function replaceImportPath(
   importPath = convertPath(importPath);
   importPath = importPath.slice(2, importPath.length - 1);
 
+  // Decode any URL-encoded characters (e.g. non-ASCII) that TypeScript may
+  // have introduced in the import path so that posix.relative can correctly
+  // compute a relative path against the (non-encoded) file name.
+  const decodedImportPath = safeDecodeURIComponent(importPath);
+
   try {
-    if (isAbsolute(importPath)) {
+    if (isAbsolute(decodedImportPath)) {
       throw {};
     }
 
-    require.resolve(importPath);
+    require.resolve(decodedImportPath);
     if (!options.esmCompatible) {
       typeReference = typeReference.replace('import', 'require');
     }
@@ -189,10 +194,10 @@ export function replaceImportPath(
     };
   } catch {
     const from = options?.readonly
-      ? convertPath(options.pathToSource)
-      : posix.dirname(convertPath(fileName));
+      ? safeDecodeURIComponent(convertPath(options.pathToSource))
+      : posix.dirname(safeDecodeURIComponent(convertPath(fileName)));
 
-    let relativePath = posix.relative(from, importPath);
+    let relativePath = posix.relative(from, decodedImportPath);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
     const nodeModulesText = 'node_modules';
@@ -383,6 +388,20 @@ export function convertPath(windowsPath: string) {
     .replace(/^\\\\\?\\/, '')
     .replace(/\\/g, '/')
     .replace(/\/\/+/g, '/');
+}
+
+/**
+ * Safely decodes URL-encoded characters in a path (e.g. non-ASCII characters
+ * that TypeScript may encode when generating type reference strings).
+ * Returns the original string if decoding fails.
+ * @param path
+ */
+export function safeDecodeURIComponent(path: string) {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
 }
 
 /**
