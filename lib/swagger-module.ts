@@ -8,6 +8,9 @@ import {
   SwaggerCustomOptions,
   SwaggerDocumentOptions
 } from './interfaces';
+import {
+  SecuritySchemeObject
+} from './interfaces/open-api-spec.interface';
 import { MetadataLoader } from './plugin/metadata-loader';
 import { SwaggerScanner } from './swagger-scanner';
 import {
@@ -42,12 +45,16 @@ export class SwaggerModule {
       document.components
     );
 
-    return {
+    const finalDocument: OpenAPIObject = {
       openapi: '3.0.0',
       paths: {},
       ...config,
       ...document
     };
+
+    this.filterSecuritySchemeHeaders(finalDocument);
+
+    return finalDocument;
   }
 
   public static async loadPluginMetadata(
@@ -360,6 +367,81 @@ export class SwaggerModule {
       }
       const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
       SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
+    }
+  }
+
+  /**
+   * Collects header names that are implicitly handled by security schemes.
+   * For example, bearer/basic auth uses the "Authorization" header,
+   * and apiKey schemes with `in: 'header'` use their configured `name`.
+   */
+  private static getSecuritySchemeHeaderNames(
+    document: OpenAPIObject
+  ): Set<string> {
+    const headerNames = new Set<string>();
+    const securitySchemes = document.components?.securitySchemes;
+    if (!securitySchemes) {
+      return headerNames;
+    }
+
+    for (const scheme of Object.values(securitySchemes)) {
+      if ('$ref' in scheme) {
+        continue;
+      }
+      const securityScheme = scheme as SecuritySchemeObject;
+      if (securityScheme.type === 'http') {
+        // HTTP auth schemes (bearer, basic, etc.) use the Authorization header
+        headerNames.add('authorization');
+      } else if (
+        securityScheme.type === 'apiKey' &&
+        securityScheme.in === 'header' &&
+        securityScheme.name
+      ) {
+        headerNames.add(securityScheme.name.toLowerCase());
+      }
+    }
+    return headerNames;
+  }
+
+  /**
+   * Removes header parameters from operations that are already covered
+   * by security scheme definitions (e.g., "Authorization" for bearer auth).
+   */
+  private static filterSecuritySchemeHeaders(document: OpenAPIObject): void {
+    const securityHeaders = this.getSecuritySchemeHeaderNames(document);
+    if (securityHeaders.size === 0) {
+      return;
+    }
+
+    const paths = document.paths;
+    if (!paths) {
+      return;
+    }
+
+    for (const pathItem of Object.values(paths)) {
+      for (const method of [
+        'get',
+        'put',
+        'post',
+        'delete',
+        'options',
+        'head',
+        'patch',
+        'trace'
+      ]) {
+        const operation = pathItem[method];
+        if (!operation?.parameters) {
+          continue;
+        }
+        operation.parameters = operation.parameters.filter(
+          (param: any) =>
+            !(
+              param.in === 'header' &&
+              typeof param.name === 'string' &&
+              securityHeaders.has(param.name.toLowerCase())
+            )
+        );
+      }
     }
   }
 }
