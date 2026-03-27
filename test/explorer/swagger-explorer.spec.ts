@@ -2615,4 +2615,185 @@ describe('SwaggerExplorer', () => {
       GlobalParametersStorage.clear();
     });
   });
+
+  describe('when using non-URI versioning types', () => {
+    const CONTROLLER_VERSION = '1';
+    const METHOD_VERSION = '2';
+
+    @Controller({ path: 'with-version', version: CONTROLLER_VERSION })
+    class HeaderVersionController {
+      @Get()
+      foo(): void {}
+
+      @Version(METHOD_VERSION)
+      @Get()
+      bar(): void {}
+    }
+
+    @Controller('no-version')
+    class NoVersionController {
+      @Get()
+      foo(): void {}
+
+      @Version('3')
+      @Get()
+      bar(): void {}
+    }
+
+    describe('with HEADER versioning', () => {
+      it('should pass method version to operationIdFactory', () => {
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        const config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.HEADER,
+          header: 'X-API-VERSION'
+        });
+
+        const routes = explorer.exploreController(
+          {
+            instance: new HeaderVersionController(),
+            metatype: HeaderVersionController
+          } as InstanceWrapper<HeaderVersionController>,
+          config,
+          {
+            modulePath: 'modulePath',
+            globalPrefix: 'globalPrefix',
+            operationIdFactory:
+              controllerKeyMethodKeyVersionKeyOperationIdFactory
+          }
+        );
+
+        expect(routes[0].root.operationId).toEqual(
+          `HeaderVersionController.foo.${CONTROLLER_VERSION}`
+        );
+        expect(routes[1].root.operationId).toEqual(
+          `HeaderVersionController.bar.${METHOD_VERSION}`
+        );
+      });
+
+      it('should not pass version when controller has no version', () => {
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        const config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.HEADER,
+          header: 'X-API-VERSION'
+        });
+
+        const routes = explorer.exploreController(
+          {
+            instance: new NoVersionController(),
+            metatype: NoVersionController
+          } as InstanceWrapper<NoVersionController>,
+          config,
+          {
+            modulePath: 'modulePath',
+            globalPrefix: 'globalPrefix',
+            operationIdFactory:
+              controllerKeyMethodKeyVersionKeyOperationIdFactory
+          }
+        );
+
+        expect(routes[0].root.operationId).toEqual(
+          `NoVersionController.foo`
+        );
+        expect(routes[1].root.operationId).toEqual(
+          `NoVersionController.bar.3`
+        );
+      });
+    });
+
+    describe('with MEDIA_TYPE versioning', () => {
+      it('should pass method version to operationIdFactory', () => {
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        const config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.MEDIA_TYPE,
+          key: 'v='
+        });
+
+        const routes = explorer.exploreController(
+          {
+            instance: new HeaderVersionController(),
+            metatype: HeaderVersionController
+          } as InstanceWrapper<HeaderVersionController>,
+          config,
+          {
+            modulePath: 'modulePath',
+            globalPrefix: 'globalPrefix',
+            operationIdFactory:
+              controllerKeyMethodKeyVersionKeyOperationIdFactory
+          }
+        );
+
+        expect(routes[0].root.operationId).toEqual(
+          `HeaderVersionController.foo.${CONTROLLER_VERSION}`
+        );
+        expect(routes[1].root.operationId).toEqual(
+          `HeaderVersionController.bar.${METHOD_VERSION}`
+        );
+      });
+    });
+
+    describe('with CUSTOM versioning', () => {
+      it('should pass method version to operationIdFactory', () => {
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        const config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.CUSTOM,
+          extractor: () => '1'
+        });
+
+        const routes = explorer.exploreController(
+          {
+            instance: new HeaderVersionController(),
+            metatype: HeaderVersionController
+          } as InstanceWrapper<HeaderVersionController>,
+          config,
+          {
+            modulePath: 'modulePath',
+            globalPrefix: 'globalPrefix',
+            operationIdFactory:
+              controllerKeyMethodKeyVersionKeyOperationIdFactory
+          }
+        );
+
+        expect(routes[0].root.operationId).toEqual(
+          `HeaderVersionController.foo.${CONTROLLER_VERSION}`
+        );
+        expect(routes[1].root.operationId).toEqual(
+          `HeaderVersionController.bar.${METHOD_VERSION}`
+        );
+      });
+    });
+
+    describe('with default operationIdFactory', () => {
+      it('should include version in the default operationId for HEADER versioning', () => {
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        const config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.HEADER,
+          header: 'X-API-VERSION'
+        });
+
+        const routes = explorer.exploreController(
+          {
+            instance: new HeaderVersionController(),
+            metatype: HeaderVersionController
+          } as InstanceWrapper<HeaderVersionController>,
+          config,
+          {
+            modulePath: 'modulePath',
+            globalPrefix: 'globalPrefix'
+          }
+        );
+
+        expect(routes[0].root.operationId).toEqual(
+          `HeaderVersionController_foo_${CONTROLLER_VERSION}`
+        );
+        expect(routes[1].root.operationId).toEqual(
+          `HeaderVersionController_bar_${METHOD_VERSION}`
+        );
+      });
+    });
+  });
 });
