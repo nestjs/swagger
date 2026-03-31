@@ -177,6 +177,42 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should merge array enum metadata without keeping a top-level enum', () => {
+      class ValidationShimArrayEnumDto {
+        @ApiProperty({ enum: Role, isArray: true })
+        roles: Role[];
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            roles: {
+              enum: Role,
+              isArray: true
+            }
+          };
+        }
+      }
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(
+        ValidationShimArrayEnumDto,
+        schemas
+      );
+
+      expect(schemas.ValidationShimArrayEnumDto).toEqual({
+        type: 'object',
+        properties: {
+          roles: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['admin', 'user']
+            }
+          }
+        },
+        required: ['roles']
+      });
+    });
+
     it('should log an error when detecting duplicate DTOs with different schemas', () => {
       const loggerErrorSpy = jest.spyOn(Logger, 'error').mockImplementation();
       const schemas: Record<string, SchemasObject> = {};
@@ -819,4 +855,3 @@ describe('SchemaObjectFactory', () => {
     });
   });
 });
-
