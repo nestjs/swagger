@@ -1355,6 +1355,55 @@ describe('SwaggerExplorer', () => {
         }
       ]);
     });
+
+    it('should generate enum schema on second document generation (multi-doc regression)', () => {
+      // Reproduce issue #2182: enum schema missing in second specification.
+      // The bug was that createEnumParam mutated the Reflect metadata object
+      // by overwriting param.schema with { $ref }, so on the second call the
+      // original enum values (stored in param.schema.enum) were gone.
+
+      @Controller('')
+      class MultiDocController {
+        @Get('items')
+        @ApiQuery({ name: 'color', enum: QueryEnum, enumName: 'QueryEnum' })
+        findItems(): Promise<void> {
+          return Promise.resolve();
+        }
+      }
+
+      const config = new ApplicationConfig();
+
+      // First document generation
+      const explorer1 = new SwaggerExplorer(schemaObjectFactory);
+      explorer1.exploreController(
+        {
+          instance: new MultiDocController(),
+          metatype: MultiDocController
+        } as InstanceWrapper<MultiDocController>,
+        config,
+        { modulePath: '', globalPrefix: '' }
+      );
+      const schemas1 = explorer1.getSchemas();
+
+      // Second document generation — must produce the same enum schema
+      const explorer2 = new SwaggerExplorer(schemaObjectFactory);
+      explorer2.exploreController(
+        {
+          instance: new MultiDocController(),
+          metatype: MultiDocController
+        } as InstanceWrapper<MultiDocController>,
+        config,
+        { modulePath: '', globalPrefix: '' }
+      );
+      const schemas2 = explorer2.getSchemas();
+
+      // Both documents must contain a fully-populated enum schema
+      expect(schemas1['QueryEnum']).toBeDefined();
+      expect(schemas1['QueryEnum'].enum).toEqual([1, 2, 3]);
+
+      expect(schemas2['QueryEnum']).toBeDefined();
+      expect(schemas2['QueryEnum'].enum).toEqual([1, 2, 3]);
+    });
   });
 
   describe('when headers are defined', () => {
