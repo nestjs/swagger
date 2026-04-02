@@ -450,7 +450,6 @@ export class SchemaObjectFactory {
           metadata.isArray && metadata.items
             ? metadata.items['enum']
             : metadata.enum,
-        description: metadata.description ?? undefined,
         'x-enumNames': metadata['x-enumNames'] ?? undefined
       };
     } else {

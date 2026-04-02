@@ -706,6 +706,83 @@ describe('SchemaObjectFactory', () => {
 
       expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number' } });
     });
+
+    it('should place x-enumNames on the enum schema, not on the DTO property (issue #3391)', () => {
+      const metadata = {
+        type: 'number',
+        enum: [1, 2, 3],
+        enumName: 'XEnumTest',
+        isArray: false,
+        description: 'The x-enumNames test',
+        'x-enumNames': ['APPROVED', 'PENDING', 'REJECTED']
+      } as any;
+      const schemas = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'xEnumTest',
+        metadata,
+        schemas
+      );
+
+      // x-enumNames must be on the enum schema
+      expect(schemas['XEnumTest']['x-enumNames']).toEqual([
+        'APPROVED',
+        'PENDING',
+        'REJECTED'
+      ]);
+
+      // x-enumNames must NOT appear on the returned DTO property object
+      expect(result['x-enumNames']).toBeUndefined();
+    });
+
+    it('should not copy description from DTO property metadata to the enum schema', () => {
+      const metadata = {
+        type: 'number',
+        enum: [1, 2, 3],
+        enumName: 'XEnumTest',
+        isArray: false,
+        description: 'Property-level description'
+      } as any;
+      const schemas = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'xEnumTest',
+        metadata,
+        schemas
+      );
+
+      // description must NOT be copied to the enum schema
+      expect(schemas['XEnumTest']['description']).toBeUndefined();
+
+      // description must stay on the returned DTO property object
+      expect(result['description']).toBe('Property-level description');
+    });
+
+    it('should place x-enumNames on existing enum schema when schema already registered', () => {
+      const schemas = {
+        XEnumTest: { type: 'number', enum: [1, 2, 3] }
+      };
+      const metadata = {
+        type: 'number',
+        enum: [1, 2, 3],
+        enumName: 'XEnumTest',
+        isArray: false,
+        'x-enumNames': ['APPROVED', 'PENDING', 'REJECTED']
+      } as any;
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'xEnumTest',
+        metadata,
+        schemas
+      );
+
+      expect(schemas['XEnumTest']['x-enumNames']).toEqual([
+        'APPROVED',
+        'PENDING',
+        'REJECTED'
+      ]);
+      expect(result['x-enumNames']).toBeUndefined();
+    });
   });
 
   describe('createEnumParam', () => {

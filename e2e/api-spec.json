@@ -1849,7 +1849,6 @@
           2,
           3
         ],
-        "description": "The x-enumNames test",
         "x-enumNames": [
           "APPROVED",
           "PENDING",
