@@ -2615,4 +2615,72 @@ describe('SwaggerExplorer', () => {
       GlobalParametersStorage.clear();
     });
   });
+
+  describe('when @ApiQuery is used with a DTO type and no name (issue #3652)', () => {
+    class QueryFilterDto {
+      @ApiProperty()
+      search: string;
+
+      @ApiProperty({ minimum: 0 })
+      page: number;
+    }
+
+    @Controller('')
+    class FooController {
+      @Get('/items')
+      @ApiQuery({ type: QueryFilterDto })
+      findAll(): void {}
+
+      @Get('/named')
+      @ApiQuery({ name: 'filter', type: QueryFilterDto })
+      findNamed(): void {}
+    }
+
+    it('should use $ref for @ApiQuery with a DTO type and no name', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      // Route with unnamed @ApiQuery({ type: QueryFilterDto }) should produce
+      // a single $ref parameter instead of expanding the DTO properties inline
+      expect(routes[0].root.parameters).toEqual([
+        {
+          name: 'QueryFilterDto',
+          in: 'query',
+          required: true,
+          schema: {
+            $ref: '#/components/schemas/QueryFilterDto'
+          }
+        }
+      ]);
+
+      // The schema should be registered in components/schemas
+      expect(explorer.getSchemas()['QueryFilterDto']).toBeDefined();
+      expect(explorer.getSchemas()['QueryFilterDto'].properties).toHaveProperty(
+        'search'
+      );
+      expect(explorer.getSchemas()['QueryFilterDto'].properties).toHaveProperty(
+        'page'
+      );
+
+      // Route with named @ApiQuery({ name: 'filter', type: QueryFilterDto })
+      // should still produce a named $ref parameter (existing behavior)
+      expect(routes[1].root.parameters).toEqual([
+        {
+          name: 'filter',
+          in: 'query',
+          required: true,
+          schema: {
+            $ref: '#/components/schemas/QueryFilterDto'
+          }
+        }
+      ]);
+    });
+  });
 });

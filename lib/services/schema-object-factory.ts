@@ -120,8 +120,9 @@ export class SchemaObjectFactory {
       };
     }
     if (isFunction(param.type)) {
-      if (param.name) {
-        // We should not spread parameters that have a name
+      if (param.name !== undefined && param.name !== null) {
+        // We should not spread parameters that have a name (or an explicitly
+        // set empty name from @ApiQuery({ type: DtoClass })).
         // Just generate the schema for the type instead and link it with ref if needed
         return this.getCustomType(param, schemas);
       }
