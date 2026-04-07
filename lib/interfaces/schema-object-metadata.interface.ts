@@ -7,8 +7,10 @@ export type EnumAllowedTypes =
   | Record<string, any>
   | (() => any[] | Record<string, any>);
 
-interface SchemaObjectCommonMetadata
-  extends Omit<SchemaObject, 'type' | 'required' | 'properties' | 'enum'> {
+interface SchemaObjectCommonMetadata extends Omit<
+  SchemaObject,
+  'type' | 'required' | 'properties' | 'enum'
+> {
   isArray?: boolean;
   name?: string;
   enum?: EnumAllowedTypes;

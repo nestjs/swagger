@@ -44,11 +44,14 @@ export function ApiExtension(extensionKey: string, extensionProperties: any) {
     // Look for API methods
     const apiMethods = Object.getOwnPropertyNames(target.prototype)
       .filter((propertyKey) => !isConstructor(propertyKey))
-      .map((propertyKey) =>
-        Object.getOwnPropertyDescriptor(target.prototype, propertyKey)?.value
+      .map(
+        (propertyKey) =>
+          Object.getOwnPropertyDescriptor(target.prototype, propertyKey)?.value
       )
-      .filter((methodDescriptor) =>
-        methodDescriptor !== undefined && Reflect.hasMetadata(METHOD_METADATA, methodDescriptor)
+      .filter(
+        (methodDescriptor) =>
+          methodDescriptor !== undefined &&
+          Reflect.hasMetadata(METHOD_METADATA, methodDescriptor)
       );
 
     // If we found API methods, apply the extension, otherwise assume it's a DTO and apply to the class itself.
