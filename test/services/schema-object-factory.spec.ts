@@ -706,16 +706,6 @@ describe('SchemaObjectFactory', () => {
     }
 
     it('should preserve style and explode at ParameterObject level for named nested query params', () => {
-      class QueryDto {
-        @ApiProperty({
-          required: false,
-          type: () => GeolocationDto,
-          style: 'deepObject',
-          explode: true
-        })
-        geolocation?: GeolocationDto;
-      }
-
       const schemas = {};
       const param = {
         name: 'geolocation',
