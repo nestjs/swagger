@@ -48,6 +48,11 @@ import {
   stringLiteralDtoText,
   stringLiteralDtoTextTranspiled
 } from './fixtures/string-literal.dto';
+import {
+  sameFileArrayDtoText,
+  sameFileArrayDtoTextTranspiled,
+  sameFileArrayDtoTextTranspiledEsm
+} from './fixtures/same-file-array.dto';
 
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
@@ -309,6 +314,57 @@ describe('API model properties', () => {
     expect(esmResult.outputText).toEqual(
       parameterPropertyDtoTextTranspiled(true)
     );
+  });
+
+  it('should not add async modifier for same-file array types (regression #3630)', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'same-file-array.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(sameFileArrayDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              introspectComments: true,
+              classValidatorShim: true,
+              dtoKeyOfComment: 'title'
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(sameFileArrayDtoTextTranspiled);
+
+    // ESM version - should have async modifier because it uses await import()
+    const esmResult = ts.transpileModule(sameFileArrayDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              introspectComments: true,
+              classValidatorShim: true,
+              dtoKeyOfComment: 'title',
+              esmCompatible: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(esmResult.outputText).toEqual(sameFileArrayDtoTextTranspiledEsm);
   });
 
   it('should ignore Exclude decorator', () => {
