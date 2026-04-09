@@ -179,7 +179,7 @@ describe('SchemaObjectFactory', () => {
     });
 
     it('should log an error when detecting duplicate DTOs with different schemas', () => {
-      const loggerErrorSpy = jest.spyOn(Logger, 'error').mockImplementation();
+      const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -213,7 +213,7 @@ describe('SchemaObjectFactory', () => {
     });
 
     it('should not throw an error or log error when detecting duplicate DTOs with the same schemas', () => {
-      const loggerErrorSpy = jest.spyOn(Logger, 'error').mockImplementation();
+      const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {

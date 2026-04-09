@@ -387,7 +387,7 @@ describe('API model properties', () => {
     const filename = 'create-cat-priority.dto.ts';
     const fakeProgram = ts.createProgram([filename], options);
 
-    const debugLoggerSpy = jest.spyOn(pluginDebugLogger, 'debug');
+    const debugLoggerSpy = vi.spyOn(pluginDebugLogger, 'debug');
 
     const result = ts.transpileModule(createCatPriorityDtoText, {
       compilerOptions: options,

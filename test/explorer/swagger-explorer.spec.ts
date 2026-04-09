@@ -1263,20 +1263,20 @@ describe('SwaggerExplorer', () => {
         },
         {
           in: 'query',
-          name: 'order',
-          required: true,
-          schema: {
-            type: 'number',
-            enum: [1, 2, 3]
-          }
-        },
-        {
-          in: 'query',
           name: 'page',
           required: true,
           schema: {
             type: 'string',
             enum: ['d', 'e', 'f']
+          }
+        },
+        {
+          in: 'query',
+          name: 'order',
+          required: true,
+          schema: {
+            type: 'number',
+            enum: [1, 2, 3]
           }
         }
       ]);
@@ -1307,14 +1307,6 @@ describe('SwaggerExplorer', () => {
         },
         {
           in: 'query',
-          name: 'order',
-          required: true,
-          schema: {
-            $ref: '#/components/schemas/QueryEnum'
-          }
-        },
-        {
-          in: 'query',
           name: 'page',
           required: true,
           schema: {
@@ -1322,6 +1314,14 @@ describe('SwaggerExplorer', () => {
             items: {
               $ref: '#/components/schemas/QueryEnum'
             }
+          }
+        },
+        {
+          in: 'query',
+          name: 'order',
+          required: true,
+          schema: {
+            $ref: '#/components/schemas/QueryEnum'
           }
         }
       ]);

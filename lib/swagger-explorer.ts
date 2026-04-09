@@ -287,9 +287,9 @@ export class SwaggerExplorer {
       exploreGlobalApiHeaderMetadata
     ];
     const globalMetadata = globalExplorers
-      .map((explorer) => explorer.call(explorer, metatype))
+      .map((explorer) => (explorer as Function).call(explorer, metatype))
       .filter((val) => !isUndefined(val))
-      .reduce((curr, next) => {
+      .reduce((curr: any, next: any) => {
         if (next.depth) {
           return {
             ...curr,

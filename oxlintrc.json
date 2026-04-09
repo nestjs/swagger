@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicolo-ribaudo/oxc-project/refs/heads/nicolo/json-schema/npm/oxlint/configuration_schema.json",
+  "rules": {
+    "no-useless-escape": "off"
+  },
+  "ignorePatterns": ["dist", "node_modules"]
+}
