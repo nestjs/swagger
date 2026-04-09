@@ -34,7 +34,7 @@ export interface SwaggerCustomOptions {
    * Use this option to control the availability of Swagger-related endpoints.
    * Default: `true`.
    */
-  raw?: boolean | Array<'json' | 'yaml'>;
+  raw?: boolean | Array<'json' | 'yaml' | 'toml'>;
 
   /**
    * Url point the API definition to load in Swagger UI.
@@ -49,9 +49,15 @@ export interface SwaggerCustomOptions {
 
   /**
    * Path of the YAML API definition to serve.
-   * Default: `{{path}}-json`.
+   * Default: `{{path}}-yaml`.
    */
   yamlDocumentUrl?: string;
+
+  /**
+   * Path of the TOML API definition to serve.
+   * Default: `{{path}}-toml`.
+   */
+  tomlDocumentUrl?: string;
 
   /**
    * Hook allowing to alter the OpenAPI document before being served.
