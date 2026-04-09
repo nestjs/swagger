@@ -409,19 +409,15 @@ export class SchemaObjectFactory {
       }
     }
 
-    param.schema =
+    const newSchema =
       param.isArray || param.schema?.['items']
         ? { type: 'array', items: { $ref } }
         : { $ref };
 
-    return omit(param, [
-      'isArray',
-      'items',
-      'enumName',
-      'enum',
-      'x-enumNames',
-      'enumSchema'
-    ]);
+    return omit(
+      { ...param, schema: newSchema },
+      ['isArray', 'items', 'enumName', 'enum', 'x-enumNames', 'enumSchema']
+    );
   }
 
   createEnumSchemaType(
@@ -661,6 +657,22 @@ export class SchemaObjectFactory {
     | ParameterObject
     | (SchemaObject & { selfRequired?: boolean }) {
     const typeRef = nestedArrayType || metadata.type;
+    if (this.isConstEnumObject(typeRef as Record<string, any>)) {
+      const enumValues = getEnumValues(typeRef as Record<string, any>);
+      const enumType = getEnumType(enumValues);
+      const syntheticMetadata = {
+        ...metadata,
+        type: enumType,
+        enum: enumValues
+      } as SchemaObjectMetadata;
+      return this.createSchemaMetadata(
+        key,
+        syntheticMetadata,
+        schemas,
+        pendingSchemaRefs,
+        enumType
+      );
+    }
     if (this.isObjectLiteral(typeRef as Record<string, any>)) {
       const schemaFromObjectLiteral = this.createFromObjectLiteral(
         key,
@@ -815,6 +827,28 @@ export class SchemaObjectFactory {
 
   private isBigInt(type: Function | Type<unknown> | string): boolean {
     return type === BigInt;
+  }
+
+  /**
+   * Determines whether an object is a const-enum-like object (e.g., created with `as const`).
+   * Such objects have all values as primitive strings or numbers and no function values.
+   * This pattern is used when TypeScript namespaces merge a const object and a type alias:
+   *   export const MyEnum = { A: 'a', B: 'b' } as const;
+   *   export type MyEnum = (typeof MyEnum)[keyof typeof MyEnum];
+   * With SWC, `Reflect.getMetadata('design:type', ...)` may resolve to the const object
+   * itself rather than `Object`, causing swagger to misinterpret it as an object literal schema.
+   */
+  private isConstEnumObject(obj: Record<string, any>): boolean {
+    if (typeof obj !== 'object' || !obj || Array.isArray(obj)) {
+      return false;
+    }
+    const values = Object.values(obj);
+    if (values.length === 0) {
+      return false;
+    }
+    return values.every(
+      (value) => typeof value === 'string' || typeof value === 'number'
+    );
   }
 
   private extractPropertyModifiers(

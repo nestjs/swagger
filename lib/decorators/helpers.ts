@@ -173,6 +173,10 @@ export function createParamDecorator<T extends Record<string, any> = any>(
         continue;
       }
 
+      if (!methodDescriptor.value) {
+        continue;
+      }
+
       const isApiMethod = Reflect.hasMetadata(
         METHOD_METADATA,
         methodDescriptor.value
