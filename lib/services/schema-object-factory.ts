@@ -409,19 +409,15 @@ export class SchemaObjectFactory {
       }
     }
 
-    param.schema =
+    const newSchema =
       param.isArray || param.schema?.['items']
         ? { type: 'array', items: { $ref } }
         : { $ref };
 
-    return omit(param, [
-      'isArray',
-      'items',
-      'enumName',
-      'enum',
-      'x-enumNames',
-      'enumSchema'
-    ]);
+    return omit(
+      { ...param, schema: newSchema },
+      ['isArray', 'items', 'enumName', 'enum', 'x-enumNames', 'enumSchema']
+    );
   }
 
   createEnumSchemaType(
