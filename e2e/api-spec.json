@@ -1922,7 +1922,7 @@
               "B",
               "C"
             ],
-            "type": "string",
+            "type": "object",
             "description": "Enum with description"
           },
           "enum": {

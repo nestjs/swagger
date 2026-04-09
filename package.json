@@ -42,7 +42,6 @@
     "@nestjs/core": "11.1.18",
     "@nestjs/platform-express": "11.1.18",
     "@nestjs/platform-fastify": "11.1.18",
-    "@swc/core": "^1.15.24",
     "@types/js-yaml": "4.0.9",
     "@types/lodash": "4.17.24",
     "@types/node": "24.12.2",
@@ -62,7 +61,7 @@
     "supertest": "7.2.2",
     "swagger-parser": "10.0.3",
     "typescript": "6.0.2",
-    "unplugin-swc": "^1.5.9",
+    "vite": "^8.0.8",
     "vitest": "4.1.4"
   },
   "peerDependencies": {
