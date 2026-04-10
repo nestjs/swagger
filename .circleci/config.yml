@@ -15,7 +15,7 @@ aliases:
   - &run-unit-tests
     run:
       name: Test
-      command: npm run test -- --runInBand
+      command: npm run test
   - &run-e2e-tests
     run:
       name: E2E test
@@ -25,7 +25,7 @@ jobs:
   build:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:24.13.0
+      - image: cimg/node:24.14.1
     steps:
       - checkout
       - restore_cache:
@@ -44,7 +44,7 @@ jobs:
   unit_tests:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:24.13.0
+      - image: cimg/node:24.14.1
     steps:
       - checkout
       - *restore-cache
@@ -55,7 +55,7 @@ jobs:
   e2e_tests:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:24.13.0
+      - image: cimg/node:24.14.1
     steps:
       - checkout
       - *restore-cache

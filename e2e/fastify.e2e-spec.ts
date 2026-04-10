@@ -3,9 +3,9 @@ import {
   FastifyAdapter,
   NestFastifyApplication
 } from '@nestjs/platform-fastify';
-import * as path from 'path';
-import * as request from 'supertest';
-import * as SwaggerParser from 'swagger-parser';
+import path from 'path';
+import request from 'supertest';
+import SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
 import { FastifyController } from './src/fastify.controller';

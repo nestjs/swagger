@@ -123,7 +123,7 @@ export class DocumentBuilder {
           externalDocs
         },
         negate(isUndefined)
-      ) as TagObject
+      ) as unknown as TagObject
     );
     return this;
   }

@@ -12,7 +12,8 @@
     "sourceMap": false,
     "outDir": "./dist",
     "rootDir": "./lib",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "strictNullChecks": false
   },
   "include": [
     "lib/**/*"

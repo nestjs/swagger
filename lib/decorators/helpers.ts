@@ -47,15 +47,15 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
   metadata: T,
   overrideExisting = true
 ): PropertyDecorator {
-  return (target: object, propertyKey: string) => {
+  return (target: object, propertyKey: string | symbol) => {
     const properties =
       Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES_ARRAY, target) || [];
 
-    const key = `:${propertyKey}`;
+    const key = `:${String(propertyKey)}`;
     if (!properties.includes(key)) {
       Reflect.defineMetadata(
         DECORATORS.API_MODEL_PROPERTIES_ARRAY,
-        [...properties, `:${propertyKey}`],
+        [...properties, `:${String(propertyKey)}`],
         target
       );
     }
@@ -170,6 +170,10 @@ export function createParamDecorator<T extends Record<string, any> = any>(
       );
 
       if (!methodDescriptor) {
+        continue;
+      }
+
+      if (!methodDescriptor.value) {
         continue;
       }
 

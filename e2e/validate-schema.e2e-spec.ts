@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
 import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
-import * as SwaggerParser from 'swagger-parser';
+import SwaggerParser from 'swagger-parser';
 import {
   DocumentBuilder,
   getSchemaPath,

@@ -1401,20 +1401,20 @@ describe('SwaggerExplorer', () => {
         },
         {
           in: 'query',
-          name: 'order',
-          required: true,
-          schema: {
-            type: 'number',
-            enum: [1, 2, 3]
-          }
-        },
-        {
-          in: 'query',
           name: 'page',
           required: true,
           schema: {
             type: 'string',
             enum: ['d', 'e', 'f']
+          }
+        },
+        {
+          in: 'query',
+          name: 'order',
+          required: true,
+          schema: {
+            type: 'number',
+            enum: [1, 2, 3]
           }
         }
       ]);
@@ -1445,14 +1445,6 @@ describe('SwaggerExplorer', () => {
         },
         {
           in: 'query',
-          name: 'order',
-          required: true,
-          schema: {
-            $ref: '#/components/schemas/QueryEnum'
-          }
-        },
-        {
-          in: 'query',
           name: 'page',
           required: true,
           schema: {
@@ -1460,6 +1452,14 @@ describe('SwaggerExplorer', () => {
             items: {
               $ref: '#/components/schemas/QueryEnum'
             }
+          }
+        },
+        {
+          in: 'query',
+          name: 'order',
+          required: true,
+          schema: {
+            $ref: '#/components/schemas/QueryEnum'
           }
         }
       ]);
@@ -1492,6 +1492,55 @@ describe('SwaggerExplorer', () => {
           }
         }
       ]);
+    });
+
+    it('should generate enum schema on second document generation (multi-doc regression)', () => {
+      // Reproduce issue #2182: enum schema missing in second specification.
+      // The bug was that createEnumParam mutated the Reflect metadata object
+      // by overwriting param.schema with { $ref }, so on the second call the
+      // original enum values (stored in param.schema.enum) were gone.
+
+      @Controller('')
+      class MultiDocController {
+        @Get('items')
+        @ApiQuery({ name: 'color', enum: QueryEnum, enumName: 'QueryEnum' })
+        findItems(): Promise<void> {
+          return Promise.resolve();
+        }
+      }
+
+      const config = new ApplicationConfig();
+
+      // First document generation
+      const explorer1 = new SwaggerExplorer(schemaObjectFactory);
+      explorer1.exploreController(
+        {
+          instance: new MultiDocController(),
+          metatype: MultiDocController
+        } as InstanceWrapper<MultiDocController>,
+        config,
+        { modulePath: '', globalPrefix: '' }
+      );
+      const schemas1 = explorer1.getSchemas();
+
+      // Second document generation — must produce the same enum schema
+      const explorer2 = new SwaggerExplorer(schemaObjectFactory);
+      explorer2.exploreController(
+        {
+          instance: new MultiDocController(),
+          metatype: MultiDocController
+        } as InstanceWrapper<MultiDocController>,
+        config,
+        { modulePath: '', globalPrefix: '' }
+      );
+      const schemas2 = explorer2.getSchemas();
+
+      // Both documents must contain a fully-populated enum schema
+      expect(schemas1['QueryEnum']).toBeDefined();
+      expect(schemas1['QueryEnum'].enum).toEqual([1, 2, 3]);
+
+      expect(schemas2['QueryEnum']).toBeDefined();
+      expect(schemas2['QueryEnum'].enum).toEqual([1, 2, 3]);
     });
   });
 
@@ -2751,6 +2800,187 @@ describe('SwaggerExplorer', () => {
       ).toEqual('403 - global error response');
 
       GlobalParametersStorage.clear();
+    });
+  });
+
+  describe('when using non-URI versioning types', () => {
+    const CONTROLLER_VERSION = '1';
+    const METHOD_VERSION = '2';
+
+    @Controller({ path: 'with-version', version: CONTROLLER_VERSION })
+    class HeaderVersionController {
+      @Get()
+      foo(): void {}
+
+      @Version(METHOD_VERSION)
+      @Get()
+      bar(): void {}
+    }
+
+    @Controller('no-version')
+    class NoVersionController {
+      @Get()
+      foo(): void {}
+
+      @Version('3')
+      @Get()
+      bar(): void {}
+    }
+
+    describe('with HEADER versioning', () => {
+      it('should pass method version to operationIdFactory', () => {
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        const config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.HEADER,
+          header: 'X-API-VERSION'
+        });
+
+        const routes = explorer.exploreController(
+          {
+            instance: new HeaderVersionController(),
+            metatype: HeaderVersionController
+          } as InstanceWrapper<HeaderVersionController>,
+          config,
+          {
+            modulePath: 'modulePath',
+            globalPrefix: 'globalPrefix',
+            operationIdFactory:
+              controllerKeyMethodKeyVersionKeyOperationIdFactory
+          }
+        );
+
+        expect(routes[0].root.operationId).toEqual(
+          `HeaderVersionController.foo.${CONTROLLER_VERSION}`
+        );
+        expect(routes[1].root.operationId).toEqual(
+          `HeaderVersionController.bar.${METHOD_VERSION}`
+        );
+      });
+
+      it('should not pass version when controller has no version', () => {
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        const config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.HEADER,
+          header: 'X-API-VERSION'
+        });
+
+        const routes = explorer.exploreController(
+          {
+            instance: new NoVersionController(),
+            metatype: NoVersionController
+          } as InstanceWrapper<NoVersionController>,
+          config,
+          {
+            modulePath: 'modulePath',
+            globalPrefix: 'globalPrefix',
+            operationIdFactory:
+              controllerKeyMethodKeyVersionKeyOperationIdFactory
+          }
+        );
+
+        expect(routes[0].root.operationId).toEqual(
+          `NoVersionController.foo`
+        );
+        expect(routes[1].root.operationId).toEqual(
+          `NoVersionController.bar.3`
+        );
+      });
+    });
+
+    describe('with MEDIA_TYPE versioning', () => {
+      it('should pass method version to operationIdFactory', () => {
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        const config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.MEDIA_TYPE,
+          key: 'v='
+        });
+
+        const routes = explorer.exploreController(
+          {
+            instance: new HeaderVersionController(),
+            metatype: HeaderVersionController
+          } as InstanceWrapper<HeaderVersionController>,
+          config,
+          {
+            modulePath: 'modulePath',
+            globalPrefix: 'globalPrefix',
+            operationIdFactory:
+              controllerKeyMethodKeyVersionKeyOperationIdFactory
+          }
+        );
+
+        expect(routes[0].root.operationId).toEqual(
+          `HeaderVersionController.foo.${CONTROLLER_VERSION}`
+        );
+        expect(routes[1].root.operationId).toEqual(
+          `HeaderVersionController.bar.${METHOD_VERSION}`
+        );
+      });
+    });
+
+    describe('with CUSTOM versioning', () => {
+      it('should pass method version to operationIdFactory', () => {
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        const config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.CUSTOM,
+          extractor: () => '1'
+        });
+
+        const routes = explorer.exploreController(
+          {
+            instance: new HeaderVersionController(),
+            metatype: HeaderVersionController
+          } as InstanceWrapper<HeaderVersionController>,
+          config,
+          {
+            modulePath: 'modulePath',
+            globalPrefix: 'globalPrefix',
+            operationIdFactory:
+              controllerKeyMethodKeyVersionKeyOperationIdFactory
+          }
+        );
+
+        expect(routes[0].root.operationId).toEqual(
+          `HeaderVersionController.foo.${CONTROLLER_VERSION}`
+        );
+        expect(routes[1].root.operationId).toEqual(
+          `HeaderVersionController.bar.${METHOD_VERSION}`
+        );
+      });
+    });
+
+    describe('with default operationIdFactory', () => {
+      it('should include version in the default operationId for HEADER versioning', () => {
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        const config = new ApplicationConfig();
+        config.enableVersioning({
+          type: VersioningType.HEADER,
+          header: 'X-API-VERSION'
+        });
+
+        const routes = explorer.exploreController(
+          {
+            instance: new HeaderVersionController(),
+            metatype: HeaderVersionController
+          } as InstanceWrapper<HeaderVersionController>,
+          config,
+          {
+            modulePath: 'modulePath',
+            globalPrefix: 'globalPrefix'
+          }
+        );
+
+        expect(routes[0].root.operationId).toEqual(
+          `HeaderVersionController_foo_${CONTROLLER_VERSION}`
+        );
+        expect(routes[1].root.operationId).toEqual(
+          `HeaderVersionController_bar_${METHOD_VERSION}`
+        );
+      });
     });
   });
 });

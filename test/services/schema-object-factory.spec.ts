@@ -1,4 +1,5 @@
 import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
+import { DECORATORS } from '../../lib/constants';
 import { Logger } from '@nestjs/common';
 import {
   BaseParameterObject,
@@ -178,7 +179,7 @@ describe('SchemaObjectFactory', () => {
     });
 
     it('should log an error when detecting duplicate DTOs with different schemas', () => {
-      const loggerErrorSpy = jest.spyOn(Logger, 'error').mockImplementation();
+      const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -212,7 +213,7 @@ describe('SchemaObjectFactory', () => {
     });
 
     it('should not throw an error or log error when detecting duplicate DTOs with the same schemas', () => {
-      const loggerErrorSpy = jest.spyOn(Logger, 'error').mockImplementation();
+      const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -816,6 +817,89 @@ describe('SchemaObjectFactory', () => {
         properties: { name: { type: 'string' } }
       });
       expect(result.type).toBe('array');
+    });
+  });
+
+  describe('SWC const-enum compatibility (issue #3326)', () => {
+    // Simulate the `as const` pattern that SWC resolves as the const object for design:type:
+    //   export const MyEnum = { FOO: 'FOO', BAR: 'BAR' } as const;
+    //   export type MyEnum = (typeof MyEnum)[keyof typeof MyEnum];
+    const MyStringEnum = { FOO: 'FOO', BAR: 'BAR' } as const;
+    const MyNumericEnum = { ONE: 1, TWO: 2 } as const;
+
+    it('should handle a const-enum object as design:type without throwing circular dependency error', () => {
+      // Simulate what SWC emits: design:type is the const object itself
+      class SwcDto {
+        someEnum: any;
+      }
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        { type: MyStringEnum, required: false },
+        SwcDto.prototype,
+        'someEnum'
+      );
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES_ARRAY,
+        [':someEnum'],
+        SwcDto.prototype
+      );
+
+      const schemas: Record<string, any> = {};
+      expect(() =>
+        schemaObjectFactory.exploreModelSchema(SwcDto as any, schemas)
+      ).not.toThrow();
+    });
+
+    it('should produce an enum schema when design:type is a string const-enum object (SWC behavior)', () => {
+      class SwcStringEnumDto {
+        status: any;
+      }
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        { type: MyStringEnum, required: true },
+        SwcStringEnumDto.prototype,
+        'status'
+      );
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES_ARRAY,
+        [':status'],
+        SwcStringEnumDto.prototype
+      );
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(SwcStringEnumDto as any, schemas);
+
+      expect(schemas['SwcStringEnumDto']).toBeDefined();
+      const statusProp = schemas['SwcStringEnumDto'].properties['status'];
+      expect(statusProp).toBeDefined();
+      // Should be treated as an enum, not throw a circular dependency error
+      expect(statusProp.type ?? statusProp.allOf).toBeDefined();
+    });
+
+    it('should produce an enum schema when design:type is a numeric const-enum object (SWC behavior)', () => {
+      class SwcNumericEnumDto {
+        rank: any;
+      }
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        { type: MyNumericEnum, required: true },
+        SwcNumericEnumDto.prototype,
+        'rank'
+      );
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES_ARRAY,
+        [':rank'],
+        SwcNumericEnumDto.prototype
+      );
+
+      const schemas: Record<string, any> = {};
+      expect(() =>
+        schemaObjectFactory.exploreModelSchema(SwcNumericEnumDto as any, schemas)
+      ).not.toThrow();
+
+      expect(schemas['SwcNumericEnumDto']).toBeDefined();
+      const rankProp = schemas['SwcNumericEnumDto'].properties['rank'];
+      expect(rankProp).toBeDefined();
     });
   });
 });

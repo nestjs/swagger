@@ -256,3 +256,5 @@ export function before() {
 export function ReadonlyVisitor() {
   return class {};
 }
+export const ApiPropertyOptions = {};
+export const OpenAPIObject = {};
