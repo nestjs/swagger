@@ -422,6 +422,69 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should convert RegExp pattern to string in schema', () => {
+      class RegExpPatternDto {
+        @ApiProperty({ pattern: /^[+]?abc$/ })
+        code: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(RegExpPatternDto, schemas);
+
+      expect(schemas[RegExpPatternDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          code: {
+            type: 'string',
+            pattern: '^[+]?abc$'
+          }
+        },
+        required: ['code']
+      });
+    });
+
+    it('should strip flags when converting RegExp pattern', () => {
+      class RegExpFlagsDto {
+        @ApiProperty({ pattern: /abc/i })
+        value: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(RegExpFlagsDto, schemas);
+
+      expect(schemas[RegExpFlagsDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          value: {
+            type: 'string',
+            pattern: 'abc'
+          }
+        },
+        required: ['value']
+      });
+    });
+
+    it('should keep string pattern unchanged', () => {
+      class StringPatternDto {
+        @ApiProperty({ pattern: '^[a-z]+$' })
+        slug: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(StringPatternDto, schemas);
+
+      expect(schemas[StringPatternDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          slug: {
+            type: 'string',
+            pattern: '^[a-z]+$'
+          }
+        },
+        required: ['slug']
+      });
+    });
+
     it('should override base class metadata', () => {
       class CreatUserDto {
         @ApiProperty({ minLength: 0, required: true })
