@@ -178,6 +178,40 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should support enumName with oneOf', () => {
+      enum Status {
+        Active = 'active',
+        Inactive = 'inactive'
+      }
+
+      class DtoWithEnumOneOf {
+        @ApiProperty({
+          oneOf: [{ type: 'string' }],
+          enum: Status,
+          enumName: 'Status'
+        })
+        status: Status | string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithEnumOneOf, schemas);
+
+      expect(schemas).toHaveProperty('Status');
+      expect(schemas.Status).toEqual({
+        type: 'string',
+        enum: ['active', 'inactive']
+      });
+      expect(schemas.DtoWithEnumOneOf.properties.status).toEqual({
+        oneOf: [
+          { type: 'string' },
+          { $ref: '#/components/schemas/Status' }
+        ]
+      });
+      expect(
+        schemas.DtoWithEnumOneOf.properties.status
+      ).not.toHaveProperty('allOf');
+    });
+
     it('should log an error when detecting duplicate DTOs with different schemas', () => {
       const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
@@ -706,6 +740,71 @@ describe('SchemaObjectFactory', () => {
       schemaObjectFactory.createEnumSchemaType('field', metadata, schemas);
 
       expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number' } });
+    });
+
+    it('should add $ref to existing oneOf when enumName is used with oneOf', () => {
+      const metadata = {
+        type: 'string',
+        enum: ['a', 'b', 'c'],
+        enumName: 'MyEnum',
+        isArray: false,
+        oneOf: [{ type: 'number' }]
+      } as any;
+      const schemas = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'field',
+        metadata,
+        schemas
+      );
+
+      expect(schemas).toEqual({
+        MyEnum: { enum: ['a', 'b', 'c'], type: 'string' }
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          oneOf: [
+            { type: 'number' },
+            { $ref: '#/components/schemas/MyEnum' }
+          ]
+        })
+      );
+      expect(result).not.toHaveProperty('allOf');
+      expect(result).not.toHaveProperty('enum');
+      expect(result).not.toHaveProperty('enumName');
+      expect(result).not.toHaveProperty('type');
+    });
+
+    it('should add $ref to existing anyOf when enumName is used with anyOf', () => {
+      const metadata = {
+        type: 'string',
+        enum: ['x', 'y'],
+        enumName: 'MyEnum',
+        isArray: false,
+        anyOf: [{ type: 'number' }]
+      } as any;
+      const schemas = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'field',
+        metadata,
+        schemas
+      );
+
+      expect(schemas).toEqual({
+        MyEnum: { enum: ['x', 'y'], type: 'string' }
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          anyOf: [
+            { type: 'number' },
+            { $ref: '#/components/schemas/MyEnum' }
+          ]
+        })
+      );
+      expect(result).not.toHaveProperty('allOf');
+      expect(result).not.toHaveProperty('enum');
+      expect(result).not.toHaveProperty('enumName');
     });
   });
 
