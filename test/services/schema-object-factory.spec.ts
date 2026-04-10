@@ -749,6 +749,85 @@ describe('SchemaObjectFactory', () => {
     });
   });
 
+  describe('createFromModel', () => {
+    it('should preserve parent example when a non-body param property has a DTO type', () => {
+      class ChildDto {
+        @ApiProperty({ example: 'child DTO example 1' })
+        childKey1: string;
+        @ApiProperty({ example: 'child DTO example 2' })
+        childKey2: string;
+      }
+
+      class ParentDto {
+        @ApiProperty({ example: 'parent DTO example' })
+        parentKey: ChildDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      // Simulate what ParametersMetadataMapper produces for @Query() ParentDto:
+      // it expands the DTO into individual properties with their metadata
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: ChildDto,
+          name: 'parentKey',
+          required: true,
+          example: 'parent DTO example'
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(
+        queryParams,
+        schemas
+      );
+
+      expect(result).toHaveLength(1);
+      const paramResult = result[0] as any;
+      expect(paramResult.name).toBe('parentKey');
+      // The parent's example should be preserved in the schema
+      expect(paramResult.schema).toBeDefined();
+      expect(paramResult.schema.example).toBe('parent DTO example');
+      // Should use allOf pattern when extra metadata exists alongside $ref
+      expect(paramResult.schema.allOf).toBeDefined();
+      expect(paramResult.schema.allOf[0].$ref).toContain('ChildDto');
+    });
+
+    it('should not alter schema when no extra schema options exist on param', () => {
+      class SimpleChild {
+        @ApiProperty()
+        value: string;
+      }
+
+      class SimpleParent {
+        @ApiProperty()
+        child: SimpleChild;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: SimpleChild,
+          name: 'child',
+          required: true
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(
+        queryParams,
+        schemas
+      );
+
+      expect(result).toHaveLength(1);
+      const paramResult = result[0] as any;
+      // Without extra schema options, should use plain $ref
+      expect(paramResult.schema.$ref).toContain('SimpleChild');
+      expect(paramResult.schema.allOf).toBeUndefined();
+    });
+  });
+
   describe('transformToArraySchemaProperty', () => {
     it('should preserve items schema when metadata.items is already defined and type is string', () => {
       const metadata = {
