@@ -252,6 +252,18 @@ describe('Validate OpenAPI schema', () => {
     });
   });
 
+  it('should include type field when nullable is used with allOf (issue #3274)', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    const createCatDtoSchema = document.components?.schemas
+      ?.CreateCatDto as SchemaObject;
+    expect(createCatDtoSchema.properties.nullableTag).toEqual({
+      description: 'nullable tag',
+      nullable: true,
+      type: 'object',
+      allOf: [{ $ref: '#/components/schemas/TagDto' }]
+    });
+  });
+
   it('should not add optional properties to required list', () => {
     const document = SwaggerModule.createDocument(app, options);
     const required = (document.components?.schemas?.Cat as SchemaObject)

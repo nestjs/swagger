@@ -96,6 +96,9 @@ export class CreateCatDto {
   @ApiProperty({ description: 'tag', required: false })
   readonly tag: TagDto;
 
+  @ApiProperty({ description: 'nullable tag', nullable: true, type: () => TagDto })
+  readonly nullableTag: TagDto;
+
   nested: {
     first: string;
     second: number;
