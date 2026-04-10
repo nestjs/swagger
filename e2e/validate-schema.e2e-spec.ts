@@ -298,4 +298,82 @@ describe('Validate OpenAPI schema', () => {
       'x-another-field': 'another value'
     });
   });
+
+  describe('hierarchical tags (OpenAPI 3.2)', () => {
+    it('should add tag with parent option', async () => {
+      const hierarchicalOptions = new DocumentBuilder()
+        .setTitle('Hierarchical Tags Test')
+        .setVersion('1.0')
+        .addTag('Animals', 'All animal operations')
+        .addTag('Cats', 'Cat operations', undefined, { parent: 'Animals' })
+        .build();
+
+      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+
+      expect(document.tags).toBeDefined();
+      expect(document.tags).toHaveLength(2);
+      expect(document.tags?.[0]).toEqual({
+        name: 'Animals',
+        description: 'All animal operations'
+      });
+      expect(document.tags?.[1]).toEqual({
+        name: 'Cats',
+        description: 'Cat operations',
+        parent: 'Animals'
+      });
+    });
+
+    it('should add tag with kind option', async () => {
+      const hierarchicalOptions = new DocumentBuilder()
+        .setTitle('Hierarchical Tags Test')
+        .setVersion('1.0')
+        .addTag('Internal', 'Internal APIs', undefined, { kind: 'reference' })
+        .build();
+
+      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+
+      expect(document.tags).toBeDefined();
+      expect(document.tags).toHaveLength(1);
+      expect(document.tags?.[0]).toEqual({
+        name: 'Internal',
+        description: 'Internal APIs',
+        kind: 'reference'
+      });
+    });
+
+    it('should add tag with both parent and kind options', async () => {
+      const hierarchicalOptions = new DocumentBuilder()
+        .setTitle('Hierarchical Tags Test')
+        .setVersion('1.0')
+        .addTag('Animals', 'All animal operations')
+        .addTag('Cats', 'Cat operations', undefined, {
+          parent: 'Animals',
+          kind: 'navigation'
+        })
+        .build();
+
+      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+
+      expect(document.tags).toBeDefined();
+      expect(document.tags).toHaveLength(2);
+      expect(document.tags?.[1]).toEqual({
+        name: 'Cats',
+        description: 'Cat operations',
+        parent: 'Animals',
+        kind: 'navigation'
+      });
+    });
+
+    it('should keep operation tags as string arrays', async () => {
+      const document = SwaggerModule.createDocument(app, options);
+
+      // Check that operation-level tags are string arrays (from @ApiTags decorator)
+      const createCatOperation = document.paths['/api/cats']?.post;
+      expect(createCatOperation?.tags).toBeDefined();
+      expect(Array.isArray(createCatOperation?.tags)).toBe(true);
+      expect(createCatOperation?.tags?.every((tag) => typeof tag === 'string')).toBe(
+        true
+      );
+    });
+  });
 });
