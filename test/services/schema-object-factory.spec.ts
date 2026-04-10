@@ -178,8 +178,8 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
-    it('should log an error when detecting duplicate DTOs with different schemas', () => {
-      const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
+    it('should log a warning when detecting duplicate DTOs with different schemas', () => {
+      const loggerWarnSpy = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -203,17 +203,49 @@ describe('SchemaObjectFactory', () => {
         schemas
       );
 
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
         `Duplicate DTO detected: "DuplicateDTO" is defined multiple times with different schemas.\n` +
           `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
           `Note: This will throw an error in the next major version.`
       );
 
-      loggerErrorSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
     });
 
-    it('should not throw an error or log error when detecting duplicate DTOs with the same schemas', () => {
+    it('should not log an error when detecting duplicate DTOs with different schemas', () => {
       const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
+      const loggerWarnSpy = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
+      const schemas: Record<string, SchemasObject> = {};
+
+      class DuplicateDTO {
+        @ApiProperty()
+        property1: string;
+      }
+
+      schemaObjectFactory.exploreModelSchema(DuplicateDTO, schemas);
+
+      class DuplicateDTOWithDifferentSchema {
+        @ApiProperty()
+        property2: string;
+      }
+
+      Object.defineProperty(DuplicateDTOWithDifferentSchema, 'name', {
+        value: 'DuplicateDTO'
+      });
+
+      schemaObjectFactory.exploreModelSchema(
+        DuplicateDTOWithDifferentSchema,
+        schemas
+      );
+
+      expect(loggerErrorSpy).not.toHaveBeenCalled();
+
+      loggerErrorSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
+    });
+
+    it('should not log a warning when detecting duplicate DTOs with the same schemas', () => {
+      const loggerWarnSpy = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -237,9 +269,9 @@ describe('SchemaObjectFactory', () => {
         schemas
       );
 
-      expect(loggerErrorSpy).not.toHaveBeenCalled();
+      expect(loggerWarnSpy).not.toHaveBeenCalled();
 
-      loggerErrorSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
     });
 
     it('should create openapi schema', () => {
