@@ -902,5 +902,51 @@ describe('SchemaObjectFactory', () => {
       expect(rankProp).toBeDefined();
     });
   });
+
+  describe('property override in class inheritance', () => {
+    it('should use the child class property type when overriding a parent property', () => {
+      class InfoPostDTO {
+        @ApiProperty()
+        name: string;
+      }
+
+      class InfoPutDTO extends InfoPostDTO {
+        @ApiProperty()
+        id: number;
+      }
+
+      class EntityPostDTO {
+        @ApiProperty()
+        id: number;
+
+        @ApiProperty({ type: () => InfoPostDTO })
+        info: InfoPostDTO;
+      }
+
+      class EntityPutDTO extends EntityPostDTO {
+        @ApiProperty({ type: () => InfoPutDTO })
+        info: InfoPutDTO;
+      }
+
+      const schemas: Record<string, any> = {};
+
+      schemaObjectFactory.exploreModelSchema(EntityPostDTO as any, schemas);
+      schemaObjectFactory.exploreModelSchema(EntityPutDTO as any, schemas);
+
+      // EntityPostDTO.info should reference InfoPostDTO
+      const postInfoProp = schemas['EntityPostDTO'].properties['info'];
+      expect(postInfoProp).toBeDefined();
+      expect(postInfoProp.$ref || postInfoProp.allOf?.[0]?.$ref).toContain(
+        'InfoPostDTO'
+      );
+
+      // EntityPutDTO.info should reference InfoPutDTO (not InfoPostDTO)
+      const putInfoProp = schemas['EntityPutDTO'].properties['info'];
+      expect(putInfoProp).toBeDefined();
+      expect(putInfoProp.$ref || putInfoProp.allOf?.[0]?.$ref).toContain(
+        'InfoPutDTO'
+      );
+    });
+  });
 });
 

@@ -59,7 +59,7 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
         target
       );
     }
-    const existingMetadata = Reflect.getMetadata(metakey, target, propertyKey);
+    const existingMetadata = Reflect.getOwnMetadata(metakey, target, propertyKey);
     if (existingMetadata) {
       const newMetadata = pickBy(metadata, negate(isUndefined));
       const metadataToSave = overrideExisting
