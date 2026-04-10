@@ -1,6 +1,13 @@
-import { ApiExtension, ApiProperty } from '../../../../lib';
+import {
+  ApiExtension,
+  ApiExtraModels,
+  ApiProperty,
+  getSchemaPath
+} from '../../../../lib';
 import { LettersEnum } from '../dto/pagination-query.dto';
+import { TagDto } from '../dto/tag.dto';
 
+@ApiExtraModels(TagDto)
 @ApiExtension('x-schema-extension', { test: 'test' })
 @ApiExtension('x-schema-extension-multiple', { test: 'test*2' })
 export class Cat {
@@ -101,4 +108,12 @@ export class Cat {
 
   @ApiProperty({ type: [String], link: () => Cat })
   kittenIds?: string[];
+
+  @ApiProperty({
+    oneOf: [
+      { $ref: getSchemaPath(TagDto) },
+      { type: 'array', items: { $ref: getSchemaPath(TagDto) } }
+    ]
+  })
+  oneOfWithRef?: any; // Simulates union type Example | Example[] (issue #3549)
 }
