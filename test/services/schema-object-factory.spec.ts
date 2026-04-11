@@ -693,6 +693,67 @@ describe('SchemaObjectFactory', () => {
     });
   });
 
+  describe('createFromModel (deepObject)', () => {
+    class GeolocationDto {
+      @ApiProperty()
+      latitude: number;
+
+      @ApiProperty()
+      longitude: number;
+
+      @ApiProperty({ description: 'Distance in kilometers' })
+      distance: number;
+    }
+
+    it('should preserve style and explode at ParameterObject level for named nested query params', () => {
+      const schemas = {};
+      const param = {
+        name: 'geolocation',
+        in: 'query',
+        required: false,
+        type: GeolocationDto,
+        style: 'deepObject',
+        explode: true
+      };
+
+      const [result] = schemaObjectFactory.createFromModel(
+        [param as any],
+        schemas
+      );
+
+      const mapped = swaggerTypesMapper.mapParamTypes([result as any]);
+      expect(mapped[0]).toMatchObject({
+        name: 'geolocation',
+        in: 'query',
+        style: 'deepObject',
+        explode: true,
+        schema: {
+          $ref: '#/components/schemas/GeolocationDto'
+        }
+      });
+    });
+
+    it('should not flatten nested object properties when style is deepObject', () => {
+      const schemas = {};
+      const param = {
+        name: 'geolocation',
+        in: 'query',
+        required: false,
+        type: GeolocationDto,
+        style: 'deepObject',
+        explode: true
+      };
+
+      const result = schemaObjectFactory.createFromModel(
+        [param as any],
+        schemas
+      );
+
+      // Should produce a single parameter (not 3 flattened ones)
+      expect(result).toHaveLength(1);
+    });
+  });
+
   describe('createEnumSchemaType', () => {
     it('should assign schema type correctly if enumName is provided', () => {
       const metadata = {

@@ -2845,4 +2845,77 @@ describe('SwaggerExplorer', () => {
       });
     });
   });
+
+  describe('deepObject style for nested query params', () => {
+    class GeolocationDto {
+      @ApiProperty()
+      latitude: number;
+
+      @ApiProperty()
+      longitude: number;
+
+      @ApiProperty({ description: 'Distance in kilometers' })
+      distance: number;
+    }
+
+    class SearchQueryDto {
+      @ApiProperty({
+        required: false,
+        type: () => GeolocationDto,
+        style: 'deepObject',
+        explode: true
+      })
+      geolocation?: GeolocationDto;
+    }
+
+    @Controller('search')
+    class SearchController {
+      @Get()
+      @ApiOperation({ summary: 'Search' })
+      search(@Query() query: SearchQueryDto): void {}
+    }
+
+    it('should emit a single query parameter with style=deepObject and $ref schema', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new SearchController(),
+          metatype: SearchController
+        } as InstanceWrapper<SearchController>,
+        new ApplicationConfig(),
+        { modulePath: '' }
+      );
+
+      const params = routes[0].root.parameters;
+      expect(params).toHaveLength(1);
+      expect(params[0]).toMatchObject({
+        name: 'geolocation',
+        in: 'query',
+        required: false,
+        style: 'deepObject',
+        explode: true,
+        schema: {
+          $ref: '#/components/schemas/GeolocationDto'
+        }
+      });
+    });
+
+    it('should not flatten GeolocationDto properties into individual query params', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new SearchController(),
+          metatype: SearchController
+        } as InstanceWrapper<SearchController>,
+        new ApplicationConfig(),
+        { modulePath: '' }
+      );
+
+      const params = routes[0].root.parameters;
+      const paramNames = params.map((p: any) => p.name);
+      expect(paramNames).not.toContain('latitude');
+      expect(paramNames).not.toContain('longitude');
+      expect(paramNames).not.toContain('distance');
+    });
+  });
 });
