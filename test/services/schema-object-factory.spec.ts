@@ -902,5 +902,39 @@ describe('SchemaObjectFactory', () => {
       expect(rankProp).toBeDefined();
     });
   });
+
+  describe('inherited property type override', () => {
+    it('should use the child class type when a property is redeclared in a subclass', () => {
+      class InfoPostDTO {
+        @ApiProperty()
+        name: string;
+      }
+      class InfoPutDTO extends InfoPostDTO {
+        @ApiProperty()
+        id: number;
+      }
+      class EntityPostDTO {
+        @ApiProperty()
+        id: number;
+
+        @ApiProperty({ type: () => InfoPostDTO })
+        info: InfoPostDTO;
+      }
+      class EntityPutDTO extends EntityPostDTO {
+        @ApiProperty({ type: () => InfoPutDTO })
+        info: InfoPutDTO;
+      }
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(EntityPutDTO as any, schemas);
+
+      const infoProp = schemas['EntityPutDTO'].properties['info'];
+      // The child redeclares `info` as InfoPutDTO — its $ref should point to InfoPutDTO
+      expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).toContain('InfoPutDTO');
+      expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).not.toContain(
+        'InfoPostDTO'
+      );
+    });
+  });
 });
 
