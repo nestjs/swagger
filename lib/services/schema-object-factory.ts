@@ -220,36 +220,41 @@ export class SchemaObjectFactory {
     this.modelPropertiesAccessor.applyMetadataFactory(prototype);
     const modelProperties =
       this.modelPropertiesAccessor.getModelProperties(prototype);
-    const propertiesWithType = modelProperties.map((key) => {
-      const property = this.mergePropertyWithMetadata(
-        key,
-        prototype,
-        schemas,
-        pendingSchemasRefs
-      );
+    try {
+      const propertiesWithType = modelProperties.map((key) => {
+        const property = this.mergePropertyWithMetadata(
+          key,
+          prototype,
+          schemas,
+          pendingSchemasRefs
+        );
 
-      const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
-      const declaredSchemaCombinator = schemaCombinators.find(
-        (combinator) => combinator in property
-      );
-      if (declaredSchemaCombinator) {
-        const schemaObjectMetadata = property as SchemaObjectMetadata;
+        const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
+        const declaredSchemaCombinator = schemaCombinators.find(
+          (combinator) => combinator in property
+        );
+        if (declaredSchemaCombinator) {
+          const schemaObjectMetadata = property as SchemaObjectMetadata;
 
-        if (
-          schemaObjectMetadata?.type === 'array' ||
-          schemaObjectMetadata.isArray
-        ) {
-          schemaObjectMetadata.items = {};
-          schemaObjectMetadata.items[declaredSchemaCombinator] =
-            property[declaredSchemaCombinator];
-          delete property[declaredSchemaCombinator];
-        } else if (!schemaObjectMetadata['nullable']) {
-          delete schemaObjectMetadata.type;
+          if (
+            schemaObjectMetadata?.type === 'array' ||
+            schemaObjectMetadata.isArray
+          ) {
+            schemaObjectMetadata.items = {};
+            schemaObjectMetadata.items[declaredSchemaCombinator] =
+              property[declaredSchemaCombinator];
+            delete property[declaredSchemaCombinator];
+          } else if (!schemaObjectMetadata['nullable']) {
+            delete schemaObjectMetadata.type;
+          }
         }
-      }
-      return property as ParameterObject;
-    });
-    return propertiesWithType;
+        return property as ParameterObject;
+      });
+      return propertiesWithType;
+    } catch (err) {
+      err.message = `[${type.name}] ${err.message}`;
+      throw err;
+    }
   }
 
   /**

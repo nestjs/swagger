@@ -1054,11 +1054,34 @@ describe('SchemaObjectFactory', () => {
       schemaObjectFactory.exploreModelSchema(EntityPutDTO as any, schemas);
 
       const infoProp = schemas['EntityPutDTO'].properties['info'];
-      // The child redeclares `info` as InfoPutDTO — its $ref should point to InfoPutDTO
       expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).toContain('InfoPutDTO');
       expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).not.toContain(
         'InfoPostDTO'
       );
+    });
+  });
+
+  describe('circular dependency error messages (issue #3655)', () => {
+    it('should prefix the class name to the circular dependency error message', () => {
+      class CircularParentDto {
+        child: any;
+      }
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        { type: undefined, required: true },
+        CircularParentDto.prototype,
+        'child'
+      );
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES_ARRAY,
+        [':child'],
+        CircularParentDto.prototype
+      );
+
+      const schemas: Record<string, any> = {};
+      expect(() =>
+        schemaObjectFactory.exploreModelSchema(CircularParentDto as any, schemas)
+      ).toThrow(/\[CircularParentDto\].*circular dependency/i);
     });
   });
 });
