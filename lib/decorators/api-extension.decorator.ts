@@ -13,6 +13,22 @@ function applyExtension(target: any, key: string, value: any): void {
   );
 }
 
+function applyPropertyExtension(
+  target: object,
+  propertyKey: string | symbol,
+  extensionKey: string,
+  value: any
+): void {
+  const extensions =
+    Reflect.getMetadata(DECORATORS.API_EXTENSION, target, propertyKey) || {};
+  Reflect.defineMetadata(
+    DECORATORS.API_EXTENSION,
+    { [extensionKey]: value, ...extensions },
+    target,
+    propertyKey
+  );
+}
+
 /**
  * @publicApi
  */
@@ -36,28 +52,36 @@ export function ApiExtension(extensionKey: string, extensionProperties: any) {
       return descriptor;
     }
 
-    // Ensure decorator is used on a class
-    if (typeof target === 'object') {
-      return target;
+    // Property-level decorator: target is the class prototype (an object),
+    // key is present (property name), but descriptor is absent.
+    if (typeof target === 'object' && key !== undefined) {
+      applyPropertyExtension(target, key, extensionKey, extensionValue);
+      return;
     }
 
-    // Look for API methods
-    const apiMethods = Object.getOwnPropertyNames(target.prototype)
-      .filter((propertyKey) => !isConstructor(propertyKey))
-      .map((propertyKey) =>
-        Object.getOwnPropertyDescriptor(target.prototype, propertyKey)?.value
-      )
-      .filter((methodDescriptor) =>
-        methodDescriptor !== undefined && Reflect.hasMetadata(METHOD_METADATA, methodDescriptor)
-      );
+    // Class-level: target is the constructor (a function)
+    if (typeof target === 'function') {
+      // Look for API methods
+      const apiMethods = Object.getOwnPropertyNames(target.prototype)
+        .filter((propertyKey) => !isConstructor(propertyKey))
+        .map((propertyKey) =>
+          Object.getOwnPropertyDescriptor(target.prototype, propertyKey)?.value
+        )
+        .filter(
+          (methodDescriptor) =>
+            methodDescriptor !== undefined &&
+            Reflect.hasMetadata(METHOD_METADATA, methodDescriptor)
+        );
 
-    // If we found API methods, apply the extension, otherwise assume it's a DTO and apply to the class itself.
-    if (apiMethods.length > 0) {
-      apiMethods.forEach((method) =>
-        applyExtension(method, extensionKey, extensionValue)
-      );
-    } else {
-      applyExtension(target, extensionKey, extensionValue);
+      // If we found API methods, apply the extension, otherwise assume it's a
+      // DTO and apply to the class itself.
+      if (apiMethods.length > 0) {
+        apiMethods.forEach((method) =>
+          applyExtension(method, extensionKey, extensionValue)
+        );
+      } else {
+        applyExtension(target, extensionKey, extensionValue);
+      }
     }
 
     return target;

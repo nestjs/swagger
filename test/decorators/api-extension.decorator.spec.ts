@@ -365,6 +365,63 @@ describe('ApiExtension', () => {
     });
   });
 
+  describe('when applied to DTO properties (issue #3796)', () => {
+    it('should store extension metadata per property', () => {
+      class CreateCatDto {
+        @ApiExtension('x-source', { source: 'user-input' })
+        name: string;
+      }
+
+      expect(
+        Reflect.hasMetadata(
+          DECORATORS.API_EXTENSION,
+          CreateCatDto.prototype,
+          'name'
+        )
+      ).toBeTruthy();
+      expect(
+        Reflect.getMetadata(
+          DECORATORS.API_EXTENSION,
+          CreateCatDto.prototype,
+          'name'
+        )
+      ).toEqual({ 'x-source': { source: 'user-input' } });
+    });
+
+    it('should merge multiple property-level extensions', () => {
+      class CreateCatDto {
+        @ApiExtension('x-first', { a: 1 })
+        @ApiExtension('x-second', { b: 2 })
+        name: string;
+      }
+
+      expect(
+        Reflect.getMetadata(
+          DECORATORS.API_EXTENSION,
+          CreateCatDto.prototype,
+          'name'
+        )
+      ).toEqual({ 'x-first': { a: 1 }, 'x-second': { b: 2 } });
+    });
+
+    it('should not bleed extension metadata between different properties', () => {
+      class CreateCatDto {
+        @ApiExtension('x-name-ext', { field: 'name' })
+        name: string;
+
+        age: number;
+      }
+
+      expect(
+        Reflect.getMetadata(
+          DECORATORS.API_EXTENSION,
+          CreateCatDto.prototype,
+          'age'
+        )
+      ).toBeUndefined();
+    });
+  });
+
   describe('when applied to non-controller classes (DTOs/schemas)', () => {
     it('should attach metadata to the class itself', () => {
       @ApiExtension('x-schema-extension', { schema: 'metadata' })

@@ -351,6 +351,16 @@ export class SchemaObjectFactory {
         ) || {};
     }
 
+    // Merge per-property @ApiExtension metadata into the property schema.
+    const propertyExtensions = Reflect.getMetadata(
+      DECORATORS.API_EXTENSION,
+      prototype,
+      key
+    );
+    if (propertyExtensions) {
+      metadata = { ...metadata, ...propertyExtensions };
+    }
+
     if (this.isLazyTypeFunc(metadata.type as Function)) {
       metadata.type = (metadata.type as Function)();
       [metadata.type, metadata.isArray] = getTypeIsArrayTuple(
