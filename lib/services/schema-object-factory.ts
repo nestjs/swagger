@@ -409,10 +409,24 @@ export class SchemaObjectFactory {
       }
     }
 
+    // Schema-level options (default, example, examples) live at the param root
+    // before this point, but `mapParamTypes` will strip them via `omitParamKeys`.
+    // Move them into the schema object so they are preserved in the final output.
+    const schemaLevelKeys = ['default', 'example', 'examples'] as const;
+    const extraSchemaProps: Record<string, any> = {};
+    for (const k of schemaLevelKeys) {
+      if ((param as Record<string, any>)[k] !== undefined) {
+        extraSchemaProps[k] = (param as Record<string, any>)[k];
+      }
+    }
+    const hasExtra = Object.keys(extraSchemaProps).length > 0;
+
     const newSchema =
       param.isArray || param.schema?.['items']
-        ? { type: 'array', items: { $ref } }
-        : { $ref };
+        ? { type: 'array', items: { $ref }, ...extraSchemaProps }
+        : hasExtra
+          ? { allOf: [{ $ref }], ...extraSchemaProps }
+          : { $ref };
 
     return omit(
       { ...param, schema: newSchema },

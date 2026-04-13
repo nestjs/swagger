@@ -872,6 +872,38 @@ describe('SchemaObjectFactory', () => {
         type: 'string'
       });
     });
+
+    it('should preserve default in schema when enumName is set (issue #3454)', () => {
+      const params: ParamWithTypeMetadata & BaseParameterObject = {
+        required: false,
+        isArray: false,
+        enumName: 'OperatorType',
+        enum: ['equal', 'not_equal'],
+        ...(({ default: 'equal' } as any))
+      };
+      const schemas = {};
+      const result = schemaObjectFactory.createEnumParam(params, schemas);
+
+      expect((result as any).schema).toEqual({
+        allOf: [{ $ref: '#/components/schemas/OperatorType' }],
+        default: 'equal'
+      });
+    });
+
+    it('should keep plain $ref schema when no schema-level extras are present', () => {
+      const params: ParamWithTypeMetadata & BaseParameterObject = {
+        required: true,
+        isArray: false,
+        enumName: 'StatusEnum',
+        enum: ['active', 'inactive']
+      };
+      const schemas = {};
+      const result = schemaObjectFactory.createEnumParam(params, schemas);
+
+      expect((result as any).schema).toEqual({
+        $ref: '#/components/schemas/StatusEnum'
+      });
+    });
   });
 
   describe('transformToArraySchemaProperty', () => {
