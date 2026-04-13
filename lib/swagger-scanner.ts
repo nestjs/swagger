@@ -41,8 +41,11 @@ export class SwaggerScanner {
       ignoreGlobalPrefix = false,
       operationIdFactory,
       linkNameFactory,
-      autoTagControllers = true
+      autoTagControllers = true,
+      ignoreDuplicateSchemas = false
     } = options;
+
+    this.schemaObjectFactory.setIgnoreDuplicates(ignoreDuplicateSchemas);
 
     const untypedApp = app as any;
     const container = untypedApp.container as NestContainer;

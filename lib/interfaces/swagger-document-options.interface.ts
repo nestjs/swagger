@@ -56,4 +56,13 @@ export interface SwaggerDocumentOptions {
    * @default true
    */
   autoTagControllers?: boolean;
+
+  /**
+   * When `true`, registering the same DTO class under different schema names (or the
+   * same name with a different shape) will be silently ignored instead of emitting a
+   * warning. Useful when intentionally sharing schemas across modules that each
+   * contribute a partial view of the same class.
+   * @default false
+   */
+  ignoreDuplicateSchemas?: boolean;
 }

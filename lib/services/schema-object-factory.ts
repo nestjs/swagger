@@ -37,10 +37,16 @@ import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
 import { SwaggerTypesMapper } from './swagger-types-mapper';
 
 export class SchemaObjectFactory {
+  private ignoreDuplicates = false;
+
   constructor(
     private readonly modelPropertiesAccessor: ModelPropertiesAccessor,
     private readonly swaggerTypesMapper: SwaggerTypesMapper
   ) {}
+
+  setIgnoreDuplicates(value: boolean) {
+    this.ignoreDuplicates = value;
+  }
 
   createFromModel(
     parameters: ParamWithTypeMetadata[],
@@ -312,11 +318,15 @@ export class SchemaObjectFactory {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
 
-    if (schemas[schemaName] && !isEqual(schemas[schemaName], typeDefinition)) {
-      Logger.error(
+    if (
+      schemas[schemaName] &&
+      !isEqual(schemas[schemaName], typeDefinition) &&
+      !this.ignoreDuplicates
+    ) {
+      Logger.warn(
         `Duplicate DTO detected: "${schemaName}" is defined multiple times with different schemas.\n` +
           `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
-          `Note: This will throw an error in the next major version.`
+          `To suppress this warning, set { ignoreDuplicateSchemas: true } in SwaggerModule.createDocument() options.`
       );
     }
 
