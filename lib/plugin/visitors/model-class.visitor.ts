@@ -727,15 +727,32 @@ export class ModelClassVisitor extends AbstractFileVisitor {
 
     const enumProperty = factory.createPropertyAssignment(key, enumIdentifier);
 
+    const extraProperties: ts.PropertyAssignment[] = [];
+
+    if (options.autoFillEnumName && !hasPropertyKey('enumName', existingProperties)) {
+      const fullTypeName = typeReferenceDescriptor.typeName;
+      // getText() may return a fully-qualified name like `import("./file").EnumName`;
+      // extract only the simple identifier after the last '.'
+      const enumTypeName = fullTypeName.includes('.')
+        ? fullTypeName.slice(fullTypeName.lastIndexOf('.') + 1)
+        : fullTypeName;
+      extraProperties.push(
+        factory.createPropertyAssignment(
+          'enumName',
+          factory.createStringLiteral(enumTypeName)
+        )
+      );
+    }
+
     if (isArrayType) {
       const isArrayKey = 'isArray';
       const isArrayProperty = factory.createPropertyAssignment(
         isArrayKey,
         factory.createIdentifier('true')
       );
-      return [enumProperty, isArrayProperty];
+      return [enumProperty, isArrayProperty, ...extraProperties];
     }
-    return enumProperty;
+    return extraProperties.length > 0 ? [enumProperty, ...extraProperties] : enumProperty;
   }
 
   createDefaultPropertyAssignment(

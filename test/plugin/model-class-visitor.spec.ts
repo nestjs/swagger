@@ -497,4 +497,51 @@ describe('API model properties', () => {
     });
     expect(resultWithSkip.outputText).not.toContain(`default: 5`);
   });
+
+  it('should auto-fill enumName when autoFillEnumName option is true', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'enum-name.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const enumDtoText = `
+      export enum StatusEnum { Active = 'active', Inactive = 'inactive' }
+      import { ApiProperty } from '../../decorators';
+      export class EnumNameDto {
+        @ApiProperty()
+        status: StatusEnum;
+      }
+    `;
+
+    const resultWithoutOption = ts.transpileModule(enumDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before({ introspectComments: true, classValidatorShim: false }, fakeProgram)
+        ]
+      }
+    });
+    expect(resultWithoutOption.outputText).not.toContain(`enumName: "StatusEnum"`);
+
+    const resultWithOption = ts.transpileModule(enumDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: false, autoFillEnumName: true },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(resultWithOption.outputText).toContain(`enumName: "StatusEnum"`);
+  });
 });
