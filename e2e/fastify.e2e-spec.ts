@@ -415,6 +415,60 @@ describe('Fastify Swagger', () => {
     });
   });
 
+  describe('async patchDocumentOnRequest', () => {
+    const JSON_CUSTOM_URL = '/async-apidoc-json';
+    const YAML_CUSTOM_URL = '/async-apidoc-yaml';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup('async-api', app, swaggerDocument, {
+        jsonDocumentUrl: JSON_CUSTOM_URL,
+        yamlDocumentUrl: YAML_CUSTOM_URL,
+        patchDocumentOnRequest: async (req, res, document) => {
+          // Simulate async work (e.g. fetching tenant config from a database)
+          const description = await Promise.resolve(
+            (req as Record<string, any>).query.description
+          );
+          return {
+            ...document,
+            info: { ...document.info, description }
+          };
+        }
+      });
+
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('async patched JSON document should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${JSON_CUSTOM_URL}?description=Async%20description`
+      );
+      expect(response.body.info.description).toBe('Async description');
+    });
+
+    it('async patched YAML document should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${YAML_CUSTOM_URL}?description=Async%20description`
+      );
+      expect(response.text).toContain('Async description');
+    });
+
+    it('async patched swagger-ui-init.js should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `/async-api/swagger-ui-init.js?description=Async%20UI%20description`
+      );
+      expect(response.text).toContain('"description": "Async UI description"');
+    });
+  });
+
   describe('custom documents endpoints with global prefix', () => {
     let appGlobalPrefix: NestFastifyApplication;
 
