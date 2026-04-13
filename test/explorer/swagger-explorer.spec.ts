@@ -2845,4 +2845,53 @@ describe('SwaggerExplorer', () => {
       });
     });
   });
+
+  describe('deepObject query parameter style (issue #3495)', () => {
+    class GeolocationDto {
+      @ApiProperty({ type: Number })
+      latitude: number;
+
+      @ApiProperty({ type: Number })
+      longitude: number;
+    }
+
+    class SearchQueryDto {
+      @ApiProperty({
+        type: () => GeolocationDto,
+        style: 'deepObject',
+        explode: true,
+        required: false
+      })
+      geolocation?: GeolocationDto;
+    }
+
+    @Controller('search')
+    class SearchController {
+      @Get()
+      find(@Query() _query: SearchQueryDto) {}
+    }
+
+    it('should set style: deepObject on the nested object query param', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new SearchController(),
+          metatype: SearchController
+        } as InstanceWrapper<SearchController>,
+        new ApplicationConfig(),
+        { modulePath: '', globalPrefix: '' }
+      );
+
+      const geoParam = routes[0]?.root?.parameters?.find(
+        (p: any) => p.name === 'geolocation'
+      ) as any;
+
+      expect(geoParam).toBeDefined();
+      expect(geoParam.style).toBe('deepObject');
+      expect(geoParam.explode).toBe(true);
+      expect(geoParam.schema?.$ref).toBe(
+        '#/components/schemas/GeolocationDto'
+      );
+    });
+  });
 });

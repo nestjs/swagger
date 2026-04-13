@@ -1,6 +1,10 @@
 import { Type } from '@nestjs/common';
 import { EnumSchemaAttributes } from './enum-schema-attributes.interface';
-import { ReferenceObject, SchemaObject } from './open-api-spec.interface';
+import {
+  ParameterStyle,
+  ReferenceObject,
+  SchemaObject
+} from './open-api-spec.interface';
 
 export type EnumAllowedTypes =
   | any[]
@@ -12,6 +16,18 @@ interface SchemaObjectCommonMetadata
   isArray?: boolean;
   name?: string;
   enum?: EnumAllowedTypes;
+  /**
+   * OpenAPI parameter serialization style.
+   * Set to `'deepObject'` on a nested-object `@ApiProperty` to have the
+   * expanded query parameter use bracket notation
+   * (e.g. `?geo[lat]=5&geo[lon]=1`).
+   */
+  style?: ParameterStyle;
+  /**
+   * Whether to expand the parameter value.  Usually combined with
+   * `style: 'deepObject'` for nested query parameters.
+   */
+  explode?: boolean;
 }
 
 export type SchemaObjectMetadata =
