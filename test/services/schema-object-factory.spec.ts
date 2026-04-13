@@ -818,6 +818,63 @@ describe('SchemaObjectFactory', () => {
     });
   });
 
+  describe('createEnumSchemaType (issue #1125 — enumName with oneOf/anyOf)', () => {
+    it('should register the enum schema and preserve oneOf when enumName is combined with oneOf', () => {
+      const metadata = {
+        type: 'string',
+        enum: ['A', 'B'],
+        enumName: 'LetterEnum',
+        oneOf: [
+          { $ref: '#/components/schemas/LetterEnum' },
+          { type: 'null' }
+        ],
+        isArray: false
+      } as any;
+      const schemas: Record<string, any> = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'letter',
+        metadata,
+        schemas
+      );
+
+      // Named enum schema should be registered
+      expect(schemas['LetterEnum']).toBeDefined();
+      expect(schemas['LetterEnum'].enum).toEqual(['A', 'B']);
+
+      // Property should carry the oneOf, not a generated allOf
+      expect((result as any).oneOf).toEqual([
+        { $ref: '#/components/schemas/LetterEnum' },
+        { type: 'null' }
+      ]);
+      expect((result as any).allOf).toBeUndefined();
+    });
+
+    it('should preserve anyOf when enumName is combined with anyOf', () => {
+      const metadata = {
+        type: 'string',
+        enum: ['X', 'Y'],
+        enumName: 'XYEnum',
+        anyOf: [
+          { $ref: '#/components/schemas/XYEnum' },
+          { type: 'string' }
+        ],
+        isArray: false
+      } as any;
+      const schemas: Record<string, any> = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'value',
+        metadata,
+        schemas
+      );
+
+      expect(schemas['XYEnum']).toBeDefined();
+      expect((result as any).anyOf).toBeDefined();
+      expect((result as any).allOf).toBeUndefined();
+    });
+  });
+
   describe('createEnumSchemaType', () => {
     it('should assign schema type correctly if enumName is provided', () => {
       const metadata = {

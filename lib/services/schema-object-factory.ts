@@ -462,6 +462,18 @@ export class SchemaObjectFactory {
       }
     }
 
+    // When the property already uses a schema combinator (oneOf / anyOf),
+    // respect that structure — the enum schema has already been registered
+    // above; we just need to pass the combinator through without overriding
+    // it with a generated `allOf: [{ $ref }]`.
+    if (metadata.oneOf || metadata.anyOf) {
+      const pathsToOmit = ['enum', 'enumName', 'enumSchema', 'x-enumNames'];
+      return omit(
+        { ...metadata, name: metadata.name || key },
+        pathsToOmit
+      ) as SchemaObjectMetadata;
+    }
+
     const _schemaObject = {
       ...metadata,
       name: metadata.name || key,
