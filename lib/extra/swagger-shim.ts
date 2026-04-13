@@ -37,6 +37,9 @@ export function ApiHeader() {
 export function ApiHeaders() {
   return () => {};
 }
+export function ApiOptionalHeader() {
+  return () => {};
+}
 export function ApiHideProperty() {
   return () => {};
 }

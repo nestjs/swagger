@@ -64,6 +64,19 @@ export function ApiHeader(
   };
 }
 
+/**
+ * Convenience decorator equivalent to `@ApiHeader({ ..., required: false })`.
+ * Use this when the header is optional and you are not using the CLI plugin,
+ * which cannot infer optionality from the TypeScript `?` modifier for headers.
+ *
+ * @publicApi
+ */
+export function ApiOptionalHeader(
+  options: ApiHeaderOptions
+): MethodDecorator & ClassDecorator {
+  return ApiHeader({ ...options, required: false });
+}
+
 export const ApiHeaders = (
   headers: ApiHeaderOptions[]
 ): MethodDecorator & ClassDecorator => {
