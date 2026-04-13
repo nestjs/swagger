@@ -232,6 +232,9 @@ export function DocumentBuilder() {
 export function SwaggerModule() {
   return () => {};
 }
+export function DeepPartialType() {
+  return class {};
+}
 export function IntersectionType() {
   return class {};
 }
