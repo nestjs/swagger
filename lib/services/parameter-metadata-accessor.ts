@@ -1,4 +1,4 @@
-import { Type } from '@nestjs/common';
+import { ParseUUIDPipe, Type } from '@nestjs/common';
 import {
   PARAMTYPES_METADATA,
   ROUTE_ARGS_METADATA
@@ -57,12 +57,20 @@ export class ParameterMetadataAccessor {
 
     const parametersWithType: ParamsWithType = mapValues(
       reverseObjectKeys(routeArgsMetadata),
-      (param: ParamMetadata) =>
-        ({
+      (param: ParamMetadata & { pipes?: Array<Type<unknown> | object> }) => {
+        const base: ParamWithTypeMetadata = {
           type: types[param.index],
           name: param.data,
           required: true
-        }) as unknown as ParamWithTypeMetadata
+        };
+        // When ParseUUIDPipe is applied to a parameter, automatically set
+        // format: 'uuid' so that @ApiParam/@ApiQuery annotations are not
+        // required just to document the format.
+        if (this.hasPipe(param.pipes, ParseUUIDPipe)) {
+          (base as any).format = 'uuid';
+        }
+        return base as unknown as ParamWithTypeMetadata;
+      }
     ) as unknown as ParamsWithType;
     const excludePredicate = (val: ParamWithTypeMetadata) =>
       val.in === PARAM_TOKEN_PLACEHOLDER || (val.name && val.in === 'body');
@@ -75,6 +83,18 @@ export class ParameterMetadataAccessor {
       excludePredicate as Function
     );
     return !isEmpty(parameters) ? (parameters as ParamsWithType) : undefined;
+  }
+
+  private hasPipe(
+    pipes: Array<Type<unknown> | object> | undefined,
+    pipeClass: Type<unknown>
+  ): boolean {
+    if (!pipes?.length) {
+      return false;
+    }
+    return pipes.some(
+      (p) => p === pipeClass || (p instanceof pipeClass) || p?.constructor === pipeClass
+    );
   }
 
   private mapParamType(key: string): string {

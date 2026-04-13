@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Version,
@@ -2843,6 +2844,65 @@ describe('SwaggerExplorer', () => {
           `HeaderVersionController_bar_${METHOD_VERSION}`
         );
       });
+    });
+  });
+
+  describe('ParseUUIDPipe inference (issue #1818)', () => {
+    @Controller('items')
+    class ItemsController {
+      @Get(':id')
+      getById(@Param('id', ParseUUIDPipe) id: string) {
+        return id;
+      }
+
+      @Get(':id/sub/:subId')
+      getSubById(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Param('subId') subId: string
+      ) {
+        return { id, subId };
+      }
+    }
+
+    it('should infer format: uuid from ParseUUIDPipe on path param', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new ItemsController(),
+          metatype: ItemsController
+        } as InstanceWrapper<ItemsController>,
+        new ApplicationConfig(),
+        { modulePath: '', globalPrefix: '' }
+      );
+
+      const getByIdRoute = routes.find((r) => r.root.operationId?.includes('getById') && !r.root.operationId?.includes('Sub'));
+      const idParam = getByIdRoute?.root?.parameters?.find(
+        (p: any) => p.name === 'id'
+      ) as any;
+
+      expect(idParam).toBeDefined();
+      expect(idParam.schema?.format).toBe('uuid');
+    });
+
+    it('should only apply uuid format to params with ParseUUIDPipe', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new ItemsController(),
+          metatype: ItemsController
+        } as InstanceWrapper<ItemsController>,
+        new ApplicationConfig(),
+        { modulePath: '', globalPrefix: '' }
+      );
+
+      const subRoute = routes.find((r) => r.root.operationId?.includes('SubById'));
+      const params = subRoute?.root?.parameters as any[];
+
+      const idParam = params?.find((p: any) => p.name === 'id');
+      const subIdParam = params?.find((p: any) => p.name === 'subId');
+
+      expect(idParam?.schema?.format).toBe('uuid');
+      expect(subIdParam?.schema?.format).toBeUndefined();
     });
   });
 });
