@@ -20,6 +20,7 @@ export interface ApiResponseCommonMetadata
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   description?: string;
+  nullable?: boolean;
 }
 
 export type ApiResponseMetadata =
