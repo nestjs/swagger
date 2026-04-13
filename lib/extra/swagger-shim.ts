@@ -256,5 +256,8 @@ export function before() {
 export function ReadonlyVisitor() {
   return class {};
 }
+export function generateSchema() {
+  return { schema: {}, schemas: {} };
+}
 export const ApiPropertyOptions = {};
 export const OpenAPIObject = {};
