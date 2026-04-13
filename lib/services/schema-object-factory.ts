@@ -252,8 +252,11 @@ export class SchemaObjectFactory {
       });
       return propertiesWithType;
     } catch (err) {
-      err.message = `[${type.name}] ${err.message}`;
-      throw err;
+      if (err instanceof Error) {
+        err.message = `[${type.name}] ${err.message}`;
+        throw err;
+      }
+      throw new Error(`[${type.name}] ${String(err)}`);
     }
   }
 
