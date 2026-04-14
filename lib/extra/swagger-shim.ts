@@ -244,6 +244,9 @@ export function PartialType() {
 export function PickType() {
   return class {};
 }
+export function getDocumentationInsights() {
+  return {};
+}
 export function getSchemaPath() {
   return () => '';
 }
