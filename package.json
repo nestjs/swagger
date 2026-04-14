@@ -32,7 +32,7 @@
     "js-yaml": "4.1.1",
     "lodash": "4.18.1",
     "path-to-regexp": "8.4.2",
-    "swagger-ui-dist": "5.32.2"
+    "swagger-ui-dist": "5.32.3"
   },
   "devDependencies": {
     "@commitlint/cli": "20.5.0",
