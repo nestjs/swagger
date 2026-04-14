@@ -292,6 +292,7 @@ describe('SchemaObjectFactory', () => {
           },
           profile: {
             description: 'Profile',
+            type: 'object',
             nullable: true,
             allOf: [
               {
