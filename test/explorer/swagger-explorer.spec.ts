@@ -1101,6 +1101,144 @@ describe('SwaggerExplorer', () => {
       });
     };
   });
+  describe('when request body encoding is provided', () => {
+    @Controller('')
+    class FooController {
+      @ApiConsumes('multipart/form-data')
+      @Post('foos')
+      @ApiBody({
+        schema: {
+          type: 'object',
+          properties: {
+            tags: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            payload: { type: 'string' }
+          }
+        },
+        encoding: {
+          tags: { style: 'form', explode: true },
+          payload: { contentType: 'text/plain' }
+        }
+      })
+      create(): void {}
+    }
+
+    it('should include encoding in the requestBody content', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {
+          modulePath: undefined,
+          globalPrefix: undefined
+        }
+      );
+
+      expect(routes.length).toEqual(1);
+      expect(routes[0].root.requestBody).toEqual({
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              properties: {
+                tags: {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                payload: { type: 'string' }
+              }
+            },
+            encoding: {
+              tags: { style: 'form', explode: true },
+              payload: { contentType: 'text/plain' }
+            }
+          }
+        }
+      });
+    });
+  });
+  describe('when form-urlencoded request body encoding is provided', () => {
+    @Controller('')
+    class FooController {
+      @ApiConsumes('application/x-www-form-urlencoded')
+      @Post('foos')
+      @ApiBody({
+        schema: {
+          type: 'object',
+          properties: {
+            filters: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            payload: { type: 'string' }
+          }
+        },
+        encoding: {
+          filters: { style: 'form', explode: true },
+          payload: {
+            contentType: 'application/json',
+            headers: {
+              'x-payload-type': {
+                schema: { type: 'string' }
+              }
+            }
+          }
+        }
+      })
+      create(): void {}
+    }
+
+    it('should include encoding for x-www-form-urlencoded content', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {
+          modulePath: undefined,
+          globalPrefix: undefined
+        }
+      );
+
+      expect(routes.length).toEqual(1);
+      expect(routes[0].root.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/x-www-form-urlencoded': {
+            schema: {
+              type: 'object',
+              properties: {
+                filters: {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                payload: { type: 'string' }
+              }
+            },
+            encoding: {
+              filters: { style: 'form', explode: true },
+              payload: {
+                contentType: 'application/json',
+                headers: {
+                  'x-payload-type': {
+                    schema: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+  });
   describe('when enum is used', () => {
     enum ParamEnum {
       A = 'a',
