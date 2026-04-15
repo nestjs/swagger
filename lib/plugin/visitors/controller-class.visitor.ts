@@ -17,7 +17,8 @@ import {
   getDecoratorOrUndefinedByNames,
   getOutputExtension,
   getTypeReferenceAsString,
-  hasPropertyKey
+  hasPropertyKey,
+  normalizePackagePath
 } from '../utils/plugin-utils';
 import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util';
 import { AbstractFileVisitor } from './abstract.visitor';
@@ -42,7 +43,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     Object.keys(this._collectedMetadata).forEach((filePath) => {
       const metadata = this._collectedMetadata[filePath];
       const fileExt = options.esmCompatible ? getOutputExtension(filePath) : '';
-      const path = filePath.replace(/\.[jt]s$/, fileExt);
+      let path = filePath.replace(/\.[jt]s$/, fileExt);
+      path = normalizePackagePath(path);
       const importExpr = ts.factory.createCallExpression(
         ts.factory.createToken(ts.SyntaxKind.ImportKeyword) as ts.Expression,
         undefined,
