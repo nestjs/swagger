@@ -13,6 +13,10 @@ describe('ApiQuery', () => {
       }
 
       public noAPiMethod(): void {}
+
+      public get service() {
+        return null;
+      }
     }
 
     it('should attach metadata to all API methods', () => {

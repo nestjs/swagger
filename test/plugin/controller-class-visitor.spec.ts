@@ -5,6 +5,10 @@ import {
   appControllerTextTranspiled
 } from './fixtures/app.controller';
 import {
+  appControllerApiResponseText,
+  appControllerApiResponseTextTranspiled
+} from './fixtures/app.controller-api-response';
+import {
   appControllerWithTabsText,
   appControllerWithTabsTextTranspiled
 } from './fixtures/app.controller-tabs';
@@ -54,6 +58,27 @@ describe('Controller methods', () => {
       }
     });
     expect(result.outputText).toEqual(appControllerWithTabsTextTranspiled);
+  });
+
+  it('should not add a default response when explicit Api*Response decorator is present (issue #1639)', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerApiResponseText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(appControllerApiResponseTextTranspiled);
   });
 
   it('should add response based on the return value (without modifiers)', () => {

@@ -5,7 +5,7 @@ import { SwaggerEnumType } from '../types/swagger-enum.type';
 
 export function getEnumValues(
   enumType: SwaggerEnumType | (() => SwaggerEnumType)
-): string[] | number[] {
+): string[] | number[] | boolean[] {
   if (typeof enumType === 'function') {
     return getEnumValues(enumType());
   }
@@ -37,9 +37,16 @@ export function getEnumValues(
     .map((key) => enumType[key]);
 }
 
-export function getEnumType(values: (string | number)[]): 'string' | 'number' {
+export function getEnumType(
+  values: (string | number | boolean)[]
+): 'string' | 'number' | 'boolean' {
   const hasString = values.filter(isString).length > 0;
-  return hasString ? 'string' : 'number';
+  if (hasString) {
+    return 'string';
+  }
+  const hasBoolean =
+    values.filter((v) => typeof v === 'boolean').length > 0;
+  return hasBoolean ? 'boolean' : 'number';
 }
 
 export function addEnumArraySchema(

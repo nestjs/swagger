@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
 import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
-import * as SwaggerParser from 'swagger-parser';
+import SwaggerParser from 'swagger-parser';
 import {
   DocumentBuilder,
   getSchemaPath,
@@ -249,6 +249,18 @@ describe('Validate OpenAPI schema', () => {
           'image/jpeg': { schema: { type: 'string', format: 'binary' } }
         }
       }
+    });
+  });
+
+  it('should include type field when nullable is used with allOf (issue #3274)', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    const createCatDtoSchema = document.components?.schemas
+      ?.CreateCatDto as SchemaObject;
+    expect(createCatDtoSchema.properties.nullableTag).toEqual({
+      description: 'nullable tag',
+      nullable: true,
+      type: 'object',
+      allOf: [{ $ref: '#/components/schemas/TagDto' }]
     });
   });
 

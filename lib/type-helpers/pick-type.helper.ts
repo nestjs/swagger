@@ -8,6 +8,7 @@ import { pick } from 'lodash';
 import { DECORATORS } from '../constants';
 import { ApiProperty } from '../decorators';
 import { MetadataLoader } from '../plugin/metadata-loader';
+import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
 import { clonePluginMetadataFactory } from './mapped-types.utils';
 
@@ -52,6 +53,16 @@ export function PickType<T, K extends keyof T>(
       const decoratorFactory = ApiProperty(metadata);
       decoratorFactory(PickTypeClass.prototype, propertyKey);
     });
+
+    if (PickTypeClass[METADATA_FACTORY_NAME]) {
+      const pluginMetadata = PickTypeClass[METADATA_FACTORY_NAME]();
+      Object.keys(pluginMetadata).forEach((key) => {
+        if (!fields.includes(key)) {
+          const decoratorFactory = ApiProperty(pluginMetadata[key]);
+          decoratorFactory(PickTypeClass.prototype, key);
+        }
+      });
+    }
   }
   applyFields(fields);
 

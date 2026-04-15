@@ -20,6 +20,7 @@ export interface ApiResponseCommonMetadata
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   description?: string;
+  nullable?: boolean;
 }
 
 export type ApiResponseMetadata =
@@ -63,9 +64,8 @@ export function ApiResponse(
   apiResponseMetadata.isArray = isArray;
   options.description = options.description ? options.description : '';
 
-  const groupedMetadata = {
-    [options.status || 'default']: omit(options, 'status')
-  };
+  const statusKey = options.status || 'default';
+  const incomingEntry = omit(options, 'status');
   return (
     target: object,
     key?: string | symbol,
@@ -84,7 +84,7 @@ export function ApiResponse(
         DECORATORS.API_RESPONSE,
         {
           ...responses,
-          ...groupedMetadata
+          [statusKey]: mergeResponseEntry(responses?.[statusKey], incomingEntry)
         },
         descriptor.value
       );
@@ -98,11 +98,38 @@ export function ApiResponse(
       DECORATORS.API_RESPONSE,
       {
         ...responses,
-        ...groupedMetadata
+        [statusKey]: mergeResponseEntry(responses?.[statusKey], incomingEntry)
       },
       target
     );
     return target;
+  };
+}
+
+function mergeResponseEntry(
+  existing: Record<string, any> | undefined,
+  incoming: Record<string, any>
+): Record<string, any> {
+  if (!existing) {
+    return incoming;
+  }
+  const existingDesc = existing.description || '';
+  const incomingDesc = incoming.description || '';
+  const mergedDescription =
+    existingDesc && incomingDesc
+      ? `${existingDesc}\n\n${incomingDesc}`
+      : existingDesc || incomingDesc;
+
+  const mergedExamples =
+    existing.examples && incoming.examples
+      ? { ...existing.examples, ...incoming.examples }
+      : incoming.examples ?? existing.examples;
+
+  return {
+    ...existing,
+    ...incoming,
+    description: mergedDescription,
+    ...(mergedExamples !== undefined ? { examples: mergedExamples } : {})
   };
 }
 
