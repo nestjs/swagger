@@ -151,4 +151,58 @@ describe('ApiResponse', () => {
       }
     );
   });
+
+  describe('when the same status code is used multiple times', () => {
+    @Controller('tests')
+    class TestController {
+      @Get()
+      @ApiBadRequestResponse({ description: 'email is invalid' })
+      @ApiBadRequestResponse({ description: 'password is too short' })
+      @ApiBadRequestResponse({ description: 'dto is invalid' })
+      public post(): string {
+        return 'test';
+      }
+    }
+
+    it('should merge descriptions with newline separator', () => {
+      const controller = new TestController();
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_RESPONSE,
+        controller.post
+      );
+      // Decorators are applied bottom-to-top, so the merge order is:
+      // dto is invalid → password is too short → email is invalid
+      expect(metadata[400].description).toBe(
+        'dto is invalid\n\npassword is too short\n\nemail is invalid'
+      );
+    });
+
+    it('should merge examples from multiple decorators', () => {
+      @Controller('tests')
+      class ExamplesController {
+        @Get()
+        @ApiBadRequestResponse({
+          description: 'error A',
+          examples: { case1: { summary: 'Case 1', value: { msg: 'a' } } }
+        })
+        @ApiBadRequestResponse({
+          description: 'error B',
+          examples: { case2: { summary: 'Case 2', value: { msg: 'b' } } }
+        })
+        public get(): string {
+          return 'test';
+        }
+      }
+
+      const ctrl = new ExamplesController();
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_RESPONSE,
+        ctrl.get
+      );
+      expect(metadata[400].examples).toEqual({
+        case1: { summary: 'Case 1', value: { msg: 'a' } },
+        case2: { summary: 'Case 2', value: { msg: 'b' } }
+      });
+    });
+  });
 });
