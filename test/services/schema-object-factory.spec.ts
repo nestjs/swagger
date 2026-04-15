@@ -325,6 +325,7 @@ describe('SchemaObjectFactory', () => {
           profile: {
             description: 'Profile',
             nullable: true,
+            type: 'object',
             allOf: [
               {
                 $ref: '#/components/schemas/CreateProfileDto'
@@ -425,6 +426,35 @@ describe('SchemaObjectFactory', () => {
           }
         },
         required: ['firstname', 'lastname', 'parent']
+      });
+    });
+
+    it('should include type "object" for nullable $ref properties (issue #3274)', () => {
+      class ProfileDto {
+        @ApiProperty()
+        bio: string;
+      }
+
+      class UserWithNullableProfile {
+        @ApiProperty({
+          nullable: true,
+          type: () => ProfileDto
+        })
+        profile: ProfileDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        UserWithNullableProfile,
+        schemas
+      );
+      expect(
+        (schemas['UserWithNullableProfile'] as Record<string, any>).properties
+          .profile
+      ).toEqual({
+        nullable: true,
+        type: 'object',
+        allOf: [{ $ref: '#/components/schemas/ProfileDto' }]
       });
     });
 
