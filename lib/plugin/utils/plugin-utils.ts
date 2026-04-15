@@ -195,7 +195,7 @@ export function replaceImportPath(
   } catch {
     const from = options?.readonly
       ? safeDecodeURIComponent(convertPath(options.pathToSource))
-      : posix.dirname(safeDecodeURIComponent(convertPath(fileName)));
+      : getOutputDir(fileName, options);
 
     let relativePath = posix.relative(from, decodedImportPath);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
@@ -252,6 +252,22 @@ export function replaceImportPath(
       importPath: relativePath
     };
   }
+}
+
+/**
+ * Returns the directory from which the generated require()/import() call will
+ * execute at runtime.  When tsconfig specifies outDir+rootDir the output file
+ * lives at a different path depth than the source file, so we rebase the
+ * source directory onto the output tree before computing relative import paths.
+ */
+function getOutputDir(fileName: string, options: PluginOptions): string {
+  const sourceDir = posix.dirname(safeDecodeURIComponent(convertPath(fileName)));
+  if (options.outDir && options.rootDir) {
+    const outDir = convertPath(options.outDir);
+    const rootDir = convertPath(options.rootDir);
+    return posix.join(outDir, posix.relative(rootDir, sourceDir));
+  }
+  return sourceDir;
 }
 
 function convertToAsyncImport(typeReference: string) {

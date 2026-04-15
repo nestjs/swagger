@@ -22,6 +22,21 @@ export interface PluginOptions {
    * Skip add default for properties that do not specify default values.
    */
   skipDefaultValues?: boolean;
+
+  /**
+   * @internal
+   * Resolved from the TypeScript compiler options. Used to adjust relative
+   * import paths so they are correct from the *output* file location rather
+   * than the source file location when outDir adds extra directory depth.
+   */
+  outDir?: string;
+
+  /**
+   * @internal
+   * Resolved from the TypeScript compiler options. Used together with outDir
+   * to compute the correct output-relative import path.
+   */
+  rootDir?: string;
 }
 
 const defaultOptions: PluginOptions = {

@@ -107,5 +107,59 @@ describe('plugin-utils', () => {
       expect(result.typeReference).not.toContain('/mnt/Data');
       expect(result.typeReference).toContain('../entities/test.entity');
     });
+
+    it('should adjust relative path depth when outDir is deeper than rootDir (issue #2706)', () => {
+      // Monorepo layout:
+      //   rootDir : /project/apps/nest          (the app root, NOT src/)
+      //   outDir  : /project/apps/nest/dist
+      //   source  : /project/apps/nest/src/app.controller.ts
+      //   output  : /project/apps/nest/dist/src/app.controller.js  ← src/ is preserved
+      //   target  : /project/packages/math-helpers/dist/index
+      //
+      // Without correction `from` = src/, producing  ../../../packages/…  (3 levels)
+      // With correction    `from` = dist/src/, producing ../../../../packages/… (4 levels)
+      const typeReference =
+        'import("/project/packages/math-helpers/dist/index").MathHelper';
+      const fileName = '/project/apps/nest/src/app.controller.ts';
+      const options = {
+        rootDir: '/project/apps/nest',
+        outDir: '/project/apps/nest/dist'
+      };
+
+      const result = replaceImportPath(typeReference, fileName, options);
+
+      // Output file is at /project/apps/nest/dist/src/app.controller.js
+      // Correct relative path: ../../../../packages/math-helpers/dist/index
+      expect(result.typeReference).toContain(
+        '../../../../packages/math-helpers/dist/index'
+      );
+    });
+
+    it('should produce same path as baseline when outDir equals rootDir', () => {
+      // When outDir and rootDir are at the same depth, the correction is a no-op.
+      const typeReference =
+        'import("/project/src/entities/test.entity").TestEnum';
+      const fileName = '/project/src/dto/test.dto.ts';
+      const options = {
+        rootDir: '/project/src',
+        outDir: '/project/src'
+      };
+
+      const result = replaceImportPath(typeReference, fileName, options);
+
+      expect(result.typeReference).toContain('../entities/test.entity');
+    });
+
+    it('should fall back to source-based path when outDir/rootDir are absent', () => {
+      // Baseline behaviour must be preserved when options do not include outDir/rootDir.
+      const typeReference =
+        'import("/project/src/entities/test.entity").TestEnum';
+      const fileName = '/project/src/dto/test.dto.ts';
+      const options = {};
+
+      const result = replaceImportPath(typeReference, fileName, options);
+
+      expect(result.typeReference).toContain('../entities/test.entity');
+    });
   });
 });
