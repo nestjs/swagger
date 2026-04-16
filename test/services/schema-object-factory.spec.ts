@@ -825,6 +825,52 @@ describe('SchemaObjectFactory', () => {
       expect(paramResult.schema.$ref).toContain('SimpleChild');
       expect(paramResult.schema.allOf).toBeUndefined();
     });
+
+    it('should merge param-level allOf with $ref wrapping and not lose example', () => {
+      class TagDto {
+        @ApiProperty()
+        name: string;
+      }
+
+      class FilterDto {
+        @ApiProperty()
+        value: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      // Simulate @ApiQuery({ name: 'filter', type: FilterDto, example: 'foo',
+      //   allOf: [{ $ref: '#/components/schemas/TagDto' }] }) on a @Query() param.
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: FilterDto,
+          name: 'filter',
+          required: true,
+          example: 'foo',
+          allOf: [{ $ref: '#/components/schemas/TagDto' }]
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toHaveLength(1);
+      const paramResult = result[0] as any;
+      // Top-level allOf and example must be moved into schema, not leaked.
+      expect(paramResult.allOf).toBeUndefined();
+      expect(paramResult.example).toBeUndefined();
+      expect(paramResult.schema).toBeDefined();
+      expect(paramResult.schema.example).toBe('foo');
+      // Both the parameter's allOf entry and the wrapped $ref should be present.
+      expect(Array.isArray(paramResult.schema.allOf)).toBe(true);
+      expect(paramResult.schema.allOf).toEqual(
+        expect.arrayContaining([
+          { $ref: '#/components/schemas/TagDto' },
+          expect.objectContaining({ $ref: expect.stringContaining('FilterDto') })
+        ])
+      );
+      expect(paramResult.schema.$ref).toBeUndefined();
+    });
   });
 
   describe('transformToArraySchemaProperty', () => {
