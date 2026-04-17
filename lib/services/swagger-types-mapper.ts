@@ -152,6 +152,7 @@ export class SwaggerTypesMapper {
       'nullable',
       'default',
       'example',
+      'examples',
       'oneOf',
       'anyOf',
       'type',

@@ -1054,11 +1054,33 @@ describe('SchemaObjectFactory', () => {
       schemaObjectFactory.exploreModelSchema(EntityPutDTO as any, schemas);
 
       const infoProp = schemas['EntityPutDTO'].properties['info'];
-      // The child redeclares `info` as InfoPutDTO — its $ref should point to InfoPutDTO
       expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).toContain('InfoPutDTO');
       expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).not.toContain(
         'InfoPostDTO'
       );
+    });
+  });
+
+  describe('SwaggerTypesMapper.getSchemaOptionsKeys', () => {
+    it('should include "examples" in schema options keys', () => {
+      const mapper = new SwaggerTypesMapper();
+      expect(mapper.getSchemaOptionsKeys()).toContain('examples');
+    });
+
+    it('should move "examples" array from param root into schema sub-object', () => {
+      const mapper = new SwaggerTypesMapper();
+      const param = {
+        name: 'filter',
+        in: 'query',
+        type: 'string',
+        examples: {
+          empty: { value: '' },
+          full: { value: 'active' }
+        }
+      };
+      const [mapped] = mapper.mapParamTypes([param as any]);
+      expect((mapped as any).schema.examples).toEqual(param.examples);
+      expect((mapped as any).examples).toBeUndefined();
     });
   });
 });
