@@ -1,6 +1,6 @@
 export const createCatDtoText = `
 import { UUID } from 'crypto';
-import { IsInt, IsString, IsPositive, IsNegative, Length, Matches, IsIn } from 'class-validator';
+import { IsArray, IsInt, IsString, IsPositive, IsNegative, Length, Matches, IsIn } from 'class-validator';
 
 enum Status {
     ENABLED,
@@ -69,6 +69,11 @@ export class CreateCatDto {
   @Contains('log_')
   searchBy: string;
   tags: string[];
+  @IsIn(['red', 'green'], { each: false })
+  favoriteColor: string;
+  @IsArray()
+  @IsIn(['black', 'white'], { each: true })
+  favoriteColors: string[];
   status: Status = Status.ENABLED;
   status2?: Status;
   statusArr?: Status[];
@@ -102,7 +107,7 @@ export class CreateCatDto {
 
 export const createCatDtoTextTranspiled = `var _CreateCatDto_privateProperty;
 import * as openapi from "@nestjs/swagger";
-import { IsString, IsPositive, IsNegative, Length, Matches, IsIn } from 'class-validator';
+import { IsArray, IsString, IsPositive, IsNegative, Length, Matches, IsIn } from 'class-validator';
 var Status;
 (function (Status) {
     Status[Status[\"ENABLED\"] = 0] = \"ENABLED\";
@@ -126,7 +131,7 @@ export class CreateCatDto {
         _CreateCatDto_privateProperty.set(this, void 0);
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { isIn: { required: true, type: () => String, enum: ['a', 'b'] }, pattern: { required: true, type: () => String, pattern: "/^[+]?abc$/" }, name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, positive: { required: true, type: () => Number, default: 5, minimum: 1 }, negative: { required: true, type: () => Number, default: -1, maximum: -1 }, lengthMin: { required: true, type: () => String, minLength: 2 }, lengthMinMax: { required: true, type: () => String, minLength: 3, maxLength: 5 }, names: { required: true, type: () => [String], minItems: 1, uniqueItems: true, maxItems: 10 }, employees: { required: true, type: () => [String], minItems: 1 }, nominator: { required: true, type: () => String, multipleOf: 2 }, encodedInfo: { required: true, type: () => String, format: "base64" }, creditCard: { required: true, type: () => String, format: "credit-card" }, currency: { required: true, type: () => String, format: "currency" }, email: { required: true, type: () => String, format: "email" }, response: { required: true, type: () => Object, format: "json" }, githubAccount: { required: true, type: () => String, format: "uri" }, transactionId: { required: true, type: () => String, format: "uuid" }, phoneNumber: { required: true, type: () => String, format: "mobile-phone" }, char: { required: true, type: () => String, pattern: "^[\\\\x00-\\\\x7F]+$" }, color: { required: true, type: () => String, pattern: "^#?([0-9A-F]{3}|[0-9A-F]{4}|[0-9A-F]{6}|[0-9A-F]{8})$" }, hex: { required: true, type: () => String, pattern: "^(0x|0h)?[0-9A-F]+$" }, searchBy: { required: true, type: () => String, pattern: "log_" }, tags: { required: true, type: () => [String] }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, statusArr: { required: false, enum: Status, isArray: true }, oneValueEnum: { required: false, enum: OneValueEnum }, oneValueEnumArr: { required: false, enum: OneValueEnum, isArray: true }, breed: { required: false, type: () => String, title: "this is breed im comment" }, nodes: { required: true, type: () => [Object] }, optionalBoolean: { required: false, type: () => Boolean }, date: { required: true, type: () => Date }, twoDimensionPrimitives: { required: true, type: () => [[String]] }, twoDimensionNodes: { required: true, type: () => [[OtherNode]] }, cryptoUUIDProperty: { required: true, type: () => Object }, arrayOfUUIDs: { required: true, type: () => [Object] } };
+        return { isIn: { required: true, type: () => String, enum: ['a', 'b'] }, pattern: { required: true, type: () => String, pattern: "/^[+]?abc$/" }, name: { required: true, type: () => String }, age: { required: true, type: () => Number, default: 3, minimum: 0, maximum: 10 }, positive: { required: true, type: () => Number, default: 5, minimum: 1 }, negative: { required: true, type: () => Number, default: -1, maximum: -1 }, lengthMin: { required: true, type: () => String, minLength: 2 }, lengthMinMax: { required: true, type: () => String, minLength: 3, maxLength: 5 }, names: { required: true, type: () => [String], minItems: 1, uniqueItems: true, maxItems: 10 }, employees: { required: true, type: () => [String], minItems: 1 }, nominator: { required: true, type: () => String, multipleOf: 2 }, encodedInfo: { required: true, type: () => String, format: "base64" }, creditCard: { required: true, type: () => String, format: "credit-card" }, currency: { required: true, type: () => String, format: "currency" }, email: { required: true, type: () => String, format: "email" }, response: { required: true, type: () => Object, format: "json" }, githubAccount: { required: true, type: () => String, format: "uri" }, transactionId: { required: true, type: () => String, format: "uuid" }, phoneNumber: { required: true, type: () => String, format: "mobile-phone" }, char: { required: true, type: () => String, pattern: "^[\\\\x00-\\\\x7F]+$" }, color: { required: true, type: () => String, pattern: "^#?([0-9A-F]{3}|[0-9A-F]{4}|[0-9A-F]{6}|[0-9A-F]{8})$" }, hex: { required: true, type: () => String, pattern: "^(0x|0h)?[0-9A-F]+$" }, searchBy: { required: true, type: () => String, pattern: "log_" }, tags: { required: true, type: () => [String] }, favoriteColor: { required: true, type: () => String, enum: ['red', 'green'] }, favoriteColors: { required: true, type: () => [String], enum: ['black', 'white'], isArray: true }, status: { required: true, default: Status.ENABLED, enum: Status }, status2: { required: false, enum: Status }, statusArr: { required: false, enum: Status, isArray: true }, oneValueEnum: { required: false, enum: OneValueEnum }, oneValueEnumArr: { required: false, enum: OneValueEnum, isArray: true }, breed: { required: false, type: () => String, title: "this is breed im comment" }, nodes: { required: true, type: () => [Object] }, optionalBoolean: { required: false, type: () => Boolean }, date: { required: true, type: () => Date }, twoDimensionPrimitives: { required: true, type: () => [[String]] }, twoDimensionNodes: { required: true, type: () => [[OtherNode]] }, cryptoUUIDProperty: { required: true, type: () => Object }, arrayOfUUIDs: { required: true, type: () => [Object] } };
     }
 }
 _CreateCatDto_privateProperty = new WeakMap();
@@ -199,6 +204,13 @@ __decorate([
 __decorate([
     Contains('log_')
 ], CreateCatDto.prototype, \"searchBy\", void 0);
+__decorate([
+    IsIn(['red', 'green'], { each: false })
+], CreateCatDto.prototype, \"favoriteColor\", void 0);
+__decorate([
+    IsArray(),
+    IsIn(['black', 'white'], { each: true })
+], CreateCatDto.prototype, \"favoriteColors\", void 0);
 __decorate([
     ApiProperty({ description: "this is breed", type: String }),
     IsString()

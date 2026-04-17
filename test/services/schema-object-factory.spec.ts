@@ -178,8 +178,46 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should merge array enum metadata without keeping a top-level enum', () => {
+      class ValidationShimArrayEnumDto {
+        @ApiProperty({ enum: Role, isArray: true })
+        roles: Role[];
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            roles: {
+              enum: Role,
+              isArray: true
+            }
+          };
+        }
+      }
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(
+        ValidationShimArrayEnumDto,
+        schemas
+      );
+
+      expect(schemas.ValidationShimArrayEnumDto).toEqual({
+        type: 'object',
+        properties: {
+          roles: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['admin', 'user']
+            }
+          }
+        },
+        required: ['roles']
+      });
+    });
+
     it('should log a warning when detecting duplicate DTOs with different schemas', () => {
-      const loggerWarnSpy = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
+      const loggerWarnSpy = vi
+        .spyOn(Logger, 'warn')
+        .mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -213,8 +251,12 @@ describe('SchemaObjectFactory', () => {
     });
 
     it('should not log an error when detecting duplicate DTOs with different schemas', () => {
-      const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
-      const loggerWarnSpy = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
+      const loggerErrorSpy = vi
+        .spyOn(Logger, 'error')
+        .mockImplementation(() => {});
+      const loggerWarnSpy = vi
+        .spyOn(Logger, 'warn')
+        .mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -245,7 +287,9 @@ describe('SchemaObjectFactory', () => {
     });
 
     it('should not log a warning when detecting duplicate DTOs with the same schemas', () => {
-      const loggerWarnSpy = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
+      const loggerWarnSpy = vi
+        .spyOn(Logger, 'warn')
+        .mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -444,10 +488,7 @@ describe('SchemaObjectFactory', () => {
       }
 
       const schemas: Record<string, SchemasObject> = {};
-      schemaObjectFactory.exploreModelSchema(
-        UserWithNullableProfile,
-        schemas
-      );
+      schemaObjectFactory.exploreModelSchema(UserWithNullableProfile, schemas);
       expect(
         (schemas['UserWithNullableProfile'] as Record<string, any>).properties
           .profile
@@ -1019,7 +1060,10 @@ describe('SchemaObjectFactory', () => {
 
       const schemas: Record<string, any> = {};
       expect(() =>
-        schemaObjectFactory.exploreModelSchema(SwcNumericEnumDto as any, schemas)
+        schemaObjectFactory.exploreModelSchema(
+          SwcNumericEnumDto as any,
+          schemas
+        )
       ).not.toThrow();
 
       expect(schemas['SwcNumericEnumDto']).toBeDefined();
@@ -1055,11 +1099,12 @@ describe('SchemaObjectFactory', () => {
 
       const infoProp = schemas['EntityPutDTO'].properties['info'];
       // The child redeclares `info` as InfoPutDTO — its $ref should point to InfoPutDTO
-      expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).toContain('InfoPutDTO');
+      expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).toContain(
+        'InfoPutDTO'
+      );
       expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).not.toContain(
         'InfoPostDTO'
       );
     });
   });
 });
-
