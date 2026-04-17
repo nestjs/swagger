@@ -27,6 +27,7 @@ import { CatsService } from './cats.service';
 import { Cat } from './classes/cat.class';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { LettersEnum, PaginationQuery } from './dto/pagination-query.dto';
+import { TagDto } from './dto/tag.dto';
 import { CatBreed } from './enums/cat-breed.enum';
 
 @ApiSecurity('basic')
@@ -173,6 +174,14 @@ export class CatsController {
     deprecated: false
   })
   getWithEnumNamedParam(@Param('type') type: LettersEnum) {}
+
+  @Get('with-named-type-example')
+  @ApiQuery({
+    name: 'filter',
+    type: TagDto,
+    example: 'example-tag'
+  })
+  getWithNamedTypeExample(@Query('filter') filter: TagDto) {}
 
   @Get('with-random-query')
   @ApiQuery({

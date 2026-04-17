@@ -10,7 +10,7 @@ import {
   OpenAPIObject,
   SwaggerModule
 } from '../lib';
-import { SchemaObject } from '../lib/interfaces/open-api-spec.interface';
+import { ParameterObject, SchemaObject } from '../lib/interfaces/open-api-spec.interface';
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
@@ -189,6 +189,20 @@ describe('Validate OpenAPI schema', () => {
       console.log(doc);
       expect(err).toBeUndefined();
     }
+  });
+
+  it('should preserve example metadata for named type query params (issue #3335)', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    const params =
+      document.paths['/api/cats/with-named-type-example']['get']['parameters'];
+    const filterParam = params.find(
+      (p: any) => p.name === 'filter' && p.in === 'query'
+    );
+    expect(filterParam).toBeDefined();
+    expect((filterParam as ParameterObject).schema).toEqual({
+      example: 'example-tag',
+      allOf: [{ $ref: '#/components/schemas/TagDto' }]
+    });
   });
 
   it('should fix colons in url', async () => {
