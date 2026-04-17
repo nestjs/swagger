@@ -5,6 +5,7 @@ import {
   EnumAllowedTypes,
   SchemaObjectMetadata
 } from '../interfaces/schema-object-metadata.interface';
+import { ParameterStyle } from '../interfaces/open-api-spec.interface';
 import { getEnumType, getEnumValues } from '../utils/enum.utils';
 import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers';
 
@@ -20,6 +21,19 @@ export type ApiPropertyCommonOptions = SchemaObjectMetadata & {
    * @see [Swagger link objects](https://swagger.io/docs/specification/links/)
    */
   link?: () => Type<unknown> | Function;
+  /**
+   * Describes how the parameter value will be serialized.
+   *
+   * @see [Swagger serialization](https://swagger.io/docs/specification/serialization/)
+   */
+  style?: ParameterStyle;
+  /**
+   * When true, array or object parameter values generate
+   * separate parameters for each value.
+   *
+   * @see [Swagger serialization](https://swagger.io/docs/specification/serialization/)
+   */
+  explode?: boolean;
 };
 
 export type ApiPropertyOptions =
