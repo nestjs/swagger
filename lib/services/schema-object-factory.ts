@@ -468,9 +468,15 @@ export class SchemaObjectFactory {
       type: metadata.isArray ? 'array' : 'string'
     };
 
+    const existingCombinator = (['oneOf', 'anyOf'] as const).find(
+      (key) => key in metadata && Array.isArray(metadata[key])
+    );
+
     const refHost = metadata.isArray
       ? { items: { $ref } }
-      : { allOf: [{ $ref }] };
+      : existingCombinator
+        ? { [existingCombinator]: [...metadata[existingCombinator], { $ref }] }
+        : { allOf: [{ $ref }] };
 
     const paramObject = { ..._schemaObject, ...refHost };
     const pathsToOmit = ['enum', 'enumName', 'enumSchema', 'x-enumNames'];
