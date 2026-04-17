@@ -517,12 +517,21 @@ export class SchemaObjectFactory {
     const extraMetadataKeys = Object.keys(validMetadataObject);
 
     if (extraMetadataKeys.length > 0) {
+      // Move `nullable` into the allOf array to avoid Redocly lint errors.
+      // Placing `nullable: true` alongside `allOf` at the same level is
+      // technically allowed by OAS 3.0 but rejected by strict linters such as
+      // Redocly.  Appending `{ nullable: true }` as an additional allOf entry
+      // is accepted by all major validators.
+      const { nullable, ...restMetadata } = validMetadataObject as any;
+      const allOfEntries: any[] = [{ $ref }];
+      if (nullable === true) {
+        allOfEntries.push({ nullable: true });
+      }
       return {
         name: metadata.name || key,
         required: metadata.required,
-        ...validMetadataObject,
-        ...(validMetadataObject['nullable'] ? { type: 'object' } : {}),
-        allOf: [{ $ref }]
+        ...restMetadata,
+        allOf: allOfEntries
       } as SchemaObjectMetadata;
     }
     return {
