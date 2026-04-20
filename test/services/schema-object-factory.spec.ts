@@ -178,8 +178,42 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
-    it('should log an error when detecting duplicate DTOs with different schemas', () => {
-      const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
+    it('should support enumName with oneOf', () => {
+      enum Status {
+        Active = 'active',
+        Inactive = 'inactive'
+      }
+
+      class DtoWithEnumOneOf {
+        @ApiProperty({
+          oneOf: [{ type: 'string' }],
+          enum: Status,
+          enumName: 'Status'
+        })
+        status: Status | string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithEnumOneOf, schemas);
+
+      expect(schemas).toHaveProperty('Status');
+      expect(schemas.Status).toEqual({
+        type: 'string',
+        enum: ['active', 'inactive']
+      });
+      expect(schemas.DtoWithEnumOneOf.properties.status).toEqual({
+        oneOf: [
+          { type: 'string' },
+          { $ref: '#/components/schemas/Status' }
+        ]
+      });
+      expect(
+        schemas.DtoWithEnumOneOf.properties.status
+      ).not.toHaveProperty('allOf');
+    });
+
+    it('should log a warning when detecting duplicate DTOs with different schemas', () => {
+      const loggerWarnSpy = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -203,17 +237,49 @@ describe('SchemaObjectFactory', () => {
         schemas
       );
 
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
         `Duplicate DTO detected: "DuplicateDTO" is defined multiple times with different schemas.\n` +
           `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
           `Note: This will throw an error in the next major version.`
       );
 
-      loggerErrorSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
     });
 
-    it('should not throw an error or log error when detecting duplicate DTOs with the same schemas', () => {
+    it('should not log an error when detecting duplicate DTOs with different schemas', () => {
       const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
+      const loggerWarnSpy = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
+      const schemas: Record<string, SchemasObject> = {};
+
+      class DuplicateDTO {
+        @ApiProperty()
+        property1: string;
+      }
+
+      schemaObjectFactory.exploreModelSchema(DuplicateDTO, schemas);
+
+      class DuplicateDTOWithDifferentSchema {
+        @ApiProperty()
+        property2: string;
+      }
+
+      Object.defineProperty(DuplicateDTOWithDifferentSchema, 'name', {
+        value: 'DuplicateDTO'
+      });
+
+      schemaObjectFactory.exploreModelSchema(
+        DuplicateDTOWithDifferentSchema,
+        schemas
+      );
+
+      expect(loggerErrorSpy).not.toHaveBeenCalled();
+
+      loggerErrorSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
+    });
+
+    it('should not log a warning when detecting duplicate DTOs with the same schemas', () => {
+      const loggerWarnSpy = vi.spyOn(Logger, 'warn').mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -237,9 +303,9 @@ describe('SchemaObjectFactory', () => {
         schemas
       );
 
-      expect(loggerErrorSpy).not.toHaveBeenCalled();
+      expect(loggerWarnSpy).not.toHaveBeenCalled();
 
-      loggerErrorSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
     });
 
     it('should create openapi schema', () => {
@@ -293,6 +359,7 @@ describe('SchemaObjectFactory', () => {
           profile: {
             description: 'Profile',
             nullable: true,
+            type: 'object',
             allOf: [
               {
                 $ref: '#/components/schemas/CreateProfileDto'
@@ -396,6 +463,35 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should include type "object" for nullable $ref properties (issue #3274)', () => {
+      class ProfileDto {
+        @ApiProperty()
+        bio: string;
+      }
+
+      class UserWithNullableProfile {
+        @ApiProperty({
+          nullable: true,
+          type: () => ProfileDto
+        })
+        profile: ProfileDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        UserWithNullableProfile,
+        schemas
+      );
+      expect(
+        (schemas['UserWithNullableProfile'] as Record<string, any>).properties
+          .profile
+      ).toEqual({
+        nullable: true,
+        type: 'object',
+        allOf: [{ $ref: '#/components/schemas/ProfileDto' }]
+      });
+    });
+
     it('should purge linked types from properties', () => {
       class Human {
         @ApiProperty()
@@ -419,6 +515,69 @@ describe('SchemaObjectFactory', () => {
           }
         },
         required: ['id', 'spouseId']
+      });
+    });
+
+    it('should convert RegExp pattern to string in schema', () => {
+      class RegExpPatternDto {
+        @ApiProperty({ pattern: /^[+]?abc$/ })
+        code: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(RegExpPatternDto, schemas);
+
+      expect(schemas[RegExpPatternDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          code: {
+            type: 'string',
+            pattern: '^[+]?abc$'
+          }
+        },
+        required: ['code']
+      });
+    });
+
+    it('should strip flags when converting RegExp pattern', () => {
+      class RegExpFlagsDto {
+        @ApiProperty({ pattern: /abc/i })
+        value: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(RegExpFlagsDto, schemas);
+
+      expect(schemas[RegExpFlagsDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          value: {
+            type: 'string',
+            pattern: 'abc'
+          }
+        },
+        required: ['value']
+      });
+    });
+
+    it('should keep string pattern unchanged', () => {
+      class StringPatternDto {
+        @ApiProperty({ pattern: '^[a-z]+$' })
+        slug: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(StringPatternDto, schemas);
+
+      expect(schemas[StringPatternDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          slug: {
+            type: 'string',
+            pattern: '^[a-z]+$'
+          }
+        },
+        required: ['slug']
       });
     });
 
@@ -707,6 +866,71 @@ describe('SchemaObjectFactory', () => {
 
       expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number' } });
     });
+
+    it('should add $ref to existing oneOf when enumName is used with oneOf', () => {
+      const metadata = {
+        type: 'string',
+        enum: ['a', 'b', 'c'],
+        enumName: 'MyEnum',
+        isArray: false,
+        oneOf: [{ type: 'number' }]
+      } as any;
+      const schemas = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'field',
+        metadata,
+        schemas
+      );
+
+      expect(schemas).toEqual({
+        MyEnum: { enum: ['a', 'b', 'c'], type: 'string' }
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          oneOf: [
+            { type: 'number' },
+            { $ref: '#/components/schemas/MyEnum' }
+          ]
+        })
+      );
+      expect(result).not.toHaveProperty('allOf');
+      expect(result).not.toHaveProperty('enum');
+      expect(result).not.toHaveProperty('enumName');
+      expect(result).not.toHaveProperty('type');
+    });
+
+    it('should add $ref to existing anyOf when enumName is used with anyOf', () => {
+      const metadata = {
+        type: 'string',
+        enum: ['x', 'y'],
+        enumName: 'MyEnum',
+        isArray: false,
+        anyOf: [{ type: 'number' }]
+      } as any;
+      const schemas = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'field',
+        metadata,
+        schemas
+      );
+
+      expect(schemas).toEqual({
+        MyEnum: { enum: ['x', 'y'], type: 'string' }
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          anyOf: [
+            { type: 'number' },
+            { $ref: '#/components/schemas/MyEnum' }
+          ]
+        })
+      );
+      expect(result).not.toHaveProperty('allOf');
+      expect(result).not.toHaveProperty('enum');
+      expect(result).not.toHaveProperty('enumName');
+    });
   });
 
   describe('createEnumParam', () => {
@@ -900,6 +1124,40 @@ describe('SchemaObjectFactory', () => {
       expect(schemas['SwcNumericEnumDto']).toBeDefined();
       const rankProp = schemas['SwcNumericEnumDto'].properties['rank'];
       expect(rankProp).toBeDefined();
+    });
+  });
+
+  describe('inherited property type override', () => {
+    it('should use the child class type when a property is redeclared in a subclass', () => {
+      class InfoPostDTO {
+        @ApiProperty()
+        name: string;
+      }
+      class InfoPutDTO extends InfoPostDTO {
+        @ApiProperty()
+        id: number;
+      }
+      class EntityPostDTO {
+        @ApiProperty()
+        id: number;
+
+        @ApiProperty({ type: () => InfoPostDTO })
+        info: InfoPostDTO;
+      }
+      class EntityPutDTO extends EntityPostDTO {
+        @ApiProperty({ type: () => InfoPutDTO })
+        info: InfoPutDTO;
+      }
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(EntityPutDTO as any, schemas);
+
+      const infoProp = schemas['EntityPutDTO'].properties['info'];
+      // The child redeclares `info` as InfoPutDTO — its $ref should point to InfoPutDTO
+      expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).toContain('InfoPutDTO');
+      expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).not.toContain(
+        'InfoPostDTO'
+      );
     });
   });
 });

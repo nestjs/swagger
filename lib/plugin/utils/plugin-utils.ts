@@ -200,26 +200,9 @@ export function replaceImportPath(
     let relativePath = posix.relative(from, decodedImportPath);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
-    const nodeModulesText = 'node_modules';
-    const nodeModulePos = relativePath.indexOf(nodeModulesText);
-    if (nodeModulePos >= 0) {
-      relativePath = relativePath.slice(
-        nodeModulePos + nodeModulesText.length + 1 // slash
-      );
-
-      const typesText = '@types';
-      const typesPos = relativePath.indexOf(typesText);
-      if (typesPos >= 0) {
-        relativePath = relativePath.slice(
-          typesPos + typesText.length + 1 //slash
-        );
-      }
-
-      const indexText = '/index';
-      const indexPos = relativePath.indexOf(indexText);
-      if (indexPos >= 0) {
-        relativePath = relativePath.slice(0, indexPos);
-      }
+    const normalizedPath = normalizePackagePath(relativePath);
+    if (normalizedPath !== relativePath) {
+      relativePath = normalizedPath;
     } else if (options.esmCompatible) {
       // Add appropriate extension for non-node_modules imports
       const extension = getOutputExtension(fileName);
@@ -418,6 +401,42 @@ export function safeDecodeURIComponent(path: string) {
   } catch {
     return path;
   }
+}
+
+/**
+ * When a path goes through node_modules (e.g. a workspace package resolved to
+ * its physical location inside node_modules), strip the node_modules prefix so
+ * the generated import uses the package specifier instead of a relative path.
+ * This mirrors the same normalisation already done inside replaceImportPath().
+ *
+ * For example:
+ *   ../node_modules/@amk/utils/src/dto/order.dto  →  @amk/utils/src/dto/order.dto
+ *   ../../../packages/product-warehouse/dist/index  (no node_modules) → unchanged
+ */
+export function normalizePackagePath(importPath: string): string {
+  const nodeModulesText = 'node_modules';
+  const nodeModulePos = importPath.indexOf(nodeModulesText);
+  if (nodeModulePos < 0) {
+    return importPath;
+  }
+
+  let packagePath = importPath.slice(
+    nodeModulePos + nodeModulesText.length + 1 // skip the trailing slash
+  );
+
+  const typesText = '@types';
+  const typesPos = packagePath.indexOf(typesText);
+  if (typesPos >= 0) {
+    packagePath = packagePath.slice(typesPos + typesText.length + 1);
+  }
+
+  const indexText = '/index';
+  const indexPos = packagePath.indexOf(indexText);
+  if (indexPos >= 0) {
+    packagePath = packagePath.slice(0, indexPos);
+  }
+
+  return packagePath;
 }
 
 /**

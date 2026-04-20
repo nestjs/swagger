@@ -12,15 +12,17 @@ export class ResponseObjectMapper {
     produces: string[]
   ) {
     const exampleKeys = ['example', 'examples'];
+    const arraySchema = {
+      type: 'array',
+      items: { $ref: getSchemaPath(name) }
+    };
+    const schema = response.nullable
+      ? { oneOf: [arraySchema, { type: 'null' }] }
+      : arraySchema;
     return {
-      ...omit(response, exampleKeys),
+      ...omit(response, [...exampleKeys, 'nullable']),
       ...this.mimetypeContentWrapper.wrap(produces, {
-        schema: {
-          type: 'array',
-          items: {
-            $ref: getSchemaPath(name)
-          }
-        },
+        schema,
         ...pick(response, exampleKeys)
       })
     };
@@ -28,12 +30,13 @@ export class ResponseObjectMapper {
 
   toRefObject(response: Record<string, any>, name: string, produces: string[]) {
     const exampleKeys = ['example', 'examples'];
+    const schema = response.nullable
+      ? { oneOf: [{ $ref: getSchemaPath(name) }, { type: 'null' }] }
+      : { $ref: getSchemaPath(name) };
     return {
-      ...omit(response, exampleKeys),
+      ...omit(response, [...exampleKeys, 'nullable']),
       ...this.mimetypeContentWrapper.wrap(produces, {
-        schema: {
-          $ref: getSchemaPath(name)
-        },
+        schema,
         ...pick(response, exampleKeys)
       })
     };

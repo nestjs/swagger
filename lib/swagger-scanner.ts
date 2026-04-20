@@ -20,6 +20,7 @@ import { SwaggerTypesMapper } from './services/swagger-types-mapper';
 import { SwaggerExplorer } from './swagger-explorer';
 import { SwaggerTransformer } from './swagger-transformer';
 import { getGlobalPrefix } from './utils/get-global-prefix';
+import { stripDynamicDefaults } from './utils/strip-dynamic-defaults.util';
 import { stripLastSlash } from './utils/strip-last-slash.util';
 
 export class SwaggerScanner {
@@ -41,7 +42,8 @@ export class SwaggerScanner {
       ignoreGlobalPrefix = false,
       operationIdFactory,
       linkNameFactory,
-      autoTagControllers = true
+      autoTagControllers = true,
+      excludeDynamicDefaults = false
     } = options;
 
     const untypedApp = app as any;
@@ -100,6 +102,10 @@ export class SwaggerScanner {
 
     const schemas = this.explorer.getSchemas();
     this.addExtraModels(schemas, extraModels);
+
+    if (excludeDynamicDefaults) {
+      stripDynamicDefaults(schemas as Record<string, SchemaObject>);
+    }
 
     return {
       ...this.transformer.normalizePaths(flatten(denormalizedPaths)),

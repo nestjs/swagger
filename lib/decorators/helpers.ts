@@ -62,6 +62,26 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
     const existingMetadata = Reflect.getMetadata(metakey, target, propertyKey);
     if (existingMetadata) {
       const newMetadata = pickBy(metadata, negate(isUndefined));
+
+      // When the existing metadata was inherited from a parent class (i.e. there
+      // is no own metadata on the current prototype), the child's TypeScript-
+      // inferred design:type should take precedence so that re-declaring an
+      // inherited property with a subtype (e.g. `info: InfoPutDTO` overriding
+      // `info: InfoPostDTO`) is correctly reflected in the generated schema.
+      const ownExistingMetadata = Reflect.getOwnMetadata(
+        metakey,
+        target,
+        propertyKey
+      );
+      if (!ownExistingMetadata && newMetadata.type === undefined) {
+        const designType =
+          target?.constructor?.[METADATA_FACTORY_NAME]?.()[propertyKey]?.type ??
+          Reflect.getMetadata('design:type', target, propertyKey);
+        if (designType) {
+          newMetadata.type = designType;
+        }
+      }
+
       const metadataToSave = overrideExisting
         ? {
             ...existingMetadata,

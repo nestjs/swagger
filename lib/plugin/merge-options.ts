@@ -22,7 +22,7 @@ export interface PluginOptions {
    * Skip add default for properties that do not specify default values.
    */
   skipDefaultValues?: boolean;
-
+  
   /**
    * @internal
    * Resolved from the TypeScript compiler options. Used to adjust relative
@@ -37,6 +37,13 @@ export interface PluginOptions {
    * to compute the correct output-relative import path.
    */
   rootDir?: string;
+  
+  /**
+   * Automatically add `enumName` to @ApiProperty when the property type is
+   * an enum. The name is derived from the enum's type name, which prevents
+   * duplicate inline enum definitions in the generated OpenAPI document.
+   */
+  autoFillEnumName?: boolean;
 }
 
 const defaultOptions: PluginOptions = {

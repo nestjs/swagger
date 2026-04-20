@@ -84,6 +84,10 @@ export function createApiPropertyDecorator(
     };
   }
 
+  if (options.pattern instanceof RegExp) {
+    options.pattern = options.pattern.source;
+  }
+
   return createPropertyDecorator(
     DECORATORS.API_MODEL_PROPERTIES,
     options,

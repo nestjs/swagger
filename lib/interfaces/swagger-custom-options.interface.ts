@@ -56,12 +56,15 @@ export interface SwaggerCustomOptions {
   /**
    * Hook allowing to alter the OpenAPI document before being served.
    * It's called after the document is generated and before it is served as JSON & YAML.
+   * The hook can return either a plain `OpenAPIObject` or a `Promise<OpenAPIObject>`,
+   * enabling async operations such as fetching tenant-specific configuration or
+   * reading from a database before serving the document.
    */
   patchDocumentOnRequest?: <TRequest = any, TResponse = any>(
     req: TRequest,
     res: TResponse,
     document: OpenAPIObject
-  ) => OpenAPIObject;
+  ) => OpenAPIObject | Promise<OpenAPIObject>;
 
   /**
    * If `true`, the selector of OpenAPI definitions is displayed in the Swagger UI interface.
