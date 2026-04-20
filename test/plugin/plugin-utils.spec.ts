@@ -150,6 +150,31 @@ describe('plugin-utils', () => {
       expect(result.typeReference).toContain('../entities/test.entity');
     });
 
+    it('should remap import paths within rootDir to outDir (rootDir = src/)', () => {
+      // Standard layout with rootDir pointing to src/:
+      //   rootDir : /project/src
+      //   outDir  : /project/dist
+      //   source  : /project/src/dto/nested/test.dto.ts
+      //   output  : /project/dist/dto/nested/test.dto.js
+      //   import  : /project/src/entities/test.entity     (within rootDir)
+      //   target  : /project/dist/entities/test.entity     (remapped to outDir)
+      //
+      // Without fix: require("../../../src/entities/test.entity")  (broken)
+      // With fix:    require("../../entities/test.entity")          (correct)
+      const typeReference =
+        'import("/project/src/entities/test.entity").TestEnum';
+      const fileName = '/project/src/dto/nested/test.dto.ts';
+      const options = {
+        rootDir: '/project/src',
+        outDir: '/project/dist'
+      };
+
+      const result = replaceImportPath(typeReference, fileName, options);
+
+      expect(result.typeReference).toContain('../../entities/test.entity');
+      expect(result.typeReference).not.toContain('/src/');
+    });
+
     it('should fall back to source-based path when outDir/rootDir are absent', () => {
       // Baseline behaviour must be preserved when options do not include outDir/rootDir.
       const typeReference =
