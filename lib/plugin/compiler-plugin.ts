@@ -17,6 +17,14 @@ export const before = (options?: Record<string, any>, program?: ts.Program) => {
     throw new Error(error);
   }
 
+  const compilerOptions = program.getCompilerOptions();
+  if (compilerOptions.outDir) {
+    options.outDir = compilerOptions.outDir;
+  }
+  if (compilerOptions.rootDir) {
+    options.rootDir = compilerOptions.rootDir;
+  }
+
   return (ctx: ts.TransformationContext): ts.Transformer<any> => {
     return (sf: ts.SourceFile) => {
       if (isFilenameMatched(options.dtoFileNameSuffix, sf.fileName)) {
