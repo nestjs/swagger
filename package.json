@@ -37,7 +37,7 @@
   "devDependencies": {
     "@commitlint/cli": "20.5.0",
     "@commitlint/config-angular": "20.5.0",
-    "@fastify/static": "9.1.0",
+    "@fastify/static": "9.1.1",
     "@nestjs/common": "11.1.19",
     "@nestjs/core": "11.1.19",
     "@nestjs/platform-express": "11.1.19",
@@ -61,7 +61,7 @@
     "rxjs": "7.8.2",
     "supertest": "7.2.2",
     "swagger-parser": "10.0.3",
-    "typescript": "6.0.2",
+    "typescript": "6.0.3",
     "vite": "^8.0.8",
     "vitest": "4.1.4"
   },

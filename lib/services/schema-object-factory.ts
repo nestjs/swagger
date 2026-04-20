@@ -468,9 +468,15 @@ export class SchemaObjectFactory {
       type: metadata.isArray ? 'array' : 'string'
     };
 
+    const existingCombinator = (['oneOf', 'anyOf'] as const).find(
+      (key) => key in metadata && Array.isArray(metadata[key])
+    );
+
     const refHost = metadata.isArray
       ? { items: { $ref } }
-      : { allOf: [{ $ref }] };
+      : existingCombinator
+        ? { [existingCombinator]: [...metadata[existingCombinator], { $ref }] }
+        : { allOf: [{ $ref }] };
 
     const paramObject = { ..._schemaObject, ...refHost };
     const pathsToOmit = ['enum', 'enumName', 'enumSchema', 'x-enumNames'];
@@ -674,6 +680,20 @@ export class SchemaObjectFactory {
         enumType
       );
     }
+
+    // When a schema combinator (oneOf, anyOf, allOf) is explicitly declared,
+    // skip type-based resolution. The combinator should take precedence over
+    // any inferred type (e.g., Object from union types).
+    const hasSchemaCombinator = ['oneOf', 'anyOf', 'allOf'].some(
+      (combinator) => combinator in metadata
+    );
+    if (hasSchemaCombinator) {
+      return {
+        ...metadata,
+        name: metadata.name || key
+      };
+    }
+
     if (this.isObjectLiteral(typeRef as Record<string, any>)) {
       const schemaFromObjectLiteral = this.createFromObjectLiteral(
         key,

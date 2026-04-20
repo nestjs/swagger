@@ -103,6 +103,10 @@ describe('Validate OpenAPI schema', () => {
                   type: () => ({
                     ids: { required: true, type: () => Number }
                   })
+                },
+                oneOfWithRef: {
+                  required: false,
+                  type: () => Object
                 }
               }
             }

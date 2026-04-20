@@ -213,6 +213,40 @@ describe('SchemaObjectFactory', () => {
         required: ['roles']
       });
     });
+    
+    it('should support enumName with oneOf', () => {
+      enum Status {
+        Active = 'active',
+        Inactive = 'inactive'
+      }
+
+      class DtoWithEnumOneOf {
+        @ApiProperty({
+          oneOf: [{ type: 'string' }],
+          enum: Status,
+          enumName: 'Status'
+        })
+        status: Status | string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithEnumOneOf, schemas);
+
+      expect(schemas).toHaveProperty('Status');
+      expect(schemas.Status).toEqual({
+        type: 'string',
+        enum: ['active', 'inactive']
+      });
+      expect(schemas.DtoWithEnumOneOf.properties.status).toEqual({
+        oneOf: [
+          { type: 'string' },
+          { $ref: '#/components/schemas/Status' }
+        ]
+      });
+      expect(
+        schemas.DtoWithEnumOneOf.properties.status
+      ).not.toHaveProperty('allOf');
+    });
 
     it('should log a warning when detecting duplicate DTOs with different schemas', () => {
       const loggerWarnSpy = vi
@@ -873,6 +907,71 @@ describe('SchemaObjectFactory', () => {
 
       expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number' } });
     });
+
+    it('should add $ref to existing oneOf when enumName is used with oneOf', () => {
+      const metadata = {
+        type: 'string',
+        enum: ['a', 'b', 'c'],
+        enumName: 'MyEnum',
+        isArray: false,
+        oneOf: [{ type: 'number' }]
+      } as any;
+      const schemas = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'field',
+        metadata,
+        schemas
+      );
+
+      expect(schemas).toEqual({
+        MyEnum: { enum: ['a', 'b', 'c'], type: 'string' }
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          oneOf: [
+            { type: 'number' },
+            { $ref: '#/components/schemas/MyEnum' }
+          ]
+        })
+      );
+      expect(result).not.toHaveProperty('allOf');
+      expect(result).not.toHaveProperty('enum');
+      expect(result).not.toHaveProperty('enumName');
+      expect(result).not.toHaveProperty('type');
+    });
+
+    it('should add $ref to existing anyOf when enumName is used with anyOf', () => {
+      const metadata = {
+        type: 'string',
+        enum: ['x', 'y'],
+        enumName: 'MyEnum',
+        isArray: false,
+        anyOf: [{ type: 'number' }]
+      } as any;
+      const schemas = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'field',
+        metadata,
+        schemas
+      );
+
+      expect(schemas).toEqual({
+        MyEnum: { enum: ['x', 'y'], type: 'string' }
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          anyOf: [
+            { type: 'number' },
+            { $ref: '#/components/schemas/MyEnum' }
+          ]
+        })
+      );
+      expect(result).not.toHaveProperty('allOf');
+      expect(result).not.toHaveProperty('enum');
+      expect(result).not.toHaveProperty('enumName');
+    });
   });
 
   describe('createEnumParam', () => {
@@ -1105,6 +1204,140 @@ describe('SchemaObjectFactory', () => {
       expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).not.toContain(
         'InfoPostDTO'
       );
+    });
+  });
+
+  describe('oneOf with Object type (issue #3549)', () => {
+    it('should correctly handle oneOf when design:type is Object', () => {
+      class Example {
+        @ApiProperty()
+        foo: string;
+        @ApiProperty()
+        bar: string;
+      }
+
+      class Params {
+        @ApiProperty({
+          oneOf: [
+            { $ref: '#/components/schemas/Example' },
+            {
+              type: 'array',
+              items: { $ref: '#/components/schemas/Example' }
+            }
+          ]
+        })
+        example: any; // Union types reflect as Object at runtime
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(Params, schemas);
+
+      expect(schemas['Params'].properties['example']).toEqual({
+        oneOf: [
+          { $ref: '#/components/schemas/Example' },
+          {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Example' }
+          }
+        ]
+      });
+    });
+
+    it('should correctly handle oneOf when metadata factory provides type as Object', () => {
+      class Example {
+        @ApiProperty()
+        foo: string;
+        @ApiProperty()
+        bar: string;
+      }
+
+      class ParamsWithFactory {
+        @ApiProperty({
+          oneOf: [
+            { $ref: '#/components/schemas/Example' },
+            {
+              type: 'array',
+              items: { $ref: '#/components/schemas/Example' }
+            }
+          ]
+        })
+        example: any;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            example: { type: () => Object, required: true }
+          };
+        }
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ParamsWithFactory, schemas);
+
+      expect(schemas['ParamsWithFactory'].properties['example']).toEqual({
+        oneOf: [
+          { $ref: '#/components/schemas/Example' },
+          {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Example' }
+          }
+        ]
+      });
+    });
+
+    it('should not generate $ref to Object when oneOf is declared and type is unresolvable', () => {
+      // Simulates the case where a bundler/minifier breaks function name inference,
+      // so isLazyTypeFunc returns false and the type stays as a raw function
+      const lazyObjectType = function () {
+        return Object;
+      };
+      // Ensure the function name is NOT 'type' (simulates bundler transformation)
+      Object.defineProperty(lazyObjectType, 'name', { value: '' });
+
+      class ParamsWithBrokenLazy {
+        @ApiProperty({
+          oneOf: [
+            { $ref: '#/components/schemas/SomeModel' },
+            {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SomeModel' }
+            }
+          ]
+        })
+        example: any;
+      }
+
+      // Manually set the metadata as the plugin would, with a broken lazy type
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        {
+          type: lazyObjectType,
+          oneOf: [
+            { $ref: '#/components/schemas/SomeModel' },
+            {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SomeModel' }
+            }
+          ]
+        },
+        ParamsWithBrokenLazy.prototype,
+        'example'
+      );
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ParamsWithBrokenLazy, schemas);
+
+      // Should NOT contain $ref to Object
+      const exampleProp = schemas['ParamsWithBrokenLazy'].properties['example'];
+      expect(exampleProp).not.toHaveProperty('$ref');
+      expect(exampleProp).not.toHaveProperty('allOf');
+      expect(exampleProp).toHaveProperty('oneOf');
+      expect(exampleProp['oneOf']).toEqual([
+        { $ref: '#/components/schemas/SomeModel' },
+        {
+          type: 'array',
+          items: { $ref: '#/components/schemas/SomeModel' }
+        }
+      ]);
     });
   });
 });
