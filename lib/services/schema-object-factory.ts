@@ -680,20 +680,6 @@ export class SchemaObjectFactory {
         enumType
       );
     }
-
-    // When a schema combinator (oneOf, anyOf, allOf) is explicitly declared,
-    // skip type-based resolution. The combinator should take precedence over
-    // any inferred type (e.g., Object from union types).
-    const hasSchemaCombinator = ['oneOf', 'anyOf', 'allOf'].some(
-      (combinator) => combinator in metadata
-    );
-    if (hasSchemaCombinator) {
-      return {
-        ...metadata,
-        name: metadata.name || key
-      };
-    }
-
     if (this.isObjectLiteral(typeRef as Record<string, any>)) {
       const schemaFromObjectLiteral = this.createFromObjectLiteral(
         key,
