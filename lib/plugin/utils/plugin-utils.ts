@@ -197,7 +197,15 @@ export function replaceImportPath(
       ? safeDecodeURIComponent(convertPath(options.pathToSource))
       : getOutputDir(fileName, options);
 
-    let relativePath = posix.relative(from, decodedImportPath);
+    const targetPath =
+      options.outDir && options.rootDir &&
+      decodedImportPath.startsWith(convertPath(options.rootDir))
+        ? posix.join(
+            convertPath(options.outDir),
+            posix.relative(convertPath(options.rootDir), decodedImportPath)
+          )
+        : decodedImportPath;
+    let relativePath = posix.relative(from, targetPath);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
     const normalizedPath = normalizePackagePath(relativePath);
