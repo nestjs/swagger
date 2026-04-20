@@ -2143,6 +2143,19 @@
               "type": "string"
             }
           },
+          "oneOfWithRef": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TagDto"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TagDto"
+                }
+              }
+            ]
+          },
           "siblings": {
             "type": "object",
             "properties": {
