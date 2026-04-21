@@ -214,6 +214,9 @@ export function ApiSecurity() {
 export function ApiTags() {
   return () => {};
 }
+export function ApiTagOptions() {
+  return () => {};
+}
 export function ApiCallbacks() {
   return () => {};
 }
