@@ -26,11 +26,11 @@ import { AbstractFileVisitor } from './abstract.visitor';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
-const SUCCESS_API_RESPONSE_DECORATORS = new Set(
+const NON_ERROR_API_RESPONSE_DECORATORS = new Set(
   Object.keys(HttpStatus)
     .filter((key) => {
       const code = Number(HttpStatus[key as keyof typeof HttpStatus]);
-      return !isNaN(code) && code >= 200 && code < 300;
+      return !isNaN(code) && code >= 200 && code < 400;
     })
     .map((key) => {
       const functionName = key
@@ -45,7 +45,7 @@ const SUCCESS_API_RESPONSE_DECORATORS = new Set(
     .concat(['ApiDefaultResponse'])
 );
 
-function isSuccessStatusArgument(decorator: ts.Decorator): boolean {
+function isNonErrorStatusArgument(decorator: ts.Decorator): boolean {
   const args = getDecoratorArguments(decorator);
   const firstArg = head(args);
   if (!firstArg || !ts.isObjectLiteralExpression(firstArg)) {
@@ -63,16 +63,16 @@ function isSuccessStatusArgument(decorator: ts.Decorator): boolean {
   const initializer = statusProp.initializer;
   if (ts.isNumericLiteral(initializer)) {
     const code = Number(initializer.text);
-    return code >= 200 && code < 300;
+    return code >= 200 && code < 400;
   }
   if (ts.isStringLiteral(initializer)) {
     const value = initializer.text;
-    return value === '2XX' || value === 'default';
+    return value === '2XX' || value === '3XX' || value === 'default';
   }
   // Fallback for property access expressions like HttpStatus.OK or other
-  // identifiers that resolve to a 2xx value at runtime. We cannot evaluate
-  // the expression here, so we default to treating it as an explicit
-  // response declaration (preserves the original behavior of the
+  // identifiers that resolve to a non-error value at runtime. We cannot
+  // evaluate the expression here, so we default to treating it as an
+  // explicit response declaration (preserves the original behavior of the
   // explicit-decorator guard).
   return true;
 }
@@ -220,9 +220,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
           return false;
         }
         if (decoratorName === ApiResponse.name) {
-          return isSuccessStatusArgument(item);
+          return isNonErrorStatusArgument(item);
         }
-        return SUCCESS_API_RESPONSE_DECORATORS.has(decoratorName);
+        return NON_ERROR_API_RESPONSE_DECORATORS.has(decoratorName);
       } catch {
         return false;
       }

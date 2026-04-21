@@ -64,7 +64,7 @@ describe('Controller methods', () => {
     expect(result.outputText).toEqual(appControllerWithTabsTextTranspiled);
   });
 
-  it('should not add a default response when an explicit success Api*Response decorator is present (issue #1639)', () => {
+  it('should not add a default response when an explicit non-error (2xx/3xx) Api*Response decorator is present (issue #1639)', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES2021,
