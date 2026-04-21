@@ -13,6 +13,10 @@ import {
   appControllerWithTabsTextTranspiled
 } from './fixtures/app.controller-tabs';
 import {
+  appControllerOptionalQueryText,
+  appControllerOptionalQueryTextTranspiled
+} from './fixtures/app.controller-optional-query';
+import {
   appControllerWithoutModifiersText,
   appControllerWithoutModifiersTextTranspiled
 } from './fixtures/app.controller-without-modifiers';
@@ -79,6 +83,27 @@ describe('Controller methods', () => {
       }
     });
     expect(result.outputText).toEqual(appControllerApiResponseTextTranspiled);
+  });
+
+  it('should mark optional @Query parameters as required: false (issue #30)', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerOptionalQueryText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(appControllerOptionalQueryTextTranspiled);
   });
 
   it('should add response based on the return value (without modifiers)', () => {
