@@ -63,7 +63,7 @@
     "swagger-parser": "10.0.3",
     "typescript": "6.0.3",
     "vite": "^8.0.8",
-    "vitest": "4.1.4"
+    "vitest": "4.1.5"
   },
   "peerDependencies": {
     "@fastify/static": "^8.0.0 || ^9.0.0",
