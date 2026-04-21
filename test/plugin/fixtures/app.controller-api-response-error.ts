@@ -1,7 +1,9 @@
-export const appControllerApiResponseErrorText = `import { Body, Controller, Get, Post } from '@nestjs/common';
+export const appControllerApiResponseErrorText = `import { Body, Controller, Get, Post, Redirect } from '@nestjs/common';
 import {
   ApiCreatedResponse,
+  ApiFoundResponse,
   ApiNotFoundResponse,
+  ApiResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
@@ -33,6 +35,19 @@ export class AppController {
   createExplicit(): SessionDto {
     return { id: '1' };
   }
+
+  @Post('refresh')
+  @ApiResponse({ status: 500, description: 'Server error' })
+  refreshSession(): void {
+    return;
+  }
+
+  @Get('redirect')
+  @Redirect()
+  @ApiFoundResponse({ description: 'Redirects to a URL' })
+  getRedirect(): { url: string; statusCode: number } {
+    return { url: 'https://example.com', statusCode: 302 };
+  }
 }`;
 
 export const appControllerApiResponseErrorTextTranspiled = `"use strict";
@@ -55,6 +70,12 @@ let AppController = class AppController {
     createExplicit() {
         return { id: '1' };
     }
+    refreshSession() {
+        return;
+    }
+    getRedirect() {
+        return { url: 'https://example.com', statusCode: 302 };
+    }
 };
 exports.AppController = AppController;
 __decorate([
@@ -73,6 +94,16 @@ __decorate([
     (0, swagger_1.ApiCreatedResponse)({ type: SessionDto }),
     (0, swagger_1.ApiUnauthorizedResponse)()
 ], AppController.prototype, "createExplicit", null);
+__decorate([
+    (0, common_1.Post)('refresh'),
+    (0, swagger_1.ApiResponse)({ status: 500, description: 'Server error' }),
+    openapi.ApiResponse({ status: 201 })
+], AppController.prototype, "refreshSession", null);
+__decorate([
+    (0, common_1.Get)('redirect'),
+    (0, common_1.Redirect)(),
+    (0, swagger_1.ApiFoundResponse)({ description: 'Redirects to a URL' })
+], AppController.prototype, "getRedirect", null);
 exports.AppController = AppController = __decorate([
     (0, common_1.Controller)('example')
 ], AppController);

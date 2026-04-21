@@ -26,6 +26,30 @@ import { AbstractFileVisitor } from './abstract.visitor';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
+function isSuccessOrRedirectApiResponseArg(decorator: ts.Decorator): boolean {
+  const [firstArg] = getDecoratorArguments(decorator);
+  if (!firstArg || !ts.isObjectLiteralExpression(firstArg)) return true;
+  const statusProp = firstArg.properties.find(
+    (p): p is ts.PropertyAssignment =>
+      ts.isPropertyAssignment(p) &&
+      ts.isIdentifier(p.name) &&
+      p.name.text === 'status'
+  );
+  if (!statusProp) return true;
+  const init = statusProp.initializer;
+  if (ts.isNumericLiteral(init)) return Number(init.text) < 400;
+  if (ts.isStringLiteral(init)) {
+    return (
+      init.text === '1XX' ||
+      init.text === '2XX' ||
+      init.text === '3XX' ||
+      init.text === 'default'
+    );
+  }
+  // Non-literal (e.g. HttpStatus.OK) — can't evaluate at compile time; preserve pre-PR behavior.
+  return true;
+}
+
 export class ControllerClassVisitor extends AbstractFileVisitor {
   private readonly _collectedMetadata: Record<
     string,
@@ -171,14 +195,16 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const hasExplicitApiResponseDecorator = decorators.some((item) => {
       try {
         const decoratorName = getDecoratorName(item);
-        if (decoratorName === ApiResponse.name) return true;
+        // Error factories (4xx/5xx) must not suppress the auto-inferred 2xx.
+        if (decoratorName === ApiResponse.name) {
+          return isSuccessOrRedirectApiResponseArg(item);
+        }
         const statusNameMatch = decoratorName.match(/^Api(.+)Response$/);
         if (!statusNameMatch) return false;
         const statusKey = statusNameMatch[1]
           .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
           .toUpperCase();
         const status = Number(HttpStatus[statusKey as keyof typeof HttpStatus]);
-        // Error factories (4xx/5xx) must not suppress the auto-inferred 2xx.
         return isNaN(status) || status < 400;
       } catch {
         return false;

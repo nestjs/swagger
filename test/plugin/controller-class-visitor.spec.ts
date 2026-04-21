@@ -118,7 +118,7 @@ describe('Controller methods', () => {
     expect(result.outputText).toEqual(appControllerOptionalQueryTextTranspiled);
   });
 
-  it('should still auto-infer the default 2xx response when only error @Api*Response decorators are present', () => {
+  it('should still auto-infer the default 2xx response when only error @Api*Response decorators are present (issue #3862)', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES2021,
