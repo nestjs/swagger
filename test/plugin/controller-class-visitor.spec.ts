@@ -9,6 +9,10 @@ import {
   appControllerApiResponseTextTranspiled
 } from './fixtures/app.controller-api-response';
 import {
+  appControllerApiResponseErrorText,
+  appControllerApiResponseErrorTextTranspiled
+} from './fixtures/app.controller-api-response-error';
+import {
   appControllerWithTabsText,
   appControllerWithTabsTextTranspiled
 } from './fixtures/app.controller-tabs';
@@ -112,6 +116,29 @@ describe('Controller methods', () => {
       }
     });
     expect(result.outputText).toEqual(appControllerOptionalQueryTextTranspiled);
+  });
+
+  it('should still auto-infer the default 2xx response when only error @Api*Response decorators are present', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerApiResponseErrorText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(
+      appControllerApiResponseErrorTextTranspiled
+    );
   });
 
   it('should add response based on the return value (without modifiers)', () => {

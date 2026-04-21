@@ -1,3 +1,4 @@
+import { HttpStatus } from '@nestjs/common';
 import { compact, head } from 'lodash';
 import { posix } from 'path';
 import * as ts from 'typescript';
@@ -170,11 +171,15 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const hasExplicitApiResponseDecorator = decorators.some((item) => {
       try {
         const decoratorName = getDecoratorName(item);
-        return (
-          decoratorName === ApiResponse.name ||
-          (decoratorName.startsWith('Api') &&
-            decoratorName.endsWith('Response'))
-        );
+        if (decoratorName === ApiResponse.name) return true;
+        const statusNameMatch = decoratorName.match(/^Api(.+)Response$/);
+        if (!statusNameMatch) return false;
+        const statusKey = statusNameMatch[1]
+          .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+          .toUpperCase();
+        const status = Number(HttpStatus[statusKey as keyof typeof HttpStatus]);
+        // Error factories (4xx/5xx) must not suppress the auto-inferred 2xx.
+        return isNaN(status) || status < 400;
       } catch {
         return false;
       }
