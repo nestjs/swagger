@@ -1,3 +1,4 @@
+import { HttpStatus } from '@nestjs/common';
 import { compact, head } from 'lodash';
 import { posix } from 'path';
 import * as ts from 'typescript';
@@ -24,6 +25,57 @@ import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier
 import { AbstractFileVisitor } from './abstract.visitor';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
+
+const SUCCESS_API_RESPONSE_DECORATORS = new Set(
+  Object.keys(HttpStatus)
+    .filter((key) => {
+      const code = Number(HttpStatus[key as keyof typeof HttpStatus]);
+      return !isNaN(code) && code >= 200 && code < 300;
+    })
+    .map((key) => {
+      const functionName = key
+        .split('_')
+        .map(
+          (strToken) =>
+            `${strToken[0].toUpperCase()}${strToken.slice(1).toLowerCase()}`
+        )
+        .join('');
+      return `Api${functionName}Response`;
+    })
+    .concat(['ApiDefaultResponse'])
+);
+
+function isSuccessStatusArgument(decorator: ts.Decorator): boolean {
+  const args = getDecoratorArguments(decorator);
+  const firstArg = head(args);
+  if (!firstArg || !ts.isObjectLiteralExpression(firstArg)) {
+    return false;
+  }
+  const statusProp = firstArg.properties.find(
+    (prop) =>
+      ts.isPropertyAssignment(prop) &&
+      ((ts.isIdentifier(prop.name) && prop.name.text === 'status') ||
+        (ts.isStringLiteral(prop.name) && prop.name.text === 'status'))
+  ) as ts.PropertyAssignment | undefined;
+  if (!statusProp) {
+    return false;
+  }
+  const initializer = statusProp.initializer;
+  if (ts.isNumericLiteral(initializer)) {
+    const code = Number(initializer.text);
+    return code >= 200 && code < 300;
+  }
+  if (ts.isStringLiteral(initializer)) {
+    const value = initializer.text;
+    return value === '2XX' || value === 'default';
+  }
+  // Fallback for property access expressions like HttpStatus.OK or other
+  // identifiers that resolve to a 2xx value at runtime. We cannot evaluate
+  // the expression here, so we default to treating it as an explicit
+  // response declaration (preserves the original behavior of the
+  // explicit-decorator guard).
+  return true;
+}
 
 export class ControllerClassVisitor extends AbstractFileVisitor {
   private readonly _collectedMetadata: Record<
@@ -164,11 +216,13 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const hasExplicitApiResponseDecorator = decorators.some((item) => {
       try {
         const decoratorName = getDecoratorName(item);
-        return (
-          decoratorName === ApiResponse.name ||
-          (decoratorName.startsWith('Api') &&
-            decoratorName.endsWith('Response'))
-        );
+        if (!decoratorName) {
+          return false;
+        }
+        if (decoratorName === ApiResponse.name) {
+          return isSuccessStatusArgument(item);
+        }
+        return SUCCESS_API_RESPONSE_DECORATORS.has(decoratorName);
       } catch {
         return false;
       }

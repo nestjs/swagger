@@ -54,7 +54,8 @@ exports.AppController = AppController;
 __decorate([
     (0, common_1.Get)('redirect'),
     (0, swagger_1.ApiFoundResponse)({ description: 'Redirects to a URL' }),
-    (0, common_1.Redirect)()
+    (0, common_1.Redirect)(),
+    openapi.ApiResponse({ status: 200, type: Object })
 ], AppController.prototype, "getRedirect", null);
 __decorate([
     (0, common_1.Get)('ok'),

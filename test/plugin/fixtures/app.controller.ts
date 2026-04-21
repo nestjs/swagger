@@ -163,7 +163,8 @@ __decorate([
     openapi.ApiResponse({ status: 400, description: "Bad Request." }),
     openapi.ApiResponse({ status: 400, description: "Missing parameters." }),
     ApiResponse({ status: 403, description: 'Forbidden.' }),
-    (0, common_1.Post)()
+    (0, common_1.Post)(),
+    openapi.ApiResponse({ status: 201, type: Cat })
 ], AppController.prototype, \"create\", null);
 __decorate([
     openapi.ApiOperation({ summary: \"create a test Cat\", deprecated: true }),
