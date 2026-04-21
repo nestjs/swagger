@@ -15,6 +15,7 @@ import { reverseObjectKeys } from '../utils/reverse-object-keys.util';
 interface ParamMetadata {
   index: number;
   data?: string | number | object;
+  pipes?: unknown[];
 }
 type ParamsMetadata = Record<string, ParamMetadata>;
 
@@ -29,6 +30,7 @@ export interface ParamWithTypeMetadata {
   enumName?: string;
   enumSchema?: EnumSchemaAttributes;
   selfRequired?: boolean;
+  format?: string;
 }
 export type ParamsWithType = Record<string, ParamWithTypeMetadata>;
 
@@ -57,12 +59,17 @@ export class ParameterMetadataAccessor {
 
     const parametersWithType: ParamsWithType = mapValues(
       reverseObjectKeys(routeArgsMetadata),
-      (param: ParamMetadata) =>
-        ({
-          type: types[param.index],
+      (param: ParamMetadata) => {
+        const inferredFromPipes = this.inferSchemaFromPipes(param.pipes);
+        return {
+          type: inferredFromPipes?.type ?? types[param.index],
           name: param.data,
-          required: true
-        }) as unknown as ParamWithTypeMetadata
+          required: true,
+          ...(inferredFromPipes?.format
+            ? { format: inferredFromPipes.format }
+            : {})
+        } as unknown as ParamWithTypeMetadata;
+      }
     ) as unknown as ParamsWithType;
     const excludePredicate = (val: ParamWithTypeMetadata) =>
       val.in === PARAM_TOKEN_PLACEHOLDER || (val.name && val.in === 'body');
@@ -91,5 +98,46 @@ export class ParameterMetadataAccessor {
       default:
         return PARAM_TOKEN_PLACEHOLDER;
     }
+  }
+
+  /**
+   * Attempts to infer the parameter type/format from the pipes applied
+   * to the route argument decorator (e.g. `@Param('id', ParseUUIDPipe)`).
+   *
+   * Pipes can appear as either class references or instances, so both
+   * shapes are checked. When no known pipe is detected, `undefined` is
+   * returned so that the caller can fall back to the TypeScript-reflected
+   * type.
+   */
+  private inferSchemaFromPipes(
+    pipes: unknown[] | undefined
+  ): { type?: Type<unknown>; format?: string } | undefined {
+    if (!pipes || pipes.length === 0) {
+      return undefined;
+    }
+    for (const pipe of pipes) {
+      const pipeName = this.getPipeName(pipe);
+      if (!pipeName) {
+        continue;
+      }
+      if (pipeName === 'ParseUUIDPipe') {
+        return { type: String as unknown as Type<unknown>, format: 'uuid' };
+      }
+    }
+    return undefined;
+  }
+
+  private getPipeName(pipe: unknown): string | undefined {
+    if (!pipe) {
+      return undefined;
+    }
+    if (typeof pipe === 'function') {
+      return (pipe as Function).name;
+    }
+    if (typeof pipe === 'object') {
+      const ctor = (pipe as { constructor?: { name?: string } }).constructor;
+      return ctor?.name;
+    }
+    return undefined;
   }
 }

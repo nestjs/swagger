@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Version,
@@ -2604,6 +2605,76 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when ParseUUIDPipe is applied to a param', () => {
+    class Foo {}
+
+    @Controller('')
+    class FooController {
+      @Get('foos/:id')
+      findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Foo> {
+        return Promise.resolve({});
+      }
+
+      @Get('bars/:id')
+      findBar(
+        @Param('id', new ParseUUIDPipe({ version: '4' })) id: string
+      ): Promise<Foo> {
+        return Promise.resolve({});
+      }
+
+      @Get('bazs/:id')
+      findBaz(@Query('token', ParseUUIDPipe) token: string): Promise<Foo> {
+        return Promise.resolve({});
+      }
+    }
+
+    it('should infer the parameter schema as { type: "string", format: "uuid" }', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'id',
+          required: true,
+          schema: {
+            type: 'string',
+            format: 'uuid'
+          }
+        }
+      ]);
+      expect(routes[1].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'id',
+          required: true,
+          schema: {
+            type: 'string',
+            format: 'uuid'
+          }
+        }
+      ]);
+      expect(routes[2].root.parameters).toEqual([
+        {
+          in: 'query',
+          name: 'token',
+          required: true,
+          schema: {
+            type: 'string',
+            format: 'uuid'
+          }
+        }
+      ]);
+    });
+  });
+
   describe('when queries are defined', () => {
     class Foo {}
 
@@ -2910,12 +2981,8 @@ describe('SwaggerExplorer', () => {
           }
         );
 
-        expect(routes[0].root.operationId).toEqual(
-          `NoVersionController.foo`
-        );
-        expect(routes[1].root.operationId).toEqual(
-          `NoVersionController.bar.3`
-        );
+        expect(routes[0].root.operationId).toEqual(`NoVersionController.foo`);
+        expect(routes[1].root.operationId).toEqual(`NoVersionController.bar.3`);
       });
     });
 
