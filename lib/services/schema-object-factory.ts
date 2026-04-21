@@ -221,12 +221,29 @@ export class SchemaObjectFactory {
     const modelProperties =
       this.modelPropertiesAccessor.getModelProperties(prototype);
     const propertiesWithType = modelProperties.map((key) => {
-      const property = this.mergePropertyWithMetadata(
-        key,
-        prototype,
-        schemas,
-        pendingSchemasRefs
-      );
+      let property: ReturnType<typeof this.mergePropertyWithMetadata>;
+      try {
+        property = this.mergePropertyWithMetadata(
+          key,
+          prototype,
+          schemas,
+          pendingSchemasRefs
+        );
+      } catch (err) {
+        // Prepend the current class name to the error message so that, as the
+        // recursion unwinds, users see the full chain of classes involved in
+        // the failure (e.g. "[RootDto] [ParentDto] [ChildDto] A circular
+        // dependency has been detected ..."). This makes it much easier to
+        // locate the offending class in large codebases.
+        if (err instanceof Error) {
+          const className = type?.name || 'UnknownType';
+          const prefix = `[${className}] `;
+          if (!err.message.startsWith(prefix)) {
+            err.message = `${prefix}${err.message}`;
+          }
+        }
+        throw err;
+      }
 
       const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
       const declaredSchemaCombinator = schemaCombinators.find(
@@ -497,7 +514,7 @@ export class SchemaObjectFactory {
   ): SchemaObjectMetadata {
     if (isUndefined(trueMetadataType)) {
       throw new Error(
-        `A circular dependency has been detected (property key: "${key}"). Please, make sure that each side of a bidirectional relationships are using lazy resolvers ("type: () => ClassType").`
+        `A circular dependency has been detected (property key: "${key}"). To resolve this, use a lazy resolver for the property type ("type: () => ClassType") on each side of the relationship, or break the cycle by introducing a reference via @ApiExtraModels.`
       );
     }
     let { schemaName: schemaObjectName } = this.getSchemaMetadata(

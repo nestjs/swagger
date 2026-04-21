@@ -1171,6 +1171,50 @@ describe('SchemaObjectFactory', () => {
     });
   });
 
+  describe('circular dependency error message (issue #3655)', () => {
+    it('should include the class name chain when a circular dependency is detected', () => {
+      // Simulate a circular dependency by providing a lazy type resolver that
+      // returns `undefined` — this mirrors the situation where a bidirectional
+      // relationship has not been set up with lazy resolvers on both sides.
+      class InnerDto {
+        child: any;
+      }
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        { type: () => undefined, required: true },
+        InnerDto.prototype,
+        'child'
+      );
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES_ARRAY,
+        [':child'],
+        InnerDto.prototype
+      );
+
+      class OuterDto {
+        inner: InnerDto;
+      }
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        { type: () => InnerDto, required: true },
+        OuterDto.prototype,
+        'inner'
+      );
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES_ARRAY,
+        [':inner'],
+        OuterDto.prototype
+      );
+
+      const schemas: Record<string, any> = {};
+      expect(() =>
+        schemaObjectFactory.exploreModelSchema(OuterDto as any, schemas)
+      ).toThrow(
+        /\[OuterDto\] \[InnerDto\] A circular dependency has been detected/
+      );
+    });
+  });
+
   describe('inherited property type override', () => {
     it('should use the child class type when a property is redeclared in a subclass', () => {
       class InfoPostDTO {
