@@ -52,6 +52,7 @@ import {
   createCatMatchesDtoText,
   createCatMatchesDtoTextTranspiled
 } from './fixtures/create-cat-matches.dto';
+import {
   booleanLiteralDtoText,
   booleanLiteralDtoTextTranspiled
 } from './fixtures/boolean-literal.dto';
