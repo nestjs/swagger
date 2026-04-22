@@ -49,6 +49,10 @@ import {
   stringLiteralDtoTextTranspiled
 } from './fixtures/string-literal.dto';
 import {
+  createCatMatchesDtoText,
+  createCatMatchesDtoTextTranspiled
+} from './fixtures/create-cat-matches.dto';
+import {
   booleanLiteralDtoText,
   booleanLiteralDtoTextTranspiled
 } from './fixtures/boolean-literal.dto';
@@ -574,5 +578,26 @@ describe('API model properties', () => {
       }
     });
     expect(resultWithOption.outputText).toContain(`enumName: "StatusEnum"`);
+  });
+
+  it('should strip regex delimiters and flags from @Matches patterns', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(createCatMatchesDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classValidatorShim: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(createCatMatchesDtoTextTranspiled);
   });
 });

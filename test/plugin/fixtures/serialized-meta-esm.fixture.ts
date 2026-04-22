@@ -97,7 +97,7 @@ export default async () => {
               pattern: {
                 required: true,
                 type: () => String,
-                pattern: '/^[+]?abc$/'
+                pattern: '^[+]?abc$'
               },
               positive: {
                 required: true,

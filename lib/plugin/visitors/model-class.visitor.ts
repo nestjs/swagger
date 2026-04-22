@@ -961,10 +961,31 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       assignments,
       (decoratorRef: ts.Decorator) => {
         const decoratorArguments = getDecoratorArguments(decoratorRef);
+        const firstArg = head(decoratorArguments);
+        if (!firstArg) {
+          return [];
+        }
+        // Extract the bare regex source: strip the leading/trailing `/`
+        // plus any flags so the emitted `pattern` matches what the
+        // runtime code path does via `new RegExp(value).source`.
+        // For a string literal the `.text` already contains the bare
+        // pattern (without surrounding quotes).
+        let patternText: string | undefined;
+        if (ts.isRegularExpressionLiteral(firstArg)) {
+          const match = firstArg.text.match(/^\/(.*)\/([gimsuy]*)$/);
+          if (match) {
+            patternText = match[1];
+          }
+        } else if (ts.isStringLiteral(firstArg)) {
+          patternText = firstArg.text;
+        }
+        if (patternText === undefined) {
+          return [];
+        }
         return [
           factory.createPropertyAssignment(
             'pattern',
-            createPrimitiveLiteral(factory, head(decoratorArguments).text)
+            createPrimitiveLiteral(factory, patternText)
           )
         ];
       }
