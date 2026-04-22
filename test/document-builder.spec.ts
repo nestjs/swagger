@@ -108,4 +108,37 @@ describe('DocumentBuilder', () => {
       });
     });
   });
+
+  describe('setOpenAPIVersion', () => {
+    it('accepts a three-part numeric version with single-digit segments', () => {
+      const builder = new DocumentBuilder().setOpenAPIVersion('3.1.0');
+      expect(builder.build().openapi).toBe('3.1.0');
+    });
+
+    it('accepts a version with multi-digit segments', () => {
+      // OpenAPI spec versions follow semver; segments may have multiple digits
+      // (e.g. 3.0.10, 3.10.0). The previous `^\d\.\d\.\d$` regex rejected those.
+      const builder1 = new DocumentBuilder().setOpenAPIVersion('3.0.10');
+      expect(builder1.build().openapi).toBe('3.0.10');
+
+      const builder2 = new DocumentBuilder().setOpenAPIVersion('3.10.0');
+      expect(builder2.build().openapi).toBe('3.10.0');
+
+      const builder3 = new DocumentBuilder().setOpenAPIVersion('10.20.30');
+      expect(builder3.build().openapi).toBe('10.20.30');
+    });
+
+    it('rejects malformed versions and keeps the default', () => {
+      const defaultVersion = new DocumentBuilder().build().openapi;
+
+      const builder = new DocumentBuilder().setOpenAPIVersion('not-a-version');
+      expect(builder.build().openapi).toBe(defaultVersion);
+
+      const builder2 = new DocumentBuilder().setOpenAPIVersion('3.0');
+      expect(builder2.build().openapi).toBe(defaultVersion);
+
+      const builder3 = new DocumentBuilder().setOpenAPIVersion('3.0.0-beta');
+      expect(builder3.build().openapi).toBe(defaultVersion);
+    });
+  });
 });
