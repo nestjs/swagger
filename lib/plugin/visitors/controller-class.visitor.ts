@@ -396,7 +396,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       properties.push(
         factory.createPropertyAssignment(
           'description',
-          factory.createNumericLiteral(tag.description)
+          factory.createStringLiteral(tag.description)
         )
       );
       const objectLiteralExpr = factory.createObjectLiteralExpression(
