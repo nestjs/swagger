@@ -24,6 +24,10 @@ import {
   appControllerThrowsQuotesText,
   appControllerThrowsQuotesTextTranspiled
 } from './fixtures/app.controller-throws-quotes';
+import {
+  appControllerApiOperationDedupeText,
+  appControllerApiOperationDedupeTextTranspiled
+} from './fixtures/app.controller-api-operation-dedupe';
 
 describe('Controller methods', () => {
   it('should add response based on the return value (spaces)', () => {
@@ -152,5 +156,28 @@ describe('Controller methods', () => {
       }
     });
     expect(result.outputText).toEqual(appControllerThrowsQuotesTextTranspiled);
+  });
+
+  it('should not emit duplicate keys when user has supplied controllerKeyOfComment already', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerApiOperationDedupeText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(
+      appControllerApiOperationDedupeTextTranspiled
+    );
   });
 });

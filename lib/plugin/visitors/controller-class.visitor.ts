@@ -273,10 +273,22 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     ];
 
     const tags = getTsDocTagsOfNode(node, typeChecker);
-    const hasRemarksKey = hasPropertyKey(
-      'description',
-      factory.createNodeArray(apiOperationExistingProps)
-    );
+    const existingPropsArray = factory.createNodeArray(apiOperationExistingProps);
+    const hasRemarksKey = hasPropertyKey('description', existingPropsArray);
+    // Helper so we never unshift a key the user has already written in the
+    // explicit @ApiOperation({...}) call; otherwise the generated object
+    // literal would contain duplicate keys (e.g. `{ summary: 'doc', summary: 'user' }`).
+    const unshiftIfNotExisting = (key: string, value: string) => {
+      if (hasPropertyKey(key, existingPropsArray)) {
+        return;
+      }
+      properties.unshift(
+        factory.createPropertyAssignment(
+          key,
+          factory.createStringLiteral(value)
+        )
+      );
+    };
     if (!hasRemarksKey && tags.remarks) {
       // When the @remarks tag is used in the comment, it will be added to the description property of the @ApiOperation decorator.
       // In this case, even when the "controllerKeyOfComment" option is set to "description", the "summary" property will be used.
@@ -287,30 +299,13 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       properties.push(remarksPropertyAssignment);
 
       if (options.controllerKeyOfComment === 'description') {
-        properties.unshift(
-          factory.createPropertyAssignment(
-            'summary',
-            factory.createStringLiteral(extractedComments)
-          )
-        );
+        unshiftIfNotExisting('summary', extractedComments);
       } else {
-        const keyToGenerate = options.controllerKeyOfComment;
-        properties.unshift(
-          factory.createPropertyAssignment(
-            keyToGenerate,
-            factory.createStringLiteral(extractedComments)
-          )
-        );
+        unshiftIfNotExisting(options.controllerKeyOfComment, extractedComments);
       }
     } else {
       // No @remarks tag was found in the comment so use the attribute set by the user
-      const keyToGenerate = options.controllerKeyOfComment;
-      properties.unshift(
-        factory.createPropertyAssignment(
-          keyToGenerate,
-          factory.createStringLiteral(extractedComments)
-        )
-      );
+      unshiftIfNotExisting(options.controllerKeyOfComment, extractedComments);
     }
 
     const hasDeprecatedKey = hasPropertyKey(
