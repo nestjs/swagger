@@ -20,6 +20,10 @@ import {
   appControllerWithoutModifiersText,
   appControllerWithoutModifiersTextTranspiled
 } from './fixtures/app.controller-without-modifiers';
+import {
+  appControllerThrowsQuotesText,
+  appControllerThrowsQuotesTextTranspiled
+} from './fixtures/app.controller-throws-quotes';
 
 describe('Controller methods', () => {
   it('should add response based on the return value (spaces)', () => {
@@ -127,5 +131,26 @@ describe('Controller methods', () => {
     expect(result.outputText).toEqual(
       appControllerWithoutModifiersTextTranspiled
     );
+  });
+
+  it('should emit a valid string literal for @throws descriptions that contain quotes', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerThrowsQuotesText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(appControllerThrowsQuotesTextTranspiled);
   });
 });

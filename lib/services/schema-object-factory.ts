@@ -123,7 +123,66 @@ export class SchemaObjectFactory {
       if (param.name) {
         // We should not spread parameters that have a name
         // Just generate the schema for the type instead and link it with ref if needed
-        return this.getCustomType(param, schemas);
+        const customType = this.getCustomType(param, schemas);
+
+        // Move schema-level options (e.g., example, allOf) from the top level into
+        // the schema object so they are not lost when mapParamTypes strips top-level
+        // keys. SwaggerTypesMapper#omitParamKeys() does not remove 'allOf', so an
+        // unhandled top-level allOf would otherwise leak into the resulting
+        // ParameterObject as an invalid field.
+        const schemaOptionsKeys = [
+          ...this.swaggerTypesMapper.getSchemaOptionsKeys(),
+          'allOf'
+        ];
+        const schemaOptionsFromParam: Record<string, any> = {};
+        for (const key of schemaOptionsKeys) {
+          // Skip 'type' and 'items' as they are handled by getCustomType
+          if (key === 'type' || key === 'items') {
+            continue;
+          }
+          if (key in customType && !(key in (customType.schema || {}))) {
+            schemaOptionsFromParam[key] = (customType as any)[key];
+            delete (customType as any)[key];
+          }
+        }
+        if (Object.keys(schemaOptionsFromParam).length > 0) {
+          const existingSchema = (customType.schema || {}) as Record<
+            string,
+            any
+          >;
+          // When we have extra metadata alongside a $ref, wrap the $ref using
+          // allOf so the metadata sits beside it (OpenAPI does not allow sibling
+          // keys next to $ref). Merge with any pre-existing allOf entries from
+          // either the schema itself or the parameter rather than overwriting.
+          if ('$ref' in existingSchema) {
+            const { $ref, allOf: existingAllOf, ...restSchema } = existingSchema;
+            const { allOf: paramAllOf, ...restParamOptions } =
+              schemaOptionsFromParam;
+            const mergedAllOf = [
+              ...(Array.isArray(existingAllOf) ? existingAllOf : []),
+              ...(Array.isArray(paramAllOf) ? paramAllOf : []),
+              { $ref: $ref as string }
+            ];
+            (customType as any).schema = {
+              ...restSchema,
+              ...restParamOptions,
+              allOf: mergedAllOf
+            };
+          } else {
+            const mergedSchema: Record<string, any> = {
+              ...existingSchema,
+              ...schemaOptionsFromParam
+            };
+            // Merge allOf from both sides instead of letting one overwrite the other.
+            const existingAllOf = (existingSchema as any).allOf;
+            const paramAllOf = schemaOptionsFromParam.allOf;
+            if (Array.isArray(existingAllOf) && Array.isArray(paramAllOf)) {
+              mergedSchema.allOf = [...existingAllOf, ...paramAllOf];
+            }
+            (customType as any).schema = mergedSchema;
+          }
+        }
+        return customType;
       }
 
       const propertiesWithType = this.extractPropertiesFromType(
@@ -606,7 +665,7 @@ export class SchemaObjectFactory {
 
         const enumValues = getEnumValues(propertyCompilerMetadata.enum);
         propertyCompilerMetadata.items = {
-          type: getEnumType(enumValues),
+          type: propertyCompilerMetadata.items?.type ?? getEnumType(enumValues),
           enum: enumValues
         };
         delete propertyCompilerMetadata.enum;
@@ -614,7 +673,9 @@ export class SchemaObjectFactory {
         const enumValues = getEnumValues(propertyCompilerMetadata.enum);
 
         propertyCompilerMetadata.enum = enumValues;
-        propertyCompilerMetadata.type = getEnumType(enumValues);
+        if (!propertyCompilerMetadata.type) {
+          propertyCompilerMetadata.type = getEnumType(enumValues);
+        }
       }
       const propertyMetadata = this.mergePropertyWithMetadata(
         key,

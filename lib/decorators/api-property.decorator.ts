@@ -71,7 +71,9 @@ export function createApiPropertyDecorator(
     const enumValues = getEnumValues(options.enum);
 
     options.enum = enumValues;
-    options.type = getEnumType(enumValues);
+    if (!options.type) {
+      options.type = getEnumType(enumValues);
+    }
   }
 
   if (Array.isArray(options.type)) {

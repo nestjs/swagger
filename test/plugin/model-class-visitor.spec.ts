@@ -52,6 +52,9 @@ import {
   createCatMatchesDtoText,
   createCatMatchesDtoTextTranspiled
 } from './fixtures/create-cat-matches.dto';
+  booleanLiteralDtoText,
+  booleanLiteralDtoTextTranspiled
+} from './fixtures/boolean-literal.dto';
 
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
@@ -261,6 +264,33 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(stringLiteralDtoTextTranspiled);
+  });
+
+  it('should support & understand boolean literal types', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'boolean-literal.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(booleanLiteralDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(booleanLiteralDtoTextTranspiled);
   });
 
   it('should support & understand parameter properties', () => {
