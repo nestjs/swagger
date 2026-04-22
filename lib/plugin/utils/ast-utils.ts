@@ -254,9 +254,12 @@ export function getTsDocErrorsOfNode(node: Node) {
       try {
         const docValue = renderDocNode(block.content).split('\n')[0].trim();
         const match = docValue.match(errorParsingRegex);
+        // Keep the raw description text so the caller can safely emit it as a
+        // string literal. Pre-wrapping it in quotes breaks round-tripping when
+        // the description itself contains a quote character.
         tagResults.push({
-          status: match[1],
-          description: `"${match[2]}"`
+          status: Number(match[1]),
+          description: match[2]
         });
       } catch {
         // Do nothing
