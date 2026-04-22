@@ -1014,6 +1014,131 @@ describe('SchemaObjectFactory', () => {
     });
   });
 
+  describe('createFromModel', () => {
+    it('should preserve parent example when a non-body param property has a DTO type', () => {
+      class ChildDto {
+        @ApiProperty({ example: 'child DTO example 1' })
+        childKey1: string;
+        @ApiProperty({ example: 'child DTO example 2' })
+        childKey2: string;
+      }
+
+      class ParentDto {
+        @ApiProperty({ example: 'parent DTO example' })
+        parentKey: ChildDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      // Simulate what ParametersMetadataMapper produces for @Query() ParentDto:
+      // it expands the DTO into individual properties with their metadata
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: ChildDto,
+          name: 'parentKey',
+          required: true,
+          example: 'parent DTO example'
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(
+        queryParams,
+        schemas
+      );
+
+      expect(result).toHaveLength(1);
+      const paramResult = result[0] as any;
+      expect(paramResult.name).toBe('parentKey');
+      // The parent's example should be preserved in the schema
+      expect(paramResult.schema).toBeDefined();
+      expect(paramResult.schema.example).toBe('parent DTO example');
+      // Should use allOf pattern when extra metadata exists alongside $ref
+      expect(paramResult.schema.allOf).toBeDefined();
+      expect(paramResult.schema.allOf[0].$ref).toContain('ChildDto');
+    });
+
+    it('should not alter schema when no extra schema options exist on param', () => {
+      class SimpleChild {
+        @ApiProperty()
+        value: string;
+      }
+
+      class SimpleParent {
+        @ApiProperty()
+        child: SimpleChild;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: SimpleChild,
+          name: 'child',
+          required: true
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(
+        queryParams,
+        schemas
+      );
+
+      expect(result).toHaveLength(1);
+      const paramResult = result[0] as any;
+      // Without extra schema options, should use plain $ref
+      expect(paramResult.schema.$ref).toContain('SimpleChild');
+      expect(paramResult.schema.allOf).toBeUndefined();
+    });
+
+    it('should merge param-level allOf with $ref wrapping and not lose example', () => {
+      class TagDto {
+        @ApiProperty()
+        name: string;
+      }
+
+      class FilterDto {
+        @ApiProperty()
+        value: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      // Simulate @ApiQuery({ name: 'filter', type: FilterDto, example: 'foo',
+      //   allOf: [{ $ref: '#/components/schemas/TagDto' }] }) on a @Query() param.
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: FilterDto,
+          name: 'filter',
+          required: true,
+          example: 'foo',
+          allOf: [{ $ref: '#/components/schemas/TagDto' }]
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toHaveLength(1);
+      const paramResult = result[0] as any;
+      // Top-level allOf and example must be moved into schema, not leaked.
+      expect(paramResult.allOf).toBeUndefined();
+      expect(paramResult.example).toBeUndefined();
+      expect(paramResult.schema).toBeDefined();
+      expect(paramResult.schema.example).toBe('foo');
+      // Both the parameter's allOf entry and the wrapped $ref should be present.
+      expect(Array.isArray(paramResult.schema.allOf)).toBe(true);
+      expect(paramResult.schema.allOf).toEqual(
+        expect.arrayContaining([
+          { $ref: '#/components/schemas/TagDto' },
+          expect.objectContaining({ $ref: expect.stringContaining('FilterDto') })
+        ])
+      );
+      expect(paramResult.schema.$ref).toBeUndefined();
+    });
+  });
+
   describe('transformToArraySchemaProperty', () => {
     it('should preserve items schema when metadata.items is already defined and type is string', () => {
       const metadata = {

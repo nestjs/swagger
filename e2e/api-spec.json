@@ -1493,6 +1493,79 @@
         }
       }
     },
+    "/api/cats/with-named-type-example": {
+      "get": {
+        "operationId": "CatsController_getWithNamedTypeExample",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "test"
+            }
+          },
+          {
+            "name": "filter",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "example-tag",
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/TagDto"
+                }
+              ]
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
     "/api/cats/with-random-query": {
       "get": {
         "operationId": "CatsController_getWithRandomQuery",
