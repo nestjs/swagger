@@ -600,4 +600,40 @@ describe('API model properties', () => {
     });
     expect(result.outputText).toEqual(createCatMatchesDtoTextTranspiled);
   });
+
+  it('should emit IsIn enum metadata for literal union properties that fall back to Object', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'literal-union-is-in.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      import { IsIn } from 'class-validator';
+
+      type Hoge = 'a' | 1;
+
+      export class LiteralUnionIsInDto {
+        @IsIn(['a', 1])
+        gender!: Hoge;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classValidatorShim: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `gender: { required: true, type: () => Object, enum: ['a', 1] }`
+    );
+  });
 });

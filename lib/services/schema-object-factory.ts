@@ -742,6 +742,36 @@ export class SchemaObjectFactory {
     | ParameterObject
     | (SchemaObject & { selfRequired?: boolean }) {
     const typeRef = nestedArrayType || metadata.type;
+    if (metadata.enum && typeRef === Object) {
+      const enumValues = getEnumValues(metadata.enum);
+      const enumType = getEnumType(enumValues);
+
+      if (metadata.isArray) {
+        return this.transformToArraySchemaProperty(
+          {
+            ...metadata,
+            items: {
+              type: enumType,
+              enum: enumValues
+            }
+          } as SchemaObjectMetadata,
+          key,
+          { type: enumType, enum: enumValues }
+        );
+      }
+
+      return this.createSchemaMetadata(
+        key,
+        {
+          ...metadata,
+          type: enumType,
+          enum: enumValues
+        } as SchemaObjectMetadata,
+        schemas,
+        pendingSchemaRefs,
+        enumType
+      );
+    }
     if (this.isConstEnumObject(typeRef as Record<string, any>)) {
       const enumValues = getEnumValues(typeRef as Record<string, any>);
       const enumType = getEnumType(enumValues);

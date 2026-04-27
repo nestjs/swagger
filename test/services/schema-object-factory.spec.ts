@@ -1273,6 +1273,88 @@ describe('SchemaObjectFactory', () => {
       expect(props.code.type).toBe('string');
       expect(props.code.enum).toEqual([1, 2, 3]);
     });
+
+    it('should infer string enum type when plugin metadata falls back to Object', () => {
+      class ObjectFallbackMixedEnumDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            gender: {
+              required: true,
+              type: () => Object,
+              enum: ['a', 1]
+            }
+          };
+        }
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        ObjectFallbackMixedEnumDto,
+        schemas
+      );
+
+      const props = schemas.ObjectFallbackMixedEnumDto.properties as any;
+      expect(props.gender).toEqual({
+        type: 'string',
+        enum: ['a', 1]
+      });
+    });
+
+    it('should infer number enum type when plugin metadata falls back to Object', () => {
+      class ObjectFallbackNumberEnumDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            value: {
+              required: true,
+              type: () => Object,
+              enum: [1, 2]
+            }
+          };
+        }
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        ObjectFallbackNumberEnumDto,
+        schemas
+      );
+
+      const props = schemas.ObjectFallbackNumberEnumDto.properties as any;
+      expect(props.value).toEqual({
+        type: 'number',
+        enum: [1, 2]
+      });
+    });
+
+    it('should move enum metadata into array items when plugin array metadata falls back to Object', () => {
+      class ObjectFallbackArrayEnumDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            values: {
+              required: true,
+              type: () => [Object],
+              enum: ['a', 'b'],
+              isArray: true
+            }
+          };
+        }
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        ObjectFallbackArrayEnumDto,
+        schemas
+      );
+
+      const props = schemas.ObjectFallbackArrayEnumDto.properties as any;
+      expect(props.values).toEqual({
+        type: 'array',
+        items: {
+          type: 'string',
+          enum: ['a', 'b']
+        }
+      });
+    });
   });
 
   describe('SWC const-enum compatibility (issue #3326)', () => {
