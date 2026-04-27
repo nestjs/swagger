@@ -26,30 +26,6 @@ import { AbstractFileVisitor } from './abstract.visitor';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
-function isSuccessOrRedirectApiResponseArg(decorator: ts.Decorator): boolean {
-  const [firstArg] = getDecoratorArguments(decorator);
-  if (!firstArg || !ts.isObjectLiteralExpression(firstArg)) return true;
-  const statusProp = firstArg.properties.find(
-    (p): p is ts.PropertyAssignment =>
-      ts.isPropertyAssignment(p) &&
-      ts.isIdentifier(p.name) &&
-      p.name.text === 'status'
-  );
-  if (!statusProp) return true;
-  const init = statusProp.initializer;
-  if (ts.isNumericLiteral(init)) return Number(init.text) < 400;
-  if (ts.isStringLiteral(init)) {
-    return (
-      init.text === '1XX' ||
-      init.text === '2XX' ||
-      init.text === '3XX' ||
-      init.text === 'default'
-    );
-  }
-  // Non-literal (e.g. HttpStatus.OK) — can't evaluate at compile time; preserve pre-PR behavior.
-  return true;
-}
-
 export class ControllerClassVisitor extends AbstractFileVisitor {
   private readonly _collectedMetadata: Record<
     string,
@@ -197,7 +173,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         const decoratorName = getDecoratorName(item);
         // Error factories (4xx/5xx) must not suppress the auto-inferred 2xx.
         if (decoratorName === ApiResponse.name) {
-          return isSuccessOrRedirectApiResponseArg(item);
+          return this.isSuccessOrRedirectApiResponseArg(item);
         }
         const statusNameMatch = decoratorName.match(/^Api(.+)Response$/);
         if (!statusNameMatch) return false;
@@ -712,5 +688,29 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     );
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
     return relativePath;
+  }
+
+  private isSuccessOrRedirectApiResponseArg(decorator: ts.Decorator): boolean {
+    const [firstArg] = getDecoratorArguments(decorator);
+    if (!firstArg || !ts.isObjectLiteralExpression(firstArg)) return true;
+    const statusProp = firstArg.properties.find(
+      (p): p is ts.PropertyAssignment =>
+        ts.isPropertyAssignment(p) &&
+        ts.isIdentifier(p.name) &&
+        p.name.text === 'status'
+    );
+    if (!statusProp) return true;
+    const init = statusProp.initializer;
+    if (ts.isNumericLiteral(init)) return Number(init.text) < 400;
+    if (ts.isStringLiteral(init)) {
+      return (
+        init.text === '1XX' ||
+        init.text === '2XX' ||
+        init.text === '3XX' ||
+        init.text === 'default'
+      );
+    }
+    // Non-literal (e.g. HttpStatus.OK) — can't evaluate at compile time; preserve pre-PR behavior.
+    return true;
   }
 }
