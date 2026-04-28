@@ -43,6 +43,7 @@ export class SwaggerScanner {
       operationIdFactory,
       linkNameFactory,
       autoTagControllers = true,
+      onlyIncludeDecoratedEndpoints = false,
       excludeDynamicDefaults = false
     } = options;
 
@@ -82,7 +83,8 @@ export class SwaggerScanner {
                   globalPrefix,
                   operationIdFactory,
                   linkNameFactory,
-                  autoTagControllers
+                  autoTagControllers,
+                  onlyIncludeDecoratedEndpoints
                 })
               );
             });
@@ -94,7 +96,8 @@ export class SwaggerScanner {
             globalPrefix,
             operationIdFactory,
             linkNameFactory,
-            autoTagControllers
+            autoTagControllers,
+            onlyIncludeDecoratedEndpoints
           })
         );
       }
@@ -128,6 +131,7 @@ export class SwaggerScanner {
         fieldKey: string
       ) => string;
       autoTagControllers?: boolean;
+      onlyIncludeDecoratedEndpoints?: boolean;
     }
   ): ModuleRoute[] {
     const denormalizedArray = [...controller.values()].map((ctrl) =>

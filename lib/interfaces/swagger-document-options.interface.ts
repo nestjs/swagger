@@ -58,6 +58,11 @@ export interface SwaggerDocumentOptions {
   autoTagControllers?: boolean;
 
   /**
+   * If `true`, swagger will only include routes that are decorated with the `@ApiIncludeEndpoint()` decorator
+   * @default false
+   */
+  onlyIncludeDecoratedEndpoints?: boolean;
+  /**
    * When `true`, any `default` value on a schema property that is a non-plain
    * object at runtime (e.g. `new Date()`, class instances) will be omitted from
    * the generated document. This prevents the spec from changing on every server
