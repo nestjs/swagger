@@ -695,13 +695,13 @@ describe('SchemaObjectFactory', () => {
 
   describe('createFromModel (deepObject)', () => {
     class GeolocationDto {
-      @ApiProperty()
+      @ApiProperty({ type: Number })
       latitude: number;
 
-      @ApiProperty()
+      @ApiProperty({ type: Number })
       longitude: number;
 
-      @ApiProperty({ description: 'Distance in kilometers' })
+      @ApiProperty({ type: Number, description: 'Distance in kilometers' })
       distance: number;
     }
 

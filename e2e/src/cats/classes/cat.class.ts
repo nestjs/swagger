@@ -101,4 +101,12 @@ export class Cat {
 
   @ApiProperty({ type: [String], link: () => Cat })
   kittenIds?: string[];
+
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: { type: 'string' },
+    style: 'deepObject',
+    explode: true
+  })
+  filter?: Record<string, string>;
 }
