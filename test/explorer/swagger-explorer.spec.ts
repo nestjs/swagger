@@ -21,8 +21,10 @@ import {
   ApiDefaultGetter,
   ApiDefaultResponse,
   ApiExcludeController,
+  ApiExcludeEndpoint,
   ApiExtraModels,
   ApiHeader,
+  ApiIncludeEndpoint,
   ApiLink,
   ApiOkResponse,
   ApiOperation,
@@ -3011,6 +3013,149 @@ describe('SwaggerExplorer', () => {
           `HeaderVersionController_bar_${METHOD_VERSION}`
         );
       });
+    });
+  });
+
+  describe('with onlyIncludeDecoratedEndpoints', () => {
+    @Controller('foo')
+    class FooController {
+      @Get('included')
+      @ApiIncludeEndpoint()
+      included() {}
+
+      @Get('not-included')
+      notIncluded() {}
+    }
+
+    it('returns all routes when onlyIncludeDecoratedEndpoints is false', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix',
+          onlyIncludeDecoratedEndpoints: false
+        }
+      );
+
+      const paths = routes.map((r) => r.root!.path).sort();
+      expect(paths).toEqual([
+        '/globalPrefix/modulePath/foo/included',
+        '/globalPrefix/modulePath/foo/not-included'
+      ]);
+    });
+
+    it('returns all routes when onlyIncludeDecoratedEndpoints is omitted (default)', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix'
+        }
+      );
+
+      const paths = routes.map((r) => r.root!.path).sort();
+      expect(paths).toEqual([
+        '/globalPrefix/modulePath/foo/included',
+        '/globalPrefix/modulePath/foo/not-included'
+      ]);
+    });
+
+    it('returns only @ApiIncludeEndpoint-decorated routes when onlyIncludeDecoratedEndpoints is true', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix',
+          onlyIncludeDecoratedEndpoints: true
+        }
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].root!.path).toEqual(
+        '/globalPrefix/modulePath/foo/included'
+      );
+    });
+
+    it('still includes routes decorated with @ApiIncludeEndpoint(false) when onlyIncludeDecoratedEndpoints is true (current behavior: disable arg is a no-op for include)', () => {
+      // The explorer only checks the *presence* of the include metadata; the
+      // `disable` argument on @ApiIncludeEndpoint is currently not honored.
+      // If that ever changes, this test should be updated accordingly.
+      @Controller('bar')
+      class BarController {
+        @Get('disabled-include')
+        @ApiIncludeEndpoint(false)
+        disabledInclude() {}
+
+        @Get('not-included')
+        notIncluded() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new BarController(),
+          metatype: BarController
+        } as InstanceWrapper<BarController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix',
+          onlyIncludeDecoratedEndpoints: true
+        }
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].root!.path).toEqual(
+        '/globalPrefix/modulePath/bar/disabled-include'
+      );
+    });
+
+    it('drops routes decorated with both @ApiIncludeEndpoint and @ApiExcludeEndpoint (exclude wins)', () => {
+      @Controller('baz')
+      class BazController {
+        @Get('include-and-exclude')
+        @ApiIncludeEndpoint()
+        @ApiExcludeEndpoint()
+        includeAndExclude() {}
+
+        @Get('only-include')
+        @ApiIncludeEndpoint()
+        onlyInclude() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new BazController(),
+          metatype: BazController
+        } as InstanceWrapper<BazController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix',
+          onlyIncludeDecoratedEndpoints: true
+        }
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].root!.path).toEqual(
+        '/globalPrefix/modulePath/baz/only-include'
+      );
     });
   });
 });
