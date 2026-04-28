@@ -173,12 +173,17 @@ export function replaceImportPath(
   importPath = convertPath(importPath);
   importPath = importPath.slice(2, importPath.length - 1);
 
+  // Decode any URL-encoded characters (e.g. non-ASCII) that TypeScript may
+  // have introduced in the import path so that posix.relative can correctly
+  // compute a relative path against the (non-encoded) file name.
+  const decodedImportPath = safeDecodeURIComponent(importPath);
+
   try {
-    if (isAbsolute(importPath)) {
+    if (isAbsolute(decodedImportPath)) {
       throw {};
     }
 
-    require.resolve(importPath);
+    require.resolve(decodedImportPath);
     if (!options.esmCompatible) {
       typeReference = typeReference.replace('import', 'require');
     }
@@ -189,32 +194,23 @@ export function replaceImportPath(
     };
   } catch {
     const from = options?.readonly
-      ? convertPath(options.pathToSource)
-      : posix.dirname(convertPath(fileName));
+      ? safeDecodeURIComponent(convertPath(options.pathToSource))
+      : getOutputDir(fileName, options);
 
-    let relativePath = posix.relative(from, importPath);
+    const targetPath =
+      options.outDir && options.rootDir &&
+      decodedImportPath.startsWith(convertPath(options.rootDir))
+        ? posix.join(
+            convertPath(options.outDir),
+            posix.relative(convertPath(options.rootDir), decodedImportPath)
+          )
+        : decodedImportPath;
+    let relativePath = posix.relative(from, targetPath);
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
-    const nodeModulesText = 'node_modules';
-    const nodeModulePos = relativePath.indexOf(nodeModulesText);
-    if (nodeModulePos >= 0) {
-      relativePath = relativePath.slice(
-        nodeModulePos + nodeModulesText.length + 1 // slash
-      );
-
-      const typesText = '@types';
-      const typesPos = relativePath.indexOf(typesText);
-      if (typesPos >= 0) {
-        relativePath = relativePath.slice(
-          typesPos + typesText.length + 1 //slash
-        );
-      }
-
-      const indexText = '/index';
-      const indexPos = relativePath.indexOf(indexText);
-      if (indexPos >= 0) {
-        relativePath = relativePath.slice(0, indexPos);
-      }
+    const normalizedPath = normalizePackagePath(relativePath);
+    if (normalizedPath !== relativePath) {
+      relativePath = normalizedPath;
     } else if (options.esmCompatible) {
       // Add appropriate extension for non-node_modules imports
       const extension = getOutputExtension(fileName);
@@ -247,6 +243,22 @@ export function replaceImportPath(
       importPath: relativePath
     };
   }
+}
+
+/**
+ * Returns the directory from which the generated require()/import() call will
+ * execute at runtime.  When tsconfig specifies outDir+rootDir the output file
+ * lives at a different path depth than the source file, so we rebase the
+ * source directory onto the output tree before computing relative import paths.
+ */
+function getOutputDir(fileName: string, options: PluginOptions): string {
+  const sourceDir = posix.dirname(safeDecodeURIComponent(convertPath(fileName)));
+  if (options.outDir && options.rootDir) {
+    const outDir = convertPath(options.outDir);
+    const rootDir = convertPath(options.rootDir);
+    return posix.join(outDir, posix.relative(rootDir, sourceDir));
+  }
+  return sourceDir;
 }
 
 function convertToAsyncImport(typeReference: string) {
@@ -383,6 +395,56 @@ export function convertPath(windowsPath: string) {
     .replace(/^\\\\\?\\/, '')
     .replace(/\\/g, '/')
     .replace(/\/\/+/g, '/');
+}
+
+/**
+ * Safely decodes URL-encoded characters in a path (e.g. non-ASCII characters
+ * that TypeScript may encode when generating type reference strings).
+ * Returns the original string if decoding fails.
+ * @param path
+ */
+export function safeDecodeURIComponent(path: string) {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+}
+
+/**
+ * When a path goes through node_modules (e.g. a workspace package resolved to
+ * its physical location inside node_modules), strip the node_modules prefix so
+ * the generated import uses the package specifier instead of a relative path.
+ * This mirrors the same normalisation already done inside replaceImportPath().
+ *
+ * For example:
+ *   ../node_modules/@amk/utils/src/dto/order.dto  →  @amk/utils/src/dto/order.dto
+ *   ../../../packages/product-warehouse/dist/index  (no node_modules) → unchanged
+ */
+export function normalizePackagePath(importPath: string): string {
+  const nodeModulesText = 'node_modules';
+  const nodeModulePos = importPath.indexOf(nodeModulesText);
+  if (nodeModulePos < 0) {
+    return importPath;
+  }
+
+  let packagePath = importPath.slice(
+    nodeModulePos + nodeModulesText.length + 1 // skip the trailing slash
+  );
+
+  const typesText = '@types';
+  const typesPos = packagePath.indexOf(typesText);
+  if (typesPos >= 0) {
+    packagePath = packagePath.slice(typesPos + typesText.length + 1);
+  }
+
+  const indexText = '/index';
+  const indexPos = packagePath.indexOf(indexText);
+  if (indexPos >= 0) {
+    packagePath = packagePath.slice(0, indexPos);
+  }
+
+  return packagePath;
 }
 
 /**

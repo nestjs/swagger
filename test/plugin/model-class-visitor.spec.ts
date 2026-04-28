@@ -48,6 +48,14 @@ import {
   stringLiteralDtoText,
   stringLiteralDtoTextTranspiled
 } from './fixtures/string-literal.dto';
+import {
+  createCatMatchesDtoText,
+  createCatMatchesDtoTextTranspiled
+} from './fixtures/create-cat-matches.dto';
+import {
+  booleanLiteralDtoText,
+  booleanLiteralDtoTextTranspiled
+} from './fixtures/boolean-literal.dto';
 
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
@@ -259,6 +267,33 @@ describe('API model properties', () => {
     expect(result.outputText).toEqual(stringLiteralDtoTextTranspiled);
   });
 
+  it('should support & understand boolean literal types', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'boolean-literal.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(booleanLiteralDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(booleanLiteralDtoTextTranspiled);
+  });
+
   it('should support & understand parameter properties', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.ES2020,
@@ -387,7 +422,7 @@ describe('API model properties', () => {
     const filename = 'create-cat-priority.dto.ts';
     const fakeProgram = ts.createProgram([filename], options);
 
-    const debugLoggerSpy = jest.spyOn(pluginDebugLogger, 'debug');
+    const debugLoggerSpy = vi.spyOn(pluginDebugLogger, 'debug');
 
     const result = ts.transpileModule(createCatPriorityDtoText, {
       compilerOptions: options,
@@ -496,5 +531,109 @@ describe('API model properties', () => {
       }
     });
     expect(resultWithSkip.outputText).not.toContain(`default: 5`);
+  });
+
+  it('should auto-fill enumName when autoFillEnumName option is true', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'enum-name.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const enumDtoText = `
+      export enum StatusEnum { Active = 'active', Inactive = 'inactive' }
+      import { ApiProperty } from '../../decorators';
+      export class EnumNameDto {
+        @ApiProperty()
+        status: StatusEnum;
+      }
+    `;
+
+    const resultWithoutOption = ts.transpileModule(enumDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before({ introspectComments: true, classValidatorShim: false }, fakeProgram)
+        ]
+      }
+    });
+    expect(resultWithoutOption.outputText).not.toContain(`enumName: "StatusEnum"`);
+
+    const resultWithOption = ts.transpileModule(enumDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: false, autoFillEnumName: true },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(resultWithOption.outputText).toContain(`enumName: "StatusEnum"`);
+  });
+
+  it('should strip regex delimiters and flags from @Matches patterns', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(createCatMatchesDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classValidatorShim: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(createCatMatchesDtoTextTranspiled);
+  });
+
+  it('should emit IsIn enum metadata for literal union properties that fall back to Object', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'literal-union-is-in.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      import { IsIn } from 'class-validator';
+
+      type Hoge = 'a' | 1;
+
+      export class LiteralUnionIsInDto {
+        @IsIn(['a', 1])
+        gender!: Hoge;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classValidatorShim: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `gender: { required: true, type: () => Object, enum: ['a', 1] }`
+    );
   });
 });

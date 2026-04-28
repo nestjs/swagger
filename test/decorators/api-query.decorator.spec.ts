@@ -13,6 +13,10 @@ describe('ApiQuery', () => {
       }
 
       public noAPiMethod(): void {}
+
+      public get service() {
+        return null;
+      }
     }
 
     it('should attach metadata to all API methods', () => {
@@ -51,6 +55,60 @@ describe('ApiQuery', () => {
       expect(
         Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)
       ).toEqual([{ in: 'query', name: 'testId', required: true }]);
+    });
+  });
+
+  describe('when type is specified', () => {
+    class TestAppController {
+      @Get('string')
+      @ApiQuery({ name: 'search', type: 'string' })
+      public getString(@Query('search') s: string) {}
+
+      @Get('number')
+      @ApiQuery({ name: 'page', type: 'number' })
+      public getNumber(@Query('page') p: number) {}
+
+      @Get('boolean')
+      @ApiQuery({ name: 'sort', type: 'boolean' })
+      public getBoolean(@Query('sort') b: boolean) {}
+
+      @Get('custom')
+      @ApiQuery({ name: 'custom', type: 'uuid' as any }) // (string & {}) test to any string (like uuid) via type widening
+      public getCustom(@Query('custom') c: string) {}
+    }
+
+    const controller = new TestAppController();
+
+    it('should store "string" type in metadata', () => {
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_PARAMETERS,
+        controller.getString
+      );
+      expect(metadata[0].type).toEqual('string');
+    });
+
+    it('should store "number" type in metadata', () => {
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_PARAMETERS,
+        controller.getNumber
+      );
+      expect(metadata[0].type).toEqual('number');
+    });
+
+    it('should store "boolean" literal type in metadata', () => {
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_PARAMETERS,
+        controller.getBoolean
+      );
+      expect(metadata[0].type).toEqual('boolean');
+    });
+
+    it('should store any string (like uuid) via type widening', () => {
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_PARAMETERS,
+        controller.getCustom
+      );
+      expect(metadata[0].type).toEqual('uuid');
     });
   });
 });

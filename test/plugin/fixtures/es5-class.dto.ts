@@ -40,7 +40,7 @@ var CreateCatDtoEs5 = /** @class */ (function () {
     ], CreateCatDtoEs5.prototype, \"age\", void 0);
     return CreateCatDtoEs5;
 }());
- exports.CreateCatDtoEs5 = CreateCatDtoEs5;
+exports.CreateCatDtoEs5 = CreateCatDtoEs5;
 `;
 
 export const es5CreateCatDtoTextTranspiledV5 = `\"use strict\";

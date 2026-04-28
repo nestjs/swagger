@@ -65,15 +65,6 @@ export function PartialType<T>(
         mapValues(metadata, (item) => ({ ...item, required: false }))
     );
 
-    if (PartialTypeClass[METADATA_FACTORY_NAME]) {
-      const pluginFields = Object.keys(
-        PartialTypeClass[METADATA_FACTORY_NAME]()
-      );
-      pluginFields.forEach((key) =>
-        applyPartialDecoratorFn(PartialTypeClass, key)
-      );
-    }
-
     fields.forEach((key) => {
       const metadata =
         Reflect.getMetadata(
@@ -89,6 +80,21 @@ export function PartialType<T>(
       decoratorFactory(PartialTypeClass.prototype, key);
       applyPartialDecoratorFn(PartialTypeClass, key);
     });
+
+    if (PartialTypeClass[METADATA_FACTORY_NAME]) {
+      const pluginMetadata = PartialTypeClass[METADATA_FACTORY_NAME]();
+      const pluginFields = Object.keys(pluginMetadata);
+      pluginFields.forEach((key) => {
+        if (!fields.includes(key)) {
+          const decoratorFactory = ApiProperty({
+            ...pluginMetadata[key],
+            required: false
+          });
+          decoratorFactory(PartialTypeClass.prototype, key);
+        }
+        applyPartialDecoratorFn(PartialTypeClass, key);
+      });
+    }
   }
   applyFields(fields);
 

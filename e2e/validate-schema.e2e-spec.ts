@@ -3,14 +3,14 @@ import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
 import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
-import * as SwaggerParser from 'swagger-parser';
+import SwaggerParser from 'swagger-parser';
 import {
   DocumentBuilder,
   getSchemaPath,
   OpenAPIObject,
   SwaggerModule
 } from '../lib';
-import { SchemaObject } from '../lib/interfaces/open-api-spec.interface';
+import { ParameterObject, SchemaObject } from '../lib/interfaces/open-api-spec.interface';
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
@@ -66,6 +66,22 @@ describe('Validate OpenAPI schema', () => {
       })
       .addExtension('x-test', { test: 'test' })
       .addExtension('x-logo', { url: 'https://example.com/logo.png' }, 'info')
+      .addServer(
+        'http://localhost:3000',
+        'Local server',
+        {
+          someVariable: {
+            default: 'Variable default value here',
+            description: 'A variable description here'
+          }
+        },
+        {
+          'x-google-endpoint': {
+            allowCors: true
+          },
+          'x-another-field': 'another value'
+        }
+      )
       .build();
   });
 
@@ -96,9 +112,9 @@ describe('Validate OpenAPI schema', () => {
             {
               CreateCatDto: {
                 enumWithDescription: {
-                  enum: await import(
-                    './src/cats/dto/pagination-query.dto'
-                  ).then((f) => f.LettersEnum)
+                  enum: await import('./src/cats/dto/pagination-query.dto').then(
+                    (f) => f.LettersEnum
+                  )
                 },
                 name: {
                   description: 'Name of the cat'
@@ -175,6 +191,20 @@ describe('Validate OpenAPI schema', () => {
     }
   });
 
+  it('should preserve example metadata for named type query params (issue #3335)', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    const params =
+      document.paths['/api/cats/with-named-type-example']['get']['parameters'];
+    const filterParam = params.find(
+      (p: any) => p.name === 'filter' && p.in === 'query'
+    );
+    expect(filterParam).toBeDefined();
+    expect((filterParam as ParameterObject).schema).toEqual({
+      example: 'example-tag',
+      allOf: [{ $ref: '#/components/schemas/TagDto' }]
+    });
+  });
+
   it('should fix colons in url', async () => {
     const document = SwaggerModule.createDocument(app, options);
     expect(
@@ -236,6 +266,18 @@ describe('Validate OpenAPI schema', () => {
     });
   });
 
+  it('should include type field when nullable is used with allOf (issue #3274)', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    const createCatDtoSchema = document.components?.schemas
+      ?.CreateCatDto as SchemaObject;
+    expect(createCatDtoSchema.properties.nullableTag).toEqual({
+      description: 'nullable tag',
+      nullable: true,
+      type: 'object',
+      allOf: [{ $ref: '#/components/schemas/TagDto' }]
+    });
+  });
+
   it('should not add optional properties to required list', () => {
     const document = SwaggerModule.createDocument(app, options);
     const required = (document.components?.schemas?.Cat as SchemaObject)
@@ -260,6 +302,104 @@ describe('Validate OpenAPI schema', () => {
     const document = SwaggerModule.createDocument(app, options);
     expect(document.info['x-logo']).toEqual({
       url: 'https://example.com/logo.png'
+    });
+  });
+
+  it('should add server to the root', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    expect(document.servers).toBeDefined();
+    expect(document.servers).toHaveLength(1);
+    expect(document.servers?.[0]).toEqual({
+      url: 'http://localhost:3000',
+      description: 'Local server',
+      variables: {
+        someVariable: {
+          default: 'Variable default value here',
+          description: 'A variable description here'
+        }
+      },
+      'x-google-endpoint': {
+        allowCors: true
+      },
+      'x-another-field': 'another value'
+    });
+  });
+
+  describe('hierarchical tags (OpenAPI 3.2)', () => {
+    it('should add tag with parent option', async () => {
+      const hierarchicalOptions = new DocumentBuilder()
+        .setTitle('Hierarchical Tags Test')
+        .setVersion('1.0')
+        .addTag('Animals', 'All animal operations')
+        .addTag('Cats', 'Cat operations', undefined, { parent: 'Animals' })
+        .build();
+
+      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+
+      expect(document.tags).toBeDefined();
+      expect(document.tags).toHaveLength(2);
+      expect(document.tags?.[0]).toEqual({
+        name: 'Animals',
+        description: 'All animal operations'
+      });
+      expect(document.tags?.[1]).toEqual({
+        name: 'Cats',
+        description: 'Cat operations',
+        parent: 'Animals'
+      });
+    });
+
+    it('should add tag with kind option', async () => {
+      const hierarchicalOptions = new DocumentBuilder()
+        .setTitle('Hierarchical Tags Test')
+        .setVersion('1.0')
+        .addTag('Internal', 'Internal APIs', undefined, { kind: 'reference' })
+        .build();
+
+      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+
+      expect(document.tags).toBeDefined();
+      expect(document.tags).toHaveLength(1);
+      expect(document.tags?.[0]).toEqual({
+        name: 'Internal',
+        description: 'Internal APIs',
+        kind: 'reference'
+      });
+    });
+
+    it('should add tag with both parent and kind options', async () => {
+      const hierarchicalOptions = new DocumentBuilder()
+        .setTitle('Hierarchical Tags Test')
+        .setVersion('1.0')
+        .addTag('Animals', 'All animal operations')
+        .addTag('Cats', 'Cat operations', undefined, {
+          parent: 'Animals',
+          kind: 'navigation'
+        })
+        .build();
+
+      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+
+      expect(document.tags).toBeDefined();
+      expect(document.tags).toHaveLength(2);
+      expect(document.tags?.[1]).toEqual({
+        name: 'Cats',
+        description: 'Cat operations',
+        parent: 'Animals',
+        kind: 'navigation'
+      });
+    });
+
+    it('should keep operation tags as string arrays', async () => {
+      const document = SwaggerModule.createDocument(app, options);
+
+      // Check that operation-level tags are string arrays (from @ApiTags decorator)
+      const createCatOperation = document.paths['/api/cats']?.post;
+      expect(createCatOperation?.tags).toBeDefined();
+      expect(Array.isArray(createCatOperation?.tags)).toBe(true);
+      expect(createCatOperation?.tags?.every((tag) => typeof tag === 'string')).toBe(
+        true
+      );
     });
   });
 });

@@ -298,9 +298,9 @@ export class SwaggerExplorer {
       exploreGlobalApiHeaderMetadata
     ];
     const globalMetadata = globalExplorers
-      .map((explorer) => explorer.call(explorer, metatype))
+      .map((explorer) => (explorer as Function).call(explorer, metatype))
       .filter((val) => !isUndefined(val))
-      .reduce((curr, next) => {
+      .reduce((curr: any, next: any) => {
         if (next.depth) {
           return {
             ...curr,
@@ -397,10 +397,22 @@ export class SwaggerExplorer {
         const isAlias =
           allRoutePaths.length > 1 && allRoutePaths.length !== versions.length;
         const methodKey = isAlias ? `${method.name}[${index}]` : method.name;
+
+        const nonPathVersion = this.getNonPathVersion(
+          methodVersion,
+          metatype,
+          versioningOptions
+        );
+        const operationVersion = pathVersion ?? nonPathVersion;
+
         return {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,
-          operationId: this.getOperationId(instance, methodKey, pathVersion),
+          operationId: this.getOperationId(
+            instance,
+            methodKey,
+            operationVersion
+          ),
           ...apiExtension
         };
       })
@@ -585,12 +597,12 @@ export class SwaggerExplorer {
     let consumes = mergeAndUniq(classConsumes, methodConsumes);
     consumes = isEmpty(consumes) ? ['application/json'] : consumes;
 
-    const keysToRemove = ['schema', 'in', 'name', 'examples'];
+    const keysToRemove = ['schema', 'in', 'name', 'examples', 'encoding'];
     document.root.requestBody = {
       ...omit(requestBody, keysToRemove),
       ...this.mimetypeContentWrapper.wrap(
         consumes,
-        pick(requestBody, ['schema', 'examples'])
+        pick(requestBody, ['schema', 'examples', 'encoding'])
       )
     };
     return document;
@@ -612,5 +624,34 @@ export class SwaggerExplorer {
         versioningOptions.defaultVersion
       );
     }
+  }
+
+  private getNonPathVersion(
+    methodVersion: VersionValue | undefined,
+    metatype: Type<unknown>,
+    versioningOptions: VersioningOptions | undefined
+  ): string | undefined {
+    if (
+      !versioningOptions ||
+      versioningOptions.type === VersioningType.URI
+    ) {
+      return undefined;
+    }
+
+    const version =
+      methodVersion ??
+      Reflect.getMetadata(VERSION_METADATA, metatype) ??
+      versioningOptions.defaultVersion;
+
+    if (!version || version === VERSION_NEUTRAL) {
+      return undefined;
+    }
+
+    if (Array.isArray(version)) {
+      const filtered = version.filter((v) => v !== VERSION_NEUTRAL);
+      return filtered.length > 0 ? (filtered[0] as string) : undefined;
+    }
+
+    return version as string;
   }
 }

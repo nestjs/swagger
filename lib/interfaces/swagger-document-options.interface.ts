@@ -62,4 +62,12 @@ export interface SwaggerDocumentOptions {
    * @default false
    */
   onlyIncludeDecoratedEndpoints?: boolean;
+  /**
+   * When `true`, any `default` value on a schema property that is a non-plain
+   * object at runtime (e.g. `new Date()`, class instances) will be omitted from
+   * the generated document. This prevents the spec from changing on every server
+   * restart when dynamic initializers like `createdAt = new Date()` are used.
+   * @default false
+   */
+  excludeDynamicDefaults?: boolean;
 }

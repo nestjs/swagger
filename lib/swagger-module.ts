@@ -147,19 +147,18 @@ export class SwaggerModule {
     const baseUrlForSwaggerUI = normalizeRelPath(`./${urlLastSubdirectory}/`);
 
     let swaggerUiHtml: string;
+    let swaggerUiHtmlForTrailingSlash: string;
     let swaggerUiInitJS: string;
 
     httpAdapter.get(
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
-      (req, res) => {
+      async (req, res) => {
         res.type('application/javascript');
         const document = getBuiltDocument();
 
         if (swaggerOptions.patchDocumentOnRequest) {
-          const documentToSerialize = swaggerOptions.patchDocumentOnRequest(
-            req,
-            res,
-            document
+          const documentToSerialize = await Promise.resolve(
+            swaggerOptions.patchDocumentOnRequest(req, res, document)
           );
           const swaggerInitJsPerRequest = buildSwaggerInitJS(
             documentToSerialize,
@@ -185,15 +184,13 @@ export class SwaggerModule {
         normalizeRelPath(
           `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
         ),
-        (req, res) => {
+        async (req, res) => {
           res.type('application/javascript');
           const document = getBuiltDocument();
 
           if (swaggerOptions.patchDocumentOnRequest) {
-            const documentToSerialize = swaggerOptions.patchDocumentOnRequest(
-              req,
-              res,
-              document
+            const documentToSerialize = await Promise.resolve(
+              swaggerOptions.patchDocumentOnRequest(req, res, document)
             );
             const swaggerInitJsPerRequest = buildSwaggerInitJS(
               documentToSerialize,
@@ -216,13 +213,28 @@ export class SwaggerModule {
        */
     }
 
-    function serveSwaggerHtml(_: any, res: any) {
-      res.type('text/html');
-
+    const getSwaggerHtml = () => {
       if (!swaggerUiHtml) {
         swaggerUiHtml = buildSwaggerHTML(baseUrlForSwaggerUI, swaggerOptions);
       }
+      return swaggerUiHtml;
+    };
 
+    const getTrailingSlashSwaggerHtml = () => {
+      if (!swaggerUiHtmlForTrailingSlash) {
+        swaggerUiHtmlForTrailingSlash = buildSwaggerHTML('./', swaggerOptions);
+      }
+      return swaggerUiHtmlForTrailingSlash;
+    };
+
+    function serveSwaggerHtml(req: any, res: any) {
+      res.type('text/html');
+
+      const url = httpAdapter.getRequestUrl(req);
+      const hasTrailingSlash = url.endsWith('/');
+      const swaggerUiHtml = hasTrailingSlash
+        ? getTrailingSlashSwaggerHtml()
+        : getSwaggerHtml();
       res.send(swaggerUiHtml);
     }
 
@@ -256,35 +268,53 @@ export class SwaggerModule {
     serveOptions: { serveJson: boolean; serveYaml: boolean }
   ) {
     if (serveOptions.serveJson) {
-      httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
-        res.type('application/json');
-        const document = getBuiltDocument();
+      httpAdapter.get(
+        normalizeRelPath(options.jsonDocumentUrl),
+        async (req, res) => {
+          res.type('application/json');
+          const document = getBuiltDocument();
 
-        const documentToSerialize = options.swaggerOptions
-          .patchDocumentOnRequest
-          ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
-          : document;
+          const documentToSerialize = options.swaggerOptions
+            .patchDocumentOnRequest
+            ? await Promise.resolve(
+                options.swaggerOptions.patchDocumentOnRequest(
+                  req,
+                  res,
+                  document
+                )
+              )
+            : document;
 
-        res.send(JSON.stringify(documentToSerialize));
-      });
+          res.send(JSON.stringify(documentToSerialize));
+        }
+      );
     }
 
     if (serveOptions.serveYaml) {
-      httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
-        res.type('text/yaml');
-        const document = getBuiltDocument();
+      httpAdapter.get(
+        normalizeRelPath(options.yamlDocumentUrl),
+        async (req, res) => {
+          res.type('text/yaml');
+          const document = getBuiltDocument();
 
-        const documentToSerialize = options.swaggerOptions
-          .patchDocumentOnRequest
-          ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
-          : document;
+          const documentToSerialize = options.swaggerOptions
+            .patchDocumentOnRequest
+            ? await Promise.resolve(
+                options.swaggerOptions.patchDocumentOnRequest(
+                  req,
+                  res,
+                  document
+                )
+              )
+            : document;
 
-        const yamlDocument = jsyaml.dump(documentToSerialize, {
-          skipInvalid: true,
-          noRefs: true
-        });
-        res.send(yamlDocument);
-      });
+          const yamlDocument = jsyaml.dump(documentToSerialize, {
+            skipInvalid: true,
+            noRefs: true
+          });
+          res.send(yamlDocument);
+        }
+      );
     }
   }
 

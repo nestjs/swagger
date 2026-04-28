@@ -53,7 +53,11 @@ export class DocumentBuilder {
   }
 
   public setOpenAPIVersion(version: string): this {
-    if (version.match(/^\d\.\d\.\d$/)) {
+    // OpenAPI Specification versions follow semver, so each segment may contain
+    // one or more digits (e.g. `3.0.10`, `3.10.0`). Anchored regex accepts any
+    // non-negative integer per segment; the previous `^\d\.\d\.\d$` pattern
+    // rejected otherwise-valid spec versions.
+    if (/^\d+\.\d+\.\d+$/.test(version)) {
       this.document.openapi = version;
     } else {
       this.logger.warn(
@@ -66,9 +70,32 @@ export class DocumentBuilder {
   public addServer(
     url: string,
     description?: string,
-    variables?: Record<string, ServerVariableObject>
+    variables?: Record<string, ServerVariableObject>,
+    /**
+     * Any other property other than `url`, `description`, and `variables`
+     * to be added to this 'server' entry.
+     */
+    serverExtraProperties?: Record<string, any>
   ): this {
-    this.document.servers.push({ url, description, variables });
+    const serverObjDef: OpenAPIObject['servers'][number] = {
+      url,
+      description,
+      variables
+    };
+
+    if (serverExtraProperties) {
+      const alreadyDefinedKeysForServerEntry = Object.keys(serverObjDef);
+      // Merge any extra fields into the server object definition but ignoring the fields with keys `url`, `description`, and `variables`
+      for (const key in serverExtraProperties) {
+        // Ignoring already defined keys
+        if (alreadyDefinedKeysForServerEntry.includes(key)) continue;
+
+        const extraFieldValue = serverExtraProperties[key];
+        serverObjDef[key] = extraFieldValue;
+      }
+    }
+
+    this.document.servers.push(serverObjDef);
     return this;
   }
 
@@ -90,17 +117,20 @@ export class DocumentBuilder {
   public addTag(
     name: string,
     description = '',
-    externalDocs?: ExternalDocumentationObject
+    externalDocs?: ExternalDocumentationObject,
+    options?: { parent?: string; kind?: 'navigation' | 'reference' }
   ): this {
     this.document.tags = this.document.tags.concat(
       pickBy(
         {
           name,
           description,
-          externalDocs
+          externalDocs,
+          parent: options?.parent,
+          kind: options?.kind
         },
         negate(isUndefined)
-      ) as TagObject
+      ) as unknown as TagObject
     );
     return this;
   }

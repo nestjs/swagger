@@ -18,7 +18,15 @@ import { createParamDecorator, getTypeIsArrayTuple } from './helpers';
 type ParameterOptions = Omit<ParameterObject, 'in' | 'schema' | 'name'>;
 
 interface ApiQueryCommonMetadata extends ParameterOptions {
-  type?: Type<unknown> | Function | [Function] | string;
+  type?:
+    | Type<unknown>
+    | Function
+    | [Function]
+    | 'string'
+    | 'number'
+    | 'integer'
+    | 'boolean'
+    | (string & {});
   isArray?: boolean;
   enum?: SwaggerEnumType;
 }

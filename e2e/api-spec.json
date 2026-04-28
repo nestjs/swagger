@@ -336,6 +336,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -416,6 +417,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -665,6 +667,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -745,6 +748,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -829,6 +833,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1051,6 +1056,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1128,6 +1134,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1201,6 +1208,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1290,6 +1298,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1350,6 +1359,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1423,6 +1433,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1482,6 +1493,79 @@
         }
       }
     },
+    "/api/cats/with-named-type-example": {
+      "get": {
+        "operationId": "CatsController_getWithNamedTypeExample",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "test"
+            }
+          },
+          {
+            "name": "filter",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "example-tag",
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/TagDto"
+                }
+              ]
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
     "/api/cats/with-random-query": {
       "get": {
         "operationId": "CatsController_getWithRandomQuery",
@@ -1493,6 +1577,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1575,6 +1660,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1637,6 +1723,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1734,7 +1821,22 @@
       "description": ""
     }
   ],
-  "servers": [],
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local server",
+      "variables": {
+        "someVariable": {
+          "default": "Variable default value here",
+          "description": "A variable description here"
+        }
+      },
+      "x-google-endpoint": {
+        "allowCors": true
+      },
+      "x-another-field": "another value"
+    }
+  ],
   "components": {
     "securitySchemes": {
       "basic": {
@@ -1907,7 +2009,7 @@
               "B",
               "C"
             ],
-            "type": "string",
+            "type": "object",
             "description": "Enum with description"
           },
           "enum": {
@@ -1942,6 +2044,16 @@
               }
             ]
           },
+          "nullableTag": {
+            "description": "nullable tag",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TagDto"
+              }
+            ]
+          },
           "xEnumTest": {
             "description": "The x-enumNames test",
             "allOf": [
@@ -1968,6 +2080,7 @@
           "enum",
           "enumArr",
           "enumWithRef",
+          "nullableTag",
           "xEnumTest"
         ]
       },

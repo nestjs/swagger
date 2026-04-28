@@ -3,9 +3,9 @@ import {
   ExpressAdapter,
   NestExpressApplication
 } from '@nestjs/platform-express';
-import * as path from 'path';
-import * as request from 'supertest';
-import * as SwaggerParser from 'swagger-parser';
+import path from 'path';
+import request from 'supertest';
+import SwaggerParser from 'swagger-parser';
 import { DocumentBuilder, SwaggerModule } from '../lib';
 import { ApplicationModule } from './src/app.module';
 import { ExpressController } from './src/express.controller';
@@ -459,6 +459,85 @@ describe('Express Swagger', () => {
     });
   });
 
+  describe('async patchDocumentOnRequest', () => {
+    const JSON_CUSTOM_URL = '/async-apidoc-json';
+    const YAML_CUSTOM_URL = '/async-apidoc-yaml';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup('async-api', app, swaggerDocument, {
+        jsonDocumentUrl: JSON_CUSTOM_URL,
+        yamlDocumentUrl: YAML_CUSTOM_URL,
+        patchDocumentOnRequest: async (req, res, document) => {
+          // Simulate async work (e.g. fetching tenant config from a database)
+          const description = await Promise.resolve(
+            (req as Record<string, any>).query.description
+          );
+          return {
+            ...document,
+            info: { ...document.info, description }
+          };
+        }
+      });
+
+      await app.init();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('async patched JSON document should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${JSON_CUSTOM_URL}?description=Async%20description`
+      );
+      expect(response.body.info.description).toBe('Async description');
+    });
+
+    it('async patched YAML document should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${YAML_CUSTOM_URL}?description=Async%20description`
+      );
+      expect(response.text).toContain('Async description');
+    });
+
+    it('async patched swagger-ui-init.js should be served', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `/async-api/swagger-ui-init.js?description=Async%20UI%20description`
+      );
+      expect(response.text).toContain('"description": "Async UI description"');
+    });
+
+    it('sync patchDocumentOnRequest still works (backwards compatibility)', async () => {
+      const app2 = await NestFactory.create<NestExpressApplication>(
+        ApplicationModule,
+        new ExpressAdapter(),
+        { logger: false }
+      );
+      const doc = SwaggerModule.createDocument(app2, builder.build());
+      SwaggerModule.setup('compat-api', app2, doc, {
+        jsonDocumentUrl: '/compat-json',
+        patchDocumentOnRequest: (req, _res, document) => ({
+          ...document,
+          info: {
+            ...document.info,
+            description: (req as Record<string, any>).query.description
+          }
+        })
+      });
+      await app2.init();
+
+      const response = await request(app2.getHttpServer()).get(
+        '/compat-json?description=Sync%20description'
+      );
+      await app2.close();
+      expect(response.body.info.description).toBe('Sync description');
+    });
+  });
+
   describe('custom documents endpoints with global prefix', () => {
     let appGlobalPrefix: NestExpressApplication;
 
@@ -523,6 +602,39 @@ describe('Express Swagger', () => {
         console.log(doc);
         expect(err).toBeUndefined();
       }
+    });
+  });
+
+  describe('trailing slash static asset loading', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument);
+      await app.init();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('should serve HTML with baseUrl "./apidoc/" when accessed without trailing slash', async () => {
+      const response = await request(app.getHttpServer()).get(
+        SWAGGER_RELATIVE_URL
+      );
+      expect(response.status).toEqual(200);
+      expect(response.text).toContain('href="./apidoc/swagger-ui.css"');
+    });
+
+    it('should serve HTML with baseUrl "./" when accessed with trailing slash', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}/`
+      );
+      expect(response.status).toEqual(200);
+      expect(response.text).toContain('href="./swagger-ui.css"');
     });
   });
 

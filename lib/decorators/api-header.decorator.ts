@@ -22,17 +22,31 @@ const defaultHeaderOptions: Partial<ApiHeaderOptions> = {
 export function ApiHeader(
   options: ApiHeaderOptions
 ): MethodDecorator & ClassDecorator {
+  // `schema` and `content` are mutually exclusive per the OpenAPI spec for a
+  // single parameter object, so only provide a default string schema when the
+  // caller has not opted in to `content`.
+  const paramSchema = options.content
+    ? undefined
+    : {
+        type: 'string',
+        ...(options.example ? { example: options.example } : {}),
+        ...(options.schema || {})
+      };
+
   const param = pickBy<ApiHeaderOptions & { in: ParameterLocation }>(
     {
       name: isNil(options.name) ? defaultHeaderOptions.name : options.name,
       in: 'header',
       description: options.description,
       required: options.required,
+      deprecated: options.deprecated,
+      allowEmptyValue: options.allowEmptyValue,
+      style: options.style,
+      explode: options.explode,
+      allowReserved: options.allowReserved,
+      content: options.content,
       examples: options.examples,
-      schema: {
-        type: 'string',
-        ...(options.schema || {})
-      }
+      schema: paramSchema
     },
     negate(isUndefined)
   );
