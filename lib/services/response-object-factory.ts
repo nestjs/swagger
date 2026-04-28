@@ -1,4 +1,4 @@
-import { isEmpty, isFunction, omit } from 'lodash';
+import { isEmpty, isFunction, omit, pick } from 'lodash';
 import { DECORATORS } from '../constants';
 import {
   ApiPropertyOptions,
@@ -65,7 +65,8 @@ export class ResponseObjectFactory {
             items: {
               type: swaggerType
             }
-          }
+          },
+          ...pick(response, exampleKeys)
         });
         return {
           ...omit(response, exampleKeys),
@@ -76,7 +77,8 @@ export class ResponseObjectFactory {
       const content = this.mimetypeContentWrapper.wrap(produces, {
         schema: {
           type: swaggerType
-        }
+        },
+        ...pick(response, exampleKeys)
       });
       return {
         ...omit(response, exampleKeys),
