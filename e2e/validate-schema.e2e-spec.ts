@@ -205,6 +205,37 @@ describe('Validate OpenAPI schema', () => {
     });
   });
 
+  it('should preserve example/examples for built-in scalar response types', () => {
+    const document = SwaggerModule.createDocument(app, options);
+
+    const scalarExample =
+      document.paths['/api/cats/scalar-with-example']['get']['responses']['200'];
+    expect(scalarExample.content['application/json'].example).toEqual(42);
+    expect((scalarExample as any).example).toBeUndefined();
+
+    const scalarExamples =
+      document.paths['/api/cats/scalar-with-examples']['get']['responses']['200'];
+    expect(scalarExamples.content['application/json'].examples).toEqual({
+      adult: { value: 5, summary: 'Adult cat age' },
+      kitten: { value: 1, summary: 'Kitten age' }
+    });
+    expect((scalarExamples as any).examples).toBeUndefined();
+
+    const arrayExample =
+      document.paths['/api/cats/array-of-scalar-with-example']['get'][
+        'responses'
+      ]['200'];
+    expect(arrayExample.content['application/json'].schema).toEqual({
+      type: 'array',
+      items: { type: 'string' }
+    });
+    expect(arrayExample.content['application/json'].example).toEqual([
+      'Mau',
+      'Persian'
+    ]);
+    expect((arrayExample as any).example).toBeUndefined();
+  });
+
   it('should fix colons in url', async () => {
     const document = SwaggerModule.createDocument(app, options);
     expect(
