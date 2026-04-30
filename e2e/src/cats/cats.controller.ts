@@ -243,4 +243,34 @@ export class CatsController {
     }
   })
   rawSchemaResponse() {}
+
+  @Get('scalar-with-example')
+  @ApiResponse({ status: 200, type: Number, example: 42 })
+  scalarWithExample(): number {
+    return 42;
+  }
+
+  @Get('scalar-with-examples')
+  @ApiResponse({
+    status: 200,
+    type: Number,
+    examples: {
+      adult: { value: 5, summary: 'Adult cat age' },
+      kitten: { value: 1, summary: 'Kitten age' }
+    }
+  })
+  scalarWithExamples(): number {
+    return 5;
+  }
+
+  @Get('array-of-scalar-with-example')
+  @ApiResponse({
+    status: 200,
+    type: String,
+    isArray: true,
+    example: ['Mau', 'Persian']
+  })
+  arrayOfScalarWithExample(): string[] {
+    return ['Mau', 'Persian'];
+  }
 }
