@@ -629,6 +629,8 @@ describe('API model properties', () => {
     expect(result.outputText).toContain(`nullableColor: { required: true, nullable: true, enum: ["red", "green", "blue"] }`);
     expect(result.outputText).toContain(`inlineUnion: { required: true, enum: ["active", "inactive"] }`);
     expect(result.outputText).toContain(`nullableInlineUnion: { required: true, nullable: true, enum: ["active", "inactive"] }`);
+    expect(result.outputText).toContain(`statusCode: { required: true, enum: [200, 400, 500] }`);
+    expect(result.outputText).toContain(`inlineNumberUnion: { required: true, enum: [1, 2, 3] }`);
     expect(result.outputText).not.toContain(`type: () => Object`);
   });
 

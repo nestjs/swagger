@@ -726,13 +726,17 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const isArrayType = typeIsArrayTuple.isArray;
     type = typeIsArrayTuple.type;
 
-    // Handle string literal union types like `'a' | 'b' | 'c'` (with optional null/undefined)
+    // Handle string/number literal union types like `'a' | 'b'` or `1 | 2` (with optional null/undefined)
     const stringLiteralUnion = getStringLiteralUnionValues(type);
     if (stringLiteralUnion) {
       const enumProperty = factory.createPropertyAssignment(
         key,
         factory.createArrayLiteralExpression(
-          stringLiteralUnion.values.map((v) => factory.createStringLiteral(v))
+          stringLiteralUnion.values.map((v) =>
+            typeof v === 'number'
+              ? factory.createNumericLiteral(v)
+              : factory.createStringLiteral(v)
+          )
         )
       );
       const result = compact([

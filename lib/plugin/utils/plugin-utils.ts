@@ -372,15 +372,22 @@ function isPlainStringLiteralType(type: ts.Type): type is ts.StringLiteralType {
   );
 }
 
+function isPlainNumberLiteralType(type: ts.Type): type is ts.NumberLiteralType {
+  return (
+    hasFlag(type, ts.TypeFlags.NumberLiteral) &&
+    !(type.symbol && (type.symbol.flags & ts.SymbolFlags.EnumMember) !== 0)
+  );
+}
+
 /**
- * Returns the string literal values from a union type like `'a' | 'b' | 'c'`,
+ * Returns the literal values from a union type like `'a' | 'b'` or `1 | 2`,
  * stripping null/undefined constituents.
- * Returns undefined if any non-null/undefined constituent is not a plain string
- * literal (e.g. a TypeScript enum member is excluded).
+ * All non-null/undefined constituents must be the same kind of literal
+ * (all string or all number). TypeScript enum members are excluded.
  */
 export function getStringLiteralUnionValues(
   type: ts.Type
-): { values: string[]; isNullable: boolean } | undefined {
+): { values: (string | number)[]; isNullable: boolean } | undefined {
   if (!type.isUnion()) {
     return undefined;
   }
@@ -390,14 +397,19 @@ export function getStringLiteralUnionValues(
     (t) => !hasFlag(t, ts.TypeFlags.Null) && !hasFlag(t, ts.TypeFlags.Undefined)
   );
 
-  if (members.length === 0 || !members.every(isPlainStringLiteralType)) {
+  if (members.length === 0) {
     return undefined;
   }
 
-  return {
-    values: members.map((t) => t.value),
-    isNullable
-  };
+  if (members.every(isPlainStringLiteralType)) {
+    return { values: members.map((t) => t.value), isNullable };
+  }
+
+  if (members.every(isPlainNumberLiteralType)) {
+    return { values: members.map((t) => t.value), isNullable };
+  }
+
+  return undefined;
 }
 
 export function extractTypeArgumentIfArray(type: ts.Type) {
