@@ -56,6 +56,9 @@ import {
   booleanLiteralDtoText,
   booleanLiteralDtoTextTranspiled
 } from './fixtures/boolean-literal.dto';
+import {
+  stringLiteralUnionDtoText
+} from './fixtures/string-literal-union.dto';
 
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
@@ -599,6 +602,34 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(createCatMatchesDtoTextTranspiled);
+  });
+
+  it('should auto-generate enum array for string literal union types', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2022,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'string-literal-union.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(stringLiteralUnionDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({}, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(`color: { required: true, enum: ["red", "green", "blue"] }`);
+    expect(result.outputText).toContain(`optionalColor: { required: false, enum: ["red", "green", "blue"] }`);
+    expect(result.outputText).toContain(`nullableColor: { required: true, nullable: true, enum: ["red", "green", "blue"] }`);
+    expect(result.outputText).toContain(`inlineUnion: { required: true, enum: ["active", "inactive"] }`);
+    expect(result.outputText).toContain(`nullableInlineUnion: { required: true, nullable: true, enum: ["active", "inactive"] }`);
+    expect(result.outputText).not.toContain(`type: () => Object`);
   });
 
   it('should emit IsIn enum metadata for literal union properties that fall back to Object', () => {
