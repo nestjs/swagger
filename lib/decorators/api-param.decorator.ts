@@ -1,13 +1,14 @@
+import lodash from 'lodash';
 import { Type } from '@nestjs/common';
-import { isNil, omit, clone } from 'lodash';
-import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
+const { isNil, omit, clone } = lodash;
+import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface.js';
 import {
   ParameterObject,
   SchemaObject
-} from '../interfaces/open-api-spec.interface';
-import { SwaggerEnumType } from '../types/swagger-enum.type';
-import { addEnumSchema, isEnumDefined } from '../utils/enum.utils';
-import { createParamDecorator } from './helpers';
+} from '../interfaces/open-api-spec.interface.js';
+import { SwaggerEnumType } from '../types/swagger-enum.type.js';
+import { addEnumSchema, isEnumDefined } from '../utils/enum.utils.js';
+import { createParamDecorator } from './helpers.js';
 
 type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
 

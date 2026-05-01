@@ -1,20 +1,21 @@
-import { isEmpty, isFunction, omit, pick } from 'lodash';
-import { DECORATORS } from '../constants';
+import lodash from 'lodash';
+const { isEmpty, isFunction, omit, pick } = lodash;
+import { DECORATORS } from '../constants.js';
 import {
   ApiPropertyOptions,
   ApiResponseMetadata,
   ApiResponseSchemaHost
-} from '../decorators';
+} from '../decorators/index.js';
 import {
   LinksObject,
   SchemaObject
-} from '../interfaces/open-api-spec.interface';
-import { isBuiltInType } from '../utils/is-built-in-type.util';
-import { MimetypeContentWrapper } from './mimetype-content-wrapper';
-import { ModelPropertiesAccessor } from './model-properties-accessor';
-import { ResponseObjectMapper } from './response-object-mapper';
-import { SchemaObjectFactory } from './schema-object-factory';
-import { SwaggerTypesMapper } from './swagger-types-mapper';
+} from '../interfaces/open-api-spec.interface.js';
+import { isBuiltInType } from '../utils/is-built-in-type.util.js';
+import { MimetypeContentWrapper } from './mimetype-content-wrapper.js';
+import { ModelPropertiesAccessor } from './model-properties-accessor.js';
+import { ResponseObjectMapper } from './response-object-mapper.js';
+import { SchemaObjectFactory } from './schema-object-factory.js';
+import { SwaggerTypesMapper } from './swagger-types-mapper.js';
 
 export type FactoriesNeededByResponseFactory = {
   linkName: (

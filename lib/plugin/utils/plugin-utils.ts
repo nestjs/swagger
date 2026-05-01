@@ -1,7 +1,8 @@
-import { head } from 'lodash';
+import lodash from 'lodash';
+const { head } = lodash;
 import { isAbsolute, posix } from 'path';
 import * as ts from 'typescript';
-import { PluginOptions } from '../merge-options';
+import { PluginOptions } from '../merge-options.js';
 import {
   getDecoratorName,
   getText,
@@ -16,7 +17,7 @@ import {
   isString,
   isStringLiteral,
   isStringMapping
-} from './ast-utils';
+} from './ast-utils.js';
 
 export function getDecoratorOrUndefinedByNames(
   names: string[],

@@ -1504,6 +1504,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "example": "test",
               "default": "test"
             }
           },
@@ -1804,6 +1805,228 @@
           "from-controller": true
         }
       }
+    },
+    "/api/cats/scalar-with-example": {
+      "get": {
+        "operationId": "CatsController_scalarWithExample",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "number"
+                },
+                "example": 42
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/scalar-with-examples": {
+      "get": {
+        "operationId": "CatsController_scalarWithExamples",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "number"
+                },
+                "examples": {
+                  "adult": {
+                    "value": 5,
+                    "summary": "Adult cat age"
+                  },
+                  "kitten": {
+                    "value": 1,
+                    "summary": "Kitten age"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/array-of-scalar-with-example": {
+      "get": {
+        "operationId": "CatsController_arrayOfScalarWithExample",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "example": [
+                  "Mau",
+                  "Persian"
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
     }
   },
   "info": {
@@ -2009,7 +2232,7 @@
               "B",
               "C"
             ],
-            "type": "object",
+            "type": "string",
             "description": "Enum with description"
           },
           "enum": {
@@ -2210,6 +2433,20 @@
             ],
             "description": "Array of values that uses \"oneOf\""
           },
+          "enumNamedWithOneOf": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/LettersEnum"
+              }
+            ],
+            "description": "Enum named reference combined with oneOf combinators"
+          },
           "kittenIds": {
             "type": "array",
             "items": {
@@ -2246,6 +2483,7 @@
           "enumArr",
           "enumWithRef",
           "oneOfExample",
+          "enumNamedWithOneOf",
           "kittenIds"
         ]
       },

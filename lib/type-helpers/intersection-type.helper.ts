@@ -4,11 +4,11 @@ import {
   inheritTransformationMetadata,
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
-import { DECORATORS } from '../constants';
-import { ApiProperty } from '../decorators';
-import { MetadataLoader } from '../plugin/metadata-loader';
-import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
-import { clonePluginMetadataFactory } from './mapped-types.utils';
+import { DECORATORS } from '../constants.js';
+import { ApiProperty } from '../decorators/index.js';
+import { MetadataLoader } from '../plugin/metadata-loader.js';
+import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
+import { clonePluginMetadataFactory } from './mapped-types.utils.js';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 

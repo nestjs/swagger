@@ -1,16 +1,17 @@
+import lodash from 'lodash';
 import { Type } from '@nestjs/common';
-import { assign, find, isNil, map, omitBy, some, unionWith } from 'lodash';
-import { DECORATORS } from '../constants';
-import { SchemaObject } from '../interfaces/open-api-spec.interface';
-import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
+const { assign, find, isNil, map, omitBy, some, unionWith } = lodash;
+import { DECORATORS } from '../constants.js';
+import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
+import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
 import {
   ParameterMetadataAccessor,
   ParamWithTypeMetadata
-} from '../services/parameter-metadata-accessor';
-import { ParametersMetadataMapper } from '../services/parameters-metadata-mapper';
-import { SchemaObjectFactory } from '../services/schema-object-factory';
-import { SwaggerTypesMapper } from '../services/swagger-types-mapper';
-import { GlobalParametersStorage } from '../storages/global-parameters.storage';
+} from '../services/parameter-metadata-accessor.js';
+import { ParametersMetadataMapper } from '../services/parameters-metadata-mapper.js';
+import { SchemaObjectFactory } from '../services/schema-object-factory.js';
+import { SwaggerTypesMapper } from '../services/swagger-types-mapper.js';
+import { GlobalParametersStorage } from '../storages/global-parameters.storage.js';
 
 const parameterMetadataAccessor = new ParameterMetadataAccessor();
 const modelPropertiesAccessor = new ModelPropertiesAccessor();

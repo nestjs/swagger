@@ -1,5 +1,5 @@
-import { DECORATORS } from '../constants';
-import { createMixedDecorator } from './helpers';
+import { DECORATORS } from '../constants.js';
+import { createMixedDecorator } from './helpers.js';
 
 /**
  * @publicApi

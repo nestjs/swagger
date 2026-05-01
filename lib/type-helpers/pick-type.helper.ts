@@ -1,16 +1,17 @@
+import lodash from 'lodash';
 import { Type } from '@nestjs/common';
 import {
   inheritPropertyInitializers,
   inheritTransformationMetadata,
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
-import { pick } from 'lodash';
-import { DECORATORS } from '../constants';
-import { ApiProperty } from '../decorators';
-import { MetadataLoader } from '../plugin/metadata-loader';
-import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
-import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
-import { clonePluginMetadataFactory } from './mapped-types.utils';
+const { pick } = lodash;
+import { DECORATORS } from '../constants.js';
+import { ApiProperty } from '../decorators/index.js';
+import { MetadataLoader } from '../plugin/metadata-loader.js';
+import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
+import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
+import { clonePluginMetadataFactory } from './mapped-types.utils.js';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 

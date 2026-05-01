@@ -1,11 +1,12 @@
-import { isFunction, isString, isUndefined, omit, omitBy, pick } from 'lodash';
-import { ApiPropertyOptions } from '../decorators';
+import lodash from 'lodash';
+const { isFunction, isString, isUndefined, omit, omitBy, pick } = lodash;
+import { ApiPropertyOptions } from '../decorators/index.js';
 import {
   BaseParameterObject,
   ReferenceObject,
   SchemaObject
-} from '../interfaces/open-api-spec.interface';
-import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
+} from '../interfaces/open-api-spec.interface.js';
+import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
 
 type KeysToRemove =
   | keyof ApiPropertyOptions

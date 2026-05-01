@@ -1,6 +1,7 @@
-import { filter, groupBy, keyBy, mapValues, omit } from 'lodash';
-import { OpenAPIObject } from './interfaces';
-import { sortObjectLexicographically } from './utils/sort-object-lexicographically';
+import lodash from 'lodash';
+const { filter, groupBy, keyBy, mapValues, omit } = lodash;
+import { OpenAPIObject } from './interfaces/index.js';
+import { sortObjectLexicographically } from './utils/sort-object-lexicographically.js';
 
 export class SwaggerTransformer {
   public normalizePaths(

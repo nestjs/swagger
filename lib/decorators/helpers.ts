@@ -1,8 +1,9 @@
-import { METHOD_METADATA } from '@nestjs/common/constants';
-import { isConstructor } from '@nestjs/common/utils/shared.utils';
-import { isArray, isUndefined, negate, pickBy } from 'lodash';
-import { DECORATORS } from '../constants';
-import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
+import lodash from 'lodash';
+import { METHOD_METADATA } from '@nestjs/common/constants.js';
+import { isConstructor } from '@nestjs/common/utils/shared.utils.js';
+const { isArray, isUndefined, negate, pickBy } = lodash;
+import { DECORATORS } from '../constants.js';
+import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 
 export function createMethodDecorator<T = any>(
   metakey: string,

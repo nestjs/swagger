@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { DECORATORS } from '../constants';
+import { DECORATORS } from '../constants.js';
 
 /** 
  * Set the default getter for the given type to the decorated method

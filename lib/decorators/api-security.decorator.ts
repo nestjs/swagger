@@ -1,7 +1,8 @@
-import { isString } from 'lodash';
-import { DECORATORS } from '../constants';
-import { SecurityRequirementObject } from '../interfaces/open-api-spec.interface';
-import { extendMetadata } from '../utils/extend-metadata.util';
+import lodash from 'lodash';
+const { isString } = lodash;
+import { DECORATORS } from '../constants.js';
+import { SecurityRequirementObject } from '../interfaces/open-api-spec.interface.js';
+import { extendMetadata } from '../utils/extend-metadata.util.js';
 
 /**
  * @publicApi
