@@ -1,6 +1,7 @@
+import lodash from 'lodash';
 import { Type } from '@nestjs/common';
-import { isFunction } from 'lodash';
-import { BUILT_IN_TYPES } from '../services/constants';
+const { isFunction } = lodash;
+import { BUILT_IN_TYPES } from '../services/constants.js';
 
 export function isBuiltInType(
   type: Type<unknown> | Function | string

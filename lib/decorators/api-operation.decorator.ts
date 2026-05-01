@@ -1,7 +1,8 @@
-import { isUndefined, negate, pickBy } from 'lodash';
-import { DECORATORS } from '../constants';
-import { OperationObject } from '../interfaces/open-api-spec.interface';
-import { createMethodDecorator } from './helpers';
+import lodash from 'lodash';
+const { isUndefined, negate, pickBy } = lodash;
+import { DECORATORS } from '../constants.js';
+import { OperationObject } from '../interfaces/open-api-spec.interface.js';
+import { createMethodDecorator } from './helpers.js';
 
 export type ApiOperationOptions = Partial<OperationObject>;
 

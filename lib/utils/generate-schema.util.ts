@@ -1,8 +1,8 @@
 import { Type } from '@nestjs/common';
-import { SchemaObject } from '../interfaces/open-api-spec.interface';
-import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
-import { SchemaObjectFactory } from '../services/schema-object-factory';
-import { SwaggerTypesMapper } from '../services/swagger-types-mapper';
+import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
+import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
+import { SchemaObjectFactory } from '../services/schema-object-factory.js';
+import { SwaggerTypesMapper } from '../services/swagger-types-mapper.js';
 
 /**
  * Generates an OpenAPI SchemaObject for the given class based on its

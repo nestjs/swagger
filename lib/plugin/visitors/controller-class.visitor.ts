@@ -1,10 +1,11 @@
+import lodash from 'lodash';
 import { HttpStatus } from '@nestjs/common';
-import { compact, head } from 'lodash';
+const { compact, head } = lodash;
 import { posix } from 'path';
 import * as ts from 'typescript';
-import { ApiOperation, ApiQuery, ApiResponse } from '../../decorators';
-import { PluginOptions } from '../merge-options';
-import { OPENAPI_NAMESPACE } from '../plugin-constants';
+import { ApiOperation, ApiQuery, ApiResponse } from '../../decorators/index.js';
+import { PluginOptions } from '../merge-options.js';
+import { OPENAPI_NAMESPACE } from '../plugin-constants.js';
 import {
   createLiteralFromAnyValue,
   getDecoratorArguments,
@@ -12,7 +13,7 @@ import {
   getMainCommentOfNode,
   getTsDocErrorsOfNode,
   getTsDocTagsOfNode
-} from '../utils/ast-utils';
+} from '../utils/ast-utils.js';
 import {
   convertPath,
   getDecoratorOrUndefinedByNames,
@@ -20,9 +21,9 @@ import {
   getTypeReferenceAsString,
   hasPropertyKey,
   normalizePackagePath
-} from '../utils/plugin-utils';
-import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util';
-import { AbstractFileVisitor } from './abstract.visitor';
+} from '../utils/plugin-utils.js';
+import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util.js';
+import { AbstractFileVisitor } from './abstract.visitor.js';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 

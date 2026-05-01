@@ -1,13 +1,14 @@
+import lodash from 'lodash';
 import { Type } from '@nestjs/common';
-import { isFunction } from '@nestjs/common/utils/shared.utils';
-import { flatMap, identity } from 'lodash';
-import { DECORATORS } from '../constants';
-import { isBodyParameter } from '../utils/is-body-parameter.util';
-import { ModelPropertiesAccessor } from './model-properties-accessor';
+import { isFunction } from '@nestjs/common/utils/shared.utils.js';
+const { flatMap, identity } = lodash;
+import { DECORATORS } from '../constants.js';
+import { isBodyParameter } from '../utils/is-body-parameter.util.js';
+import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import {
   ParamWithTypeMetadata,
   ParamsWithType
-} from './parameter-metadata-accessor';
+} from './parameter-metadata-accessor.js';
 
 export class ParametersMetadataMapper {
   constructor(

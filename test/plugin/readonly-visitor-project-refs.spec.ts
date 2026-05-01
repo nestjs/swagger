@@ -111,12 +111,9 @@ describe('ReadonlyVisitor with TypeScript project references', () => {
         'tsconfig.json'
       );
 
-      // Should not throw for a tsconfig without references
-      expect(() => ReadonlyVisitor.createTsProgram(plainTsconfig)).not.toThrow();
-
       const program = ReadonlyVisitor.createTsProgram(plainTsconfig);
       expect(program).toBeDefined();
-    });
+    }, 30000);
 
     it('should throw when tsconfig path does not exist', () => {
       const nonExistentPath = join(

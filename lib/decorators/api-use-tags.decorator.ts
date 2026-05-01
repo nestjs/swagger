@@ -1,6 +1,6 @@
-import { DECORATORS } from '../constants';
-import { ApiTagOptions } from '../interfaces/open-api-spec.interface';
-import { createMixedDecorator } from './helpers';
+import { DECORATORS } from '../constants.js';
+import { ApiTagOptions } from '../interfaces/open-api-spec.interface.js';
+import { createMixedDecorator } from './helpers.js';
 
 /**
  * @publicApi

@@ -1,4 +1,4 @@
-import { ParameterObject } from '../interfaces/open-api-spec.interface';
+import { ParameterObject } from '../interfaces/open-api-spec.interface.js';
 
 export class GlobalParametersStorageHost {
   private parameters = new Array<ParameterObject>();

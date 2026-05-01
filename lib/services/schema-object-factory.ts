@@ -1,6 +1,7 @@
+import lodash from 'lodash';
 import { Logger, Type } from '@nestjs/common';
-import { isUndefined } from '@nestjs/common/utils/shared.utils';
-import {
+import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
+const {
   flatten,
   isEqual,
   isFunction,
@@ -10,31 +11,31 @@ import {
   omit,
   omitBy,
   pick
-} from 'lodash';
-import { DECORATORS } from '../constants';
-import { ApiSchemaOptions } from '../decorators';
-import { getTypeIsArrayTuple } from '../decorators/helpers';
-import { exploreGlobalApiExtraModelsMetadata } from '../explorers/api-extra-models.explorer';
+} = lodash;
+import { DECORATORS } from '../constants.js';
+import { ApiSchemaOptions } from '../decorators/index.js';
+import { getTypeIsArrayTuple } from '../decorators/helpers.js';
+import { exploreGlobalApiExtraModelsMetadata } from '../explorers/api-extra-models.explorer.js';
 import {
   BaseParameterObject,
   ParameterObject,
   ReferenceObject,
   SchemaObject
-} from '../interfaces/open-api-spec.interface';
-import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
-import { getSchemaPath } from '../utils';
+} from '../interfaces/open-api-spec.interface.js';
+import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface.js';
+import { getSchemaPath } from '../utils/index.js';
 import {
   getEnumType,
   getEnumValues,
   isEnumArray,
   isEnumMetadata
-} from '../utils/enum.utils';
-import { isBodyParameter } from '../utils/is-body-parameter.util';
-import { isBuiltInType } from '../utils/is-built-in-type.util';
-import { isDateCtor } from '../utils/is-date-ctor.util';
-import { ModelPropertiesAccessor } from './model-properties-accessor';
-import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
-import { SwaggerTypesMapper } from './swagger-types-mapper';
+} from '../utils/enum.utils.js';
+import { isBodyParameter } from '../utils/is-body-parameter.util.js';
+import { isBuiltInType } from '../utils/is-built-in-type.util.js';
+import { isDateCtor } from '../utils/is-date-ctor.util.js';
+import { ModelPropertiesAccessor } from './model-properties-accessor.js';
+import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
+import { SwaggerTypesMapper } from './swagger-types-mapper.js';
 
 export class SchemaObjectFactory {
   constructor(

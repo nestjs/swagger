@@ -1,6 +1,9 @@
-import { OpenAPIObject, SwaggerCustomOptions } from '../interfaces';
-import { favIconHtml, htmlTemplateString, jsTemplateString } from './constants';
-import { buildJSInitOptions } from './helpers';
+import { OpenAPIObject, SwaggerCustomOptions } from '../interfaces/index.js';
+import { favIconHtml, htmlTemplateString, jsTemplateString } from './constants.js';
+import { buildJSInitOptions } from './helpers.js';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 /**
  * Used to create swagger ui initialization js file (

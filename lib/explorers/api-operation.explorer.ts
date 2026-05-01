@@ -1,7 +1,7 @@
 import { Type } from '@nestjs/common';
-import { DECORATORS } from '../constants';
-import { ApiOperation } from '../decorators/api-operation.decorator';
-import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
+import { DECORATORS } from '../constants.js';
+import { ApiOperation } from '../decorators/api-operation.decorator.js';
+import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 
 export const exploreApiOperationMetadata = (
   instance: object,

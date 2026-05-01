@@ -1,7 +1,8 @@
-import { METHOD_METADATA } from '@nestjs/common/constants';
-import { DECORATORS } from '../constants';
-import { clone, merge } from 'lodash';
-import { isConstructor } from '@nestjs/common/utils/shared.utils';
+import lodash from 'lodash';
+import { METHOD_METADATA } from '@nestjs/common/constants.js';
+import { DECORATORS } from '../constants.js';
+const { clone, merge } = lodash;
+import { isConstructor } from '@nestjs/common/utils/shared.utils.js';
 
 function applyExtension(target: any, key: string, value: any): void {
   const extensions =
