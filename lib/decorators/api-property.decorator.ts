@@ -20,6 +20,15 @@ export type ApiPropertyCommonOptions = SchemaObjectMetadata & {
    * @see [Swagger link objects](https://swagger.io/docs/specification/links/)
    */
   link?: () => Type<unknown> | Function;
+  /**
+   * Limits the depth of `example` / `examples` values emitted for this single
+   * schema entry. Overrides `SwaggerDocumentOptions.exampleMaxDepth` for this
+   * property only; sibling and nested schemas are unaffected.
+   *
+   * The metadata is stripped before the document is returned so it never
+   * appears in the generated OpenAPI output.
+   */
+  exampleMaxDepth?: number;
 };
 
 export type ApiPropertyOptions =
