@@ -891,6 +891,31 @@ describe('SchemaObjectFactory', () => {
         required: ['testStringArray']
       });
     });
+
+    it('should resolve nested array type to the correct leaf type', () => {
+      class NestedArrayDto {
+        @ApiProperty({ type: [[String]] })
+        matrix: string[][];
+      }
+
+      const schemas = {};
+      schemaObjectFactory.exploreModelSchema(NestedArrayDto, schemas);
+      expect(schemas[NestedArrayDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          matrix: {
+            type: 'array',
+            items: {
+              type: 'array',
+              items: {
+                type: 'string'
+              }
+            }
+          }
+        },
+        required: ['matrix']
+      });
+    });
   });
 
   describe('createEnumSchemaType', () => {
