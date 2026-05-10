@@ -1,7 +1,7 @@
 import { HttpStatus, RequestMethod, Type } from '@nestjs/common';
 import { HTTP_CODE_METADATA, METHOD_METADATA } from '@nestjs/common/constants';
 import { isEmpty } from '@nestjs/common/utils/shared.utils';
-import { get, mapValues, omit } from 'lodash';
+import { mapValues, omit } from 'lodash';
 import { DECORATORS } from '../constants';
 import { ApiResponse, ApiResponseMetadata } from '../decorators';
 import { SchemaObject } from '../interfaces/open-api-spec.interface';
@@ -59,21 +59,22 @@ export const exploreApiResponseMetadata = (
   factories: FactoriesNeededByResponseFactory,
   instance: object,
   prototype: Type<unknown>,
-  method: Function
+  method: Function,
+  metatype?: Type<unknown>
 ) => {
   applyMetadataFactory(prototype, instance);
 
   const responses = Reflect.getMetadata(DECORATORS.API_RESPONSE, method);
   if (responses) {
+    // `@ApiProduces` is a class-level decorator that stores metadata on the
+    // class constructor (the metatype). Reading from `prototype` always
+    // returned undefined, silently dropping class-level produces overrides.
     const classProduces = Reflect.getMetadata(
       DECORATORS.API_PRODUCES,
-      prototype
+      metatype ?? prototype?.constructor
     );
     const methodProduces = Reflect.getMetadata(DECORATORS.API_PRODUCES, method);
-    const produces = mergeAndUniq<string[]>(
-      get(classProduces, 'produces'),
-      methodProduces
-    );
+    const produces = mergeAndUniq<string[]>(classProduces, methodProduces);
     return mapResponsesToSwaggerResponses(
       responses,
       schemas,
