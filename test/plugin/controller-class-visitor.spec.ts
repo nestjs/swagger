@@ -32,6 +32,10 @@ import {
   appControllerApiOperationDedupeText,
   appControllerApiOperationDedupeTextTranspiled
 } from './fixtures/app.controller-api-operation-dedupe';
+import {
+  appControllerPromisePrefixText,
+  appControllerPromisePrefixTextTranspiled
+} from './fixtures/app.controller-promise-prefix';
 
 describe('Controller methods', () => {
   it('should add response based on the return value (spaces)', () => {
@@ -206,5 +210,26 @@ describe('Controller methods', () => {
     expect(result.outputText).toEqual(
       appControllerApiOperationDedupeTextTranspiled
     );
+  });
+
+  it('should not unwrap user-defined classes whose names end with Promise/Observable', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerPromisePrefixText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: false }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(appControllerPromisePrefixTextTranspiled);
   });
 });
