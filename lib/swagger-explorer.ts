@@ -261,7 +261,8 @@ export class SwaggerExplorer {
               ...mergedMethodMetadata
             },
             prototype,
-            targetCallback
+            targetCallback,
+            metatype
           );
         });
       }
@@ -277,7 +278,8 @@ export class SwaggerExplorer {
             ...mergedMethodMetadata
           },
           prototype,
-          targetCallback
+          targetCallback,
+          metatype
         )
       ];
     });
@@ -574,7 +576,8 @@ export class SwaggerExplorer {
   private migrateOperationSchema(
     document: DenormalizedDoc,
     prototype: Type<unknown>,
-    method: Function
+    method: Function,
+    metatype?: Type<unknown>
   ) {
     const parametersObject: Record<string, any>[] = get(
       document,
@@ -589,9 +592,12 @@ export class SwaggerExplorer {
     const requestBody = parametersObject[requestBodyIndex];
     parametersObject.splice(requestBodyIndex, 1);
 
+    // `@ApiConsumes` is a class-level decorator that stores metadata on the
+    // class constructor (the metatype). Reading from `prototype` always
+    // returned undefined, silently dropping class-level consumes overrides.
     const classConsumes = Reflect.getMetadata(
       DECORATORS.API_CONSUMES,
-      prototype
+      metatype ?? prototype?.constructor
     );
     const methodConsumes = Reflect.getMetadata(DECORATORS.API_CONSUMES, method);
     let consumes = mergeAndUniq(classConsumes, methodConsumes);

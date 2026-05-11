@@ -3158,4 +3158,66 @@ describe('SwaggerExplorer', () => {
       );
     });
   });
+
+  describe('when @ApiConsumes/@ApiProduces are applied at the controller level', () => {
+    class Foo {
+      @ApiProperty()
+      name: string;
+    }
+
+    @ApiConsumes('application/xml')
+    @ApiProduces('application/xml')
+    @Controller('foos')
+    class FooController {
+      @Post()
+      @ApiBody({ type: Foo })
+      @ApiCreatedResponse({ type: Foo, description: 'Created' })
+      create(): Promise<Foo> {
+        return Promise.resolve(new Foo());
+      }
+    }
+
+    it('uses controller-level consumes for the requestBody content type', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].root!.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/xml': {
+            schema: { $ref: '#/components/schemas/Foo' }
+          }
+        }
+      });
+    });
+
+    it('uses controller-level produces for the response content type', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes).toHaveLength(1);
+      const created = routes[0].responses['201'] as ResponseObject;
+      expect(created.content).toEqual({
+        'application/xml': {
+          schema: { $ref: '#/components/schemas/Foo' }
+        }
+      });
+      expect(created.content['application/json']).toBeUndefined();
+    });
+  });
 });
