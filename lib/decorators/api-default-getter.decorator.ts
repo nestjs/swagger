@@ -1,7 +1,7 @@
 import { Type } from '@nestjs/common';
 import { DECORATORS } from '../constants';
 
-/** 
+/**
  * Set the default getter for the given type to the decorated method
  *
  * This is to be used in conjunction with `ApiProperty({link: () => Type})` to generate link objects
@@ -22,7 +22,7 @@ import { DECORATORS } from '../constants';
  * @param parameter Name of the parameter in the route of the getter which corresponds to the id of the type
  *
  * @see [Swagger link objects](https://swagger.io/docs/specification/links/)
- * 
+ *
  * @publicApi
  */
 export function ApiDefaultGetter(
