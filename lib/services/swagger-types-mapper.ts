@@ -146,6 +146,7 @@ export class SwaggerTypesMapper {
       'exclusiveMaximum',
       'exclusiveMinimum',
       'uniqueItems',
+      'multipleOf',
       'title',
       'format',
       'pattern',

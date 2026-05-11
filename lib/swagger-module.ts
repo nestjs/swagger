@@ -17,6 +17,7 @@ import {
 } from './swagger-ui';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
+import { isOas31OrLater } from './utils/is-oas31-or-later.util';
 import { normalizeRelPath } from './utils/normalize-rel-path';
 import { resolvePath } from './utils/resolve-path.util';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
@@ -28,6 +29,16 @@ import { validatePath } from './utils/validate-path.util';
 export class SwaggerModule {
   private static readonly metadataLoader = new MetadataLoader();
 
+  private static mergeWebhooks(
+    configWebhooks?: OpenAPIObject['webhooks'],
+    scannedWebhooks?: OpenAPIObject['webhooks']
+  ): OpenAPIObject['webhooks'] | undefined {
+    if (!configWebhooks && !scannedWebhooks) {
+      return undefined;
+    }
+    return assignTwoLevelsDeep({}, configWebhooks || {}, scannedWebhooks || {});
+  }
+
   public static createDocument(
     app: INestApplication,
     config: Omit<OpenAPIObject, 'paths'>,
@@ -35,18 +46,45 @@ export class SwaggerModule {
   ): OpenAPIObject {
     const swaggerScanner = new SwaggerScanner();
     const document = swaggerScanner.scanApplication(app, options);
+    const { webhooks: configWebhooks, ...configWithoutWebhooks } =
+      config as OpenAPIObject;
 
     document.components = assignTwoLevelsDeep(
       {},
       config.components,
       document.components
     );
-
-    return {
+    const {
+      webhooks: scannedWebhooks,
+      webhookPaths,
+      ...documentWithoutWebhooks
+    } = document as OpenAPIObject & {
+      webhookPaths?: OpenAPIObject['paths'];
+    };
+    const mergedWebhooks = SwaggerModule.mergeWebhooks(
+      configWebhooks,
+      scannedWebhooks
+    );
+    const shouldIncludeWebhooks = isOas31OrLater(config.openapi ?? '3.0.0');
+    const baseDocument: OpenAPIObject = {
       openapi: '3.0.0',
       paths: {},
-      ...config,
-      ...document
+      ...configWithoutWebhooks,
+      ...documentWithoutWebhooks
+    };
+
+    if (shouldIncludeWebhooks) {
+      return {
+        ...baseDocument,
+        ...(mergedWebhooks ? { webhooks: mergedWebhooks } : {})
+      };
+    }
+
+    return {
+      ...baseDocument,
+      paths: webhookPaths
+        ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
+        : baseDocument.paths
     };
   }
 
@@ -152,15 +190,13 @@ export class SwaggerModule {
 
     httpAdapter.get(
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
-      (req, res) => {
+      async (req, res) => {
         res.type('application/javascript');
         const document = getBuiltDocument();
 
         if (swaggerOptions.patchDocumentOnRequest) {
-          const documentToSerialize = swaggerOptions.patchDocumentOnRequest(
-            req,
-            res,
-            document
+          const documentToSerialize = await Promise.resolve(
+            swaggerOptions.patchDocumentOnRequest(req, res, document)
           );
           const swaggerInitJsPerRequest = buildSwaggerInitJS(
             documentToSerialize,
@@ -186,15 +222,13 @@ export class SwaggerModule {
         normalizeRelPath(
           `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
         ),
-        (req, res) => {
+        async (req, res) => {
           res.type('application/javascript');
           const document = getBuiltDocument();
 
           if (swaggerOptions.patchDocumentOnRequest) {
-            const documentToSerialize = swaggerOptions.patchDocumentOnRequest(
-              req,
-              res,
-              document
+            const documentToSerialize = await Promise.resolve(
+              swaggerOptions.patchDocumentOnRequest(req, res, document)
             );
             const swaggerInitJsPerRequest = buildSwaggerInitJS(
               documentToSerialize,
@@ -272,35 +306,53 @@ export class SwaggerModule {
     serveOptions: { serveJson: boolean; serveYaml: boolean }
   ) {
     if (serveOptions.serveJson) {
-      httpAdapter.get(normalizeRelPath(options.jsonDocumentUrl), (req, res) => {
-        res.type('application/json');
-        const document = getBuiltDocument();
+      httpAdapter.get(
+        normalizeRelPath(options.jsonDocumentUrl),
+        async (req, res) => {
+          res.type('application/json');
+          const document = getBuiltDocument();
 
-        const documentToSerialize = options.swaggerOptions
-          .patchDocumentOnRequest
-          ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
-          : document;
+          const documentToSerialize = options.swaggerOptions
+            .patchDocumentOnRequest
+            ? await Promise.resolve(
+                options.swaggerOptions.patchDocumentOnRequest(
+                  req,
+                  res,
+                  document
+                )
+              )
+            : document;
 
-        res.send(JSON.stringify(documentToSerialize));
-      });
+          res.send(JSON.stringify(documentToSerialize));
+        }
+      );
     }
 
     if (serveOptions.serveYaml) {
-      httpAdapter.get(normalizeRelPath(options.yamlDocumentUrl), (req, res) => {
-        res.type('text/yaml');
-        const document = getBuiltDocument();
+      httpAdapter.get(
+        normalizeRelPath(options.yamlDocumentUrl),
+        async (req, res) => {
+          res.type('text/yaml');
+          const document = getBuiltDocument();
 
-        const documentToSerialize = options.swaggerOptions
-          .patchDocumentOnRequest
-          ? options.swaggerOptions.patchDocumentOnRequest(req, res, document)
-          : document;
+          const documentToSerialize = options.swaggerOptions
+            .patchDocumentOnRequest
+            ? await Promise.resolve(
+                options.swaggerOptions.patchDocumentOnRequest(
+                  req,
+                  res,
+                  document
+                )
+              )
+            : document;
 
-        const yamlDocument = jsyaml.dump(documentToSerialize, {
-          skipInvalid: true,
-          noRefs: true
-        });
-        res.send(yamlDocument);
-      });
+          const yamlDocument = jsyaml.dump(documentToSerialize, {
+            skipInvalid: true,
+            noRefs: true
+          });
+          res.send(yamlDocument);
+        }
+      );
     }
   }
 

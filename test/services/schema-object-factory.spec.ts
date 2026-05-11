@@ -178,8 +178,80 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
-    it('should log an error when detecting duplicate DTOs with different schemas', () => {
-      const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
+    it('should merge array enum metadata without keeping a top-level enum', () => {
+      class ValidationShimArrayEnumDto {
+        @ApiProperty({ enum: Role, isArray: true })
+        roles: Role[];
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            roles: {
+              enum: Role,
+              isArray: true
+            }
+          };
+        }
+      }
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(
+        ValidationShimArrayEnumDto,
+        schemas
+      );
+
+      expect(schemas.ValidationShimArrayEnumDto).toEqual({
+        type: 'object',
+        properties: {
+          roles: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['admin', 'user']
+            }
+          }
+        },
+        required: ['roles']
+      });
+    });
+    
+    it('should support enumName with oneOf', () => {
+      enum Status {
+        Active = 'active',
+        Inactive = 'inactive'
+      }
+
+      class DtoWithEnumOneOf {
+        @ApiProperty({
+          oneOf: [{ type: 'string' }],
+          enum: Status,
+          enumName: 'Status'
+        })
+        status: Status | string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithEnumOneOf, schemas);
+
+      expect(schemas).toHaveProperty('Status');
+      expect(schemas.Status).toEqual({
+        type: 'string',
+        enum: ['active', 'inactive']
+      });
+      expect(schemas.DtoWithEnumOneOf.properties.status).toEqual({
+        oneOf: [
+          { type: 'string' },
+          { $ref: '#/components/schemas/Status' }
+        ]
+      });
+      expect(
+        schemas.DtoWithEnumOneOf.properties.status
+      ).not.toHaveProperty('allOf');
+    });
+
+    it('should log a warning when detecting duplicate DTOs with different schemas', () => {
+      const loggerWarnSpy = vi
+        .spyOn(Logger, 'warn')
+        .mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -203,17 +275,55 @@ describe('SchemaObjectFactory', () => {
         schemas
       );
 
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
         `Duplicate DTO detected: "DuplicateDTO" is defined multiple times with different schemas.\n` +
           `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
           `Note: This will throw an error in the next major version.`
       );
 
-      loggerErrorSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
     });
 
-    it('should not throw an error or log error when detecting duplicate DTOs with the same schemas', () => {
-      const loggerErrorSpy = vi.spyOn(Logger, 'error').mockImplementation(() => {});
+    it('should not log an error when detecting duplicate DTOs with different schemas', () => {
+      const loggerErrorSpy = vi
+        .spyOn(Logger, 'error')
+        .mockImplementation(() => {});
+      const loggerWarnSpy = vi
+        .spyOn(Logger, 'warn')
+        .mockImplementation(() => {});
+      const schemas: Record<string, SchemasObject> = {};
+
+      class DuplicateDTO {
+        @ApiProperty()
+        property1: string;
+      }
+
+      schemaObjectFactory.exploreModelSchema(DuplicateDTO, schemas);
+
+      class DuplicateDTOWithDifferentSchema {
+        @ApiProperty()
+        property2: string;
+      }
+
+      Object.defineProperty(DuplicateDTOWithDifferentSchema, 'name', {
+        value: 'DuplicateDTO'
+      });
+
+      schemaObjectFactory.exploreModelSchema(
+        DuplicateDTOWithDifferentSchema,
+        schemas
+      );
+
+      expect(loggerErrorSpy).not.toHaveBeenCalled();
+
+      loggerErrorSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
+    });
+
+    it('should not log a warning when detecting duplicate DTOs with the same schemas', () => {
+      const loggerWarnSpy = vi
+        .spyOn(Logger, 'warn')
+        .mockImplementation(() => {});
       const schemas: Record<string, SchemasObject> = {};
 
       class DuplicateDTO {
@@ -237,9 +347,9 @@ describe('SchemaObjectFactory', () => {
         schemas
       );
 
-      expect(loggerErrorSpy).not.toHaveBeenCalled();
+      expect(loggerWarnSpy).not.toHaveBeenCalled();
 
-      loggerErrorSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
     });
 
     it('should create openapi schema', () => {
@@ -293,6 +403,7 @@ describe('SchemaObjectFactory', () => {
           profile: {
             description: 'Profile',
             nullable: true,
+            type: 'object',
             allOf: [
               {
                 $ref: '#/components/schemas/CreateProfileDto'
@@ -396,6 +507,32 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should include type "object" for nullable $ref properties (issue #3274)', () => {
+      class ProfileDto {
+        @ApiProperty()
+        bio: string;
+      }
+
+      class UserWithNullableProfile {
+        @ApiProperty({
+          nullable: true,
+          type: () => ProfileDto
+        })
+        profile: ProfileDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(UserWithNullableProfile, schemas);
+      expect(
+        (schemas['UserWithNullableProfile'] as Record<string, any>).properties
+          .profile
+      ).toEqual({
+        nullable: true,
+        type: 'object',
+        allOf: [{ $ref: '#/components/schemas/ProfileDto' }]
+      });
+    });
+
     it('should purge linked types from properties', () => {
       class Human {
         @ApiProperty()
@@ -419,6 +556,69 @@ describe('SchemaObjectFactory', () => {
           }
         },
         required: ['id', 'spouseId']
+      });
+    });
+
+    it('should convert RegExp pattern to string in schema', () => {
+      class RegExpPatternDto {
+        @ApiProperty({ pattern: /^[+]?abc$/ })
+        code: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(RegExpPatternDto, schemas);
+
+      expect(schemas[RegExpPatternDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          code: {
+            type: 'string',
+            pattern: '^[+]?abc$'
+          }
+        },
+        required: ['code']
+      });
+    });
+
+    it('should strip flags when converting RegExp pattern', () => {
+      class RegExpFlagsDto {
+        @ApiProperty({ pattern: /abc/i })
+        value: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(RegExpFlagsDto, schemas);
+
+      expect(schemas[RegExpFlagsDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          value: {
+            type: 'string',
+            pattern: 'abc'
+          }
+        },
+        required: ['value']
+      });
+    });
+
+    it('should keep string pattern unchanged', () => {
+      class StringPatternDto {
+        @ApiProperty({ pattern: '^[a-z]+$' })
+        slug: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(StringPatternDto, schemas);
+
+      expect(schemas[StringPatternDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          slug: {
+            type: 'string',
+            pattern: '^[a-z]+$'
+          }
+        },
+        required: ['slug']
       });
     });
 
@@ -691,6 +891,31 @@ describe('SchemaObjectFactory', () => {
         required: ['testStringArray']
       });
     });
+
+    it('should resolve nested array type to the correct leaf type', () => {
+      class NestedArrayDto {
+        @ApiProperty({ type: [[String]] })
+        matrix: string[][];
+      }
+
+      const schemas = {};
+      schemaObjectFactory.exploreModelSchema(NestedArrayDto, schemas);
+      expect(schemas[NestedArrayDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          matrix: {
+            type: 'array',
+            items: {
+              type: 'array',
+              items: {
+                type: 'string'
+              }
+            }
+          }
+        },
+        required: ['matrix']
+      });
+    });
   });
 
   describe('createFromModel (deepObject)', () => {
@@ -768,6 +993,71 @@ describe('SchemaObjectFactory', () => {
 
       expect(schemas).toEqual({ MyEnum: { enum: [1, 2, 3], type: 'number' } });
     });
+
+    it('should add $ref to existing oneOf when enumName is used with oneOf', () => {
+      const metadata = {
+        type: 'string',
+        enum: ['a', 'b', 'c'],
+        enumName: 'MyEnum',
+        isArray: false,
+        oneOf: [{ type: 'number' }]
+      } as any;
+      const schemas = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'field',
+        metadata,
+        schemas
+      );
+
+      expect(schemas).toEqual({
+        MyEnum: { enum: ['a', 'b', 'c'], type: 'string' }
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          oneOf: [
+            { type: 'number' },
+            { $ref: '#/components/schemas/MyEnum' }
+          ]
+        })
+      );
+      expect(result).not.toHaveProperty('allOf');
+      expect(result).not.toHaveProperty('enum');
+      expect(result).not.toHaveProperty('enumName');
+      expect(result).not.toHaveProperty('type');
+    });
+
+    it('should add $ref to existing anyOf when enumName is used with anyOf', () => {
+      const metadata = {
+        type: 'string',
+        enum: ['x', 'y'],
+        enumName: 'MyEnum',
+        isArray: false,
+        anyOf: [{ type: 'number' }]
+      } as any;
+      const schemas = {};
+
+      const result = schemaObjectFactory.createEnumSchemaType(
+        'field',
+        metadata,
+        schemas
+      );
+
+      expect(schemas).toEqual({
+        MyEnum: { enum: ['x', 'y'], type: 'string' }
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          anyOf: [
+            { type: 'number' },
+            { $ref: '#/components/schemas/MyEnum' }
+          ]
+        })
+      );
+      expect(result).not.toHaveProperty('allOf');
+      expect(result).not.toHaveProperty('enum');
+      expect(result).not.toHaveProperty('enumName');
+    });
   });
 
   describe('createEnumParam', () => {
@@ -807,6 +1097,131 @@ describe('SchemaObjectFactory', () => {
         enum: ['a', 'b', 'c'],
         type: 'string'
       });
+    });
+  });
+
+  describe('createFromModel', () => {
+    it('should preserve parent example when a non-body param property has a DTO type', () => {
+      class ChildDto {
+        @ApiProperty({ example: 'child DTO example 1' })
+        childKey1: string;
+        @ApiProperty({ example: 'child DTO example 2' })
+        childKey2: string;
+      }
+
+      class ParentDto {
+        @ApiProperty({ example: 'parent DTO example' })
+        parentKey: ChildDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      // Simulate what ParametersMetadataMapper produces for @Query() ParentDto:
+      // it expands the DTO into individual properties with their metadata
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: ChildDto,
+          name: 'parentKey',
+          required: true,
+          example: 'parent DTO example'
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(
+        queryParams,
+        schemas
+      );
+
+      expect(result).toHaveLength(1);
+      const paramResult = result[0] as any;
+      expect(paramResult.name).toBe('parentKey');
+      // The parent's example should be preserved in the schema
+      expect(paramResult.schema).toBeDefined();
+      expect(paramResult.schema.example).toBe('parent DTO example');
+      // Should use allOf pattern when extra metadata exists alongside $ref
+      expect(paramResult.schema.allOf).toBeDefined();
+      expect(paramResult.schema.allOf[0].$ref).toContain('ChildDto');
+    });
+
+    it('should not alter schema when no extra schema options exist on param', () => {
+      class SimpleChild {
+        @ApiProperty()
+        value: string;
+      }
+
+      class SimpleParent {
+        @ApiProperty()
+        child: SimpleChild;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: SimpleChild,
+          name: 'child',
+          required: true
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(
+        queryParams,
+        schemas
+      );
+
+      expect(result).toHaveLength(1);
+      const paramResult = result[0] as any;
+      // Without extra schema options, should use plain $ref
+      expect(paramResult.schema.$ref).toContain('SimpleChild');
+      expect(paramResult.schema.allOf).toBeUndefined();
+    });
+
+    it('should merge param-level allOf with $ref wrapping and not lose example', () => {
+      class TagDto {
+        @ApiProperty()
+        name: string;
+      }
+
+      class FilterDto {
+        @ApiProperty()
+        value: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      // Simulate @ApiQuery({ name: 'filter', type: FilterDto, example: 'foo',
+      //   allOf: [{ $ref: '#/components/schemas/TagDto' }] }) on a @Query() param.
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: FilterDto,
+          name: 'filter',
+          required: true,
+          example: 'foo',
+          allOf: [{ $ref: '#/components/schemas/TagDto' }]
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toHaveLength(1);
+      const paramResult = result[0] as any;
+      // Top-level allOf and example must be moved into schema, not leaked.
+      expect(paramResult.allOf).toBeUndefined();
+      expect(paramResult.example).toBeUndefined();
+      expect(paramResult.schema).toBeDefined();
+      expect(paramResult.schema.example).toBe('foo');
+      // Both the parameter's allOf entry and the wrapped $ref should be present.
+      expect(Array.isArray(paramResult.schema.allOf)).toBe(true);
+      expect(paramResult.schema.allOf).toEqual(
+        expect.arrayContaining([
+          { $ref: '#/components/schemas/TagDto' },
+          expect.objectContaining({ $ref: expect.stringContaining('FilterDto') })
+        ])
+      );
+      expect(paramResult.schema.$ref).toBeUndefined();
     });
   });
 
@@ -878,6 +1293,153 @@ describe('SchemaObjectFactory', () => {
         properties: { name: { type: 'string' } }
       });
       expect(result.type).toBe('array');
+    });
+  });
+
+  describe('boolean enum and explicit type preservation', () => {
+    it('should produce type "boolean" with enum [true, false]', () => {
+      class BoolEnumDto {
+        @ApiProperty({ enum: [true, false] })
+        active: boolean;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(BoolEnumDto, schemas);
+
+      expect(schemas.BoolEnumDto).toBeDefined();
+      const props = schemas.BoolEnumDto.properties as any;
+      expect(props.active).toEqual({
+        type: 'boolean',
+        enum: [true, false]
+      });
+    });
+
+    it('should produce type "boolean" with enum [true]', () => {
+      class TrueLiteralDto {
+        @ApiProperty({ enum: [true] })
+        flag: boolean;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(TrueLiteralDto, schemas);
+
+      const props = schemas.TrueLiteralDto.properties as any;
+      expect(props.flag).toEqual({
+        type: 'boolean',
+        enum: [true]
+      });
+    });
+
+    it('should preserve explicit type when enum is also provided', () => {
+      class ExplicitTypeBoolDto {
+        @ApiProperty({ type: 'boolean', enum: [true] })
+        flag: boolean;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ExplicitTypeBoolDto, schemas);
+
+      const props = schemas.ExplicitTypeBoolDto.properties as any;
+      expect(props.flag).toEqual({
+        type: 'boolean',
+        enum: [true]
+      });
+    });
+
+    it('should preserve explicit type "string" even when enum values are numbers', () => {
+      class ExplicitTypeStringDto {
+        @ApiProperty({ type: 'string', enum: [1, 2, 3] })
+        code: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ExplicitTypeStringDto, schemas);
+
+      const props = schemas.ExplicitTypeStringDto.properties as any;
+      expect(props.code.type).toBe('string');
+      expect(props.code.enum).toEqual([1, 2, 3]);
+    });
+
+    it('should infer string enum type when plugin metadata falls back to Object', () => {
+      class ObjectFallbackMixedEnumDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            gender: {
+              required: true,
+              type: () => Object,
+              enum: ['a', 1]
+            }
+          };
+        }
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        ObjectFallbackMixedEnumDto,
+        schemas
+      );
+
+      const props = schemas.ObjectFallbackMixedEnumDto.properties as any;
+      expect(props.gender).toEqual({
+        type: 'string',
+        enum: ['a', 1]
+      });
+    });
+
+    it('should infer number enum type when plugin metadata falls back to Object', () => {
+      class ObjectFallbackNumberEnumDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            value: {
+              required: true,
+              type: () => Object,
+              enum: [1, 2]
+            }
+          };
+        }
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        ObjectFallbackNumberEnumDto,
+        schemas
+      );
+
+      const props = schemas.ObjectFallbackNumberEnumDto.properties as any;
+      expect(props.value).toEqual({
+        type: 'number',
+        enum: [1, 2]
+      });
+    });
+
+    it('should move enum metadata into array items when plugin array metadata falls back to Object', () => {
+      class ObjectFallbackArrayEnumDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            values: {
+              required: true,
+              type: () => [Object],
+              enum: ['a', 'b'],
+              isArray: true
+            }
+          };
+        }
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        ObjectFallbackArrayEnumDto,
+        schemas
+      );
+
+      const props = schemas.ObjectFallbackArrayEnumDto.properties as any;
+      expect(props.values).toEqual({
+        type: 'array',
+        items: {
+          type: 'string',
+          enum: ['a', 'b']
+        }
+      });
     });
   });
 
@@ -955,7 +1517,10 @@ describe('SchemaObjectFactory', () => {
 
       const schemas: Record<string, any> = {};
       expect(() =>
-        schemaObjectFactory.exploreModelSchema(SwcNumericEnumDto as any, schemas)
+        schemaObjectFactory.exploreModelSchema(
+          SwcNumericEnumDto as any,
+          schemas
+        )
       ).not.toThrow();
 
       expect(schemas['SwcNumericEnumDto']).toBeDefined();
@@ -963,5 +1528,84 @@ describe('SchemaObjectFactory', () => {
       expect(rankProp).toBeDefined();
     });
   });
-});
 
+  describe('circular dependency error message (issue #3655)', () => {
+    it('should include the class name chain when a circular dependency is detected', () => {
+      // Simulate a circular dependency by providing a lazy type resolver that
+      // returns `undefined` — this mirrors the situation where a bidirectional
+      // relationship has not been set up with lazy resolvers on both sides.
+      class InnerDto {
+        child: any;
+      }
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        { type: () => undefined, required: true },
+        InnerDto.prototype,
+        'child'
+      );
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES_ARRAY,
+        [':child'],
+        InnerDto.prototype
+      );
+
+      class OuterDto {
+        inner: InnerDto;
+      }
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        { type: () => InnerDto, required: true },
+        OuterDto.prototype,
+        'inner'
+      );
+      Reflect.defineMetadata(
+        DECORATORS.API_MODEL_PROPERTIES_ARRAY,
+        [':inner'],
+        OuterDto.prototype
+      );
+
+      const schemas: Record<string, any> = {};
+      expect(() =>
+        schemaObjectFactory.exploreModelSchema(OuterDto as any, schemas)
+      ).toThrow(
+        /\[OuterDto\] \[InnerDto\] A circular dependency has been detected/
+      );
+    });
+  });
+
+  describe('inherited property type override', () => {
+    it('should use the child class type when a property is redeclared in a subclass', () => {
+      class InfoPostDTO {
+        @ApiProperty()
+        name: string;
+      }
+      class InfoPutDTO extends InfoPostDTO {
+        @ApiProperty()
+        id: number;
+      }
+      class EntityPostDTO {
+        @ApiProperty()
+        id: number;
+
+        @ApiProperty({ type: () => InfoPostDTO })
+        info: InfoPostDTO;
+      }
+      class EntityPutDTO extends EntityPostDTO {
+        @ApiProperty({ type: () => InfoPutDTO })
+        info: InfoPutDTO;
+      }
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(EntityPutDTO as any, schemas);
+
+      const infoProp = schemas['EntityPutDTO'].properties['info'];
+      // The child redeclares `info` as InfoPutDTO — its $ref should point to InfoPutDTO
+      expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).toContain(
+        'InfoPutDTO'
+      );
+      expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).not.toContain(
+        'InfoPostDTO'
+      );
+    });
+  });
+});

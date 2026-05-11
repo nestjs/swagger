@@ -10,7 +10,7 @@ import {
   OpenAPIObject,
   SwaggerModule
 } from '../lib';
-import { SchemaObject } from '../lib/interfaces/open-api-spec.interface';
+import { ParameterObject, SchemaObject } from '../lib/interfaces/open-api-spec.interface';
 import { ApplicationModule } from './src/app.module';
 import { Cat } from './src/cats/classes/cat.class';
 import { TagDto } from './src/cats/dto/tag.dto';
@@ -191,6 +191,51 @@ describe('Validate OpenAPI schema', () => {
     }
   });
 
+  it('should preserve example metadata for named type query params (issue #3335)', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    const params =
+      document.paths['/api/cats/with-named-type-example']['get']['parameters'];
+    const filterParam = params.find(
+      (p: any) => p.name === 'filter' && p.in === 'query'
+    );
+    expect(filterParam).toBeDefined();
+    expect((filterParam as ParameterObject).schema).toEqual({
+      example: 'example-tag',
+      allOf: [{ $ref: '#/components/schemas/TagDto' }]
+    });
+  });
+
+  it('should preserve example/examples for built-in scalar response types', () => {
+    const document = SwaggerModule.createDocument(app, options);
+
+    const scalarExample =
+      document.paths['/api/cats/scalar-with-example']['get']['responses']['200'];
+    expect(scalarExample.content['application/json'].example).toEqual(42);
+    expect((scalarExample as any).example).toBeUndefined();
+
+    const scalarExamples =
+      document.paths['/api/cats/scalar-with-examples']['get']['responses']['200'];
+    expect(scalarExamples.content['application/json'].examples).toEqual({
+      adult: { value: 5, summary: 'Adult cat age' },
+      kitten: { value: 1, summary: 'Kitten age' }
+    });
+    expect((scalarExamples as any).examples).toBeUndefined();
+
+    const arrayExample =
+      document.paths['/api/cats/array-of-scalar-with-example']['get'][
+        'responses'
+      ]['200'];
+    expect(arrayExample.content['application/json'].schema).toEqual({
+      type: 'array',
+      items: { type: 'string' }
+    });
+    expect(arrayExample.content['application/json'].example).toEqual([
+      'Mau',
+      'Persian'
+    ]);
+    expect((arrayExample as any).example).toBeUndefined();
+  });
+
   it('should fix colons in url', async () => {
     const document = SwaggerModule.createDocument(app, options);
     expect(
@@ -252,6 +297,18 @@ describe('Validate OpenAPI schema', () => {
     });
   });
 
+  it('should include type field when nullable is used with allOf (issue #3274)', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    const createCatDtoSchema = document.components?.schemas
+      ?.CreateCatDto as SchemaObject;
+    expect(createCatDtoSchema.properties.nullableTag).toEqual({
+      description: 'nullable tag',
+      nullable: true,
+      type: 'object',
+      allOf: [{ $ref: '#/components/schemas/TagDto' }]
+    });
+  });
+
   it('should not add optional properties to required list', () => {
     const document = SwaggerModule.createDocument(app, options);
     const required = (document.components?.schemas?.Cat as SchemaObject)
@@ -296,6 +353,84 @@ describe('Validate OpenAPI schema', () => {
         allowCors: true
       },
       'x-another-field': 'another value'
+    });
+  });
+
+  describe('hierarchical tags (OpenAPI 3.2)', () => {
+    it('should add tag with parent option', async () => {
+      const hierarchicalOptions = new DocumentBuilder()
+        .setTitle('Hierarchical Tags Test')
+        .setVersion('1.0')
+        .addTag('Animals', 'All animal operations')
+        .addTag('Cats', 'Cat operations', undefined, { parent: 'Animals' })
+        .build();
+
+      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+
+      expect(document.tags).toBeDefined();
+      expect(document.tags).toHaveLength(2);
+      expect(document.tags?.[0]).toEqual({
+        name: 'Animals',
+        description: 'All animal operations'
+      });
+      expect(document.tags?.[1]).toEqual({
+        name: 'Cats',
+        description: 'Cat operations',
+        parent: 'Animals'
+      });
+    });
+
+    it('should add tag with kind option', async () => {
+      const hierarchicalOptions = new DocumentBuilder()
+        .setTitle('Hierarchical Tags Test')
+        .setVersion('1.0')
+        .addTag('Internal', 'Internal APIs', undefined, { kind: 'reference' })
+        .build();
+
+      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+
+      expect(document.tags).toBeDefined();
+      expect(document.tags).toHaveLength(1);
+      expect(document.tags?.[0]).toEqual({
+        name: 'Internal',
+        description: 'Internal APIs',
+        kind: 'reference'
+      });
+    });
+
+    it('should add tag with both parent and kind options', async () => {
+      const hierarchicalOptions = new DocumentBuilder()
+        .setTitle('Hierarchical Tags Test')
+        .setVersion('1.0')
+        .addTag('Animals', 'All animal operations')
+        .addTag('Cats', 'Cat operations', undefined, {
+          parent: 'Animals',
+          kind: 'navigation'
+        })
+        .build();
+
+      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+
+      expect(document.tags).toBeDefined();
+      expect(document.tags).toHaveLength(2);
+      expect(document.tags?.[1]).toEqual({
+        name: 'Cats',
+        description: 'Cat operations',
+        parent: 'Animals',
+        kind: 'navigation'
+      });
+    });
+
+    it('should keep operation tags as string arrays', async () => {
+      const document = SwaggerModule.createDocument(app, options);
+
+      // Check that operation-level tags are string arrays (from @ApiTags decorator)
+      const createCatOperation = document.paths['/api/cats']?.post;
+      expect(createCatOperation?.tags).toBeDefined();
+      expect(Array.isArray(createCatOperation?.tags)).toBe(true);
+      expect(createCatOperation?.tags?.every((tag) => typeof tag === 'string')).toBe(
+        true
+      );
     });
   });
 });

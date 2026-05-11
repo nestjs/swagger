@@ -1,4 +1,4 @@
-import { isEmpty, isFunction, omit } from 'lodash';
+import { isEmpty, isFunction, omit, pick } from 'lodash';
 import { DECORATORS } from '../constants';
 import {
   ApiPropertyOptions,
@@ -58,28 +58,21 @@ export class ResponseObjectFactory {
         this.swaggerTypesMapper.mapTypeToOpenAPIType(typeName);
 
       const exampleKeys = ['example', 'examples'];
-      if (isArray) {
-        const content = this.mimetypeContentWrapper.wrap(produces, {
-          schema: {
-            type: 'array',
-            items: {
-              type: swaggerType
-            }
-          }
-        });
-        return {
-          ...omit(response, exampleKeys),
-          ...content
-        };
-      }
-
+      const baseSchema: SchemaObject = isArray
+        ? { type: 'array', items: { type: swaggerType } }
+        : { type: swaggerType };
+      // Mirror the nullable handling in ResponseObjectMapper so the
+      // "nullable" flag does not leak into the response object root and
+      // is instead represented as "oneOf: [<schema>, { type: 'null' }]".
+      const schema: SchemaObject = response.nullable
+        ? { oneOf: [baseSchema, { type: 'null' }] }
+        : baseSchema;
       const content = this.mimetypeContentWrapper.wrap(produces, {
-        schema: {
-          type: swaggerType
-        }
+        schema,
+        ...pick(response, exampleKeys)
       });
       return {
-        ...omit(response, exampleKeys),
+        ...omit(response, [...exampleKeys, 'nullable']),
         ...content
       };
     }

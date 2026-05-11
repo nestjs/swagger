@@ -23,6 +23,10 @@ class NonExportedClass {
   prop: string;
 }
 
+export class SameFileClass {
+  value: string;
+}
+
 export enum CategoryState {
   OK = 'OK',
   DEPRECATED = 'DEPRECATED'
@@ -127,6 +131,9 @@ export class CreateCatDto {
   // Both props should be ignored
   nonExportedEnum: NonExportedEnum;
   nonExportedClass: NonExportedClass;
+
+  // Exported same-file class should use t["./path"].ClassName pattern
+  sameFileRef: SameFileClass;
 
   // Default value should be ignored
   logger = new ConsoleLogger();

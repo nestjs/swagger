@@ -5,6 +5,7 @@ export * from './api-consumes.decorator';
 export * from './api-cookie.decorator';
 export * from './api-default-getter.decorator';
 export * from './api-exclude-endpoint.decorator';
+export * from './api-include-endpoint.decorator';
 export * from './api-exclude-controller.decorator';
 export * from './api-extra-models.decorator';
 export * from './api-header.decorator';
@@ -21,6 +22,7 @@ export {
   ApiResponseProperty
 } from './api-property.decorator';
 export * from './api-query.decorator';
+export * from './api-webhook.decorator';
 export * from './api-response.decorator';
 export * from './api-security.decorator';
 export * from './api-use-tags.decorator';

@@ -41,6 +41,7 @@ import {
   exploreGlobalApiExtraModelsMetadata
 } from './explorers/api-extra-models.explorer';
 import { exploreGlobalApiHeaderMetadata } from './explorers/api-headers.explorer';
+import { exploreApiIncludeEndpointMetadata } from './explorers/api-include-endpoint.explorer';
 import { exploreApiOperationMetadata } from './explorers/api-operation.explorer';
 import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer';
 import {
@@ -113,6 +114,7 @@ export class SwaggerExplorer {
         fieldKey: string
       ) => string;
       autoTagControllers?: boolean;
+      onlyIncludeDecoratedEndpoints?: boolean;
     }
   ) {
     const { operationIdFactory, linkNameFactory } = options;
@@ -167,6 +169,7 @@ export class SwaggerExplorer {
       modulePath?: string;
       globalPrefix?: string;
       autoTagControllers?: boolean;
+      onlyIncludeDecoratedEndpoints?: boolean;
     }
   ): DenormalizedDoc[] {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -187,6 +190,14 @@ export class SwaggerExplorer {
       DenormalizedDoc[]
     >(instance, prototype, (name) => {
       const targetCallback = prototype[name];
+      const includeEndpoint = exploreApiIncludeEndpointMetadata(
+        instance,
+        prototype,
+        targetCallback
+      );
+      if (options.onlyIncludeDecoratedEndpoints && !includeEndpoint) {
+        return;
+      }
       const excludeEndpoint = exploreApiExcludeEndpointMetadata(
         instance,
         prototype,
@@ -250,7 +261,8 @@ export class SwaggerExplorer {
               ...mergedMethodMetadata
             },
             prototype,
-            targetCallback
+            targetCallback,
+            metatype
           );
         });
       }
@@ -266,7 +278,8 @@ export class SwaggerExplorer {
             ...mergedMethodMetadata
           },
           prototype,
-          targetCallback
+          targetCallback,
+          metatype
         )
       ];
     });
@@ -319,6 +332,11 @@ export class SwaggerExplorer {
       METHOD_METADATA,
       method
     ) as RequestMethod;
+    const webhookMetadata = Reflect.getMetadata(
+      DECORATORS.API_WEBHOOK,
+      method
+    ) as string | boolean | undefined;
+    const isWebhook = Boolean(webhookMetadata);
 
     const methodVersion: VersionValue | undefined = Reflect.getMetadata(
       VERSION_METADATA,
@@ -372,6 +390,15 @@ export class SwaggerExplorer {
           return validMethods.map((requestMethod) => ({
             method: requestMethod,
             path: fullPath === '' ? '/' : fullPath,
+            ...(isWebhook
+              ? {
+                  isWebhook: true,
+                  webhookName:
+                    typeof webhookMetadata === 'string'
+                      ? webhookMetadata
+                      : method.name
+                }
+              : {}),
             operationId: `${this.getOperationId(
               instance,
               method.name
@@ -397,6 +424,15 @@ export class SwaggerExplorer {
         return {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,
+          ...(isWebhook
+            ? {
+                isWebhook: true,
+                webhookName:
+                  typeof webhookMetadata === 'string'
+                    ? webhookMetadata
+                    : method.name
+              }
+            : {}),
           operationId: this.getOperationId(
             instance,
             methodKey,
@@ -563,7 +599,8 @@ export class SwaggerExplorer {
   private migrateOperationSchema(
     document: DenormalizedDoc,
     prototype: Type<unknown>,
-    method: Function
+    method: Function,
+    metatype?: Type<unknown>
   ) {
     const parametersObject: Record<string, any>[] = get(
       document,
@@ -578,20 +615,23 @@ export class SwaggerExplorer {
     const requestBody = parametersObject[requestBodyIndex];
     parametersObject.splice(requestBodyIndex, 1);
 
+    // `@ApiConsumes` is a class-level decorator that stores metadata on the
+    // class constructor (the metatype). Reading from `prototype` always
+    // returned undefined, silently dropping class-level consumes overrides.
     const classConsumes = Reflect.getMetadata(
       DECORATORS.API_CONSUMES,
-      prototype
+      metatype ?? prototype?.constructor
     );
     const methodConsumes = Reflect.getMetadata(DECORATORS.API_CONSUMES, method);
     let consumes = mergeAndUniq(classConsumes, methodConsumes);
     consumes = isEmpty(consumes) ? ['application/json'] : consumes;
 
-    const keysToRemove = ['schema', 'in', 'name', 'examples'];
+    const keysToRemove = ['schema', 'in', 'name', 'examples', 'encoding'];
     document.root.requestBody = {
       ...omit(requestBody, keysToRemove),
       ...this.mimetypeContentWrapper.wrap(
         consumes,
-        pick(requestBody, ['schema', 'examples'])
+        pick(requestBody, ['schema', 'examples', 'encoding'])
       )
     };
     return document;
@@ -620,10 +660,7 @@ export class SwaggerExplorer {
     metatype: Type<unknown>,
     versioningOptions: VersioningOptions | undefined
   ): string | undefined {
-    if (
-      !versioningOptions ||
-      versioningOptions.type === VersioningType.URI
-    ) {
+    if (!versioningOptions || versioningOptions.type === VersioningType.URI) {
       return undefined;
     }
 

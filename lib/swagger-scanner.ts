@@ -19,7 +19,9 @@ import { SchemaObjectFactory } from './services/schema-object-factory';
 import { SwaggerTypesMapper } from './services/swagger-types-mapper';
 import { SwaggerExplorer } from './swagger-explorer';
 import { SwaggerTransformer } from './swagger-transformer';
+import { applyExampleMaxDepth } from './utils/apply-example-max-depth.util';
 import { getGlobalPrefix } from './utils/get-global-prefix';
+import { stripDynamicDefaults } from './utils/strip-dynamic-defaults.util';
 import { stripLastSlash } from './utils/strip-last-slash.util';
 
 export class SwaggerScanner {
@@ -41,7 +43,10 @@ export class SwaggerScanner {
       ignoreGlobalPrefix = false,
       operationIdFactory,
       linkNameFactory,
-      autoTagControllers = true
+      autoTagControllers = true,
+      onlyIncludeDecoratedEndpoints = false,
+      excludeDynamicDefaults = false,
+      exampleMaxDepth
     } = options;
 
     const untypedApp = app as any;
@@ -80,7 +85,8 @@ export class SwaggerScanner {
                   globalPrefix,
                   operationIdFactory,
                   linkNameFactory,
-                  autoTagControllers
+                  autoTagControllers,
+                  onlyIncludeDecoratedEndpoints
                 })
               );
             });
@@ -92,7 +98,8 @@ export class SwaggerScanner {
             globalPrefix,
             operationIdFactory,
             linkNameFactory,
-            autoTagControllers
+            autoTagControllers,
+            onlyIncludeDecoratedEndpoints
           })
         );
       }
@@ -100,6 +107,15 @@ export class SwaggerScanner {
 
     const schemas = this.explorer.getSchemas();
     this.addExtraModels(schemas, extraModels);
+
+    if (excludeDynamicDefaults) {
+      stripDynamicDefaults(schemas as Record<string, SchemaObject>);
+    }
+
+    applyExampleMaxDepth(
+      schemas as Record<string, SchemaObject>,
+      exampleMaxDepth
+    );
 
     return {
       ...this.transformer.normalizePaths(flatten(denormalizedPaths)),
@@ -122,6 +138,7 @@ export class SwaggerScanner {
         fieldKey: string
       ) => string;
       autoTagControllers?: boolean;
+      onlyIncludeDecoratedEndpoints?: boolean;
     }
   ): ModuleRoute[] {
     const denormalizedArray = [...controller.values()].map((ctrl) =>

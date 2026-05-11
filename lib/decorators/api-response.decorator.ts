@@ -14,12 +14,15 @@ export interface ApiResponseExamples {
   value: ApiResponseExampleValue;
 }
 
-export interface ApiResponseCommonMetadata
-  extends Omit<ResponseObject, 'description'> {
+export interface ApiResponseCommonMetadata extends Omit<
+  ResponseObject,
+  'description'
+> {
   status?: number | 'default' | '1XX' | '2XX' | '3XX' | '4XX' | '5XX';
   type?: Type<unknown> | Function | [Function] | string;
   isArray?: boolean;
   description?: string;
+  nullable?: boolean;
 }
 
 export type ApiResponseMetadata =
@@ -28,8 +31,10 @@ export type ApiResponseMetadata =
       examples?: { [key: string]: ApiResponseExamples };
     });
 
-export interface ApiResponseSchemaHost
-  extends Omit<ResponseObject, 'description'> {
+export interface ApiResponseSchemaHost extends Omit<
+  ResponseObject,
+  'description'
+> {
   schema: SchemaObject & Partial<ReferenceObject>;
   status?: number | 'default' | '1XX' | '2XX' | '3XX' | '4XX' | '5XX';
   description?: string;
@@ -63,9 +68,8 @@ export function ApiResponse(
   apiResponseMetadata.isArray = isArray;
   options.description = options.description ? options.description : '';
 
-  const groupedMetadata = {
-    [options.status || 'default']: omit(options, 'status')
-  };
+  const statusKey = options.status || 'default';
+  const incomingEntry = omit(options, 'status');
   return (
     target: object,
     key?: string | symbol,
@@ -84,7 +88,7 @@ export function ApiResponse(
         DECORATORS.API_RESPONSE,
         {
           ...responses,
-          ...groupedMetadata
+          [statusKey]: mergeResponseEntry(responses?.[statusKey], incomingEntry)
         },
         descriptor.value
       );
@@ -98,11 +102,38 @@ export function ApiResponse(
       DECORATORS.API_RESPONSE,
       {
         ...responses,
-        ...groupedMetadata
+        [statusKey]: mergeResponseEntry(responses?.[statusKey], incomingEntry)
       },
       target
     );
     return target;
+  };
+}
+
+function mergeResponseEntry(
+  existing: Record<string, any> | undefined,
+  incoming: Record<string, any>
+): Record<string, any> {
+  if (!existing) {
+    return incoming;
+  }
+  const existingDesc = existing.description || '';
+  const incomingDesc = incoming.description || '';
+  const mergedDescription =
+    existingDesc && incomingDesc
+      ? `${existingDesc}\n\n${incomingDesc}`
+      : existingDesc || incomingDesc;
+
+  const mergedExamples =
+    existing.examples && incoming.examples
+      ? { ...existing.examples, ...incoming.examples }
+      : incoming.examples ?? existing.examples;
+
+  return {
+    ...existing,
+    ...incoming,
+    description: mergedDescription,
+    ...(mergedExamples !== undefined ? { examples: mergedExamples } : {})
   };
 }
 

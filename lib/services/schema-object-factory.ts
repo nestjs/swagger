@@ -123,7 +123,66 @@ export class SchemaObjectFactory {
       if (param.name) {
         // We should not spread parameters that have a name
         // Just generate the schema for the type instead and link it with ref if needed
-        return this.getCustomType(param, schemas);
+        const customType = this.getCustomType(param, schemas);
+
+        // Move schema-level options (e.g., example, allOf) from the top level into
+        // the schema object so they are not lost when mapParamTypes strips top-level
+        // keys. SwaggerTypesMapper#omitParamKeys() does not remove 'allOf', so an
+        // unhandled top-level allOf would otherwise leak into the resulting
+        // ParameterObject as an invalid field.
+        const schemaOptionsKeys = [
+          ...this.swaggerTypesMapper.getSchemaOptionsKeys(),
+          'allOf'
+        ];
+        const schemaOptionsFromParam: Record<string, any> = {};
+        for (const key of schemaOptionsKeys) {
+          // Skip 'type' and 'items' as they are handled by getCustomType
+          if (key === 'type' || key === 'items') {
+            continue;
+          }
+          if (key in customType && !(key in (customType.schema || {}))) {
+            schemaOptionsFromParam[key] = (customType as any)[key];
+            delete (customType as any)[key];
+          }
+        }
+        if (Object.keys(schemaOptionsFromParam).length > 0) {
+          const existingSchema = (customType.schema || {}) as Record<
+            string,
+            any
+          >;
+          // When we have extra metadata alongside a $ref, wrap the $ref using
+          // allOf so the metadata sits beside it (OpenAPI does not allow sibling
+          // keys next to $ref). Merge with any pre-existing allOf entries from
+          // either the schema itself or the parameter rather than overwriting.
+          if ('$ref' in existingSchema) {
+            const { $ref, allOf: existingAllOf, ...restSchema } = existingSchema;
+            const { allOf: paramAllOf, ...restParamOptions } =
+              schemaOptionsFromParam;
+            const mergedAllOf = [
+              ...(Array.isArray(existingAllOf) ? existingAllOf : []),
+              ...(Array.isArray(paramAllOf) ? paramAllOf : []),
+              { $ref: $ref as string }
+            ];
+            (customType as any).schema = {
+              ...restSchema,
+              ...restParamOptions,
+              allOf: mergedAllOf
+            };
+          } else {
+            const mergedSchema: Record<string, any> = {
+              ...existingSchema,
+              ...schemaOptionsFromParam
+            };
+            // Merge allOf from both sides instead of letting one overwrite the other.
+            const existingAllOf = (existingSchema as any).allOf;
+            const paramAllOf = schemaOptionsFromParam.allOf;
+            if (Array.isArray(existingAllOf) && Array.isArray(paramAllOf)) {
+              mergedSchema.allOf = [...existingAllOf, ...paramAllOf];
+            }
+            (customType as any).schema = mergedSchema;
+          }
+        }
+        return customType;
       }
 
       const propertiesWithType = this.extractPropertiesFromType(
@@ -221,12 +280,29 @@ export class SchemaObjectFactory {
     const modelProperties =
       this.modelPropertiesAccessor.getModelProperties(prototype);
     const propertiesWithType = modelProperties.map((key) => {
-      const property = this.mergePropertyWithMetadata(
-        key,
-        prototype,
-        schemas,
-        pendingSchemasRefs
-      );
+      let property: ReturnType<typeof this.mergePropertyWithMetadata>;
+      try {
+        property = this.mergePropertyWithMetadata(
+          key,
+          prototype,
+          schemas,
+          pendingSchemasRefs
+        );
+      } catch (err) {
+        // Prepend the current class name to the error message so that, as the
+        // recursion unwinds, users see the full chain of classes involved in
+        // the failure (e.g. "[RootDto] [ParentDto] [ChildDto] A circular
+        // dependency has been detected ..."). This makes it much easier to
+        // locate the offending class in large codebases.
+        if (err instanceof Error) {
+          const className = type?.name || 'UnknownType';
+          const prefix = `[${className}] `;
+          if (!err.message.startsWith(prefix)) {
+            err.message = `${prefix}${err.message}`;
+          }
+        }
+        throw err;
+      }
 
       const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
       const declaredSchemaCombinator = schemaCombinators.find(
@@ -243,7 +319,7 @@ export class SchemaObjectFactory {
           schemaObjectMetadata.items[declaredSchemaCombinator] =
             property[declaredSchemaCombinator];
           delete property[declaredSchemaCombinator];
-        } else {
+        } else if (!schemaObjectMetadata['nullable']) {
           delete schemaObjectMetadata.type;
         }
       }
@@ -313,7 +389,7 @@ export class SchemaObjectFactory {
     }
 
     if (schemas[schemaName] && !isEqual(schemas[schemaName], typeDefinition)) {
-      Logger.error(
+      Logger.warn(
         `Duplicate DTO detected: "${schemaName}" is defined multiple times with different schemas.\n` +
           `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
           `Note: This will throw an error in the next major version.`
@@ -470,9 +546,15 @@ export class SchemaObjectFactory {
       type: metadata.isArray ? 'array' : 'string'
     };
 
+    const existingCombinator = (['oneOf', 'anyOf'] as const).find(
+      (key) => key in metadata && Array.isArray(metadata[key])
+    );
+
     const refHost = metadata.isArray
       ? { items: { $ref } }
-      : { allOf: [{ $ref }] };
+      : existingCombinator
+        ? { [existingCombinator]: [...metadata[existingCombinator], { $ref }] }
+        : { allOf: [{ $ref }] };
 
     const paramObject = { ..._schemaObject, ...refHost };
     const pathsToOmit = ['enum', 'enumName', 'enumSchema', 'x-enumNames'];
@@ -493,7 +575,7 @@ export class SchemaObjectFactory {
   ): SchemaObjectMetadata {
     if (isUndefined(trueMetadataType)) {
       throw new Error(
-        `A circular dependency has been detected (property key: "${key}"). Please, make sure that each side of a bidirectional relationships are using lazy resolvers ("type: () => ClassType").`
+        `A circular dependency has been detected (property key: "${key}"). To resolve this, use a lazy resolver for the property type ("type: () => ClassType") on each side of the relationship, or break the cycle by introducing a reference via @ApiExtraModels.`
       );
     }
     let { schemaName: schemaObjectName } = this.getSchemaMetadata(
@@ -523,6 +605,7 @@ export class SchemaObjectFactory {
         name: metadata.name || key,
         required: metadata.required,
         ...validMetadataObject,
+        ...(validMetadataObject['nullable'] ? { type: 'object' } : {}),
         allOf: [{ $ref }]
       } as SchemaObjectMetadata;
     }
@@ -584,7 +667,7 @@ export class SchemaObjectFactory {
 
         const enumValues = getEnumValues(propertyCompilerMetadata.enum);
         propertyCompilerMetadata.items = {
-          type: getEnumType(enumValues),
+          type: propertyCompilerMetadata.items?.type ?? getEnumType(enumValues),
           enum: enumValues
         };
         delete propertyCompilerMetadata.enum;
@@ -592,7 +675,9 @@ export class SchemaObjectFactory {
         const enumValues = getEnumValues(propertyCompilerMetadata.enum);
 
         propertyCompilerMetadata.enum = enumValues;
-        propertyCompilerMetadata.type = getEnumType(enumValues);
+        if (!propertyCompilerMetadata.type) {
+          propertyCompilerMetadata.type = getEnumType(enumValues);
+        }
       }
       const propertyMetadata = this.mergePropertyWithMetadata(
         key,
@@ -659,6 +744,36 @@ export class SchemaObjectFactory {
     | ParameterObject
     | (SchemaObject & { selfRequired?: boolean }) {
     const typeRef = nestedArrayType || metadata.type;
+    if (metadata.enum && typeRef === Object) {
+      const enumValues = getEnumValues(metadata.enum);
+      const enumType = getEnumType(enumValues);
+
+      if (metadata.isArray) {
+        return this.transformToArraySchemaProperty(
+          {
+            ...metadata,
+            items: {
+              type: enumType,
+              enum: enumValues
+            }
+          } as SchemaObjectMetadata,
+          key,
+          { type: enumType, enum: enumValues }
+        );
+      }
+
+      return this.createSchemaMetadata(
+        key,
+        {
+          ...metadata,
+          type: enumType,
+          enum: enumValues
+        } as SchemaObjectMetadata,
+        schemas,
+        pendingSchemaRefs,
+        enumType
+      );
+    }
     if (this.isConstEnumObject(typeRef as Record<string, any>)) {
       const enumValues = getEnumValues(typeRef as Record<string, any>);
       const enumType = getEnumType(enumValues);

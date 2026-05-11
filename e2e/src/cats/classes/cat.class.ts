@@ -99,6 +99,17 @@ export class Cat {
   })
   oneOfExample?: string[] | number[] | boolean[];
 
+  @ApiProperty({
+    enum: LettersEnum,
+    enumName: 'LettersEnum',
+    oneOf: [
+      { type: 'string' },
+      { type: 'number' }
+    ],
+    description: 'Enum named reference combined with oneOf combinators'
+  })
+  enumNamedWithOneOf?: LettersEnum | string | number;
+
   @ApiProperty({ type: [String], link: () => Cat })
   kittenIds?: string[];
 

@@ -27,6 +27,7 @@ import { CatsService } from './cats.service';
 import { Cat } from './classes/cat.class';
 import { CreateCatDto } from './dto/create-cat.dto';
 import { LettersEnum, PaginationQuery } from './dto/pagination-query.dto';
+import { TagDto } from './dto/tag.dto';
 import { CatBreed } from './enums/cat-breed.enum';
 
 @ApiSecurity('basic')
@@ -37,7 +38,8 @@ import { CatBreed } from './enums/cat-breed.enum';
   name: 'header',
   required: false,
   description: 'Test',
-  schema: { default: 'test' }
+  schema: { default: 'test' },
+  example: 'test'
 })
 @ApiExtension('x-foo', { 'from-controller': true })
 @Controller('cats')
@@ -173,6 +175,14 @@ export class CatsController {
   })
   getWithEnumNamedParam(@Param('type') type: LettersEnum) {}
 
+  @Get('with-named-type-example')
+  @ApiQuery({
+    name: 'filter',
+    type: TagDto,
+    example: 'example-tag'
+  })
+  getWithNamedTypeExample(@Query('filter') filter: TagDto) {}
+
   @Get('with-random-query')
   @ApiQuery({
     name: 'type',
@@ -233,4 +243,34 @@ export class CatsController {
     }
   })
   rawSchemaResponse() {}
+
+  @Get('scalar-with-example')
+  @ApiResponse({ status: 200, type: Number, example: 42 })
+  scalarWithExample(): number {
+    return 42;
+  }
+
+  @Get('scalar-with-examples')
+  @ApiResponse({
+    status: 200,
+    type: Number,
+    examples: {
+      adult: { value: 5, summary: 'Adult cat age' },
+      kitten: { value: 1, summary: 'Kitten age' }
+    }
+  })
+  scalarWithExamples(): number {
+    return 5;
+  }
+
+  @Get('array-of-scalar-with-example')
+  @ApiResponse({
+    status: 200,
+    type: String,
+    isArray: true,
+    example: ['Mau', 'Persian']
+  })
+  arrayOfScalarWithExample(): string[] {
+    return ['Mau', 'Persian'];
+  }
 }

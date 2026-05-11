@@ -9,13 +9,33 @@ import {
   appControllerApiResponseTextTranspiled
 } from './fixtures/app.controller-api-response';
 import {
+  appControllerApiResponseErrorText,
+  appControllerApiResponseErrorTextTranspiled
+} from './fixtures/app.controller-api-response-error';
+import {
   appControllerWithTabsText,
   appControllerWithTabsTextTranspiled
 } from './fixtures/app.controller-tabs';
 import {
+  appControllerOptionalQueryText,
+  appControllerOptionalQueryTextTranspiled
+} from './fixtures/app.controller-optional-query';
+import {
   appControllerWithoutModifiersText,
   appControllerWithoutModifiersTextTranspiled
 } from './fixtures/app.controller-without-modifiers';
+import {
+  appControllerThrowsQuotesText,
+  appControllerThrowsQuotesTextTranspiled
+} from './fixtures/app.controller-throws-quotes';
+import {
+  appControllerApiOperationDedupeText,
+  appControllerApiOperationDedupeTextTranspiled
+} from './fixtures/app.controller-api-operation-dedupe';
+import {
+  appControllerPromisePrefixText,
+  appControllerPromisePrefixTextTranspiled
+} from './fixtures/app.controller-promise-prefix';
 
 describe('Controller methods', () => {
   it('should add response based on the return value (spaces)', () => {
@@ -81,6 +101,50 @@ describe('Controller methods', () => {
     expect(result.outputText).toEqual(appControllerApiResponseTextTranspiled);
   });
 
+  it('should mark optional @Query parameters as required: false (issue #30)', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerOptionalQueryText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(appControllerOptionalQueryTextTranspiled);
+  });
+
+  it('should still auto-infer the default 2xx response when only error @Api*Response decorators are present (issue #3862)', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerApiResponseErrorText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(
+      appControllerApiResponseErrorTextTranspiled
+    );
+  });
+
   it('should add response based on the return value (without modifiers)', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
@@ -102,5 +166,70 @@ describe('Controller methods', () => {
     expect(result.outputText).toEqual(
       appControllerWithoutModifiersTextTranspiled
     );
+  });
+
+  it('should emit a valid string literal for @throws descriptions that contain quotes', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerThrowsQuotesText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(appControllerThrowsQuotesTextTranspiled);
+  });
+
+  it('should not emit duplicate keys when user has supplied controllerKeyOfComment already', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerApiOperationDedupeText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(
+      appControllerApiOperationDedupeTextTranspiled
+    );
+  });
+
+  it('should not unwrap user-defined classes whose names end with Promise/Observable', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerPromisePrefixText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: false }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(appControllerPromisePrefixTextTranspiled);
   });
 });

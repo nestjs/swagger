@@ -91,12 +91,13 @@ export default async () => {
         [
           import('./cats/dto/create-cat.dto.js'),
           {
+            SameFileClass: { value: { required: true, type: () => String } },
             CreateCatDto: {
               isIn: { required: true, type: () => String },
               pattern: {
                 required: true,
                 type: () => String,
-                pattern: '/^[+]?abc$/'
+                pattern: '^[+]?abc$'
               },
               positive: {
                 required: true,
@@ -170,6 +171,10 @@ export default async () => {
                   first: { required: true, type: () => String },
                   second: { required: true, type: () => Number }
                 })
+              },
+              sameFileRef: {
+                required: true,
+                type: () => t['./cats/dto/create-cat.dto.js'].SameFileClass
               },
               logger: { required: true, type: () => Object }
             }

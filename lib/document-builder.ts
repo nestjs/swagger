@@ -53,7 +53,11 @@ export class DocumentBuilder {
   }
 
   public setOpenAPIVersion(version: string): this {
-    if (version.match(/^\d\.\d\.\d$/)) {
+    // OpenAPI Specification versions follow semver, so each segment may contain
+    // one or more digits (e.g. `3.0.10`, `3.10.0`). Anchored regex accepts any
+    // non-negative integer per segment; the previous `^\d\.\d\.\d$` pattern
+    // rejected otherwise-valid spec versions.
+    if (/^\d+\.\d+\.\d+$/.test(version)) {
       this.document.openapi = version;
     } else {
       this.logger.warn(
@@ -113,14 +117,17 @@ export class DocumentBuilder {
   public addTag(
     name: string,
     description = '',
-    externalDocs?: ExternalDocumentationObject
+    externalDocs?: ExternalDocumentationObject,
+    options?: { parent?: string; kind?: 'navigation' | 'reference' }
   ): this {
     this.document.tags = this.document.tags.concat(
       pickBy(
         {
           name,
           description,
-          externalDocs
+          externalDocs,
+          parent: options?.parent,
+          kind: options?.kind
         },
         negate(isUndefined)
       ) as unknown as TagObject

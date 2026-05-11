@@ -21,8 +21,10 @@ import {
   ApiDefaultGetter,
   ApiDefaultResponse,
   ApiExcludeController,
+  ApiExcludeEndpoint,
   ApiExtraModels,
   ApiHeader,
+  ApiIncludeEndpoint,
   ApiLink,
   ApiOkResponse,
   ApiOperation,
@@ -32,7 +34,8 @@ import {
   ApiPropertyOptional,
   ApiQuery,
   ApiResponse,
-  ApiSchema
+  ApiSchema,
+  ApiWebhook
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
@@ -1101,6 +1104,144 @@ describe('SwaggerExplorer', () => {
       });
     };
   });
+  describe('when request body encoding is provided', () => {
+    @Controller('')
+    class FooController {
+      @ApiConsumes('multipart/form-data')
+      @Post('foos')
+      @ApiBody({
+        schema: {
+          type: 'object',
+          properties: {
+            tags: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            payload: { type: 'string' }
+          }
+        },
+        encoding: {
+          tags: { style: 'form', explode: true },
+          payload: { contentType: 'text/plain' }
+        }
+      })
+      create(): void {}
+    }
+
+    it('should include encoding in the requestBody content', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {
+          modulePath: undefined,
+          globalPrefix: undefined
+        }
+      );
+
+      expect(routes.length).toEqual(1);
+      expect(routes[0].root.requestBody).toEqual({
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              properties: {
+                tags: {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                payload: { type: 'string' }
+              }
+            },
+            encoding: {
+              tags: { style: 'form', explode: true },
+              payload: { contentType: 'text/plain' }
+            }
+          }
+        }
+      });
+    });
+  });
+  describe('when form-urlencoded request body encoding is provided', () => {
+    @Controller('')
+    class FooController {
+      @ApiConsumes('application/x-www-form-urlencoded')
+      @Post('foos')
+      @ApiBody({
+        schema: {
+          type: 'object',
+          properties: {
+            filters: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            payload: { type: 'string' }
+          }
+        },
+        encoding: {
+          filters: { style: 'form', explode: true },
+          payload: {
+            contentType: 'application/json',
+            headers: {
+              'x-payload-type': {
+                schema: { type: 'string' }
+              }
+            }
+          }
+        }
+      })
+      create(): void {}
+    }
+
+    it('should include encoding for x-www-form-urlencoded content', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {
+          modulePath: undefined,
+          globalPrefix: undefined
+        }
+      );
+
+      expect(routes.length).toEqual(1);
+      expect(routes[0].root.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/x-www-form-urlencoded': {
+            schema: {
+              type: 'object',
+              properties: {
+                filters: {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                payload: { type: 'string' }
+              }
+            },
+            encoding: {
+              filters: { style: 'form', explode: true },
+              payload: {
+                contentType: 'application/json',
+                headers: {
+                  'x-payload-type': {
+                    schema: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+  });
   describe('when enum is used', () => {
     enum ParamEnum {
       A = 'a',
@@ -1431,6 +1572,16 @@ describe('SwaggerExplorer', () => {
       create(): Promise<any> {
         return Promise.resolve();
       }
+
+      @ApiHeader({
+        name: 'X-API-Version',
+        description: 'API version',
+        example: '2025-05-16'
+      })
+      @Get('foos')
+      find2(): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
     }
 
     it('should properly define headers', () => {
@@ -1474,6 +1625,26 @@ describe('SwaggerExplorer', () => {
           schema: {
             default: 'default token',
             type: 'string'
+          }
+        }
+      ]);
+      expect(routes[2].root.parameters).toEqual([
+        {
+          description: 'auth token',
+          name: 'Authorization',
+          in: 'header',
+          schema: {
+            default: 'default token',
+            type: 'string'
+          }
+        },
+        {
+          description: 'API version',
+          name: 'X-API-Version',
+          in: 'header',
+          schema: {
+            type: 'string',
+            example: '2025-05-16'
           }
         }
       ]);
@@ -2742,12 +2913,8 @@ describe('SwaggerExplorer', () => {
           }
         );
 
-        expect(routes[0].root.operationId).toEqual(
-          `NoVersionController.foo`
-        );
-        expect(routes[1].root.operationId).toEqual(
-          `NoVersionController.bar.3`
-        );
+        expect(routes[0].root.operationId).toEqual(`NoVersionController.foo`);
+        expect(routes[1].root.operationId).toEqual(`NoVersionController.bar.3`);
       });
     });
 
@@ -2846,6 +3013,237 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('with onlyIncludeDecoratedEndpoints', () => {
+    @Controller('foo')
+    class FooController {
+      @Get('included')
+      @ApiIncludeEndpoint()
+      included() {}
+
+      @Get('not-included')
+      notIncluded() {}
+    }
+
+    it('returns all routes when onlyIncludeDecoratedEndpoints is false', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix',
+          onlyIncludeDecoratedEndpoints: false
+        }
+      );
+
+      const paths = routes.map((r) => r.root!.path).sort();
+      expect(paths).toEqual([
+        '/globalPrefix/modulePath/foo/included',
+        '/globalPrefix/modulePath/foo/not-included'
+      ]);
+    });
+
+    it('returns all routes when onlyIncludeDecoratedEndpoints is omitted (default)', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix'
+        }
+      );
+
+      const paths = routes.map((r) => r.root!.path).sort();
+      expect(paths).toEqual([
+        '/globalPrefix/modulePath/foo/included',
+        '/globalPrefix/modulePath/foo/not-included'
+      ]);
+    });
+
+    it('returns only @ApiIncludeEndpoint-decorated routes when onlyIncludeDecoratedEndpoints is true', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix',
+          onlyIncludeDecoratedEndpoints: true
+        }
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].root!.path).toEqual(
+        '/globalPrefix/modulePath/foo/included'
+      );
+    });
+
+    it('still includes routes decorated with @ApiIncludeEndpoint(false) when onlyIncludeDecoratedEndpoints is true (current behavior: disable arg is a no-op for include)', () => {
+      // The explorer only checks the *presence* of the include metadata; the
+      // `disable` argument on @ApiIncludeEndpoint is currently not honored.
+      // If that ever changes, this test should be updated accordingly.
+      @Controller('bar')
+      class BarController {
+        @Get('disabled-include')
+        @ApiIncludeEndpoint(false)
+        disabledInclude() {}
+
+        @Get('not-included')
+        notIncluded() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new BarController(),
+          metatype: BarController
+        } as InstanceWrapper<BarController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix',
+          onlyIncludeDecoratedEndpoints: true
+        }
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].root!.path).toEqual(
+        '/globalPrefix/modulePath/bar/disabled-include'
+      );
+    });
+
+    it('drops routes decorated with both @ApiIncludeEndpoint and @ApiExcludeEndpoint (exclude wins)', () => {
+      @Controller('baz')
+      class BazController {
+        @Get('include-and-exclude')
+        @ApiIncludeEndpoint()
+        @ApiExcludeEndpoint()
+        includeAndExclude() {}
+
+        @Get('only-include')
+        @ApiIncludeEndpoint()
+        onlyInclude() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new BazController(),
+          metatype: BazController
+        } as InstanceWrapper<BazController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix',
+          onlyIncludeDecoratedEndpoints: true
+        }
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].root!.path).toEqual(
+        '/globalPrefix/modulePath/baz/only-include'
+      );
+    });
+  });
+
+  describe('when @ApiConsumes/@ApiProduces are applied at the controller level', () => {
+    class Foo {
+      @ApiProperty()
+      name: string;
+    }
+
+    @ApiConsumes('application/xml')
+    @ApiProduces('application/xml')
+    @Controller('foos')
+    class FooController {
+      @Post()
+      @ApiBody({ type: Foo })
+      @ApiCreatedResponse({ type: Foo, description: 'Created' })
+      create(): Promise<Foo> {
+        return Promise.resolve(new Foo());
+      }
+    }
+
+    it('uses controller-level consumes for the requestBody content type', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].root!.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/xml': {
+            schema: { $ref: '#/components/schemas/Foo' }
+          }
+        }
+      });
+    });
+
+    it('uses controller-level produces for the response content type', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes).toHaveLength(1);
+      const created = routes[0].responses['201'] as ResponseObject;
+      expect(created.content).toEqual({
+        'application/xml': {
+          schema: { $ref: '#/components/schemas/Foo' }
+        }
+      });
+      expect(created.content['application/json']).toBeUndefined();
+    });
+  });
+
+  describe('when using ApiWebhook', () => {
+    @Controller()
+    class StripeWebhooksController {
+      @Post('stripe')
+      @ApiWebhook('stripeEvent')
+      stripe() {
+        return true;
+      }
+    }
+
+    it('marks routes as webhooks with a name', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new StripeWebhooksController(),
+          metatype: StripeWebhooksController
+        } as InstanceWrapper<StripeWebhooksController>,
+        new ApplicationConfig(),
+        { modulePath: 'modulePath' }
+      );
+
+      expect(routes[0].root.isWebhook).toBe(true);
+      expect(routes[0].root.webhookName).toBe('stripeEvent');
+    });
+  });
+
   describe('deepObject style for nested query params', () => {
     class GeolocationDto {
       @ApiProperty()
@@ -2872,7 +3270,7 @@ describe('SwaggerExplorer', () => {
     class SearchController {
       @Get()
       @ApiOperation({ summary: 'Search' })
-      search(@Query() query: SearchQueryDto): void {}
+      search(@Query() _query: SearchQueryDto): void {}
     }
 
     it('should emit a single query parameter with style=deepObject and $ref schema', () => {
