@@ -34,7 +34,8 @@ import {
   ApiPropertyOptional,
   ApiQuery,
   ApiResponse,
-  ApiSchema
+  ApiSchema,
+  ApiWebhook
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
@@ -2912,12 +2913,8 @@ describe('SwaggerExplorer', () => {
           }
         );
 
-        expect(routes[0].root.operationId).toEqual(
-          `NoVersionController.foo`
-        );
-        expect(routes[1].root.operationId).toEqual(
-          `NoVersionController.bar.3`
-        );
+        expect(routes[0].root.operationId).toEqual(`NoVersionController.foo`);
+        expect(routes[1].root.operationId).toEqual(`NoVersionController.bar.3`);
       });
     });
 
@@ -3218,6 +3215,32 @@ describe('SwaggerExplorer', () => {
         }
       });
       expect(created.content['application/json']).toBeUndefined();
+    });
+  });
+
+  describe('when using ApiWebhook', () => {
+    @Controller()
+    class StripeWebhooksController {
+      @Post('stripe')
+      @ApiWebhook('stripeEvent')
+      stripe() {
+        return true;
+      }
+    }
+
+    it('marks routes as webhooks with a name', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new StripeWebhooksController(),
+          metatype: StripeWebhooksController
+        } as InstanceWrapper<StripeWebhooksController>,
+        new ApplicationConfig(),
+        { modulePath: 'modulePath' }
+      );
+
+      expect(routes[0].root.isWebhook).toBe(true);
+      expect(routes[0].root.webhookName).toBe('stripeEvent');
     });
   });
 });

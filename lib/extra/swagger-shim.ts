@@ -223,6 +223,9 @@ export function ApiTagOptions() {
 export function ApiCallbacks() {
   return () => {};
 }
+export function ApiWebhook() {
+  return () => {};
+}
 export function ApiLink() {
   return () => {};
 }
