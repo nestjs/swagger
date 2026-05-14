@@ -129,8 +129,18 @@ export function getTypeReferenceAsString(
   }
 }
 
+/**
+ * Returns `true` when the supplied type text refers to a top-level
+ * `Promise<...>` or `Observable<...>` instantiation.
+ *
+ * The match is anchored to the start of the string (or to a fully qualified
+ * `import("...").` prefix) so user-defined classes whose names happen to end
+ * with `Promise` / `Observable` (for example `MyPromise<T>` or
+ * `AsyncObservable<T>`) are not mistakenly unwrapped to their inner type
+ * argument.
+ */
 export function isPromiseOrObservable(type: string) {
-  return type.includes('Promise<') || type.includes('Observable<');
+  return /(^|\.)(Promise|Observable)</.test(type);
 }
 
 export function hasPropertyKey(

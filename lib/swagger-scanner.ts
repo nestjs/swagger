@@ -20,6 +20,7 @@ import { SchemaObjectFactory } from './services/schema-object-factory.js';
 import { SwaggerTypesMapper } from './services/swagger-types-mapper.js';
 import { SwaggerExplorer } from './swagger-explorer.js';
 import { SwaggerTransformer } from './swagger-transformer.js';
+import { applyExampleMaxDepth } from './utils/apply-example-max-depth.util.js';
 import { getGlobalPrefix } from './utils/get-global-prefix.js';
 import { stripDynamicDefaults } from './utils/strip-dynamic-defaults.util.js';
 import { stripLastSlash } from './utils/strip-last-slash.util.js';
@@ -45,7 +46,8 @@ export class SwaggerScanner {
       linkNameFactory,
       autoTagControllers = true,
       onlyIncludeDecoratedEndpoints = false,
-      excludeDynamicDefaults = false
+      excludeDynamicDefaults = false,
+      exampleMaxDepth
     } = options;
 
     const untypedApp = app as any;
@@ -110,6 +112,11 @@ export class SwaggerScanner {
     if (excludeDynamicDefaults) {
       stripDynamicDefaults(schemas as Record<string, SchemaObject>);
     }
+
+    applyExampleMaxDepth(
+      schemas as Record<string, SchemaObject>,
+      exampleMaxDepth
+    );
 
     return {
       ...this.transformer.normalizePaths(flatten(denormalizedPaths)),

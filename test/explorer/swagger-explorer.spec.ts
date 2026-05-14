@@ -34,7 +34,8 @@ import {
   ApiPropertyOptional,
   ApiQuery,
   ApiResponse,
-  ApiSchema
+  ApiSchema,
+  ApiWebhook
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
@@ -2912,12 +2913,8 @@ describe('SwaggerExplorer', () => {
           }
         );
 
-        expect(routes[0].root.operationId).toEqual(
-          `NoVersionController.foo`
-        );
-        expect(routes[1].root.operationId).toEqual(
-          `NoVersionController.bar.3`
-        );
+        expect(routes[0].root.operationId).toEqual(`NoVersionController.foo`);
+        expect(routes[1].root.operationId).toEqual(`NoVersionController.bar.3`);
       });
     });
 
@@ -3156,6 +3153,94 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root!.path).toEqual(
         '/globalPrefix/modulePath/baz/only-include'
       );
+    });
+  });
+
+  describe('when @ApiConsumes/@ApiProduces are applied at the controller level', () => {
+    class Foo {
+      @ApiProperty()
+      name: string;
+    }
+
+    @ApiConsumes('application/xml')
+    @ApiProduces('application/xml')
+    @Controller('foos')
+    class FooController {
+      @Post()
+      @ApiBody({ type: Foo })
+      @ApiCreatedResponse({ type: Foo, description: 'Created' })
+      create(): Promise<Foo> {
+        return Promise.resolve(new Foo());
+      }
+    }
+
+    it('uses controller-level consumes for the requestBody content type', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].root!.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/xml': {
+            schema: { $ref: '#/components/schemas/Foo' }
+          }
+        }
+      });
+    });
+
+    it('uses controller-level produces for the response content type', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes).toHaveLength(1);
+      const created = routes[0].responses['201'] as ResponseObject;
+      expect(created.content).toEqual({
+        'application/xml': {
+          schema: { $ref: '#/components/schemas/Foo' }
+        }
+      });
+      expect(created.content['application/json']).toBeUndefined();
+    });
+  });
+
+  describe('when using ApiWebhook', () => {
+    @Controller()
+    class StripeWebhooksController {
+      @Post('stripe')
+      @ApiWebhook('stripeEvent')
+      stripe() {
+        return true;
+      }
+    }
+
+    it('marks routes as webhooks with a name', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new StripeWebhooksController(),
+          metatype: StripeWebhooksController
+        } as InstanceWrapper<StripeWebhooksController>,
+        new ApplicationConfig(),
+        { modulePath: 'modulePath' }
+      );
+
+      expect(routes[0].root.isWebhook).toBe(true);
+      expect(routes[0].root.webhookName).toBe('stripeEvent');
     });
   });
 });

@@ -262,7 +262,8 @@ export class SwaggerExplorer {
               ...mergedMethodMetadata
             },
             prototype,
-            targetCallback
+            targetCallback,
+            metatype
           );
         });
       }
@@ -278,7 +279,8 @@ export class SwaggerExplorer {
             ...mergedMethodMetadata
           },
           prototype,
-          targetCallback
+          targetCallback,
+          metatype
         )
       ];
     });
@@ -331,6 +333,11 @@ export class SwaggerExplorer {
       METHOD_METADATA,
       method
     ) as RequestMethod;
+    const webhookMetadata = Reflect.getMetadata(
+      DECORATORS.API_WEBHOOK,
+      method
+    ) as string | boolean | undefined;
+    const isWebhook = Boolean(webhookMetadata);
 
     const methodVersion: VersionValue | undefined = Reflect.getMetadata(
       VERSION_METADATA,
@@ -384,6 +391,15 @@ export class SwaggerExplorer {
           return validMethods.map((requestMethod) => ({
             method: requestMethod,
             path: fullPath === '' ? '/' : fullPath,
+            ...(isWebhook
+              ? {
+                  isWebhook: true,
+                  webhookName:
+                    typeof webhookMetadata === 'string'
+                      ? webhookMetadata
+                      : method.name
+                }
+              : {}),
             operationId: `${this.getOperationId(
               instance,
               method.name
@@ -409,6 +425,15 @@ export class SwaggerExplorer {
         return {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,
+          ...(isWebhook
+            ? {
+                isWebhook: true,
+                webhookName:
+                  typeof webhookMetadata === 'string'
+                    ? webhookMetadata
+                    : method.name
+              }
+            : {}),
           operationId: this.getOperationId(
             instance,
             methodKey,
@@ -575,7 +600,8 @@ export class SwaggerExplorer {
   private migrateOperationSchema(
     document: DenormalizedDoc,
     prototype: Type<unknown>,
-    method: Function
+    method: Function,
+    metatype?: Type<unknown>
   ) {
     const parametersObject: Record<string, any>[] = get(
       document,
@@ -590,9 +616,12 @@ export class SwaggerExplorer {
     const requestBody = parametersObject[requestBodyIndex];
     parametersObject.splice(requestBodyIndex, 1);
 
+    // `@ApiConsumes` is a class-level decorator that stores metadata on the
+    // class constructor (the metatype). Reading from `prototype` always
+    // returned undefined, silently dropping class-level consumes overrides.
     const classConsumes = Reflect.getMetadata(
       DECORATORS.API_CONSUMES,
-      prototype
+      metatype ?? prototype?.constructor
     );
     const methodConsumes = Reflect.getMetadata(DECORATORS.API_CONSUMES, method);
     let consumes = mergeAndUniq(classConsumes, methodConsumes);
@@ -632,10 +661,7 @@ export class SwaggerExplorer {
     metatype: Type<unknown>,
     versioningOptions: VersioningOptions | undefined
   ): string | undefined {
-    if (
-      !versioningOptions ||
-      versioningOptions.type === VersioningType.URI
-    ) {
+    if (!versioningOptions || versioningOptions.type === VersioningType.URI) {
       return undefined;
     }
 

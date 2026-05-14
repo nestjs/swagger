@@ -227,6 +227,18 @@ export class SchemaObjectFactory {
         }
       ) as ParameterObject[];
     }
+    if (this.isConstEnumObject(param.type as Record<string, any>)) {
+      const enumValues = getEnumValues(param.type as Record<string, any>);
+      const enumType = getEnumType(enumValues);
+      return {
+        ...param,
+        schema: {
+          type: enumType,
+          enum: enumValues
+        },
+        selfRequired: param.required
+      };
+    }
     if (this.isObjectLiteral(param.type)) {
       const schemaFromObjectLiteral = this.createFromObjectLiteral(
         param.name as string,

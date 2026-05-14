@@ -17,6 +17,7 @@ import {
 } from './swagger-ui/index.js';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep.js';
 import { getGlobalPrefix } from './utils/get-global-prefix.js';
+import { isOas31OrLater } from './utils/is-oas31-or-later.util.js';
 import { normalizeRelPath } from './utils/normalize-rel-path.js';
 import { resolvePath } from './utils/resolve-path.util.js';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
@@ -28,6 +29,16 @@ import { validatePath } from './utils/validate-path.util.js';
 export class SwaggerModule {
   private static readonly metadataLoader = new MetadataLoader();
 
+  private static mergeWebhooks(
+    configWebhooks?: OpenAPIObject['webhooks'],
+    scannedWebhooks?: OpenAPIObject['webhooks']
+  ): OpenAPIObject['webhooks'] | undefined {
+    if (!configWebhooks && !scannedWebhooks) {
+      return undefined;
+    }
+    return assignTwoLevelsDeep({}, configWebhooks || {}, scannedWebhooks || {});
+  }
+
   public static createDocument(
     app: INestApplication,
     config: Omit<OpenAPIObject, 'paths'>,
@@ -35,18 +46,45 @@ export class SwaggerModule {
   ): OpenAPIObject {
     const swaggerScanner = new SwaggerScanner();
     const document = swaggerScanner.scanApplication(app, options);
+    const { webhooks: configWebhooks, ...configWithoutWebhooks } =
+      config as OpenAPIObject;
 
     document.components = assignTwoLevelsDeep(
       {},
       config.components,
       document.components
     );
-
-    return {
+    const {
+      webhooks: scannedWebhooks,
+      webhookPaths,
+      ...documentWithoutWebhooks
+    } = document as OpenAPIObject & {
+      webhookPaths?: OpenAPIObject['paths'];
+    };
+    const mergedWebhooks = SwaggerModule.mergeWebhooks(
+      configWebhooks,
+      scannedWebhooks
+    );
+    const shouldIncludeWebhooks = isOas31OrLater(config.openapi ?? '3.0.0');
+    const baseDocument: OpenAPIObject = {
       openapi: '3.0.0',
       paths: {},
-      ...config,
-      ...document
+      ...configWithoutWebhooks,
+      ...documentWithoutWebhooks
+    };
+
+    if (shouldIncludeWebhooks) {
+      return {
+        ...baseDocument,
+        ...(mergedWebhooks ? { webhooks: mergedWebhooks } : {})
+      };
+    }
+
+    return {
+      ...baseDocument,
+      paths: webhookPaths
+        ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
+        : baseDocument.paths
     };
   }
 
@@ -171,7 +209,7 @@ export class SwaggerModule {
           swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
         }
 
-        res.send(swaggerUiInitJS);
+        return res.send(swaggerUiInitJS);
       }
     );
 
@@ -203,7 +241,7 @@ export class SwaggerModule {
             swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
           }
 
-          res.send(swaggerUiInitJS);
+          return res.send(swaggerUiInitJS);
         }
       );
     } catch {
@@ -285,7 +323,7 @@ export class SwaggerModule {
               )
             : document;
 
-          res.send(JSON.stringify(documentToSerialize));
+          return res.send(JSON.stringify(documentToSerialize));
         }
       );
     }
@@ -312,7 +350,7 @@ export class SwaggerModule {
             skipInvalid: true,
             noRefs: true
           });
-          res.send(yamlDocument);
+          return res.send(yamlDocument);
         }
       );
     }

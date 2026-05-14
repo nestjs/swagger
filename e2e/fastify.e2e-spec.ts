@@ -686,4 +686,66 @@ describe('Fastify Swagger', () => {
       await app.close();
     });
   });
+
+  describe('with @fastify/compress registered', () => {
+    const SWAGGER_RELATIVE_URL = '/apidoc';
+
+    beforeEach(async () => {
+      const fastifyCompress = (await import('@fastify/compress')).default;
+      await app.register(fastifyCompress as any);
+
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument);
+
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('should serve the JSON definition with brotli compression', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`${SWAGGER_RELATIVE_URL}-json`)
+        .set('Accept-Encoding', 'br');
+
+      expect(response.status).toEqual(200);
+      expect(response.headers['content-encoding']).toEqual('br');
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
+
+    it('should serve the JSON definition with gzip compression', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`${SWAGGER_RELATIVE_URL}-json`)
+        .set('Accept-Encoding', 'gzip');
+
+      expect(response.status).toEqual(200);
+      expect(response.headers['content-encoding']).toEqual('gzip');
+      expect(Object.keys(response.body).length).toBeGreaterThan(0);
+    });
+
+    it('should serve the YAML definition with brotli compression', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`${SWAGGER_RELATIVE_URL}-yaml`)
+        .set('Accept-Encoding', 'br');
+
+      expect(response.status).toEqual(200);
+      expect(response.headers['content-encoding']).toEqual('br');
+      expect(response.text.length).toBeGreaterThan(0);
+    });
+
+    it('should serve swagger-ui-init.js with brotli compression', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`${SWAGGER_RELATIVE_URL}/swagger-ui-init.js`)
+        .set('Accept-Encoding', 'br');
+
+      expect(response.status).toEqual(200);
+      expect(response.headers['content-encoding']).toEqual('br');
+      expect(response.text.length).toBeGreaterThan(0);
+    });
+  });
 });

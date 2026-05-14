@@ -20,6 +20,15 @@ export type ApiPropertyCommonOptions = SchemaObjectMetadata & {
    * @see [Swagger link objects](https://swagger.io/docs/specification/links/)
    */
   link?: () => Type<unknown> | Function;
+  /**
+   * Limits the depth of `example` / `examples` values emitted for this single
+   * schema entry. Overrides `SwaggerDocumentOptions.exampleMaxDepth` for this
+   * property only; sibling and nested schemas are unaffected.
+   *
+   * The metadata is stripped before the document is returned so it never
+   * appears in the generated OpenAPI output.
+   */
+  exampleMaxDepth?: number;
 };
 
 export type ApiPropertyOptions =
@@ -77,11 +86,24 @@ export function createApiPropertyDecorator(
   }
 
   if (Array.isArray(options.type)) {
+    // `getTypeIsArrayTuple` strips one level of array wrapping, so when
+    // `options.type` is still an array here the caller provided a nested
+    // array type (e.g. `type: [[String]]` or `type: [String], isArray: true`).
+    // Capture the inner type before reassignment - reading `options.type[0]`
+    // after the assignment below would index into the string `'array'` and
+    // produce `items.items.type === 'a'` (the first character of `'array'`).
+    const innerType = options.type[0];
     options.type = 'array';
     options.items = {
       type: 'array',
       items: {
-        type: options.type[0]
+        // Normalize built-in constructors (String, Number, Boolean, ...) to
+        // their OpenAPI primitive names; `JSON.stringify` would otherwise drop
+        // a raw constructor entirely from the emitted document.
+        type:
+          typeof innerType === 'function'
+            ? innerType.name.charAt(0).toLowerCase() + innerType.name.slice(1)
+            : innerType
       }
     };
   }

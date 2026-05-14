@@ -8,6 +8,13 @@ export interface OpenAPIObject {
   info: InfoObject;
   servers?: ServerObject[];
   paths: PathsObject;
+  /**
+   * OpenAPI 3.1: a map of out-of-band callbacks (webhooks) that may be initiated
+   * by the API provider and sent to the API consumer.
+   *
+   * @see https://spec.openapis.org/oas/v3.1.0#webhooks-object
+   */
+  webhooks?: WebhooksObject;
   components?: ComponentsObject;
   security?: SecurityRequirementObject[];
   tags?: TagObject[];
@@ -59,6 +66,7 @@ export interface ComponentsObject {
 }
 
 export type PathsObject = Record<string, PathItemObject>;
+export type WebhooksObject = Record<string, PathItemObject>;
 export interface PathItemObject {
   $ref?: string;
   summary?: string;
@@ -147,8 +155,10 @@ export interface EncodingPropertyObject {
   allowReserved?: boolean;
 }
 
-export interface ResponsesObject
-  extends Record<string, ResponseObject | ReferenceObject | undefined> {
+export interface ResponsesObject extends Record<
+  string,
+  ResponseObject | ReferenceObject | undefined
+> {
   default?: ResponseObject | ReferenceObject;
 }
 

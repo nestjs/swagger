@@ -22,6 +22,7 @@ export {
   ApiResponseProperty
 } from './api-property.decorator.js';
 export * from './api-query.decorator.js';
+export * from './api-webhook.decorator.js';
 export * from './api-response.decorator.js';
 export * from './api-security.decorator.js';
 export * from './api-use-tags.decorator.js';
