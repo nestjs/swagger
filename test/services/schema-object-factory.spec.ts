@@ -1162,6 +1162,40 @@ describe('SchemaObjectFactory', () => {
       );
       expect(paramResult.schema.$ref).toBeUndefined();
     });
+
+    it('should create enum schema for query params using SWC const-enum object metadata', () => {
+      const CampaignStatus = {
+        ACTIVE: 'active',
+        PAUSED: 'paused',
+        COMPLETED: 'completed'
+      } as const;
+      const schemas: Record<string, SchemasObject> = {};
+
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: CampaignStatus,
+          name: 'status',
+          required: false
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          in: 'query',
+          name: 'status',
+          required: false,
+          schema: {
+            type: 'string',
+            enum: ['active', 'paused', 'completed']
+          },
+          selfRequired: false
+        })
+      );
+    });
   });
 
   describe('transformToArraySchemaProperty', () => {
