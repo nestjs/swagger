@@ -209,7 +209,7 @@ export class SwaggerModule {
           swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
         }
 
-        res.send(swaggerUiInitJS);
+        return res.send(swaggerUiInitJS);
       }
     );
 
@@ -241,7 +241,7 @@ export class SwaggerModule {
             swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
           }
 
-          res.send(swaggerUiInitJS);
+          return res.send(swaggerUiInitJS);
         }
       );
     } catch {
@@ -323,7 +323,7 @@ export class SwaggerModule {
               )
             : document;
 
-          res.send(JSON.stringify(documentToSerialize));
+          return res.send(JSON.stringify(documentToSerialize));
         }
       );
     }
@@ -350,7 +350,7 @@ export class SwaggerModule {
             skipInvalid: true,
             noRefs: true
           });
-          res.send(yamlDocument);
+          return res.send(yamlDocument);
         }
       );
     }
