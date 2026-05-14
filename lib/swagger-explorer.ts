@@ -1,4 +1,3 @@
-import lodash from 'lodash';
 import { RequestMethod, VersioningType } from '@nestjs/common';
 import {
   METHOD_METADATA,
@@ -20,29 +19,18 @@ import { ApplicationConfig, MetadataScanner } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { LegacyRouteConverter } from '@nestjs/core/router/legacy-route-converter.js';
 import { RoutePathFactory } from '@nestjs/core/router/route-path-factory.js';
-const {
-  cloneDeep,
-  flatten,
-  get,
-  head,
-  isArray,
-  isEmpty,
-  mapValues,
-  omit,
-  omitBy,
-  pick
-} = lodash;
+import lodash from 'lodash';
 import { parse, Wildcard } from 'path-to-regexp';
 import { DECORATORS } from './constants.js';
 import { exploreApiCallbacksMetadata } from './explorers/api-callbacks.explorer.js';
 import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer.js';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer.js';
-import { exploreApiIncludeEndpointMetadata } from './explorers/api-include-endpoint.explorer.js';
 import {
   exploreApiExtraModelsMetadata,
   exploreGlobalApiExtraModelsMetadata
 } from './explorers/api-extra-models.explorer.js';
 import { exploreGlobalApiHeaderMetadata } from './explorers/api-headers.explorer.js';
+import { exploreApiIncludeEndpointMetadata } from './explorers/api-include-endpoint.explorer.js';
 import { exploreApiOperationMetadata } from './explorers/api-operation.explorer.js';
 import { exploreApiParametersMetadata } from './explorers/api-parameters.explorer.js';
 import {
@@ -57,9 +45,9 @@ import {
   exploreApiTagsMetadata,
   exploreGlobalApiTagsMetadata
 } from './explorers/api-use-tags.explorer.js';
-import { OperationIdFactory } from './interfaces/index.js';
 import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolvers.interface.js';
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface.js';
+import { OperationIdFactory } from './interfaces/index.js';
 import {
   OpenAPIObject,
   SchemaObject
@@ -68,6 +56,18 @@ import { MimetypeContentWrapper } from './services/mimetype-content-wrapper.js';
 import { SchemaObjectFactory } from './services/schema-object-factory.js';
 import { isBodyParameter } from './utils/is-body-parameter.util.js';
 import { mergeAndUniq } from './utils/merge-and-uniq.util.js';
+const {
+  cloneDeep,
+  flatten,
+  get,
+  head,
+  isArray,
+  isEmpty,
+  mapValues,
+  omit,
+  omitBy,
+  pick
+} = lodash;
 
 export class SwaggerExplorer {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();

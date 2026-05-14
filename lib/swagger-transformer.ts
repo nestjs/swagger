@@ -1,17 +1,18 @@
 import lodash from 'lodash';
-const { filter, groupBy, keyBy, mapValues, omit } = lodash;
+import { DenormalizedDoc } from './interfaces/denormalized-doc.interface.js';
 import { OpenAPIObject } from './interfaces/index.js';
 import { sortObjectLexicographically } from './utils/sort-object-lexicographically.js';
-import { DenormalizedDoc } from './interfaces/denormalized-doc.interface.js';
+const { filter, groupBy, keyBy, mapValues, omit } = lodash;
 
 type DenormalizedDocWithRoot = DenormalizedDoc & {
   root: NonNullable<DenormalizedDoc['root']>;
 };
 
 export class SwaggerTransformer {
-  public normalizePaths(
-    denormalizedDoc: DenormalizedDoc[]
-  ): Pick<OpenAPIObject, 'paths' | 'webhooks'> & {
+  public normalizePaths(denormalizedDoc: DenormalizedDoc[]): Pick<
+    OpenAPIObject,
+    'paths' | 'webhooks'
+  > & {
     webhookPaths?: OpenAPIObject['paths'];
   } {
     const roots = denormalizedDoc.filter(

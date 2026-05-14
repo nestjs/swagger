@@ -1,10 +1,9 @@
-import lodash from 'lodash';
 import { INestApplication, InjectionToken, Type } from '@nestjs/common';
 import { MODULE_PATH } from '@nestjs/common/constants.js';
 import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { Module } from '@nestjs/core/injector/module.js';
-const { flatten, isEmpty } = lodash;
+import lodash from 'lodash';
 import {
   OpenAPIObject,
   OperationIdFactory,
@@ -24,6 +23,7 @@ import { applyExampleMaxDepth } from './utils/apply-example-max-depth.util.js';
 import { getGlobalPrefix } from './utils/get-global-prefix.js';
 import { stripDynamicDefaults } from './utils/strip-dynamic-defaults.util.js';
 import { stripLastSlash } from './utils/strip-last-slash.util.js';
+const { flatten, isEmpty } = lodash;
 
 export class SwaggerScanner {
   private readonly transformer = new SwaggerTransformer();
