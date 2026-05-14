@@ -1,5 +1,11 @@
-import lodash from 'lodash';
-const { isFunction, isString, isUndefined, omit, omitBy, pick } = lodash;
+import {
+  isFunction,
+  isString,
+  isUndefined,
+  omit,
+  omitBy,
+  pick
+} from 'es-toolkit/compat';
 import { ApiPropertyOptions } from '../decorators/index.js';
 import {
   BaseParameterObject,

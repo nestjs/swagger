@@ -1,7 +1,6 @@
-import lodash from 'lodash';
+import { clone, merge } from 'es-toolkit/compat';
 import { METHOD_METADATA } from '@nestjs/common/constants.js';
 import { DECORATORS } from '../constants.js';
-const { clone, merge } = lodash;
 import { isConstructor } from '@nestjs/common/utils/shared.utils.js';
 
 function applyExtension(target: any, key: string, value: any): void {

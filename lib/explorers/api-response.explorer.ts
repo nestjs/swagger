@@ -3,8 +3,8 @@ import {
   HTTP_CODE_METADATA,
   METHOD_METADATA
 } from '@nestjs/common/constants.js';
+import { mapValues, omit } from 'es-toolkit/compat';
 import { isEmpty } from '@nestjs/common/utils/shared.utils.js';
-import lodash from 'lodash';
 import { DECORATORS } from '../constants.js';
 import { ApiResponse, ApiResponseMetadata } from '../decorators/index.js';
 import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
@@ -15,7 +15,6 @@ import {
 } from '../services/response-object-factory.js';
 import { GlobalResponsesStorage } from '../storages/global-responses.storage.js';
 import { mergeAndUniq } from '../utils/merge-and-uniq.util.js';
-const { get, mapValues, omit } = lodash;
 
 const responseObjectFactory = new ResponseObjectFactory();
 

@@ -12,7 +12,7 @@ import {
 import { VERSION_NEUTRAL, VersionValue } from '@nestjs/common/interfaces';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { upperFirst } from 'lodash';
+import { upperFirst } from 'es-toolkit/compat';
 import {
   ApiBadRequestResponse,
   ApiBody,

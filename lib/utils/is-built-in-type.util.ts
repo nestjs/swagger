@@ -1,6 +1,5 @@
-import lodash from 'lodash';
+import { isFunction } from 'es-toolkit/compat';
 import { Type } from '@nestjs/common';
-const { isFunction } = lodash;
 import { BUILT_IN_TYPES } from '../services/constants.js';
 
 export function isBuiltInType(

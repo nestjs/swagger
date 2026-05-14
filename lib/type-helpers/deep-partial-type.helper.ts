@@ -1,4 +1,4 @@
-import lodash from 'lodash';
+import { mapValues } from 'es-toolkit/compat';
 import { Type } from '@nestjs/common';
 import {
   applyIsOptionalDecorator,
@@ -7,7 +7,6 @@ import {
   inheritTransformationMetadata,
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
-const { mapValues } = lodash;
 import { DECORATORS } from '../constants.js';
 import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';

@@ -1,5 +1,4 @@
-import lodash from 'lodash';
-const { isEmpty, isFunction, omit, pick } = lodash;
+import { isEmpty, isFunction, omit, pick } from 'es-toolkit/compat';
 import { DECORATORS } from '../constants.js';
 import {
   ApiPropertyOptions,

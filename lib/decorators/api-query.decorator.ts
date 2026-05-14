@@ -1,6 +1,5 @@
-import lodash from 'lodash';
+import { omit } from 'es-toolkit/compat';
 import { Type } from '@nestjs/common';
-const { omit } = lodash;
 import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface.js';
 import {
   ParameterObject,

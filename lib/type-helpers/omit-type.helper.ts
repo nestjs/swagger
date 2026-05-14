@@ -1,11 +1,10 @@
-import lodash from 'lodash';
+import { omit } from 'es-toolkit/compat';
 import { Type } from '@nestjs/common';
 import {
   inheritPropertyInitializers,
   inheritTransformationMetadata,
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
-const { omit } = lodash;
 import { DECORATORS } from '../constants.js';
 import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';

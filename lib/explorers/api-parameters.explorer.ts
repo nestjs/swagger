@@ -1,6 +1,13 @@
-import lodash from 'lodash';
+import {
+  assign,
+  find,
+  isNil,
+  map,
+  omitBy,
+  some,
+  unionWith
+} from 'es-toolkit/compat';
 import { Type } from '@nestjs/common';
-const { assign, find, isNil, map, omitBy, some, unionWith } = lodash;
 import { DECORATORS } from '../constants.js';
 import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';

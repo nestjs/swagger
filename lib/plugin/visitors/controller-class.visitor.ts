@@ -1,6 +1,5 @@
-import lodash from 'lodash';
+import { compact, head } from 'es-toolkit/compat';
 import { HttpStatus } from '@nestjs/common';
-const { compact, head } = lodash;
 import { posix } from 'path';
 import * as ts from 'typescript';
 import { ApiOperation, ApiQuery, ApiResponse } from '../../decorators/index.js';

@@ -19,7 +19,18 @@ import { ApplicationConfig, MetadataScanner } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { LegacyRouteConverter } from '@nestjs/core/router/legacy-route-converter.js';
 import { RoutePathFactory } from '@nestjs/core/router/route-path-factory.js';
-import lodash from 'lodash';
+import {
+  cloneDeep,
+  flatten,
+  get,
+  head,
+  isArray,
+  isEmpty,
+  mapValues,
+  omit,
+  omitBy,
+  pick
+} from 'es-toolkit/compat';
 import { parse, Wildcard } from 'path-to-regexp';
 import { DECORATORS } from './constants.js';
 import { exploreApiCallbacksMetadata } from './explorers/api-callbacks.explorer.js';
@@ -56,19 +67,6 @@ import { MimetypeContentWrapper } from './services/mimetype-content-wrapper.js';
 import { SchemaObjectFactory } from './services/schema-object-factory.js';
 import { isBodyParameter } from './utils/is-body-parameter.util.js';
 import { mergeAndUniq } from './utils/merge-and-uniq.util.js';
-const {
-  cloneDeep,
-  flatten,
-  get,
-  head,
-  isArray,
-  isEmpty,
-  mapValues,
-  omit,
-  omitBy,
-  pick
-} = lodash;
-
 export class SwaggerExplorer {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
   private readonly metadataScanner = new MetadataScanner();

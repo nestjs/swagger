@@ -1,7 +1,4 @@
-import lodash from 'lodash';
-import { Logger, Type } from '@nestjs/common';
-import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
-const {
+import {
   flatten,
   isEqual,
   isFunction,
@@ -11,7 +8,9 @@ const {
   omit,
   omitBy,
   pick
-} = lodash;
+} from 'es-toolkit/compat';
+import { Logger, Type } from '@nestjs/common';
+import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
 import { DECORATORS } from '../constants.js';
 import { ApiSchemaOptions } from '../decorators/index.js';
 import { getTypeIsArrayTuple } from '../decorators/helpers.js';

@@ -1,5 +1,4 @@
-import lodash from 'lodash';
-const { omit, pick } = lodash;
+import { omit, pick } from 'es-toolkit/compat';
 import { ApiResponseMetadata, ApiResponseSchemaHost } from '../decorators/index.js';
 import { getSchemaPath } from '../utils/index.js';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper.js';

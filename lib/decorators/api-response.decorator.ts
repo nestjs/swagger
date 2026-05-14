@@ -1,6 +1,5 @@
-import lodash from 'lodash';
+import { omit } from 'es-toolkit/compat';
 import { HttpStatus, Type } from '@nestjs/common';
-const { omit } = lodash;
 import { DECORATORS } from '../constants.js';
 import {
   ReferenceObject,

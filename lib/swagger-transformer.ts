@@ -1,8 +1,7 @@
-import lodash from 'lodash';
+import { groupBy, keyBy, mapValues, omit } from 'es-toolkit/compat';
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface.js';
 import { OpenAPIObject } from './interfaces/index.js';
 import { sortObjectLexicographically } from './utils/sort-object-lexicographically.js';
-const { filter, groupBy, keyBy, mapValues, omit } = lodash;
 
 type DenormalizedDocWithRoot = DenormalizedDoc & {
   root: NonNullable<DenormalizedDoc['root']>;

@@ -1,7 +1,6 @@
-import lodash from 'lodash';
+import { flatMap, identity } from 'es-toolkit/compat';
 import { Type } from '@nestjs/common';
 import { isFunction } from '@nestjs/common/utils/shared.utils.js';
-const { flatMap, identity } = lodash;
 import { DECORATORS } from '../constants.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';
