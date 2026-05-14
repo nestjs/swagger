@@ -1,4 +1,4 @@
-import { ApiProperty, ApiSchema } from '../../../../lib';
+import { ApiProperty, ApiSchema } from '../../../../lib/index.js';
 
 @ApiSchema({
   name: 'ExtraModel',

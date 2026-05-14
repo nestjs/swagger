@@ -1,8 +1,12 @@
-import { ApiExtension, ApiExtraModels, ApiProperty } from '../../../../lib';
-import { XEnumTest } from '../enums/x-enum-test.enum';
-import { ExtraModelDto } from './extra-model.dto';
-import { LettersEnum } from './pagination-query.dto';
-import { TagDto } from './tag.dto';
+import {
+  ApiExtension,
+  ApiExtraModels,
+  ApiProperty
+} from '../../../../lib/index.js';
+import { XEnumTest } from '../enums/x-enum-test.enum.js';
+import { ExtraModelDto } from './extra-model.dto.js';
+import { LettersEnum } from './pagination-query.dto.js';
+import { TagDto } from './tag.dto.js';
 
 @ApiExtraModels(ExtraModelDto)
 @ApiExtension('x-tags', ['foo', 'bar'])
@@ -96,7 +100,11 @@ export class CreateCatDto {
   @ApiProperty({ description: 'tag', required: false })
   readonly tag: TagDto;
 
-  @ApiProperty({ description: 'nullable tag', nullable: true, type: () => TagDto })
+  @ApiProperty({
+    description: 'nullable tag',
+    nullable: true,
+    type: () => TagDto
+  })
   readonly nullableTag: TagDto;
 
   nested: {

@@ -1,8 +1,8 @@
 import { INestApplication, NotFoundException } from '@nestjs/common';
 import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface.js';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import * as jsyaml from 'js-yaml';
+import { createRequire } from 'node:module';
 import {
   OpenAPIObject,
   SwaggerCustomOptions,
@@ -22,6 +22,8 @@ import { normalizeRelPath } from './utils/normalize-rel-path.js';
 import { resolvePath } from './utils/resolve-path.util.js';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
 import { validatePath } from './utils/validate-path.util.js';
+
+const require = createRequire(import.meta.url);
 
 /**
  * @publicApi
@@ -108,7 +110,9 @@ export class SwaggerModule {
       : getSwaggerAssetsAbsoluteFSPath();
 
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
-      (app as NestFastifyApplication).useStaticAssets({
+      const fastifyStatic = require('@fastify/static');
+
+      httpAdapter.getInstance().register(fastifyStatic, {
         root: swaggerAssetsPath,
         prefix: finalPath,
         decorateReply: false

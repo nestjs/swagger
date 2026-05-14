@@ -3,19 +3,32 @@ import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
 import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
-import SwaggerParser from 'swagger-parser';
 import {
   DocumentBuilder,
   getSchemaPath,
   OpenAPIObject,
   SwaggerModule
-} from '../lib';
-import { ParameterObject, SchemaObject } from '../lib/interfaces/open-api-spec.interface';
-import { ApplicationModule } from './src/app.module';
-import { Cat } from './src/cats/classes/cat.class';
-import { TagDto } from './src/cats/dto/tag.dto';
-import { ValidationErrorDto } from './src/common/dto/validation-error.dto';
-import { ExpressController } from './src/express.controller';
+} from '../lib/index.js';
+import {
+  ParameterObject,
+  ResponseObject,
+  SchemaObject
+} from '../lib/interfaces/open-api-spec.interface.js';
+import { ApplicationModule } from './src/app.module.js';
+import { Cat } from './src/cats/classes/cat.class.js';
+import { TagDto } from './src/cats/dto/tag.dto.js';
+import { ValidationErrorDto } from './src/common/dto/validation-error.dto.js';
+import { ExpressController } from './src/express.controller.js';
+import SwaggerParser = require('@apidevtools/swagger-parser');
+
+function asResponseObject(
+  response: ResponseObject | { $ref: string } | undefined
+) {
+  if (!response || '$ref' in response) {
+    throw new Error('Expected an inlined response object');
+  }
+  return response;
+}
 
 describe('Validate OpenAPI schema', () => {
   let app: INestApplication;
@@ -208,28 +221,33 @@ describe('Validate OpenAPI schema', () => {
   it('should preserve example/examples for built-in scalar response types', () => {
     const document = SwaggerModule.createDocument(app, options);
 
-    const scalarExample =
-      document.paths['/api/cats/scalar-with-example']['get']['responses']['200'];
-    expect(scalarExample.content['application/json'].example).toEqual(42);
+    const scalarExample = asResponseObject(
+      document.paths['/api/cats/scalar-with-example']['get']['responses']['200']
+    );
+    expect(scalarExample.content!['application/json'].example).toEqual(42);
     expect((scalarExample as any).example).toBeUndefined();
 
-    const scalarExamples =
-      document.paths['/api/cats/scalar-with-examples']['get']['responses']['200'];
-    expect(scalarExamples.content['application/json'].examples).toEqual({
+    const scalarExamples = asResponseObject(
+      document.paths['/api/cats/scalar-with-examples']['get']['responses'][
+        '200'
+      ]
+    );
+    expect(scalarExamples.content!['application/json'].examples).toEqual({
       adult: { value: 5, summary: 'Adult cat age' },
       kitten: { value: 1, summary: 'Kitten age' }
     });
     expect((scalarExamples as any).examples).toBeUndefined();
 
-    const arrayExample =
+    const arrayExample = asResponseObject(
       document.paths['/api/cats/array-of-scalar-with-example']['get'][
         'responses'
-      ]['200'];
-    expect(arrayExample.content['application/json'].schema).toEqual({
+      ]['200']
+    );
+    expect(arrayExample.content!['application/json'].schema).toEqual({
       type: 'array',
       items: { type: 'string' }
     });
-    expect(arrayExample.content['application/json'].example).toEqual([
+    expect(arrayExample.content!['application/json'].example).toEqual([
       'Mau',
       'Persian'
     ]);
@@ -428,9 +446,9 @@ describe('Validate OpenAPI schema', () => {
       const createCatOperation = document.paths['/api/cats']?.post;
       expect(createCatOperation?.tags).toBeDefined();
       expect(Array.isArray(createCatOperation?.tags)).toBe(true);
-      expect(createCatOperation?.tags?.every((tag) => typeof tag === 'string')).toBe(
-        true
-      );
+      expect(
+        createCatOperation?.tags?.every((tag) => typeof tag === 'string')
+      ).toBe(true);
     });
   });
 });
