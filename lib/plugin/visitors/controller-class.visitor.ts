@@ -1,5 +1,5 @@
-import { compact, head } from 'es-toolkit/compat';
 import { HttpStatus } from '@nestjs/common';
+import { compact, head } from 'es-toolkit/compat';
 import { posix } from 'path';
 import * as ts from 'typescript';
 import { ApiOperation, ApiQuery, ApiResponse } from '../../decorators/index.js';
@@ -280,7 +280,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     ];
 
     const tags = getTsDocTagsOfNode(node, typeChecker);
-    const existingPropsArray = factory.createNodeArray(apiOperationExistingProps);
+    const existingPropsArray = factory.createNodeArray(
+      apiOperationExistingProps
+    );
     const hasRemarksKey = hasPropertyKey('description', existingPropsArray);
     // Helper so we never unshift a key the user has already written in the
     // explicit @ApiOperation({...}) call; otherwise the generated object

@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   clone,
   isString,
@@ -6,7 +7,6 @@ import {
   omit,
   pickBy
 } from 'es-toolkit/compat';
-import { Logger } from '@nestjs/common';
 import { ApiResponseOptions } from './decorators/api-response.decorator.js';
 import { buildDocumentBase } from './fixtures/document.base.js';
 import { OpenAPIObject } from './interfaces/index.js';

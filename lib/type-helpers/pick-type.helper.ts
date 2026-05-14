@@ -1,10 +1,10 @@
-import { pick } from 'es-toolkit/compat';
 import { Type } from '@nestjs/common';
 import {
   inheritPropertyInitializers,
   inheritTransformationMetadata,
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
+import { pick } from 'es-toolkit/compat';
 import { DECORATORS } from '../constants.js';
 import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';

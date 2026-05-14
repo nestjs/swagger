@@ -1,5 +1,5 @@
-import { omit } from 'es-toolkit/compat';
 import { HttpStatus, Type } from '@nestjs/common';
+import { omit } from 'es-toolkit/compat';
 import { DECORATORS } from '../constants.js';
 import {
   ReferenceObject,
@@ -127,7 +127,7 @@ function mergeResponseEntry(
   const mergedExamples =
     existing.examples && incoming.examples
       ? { ...existing.examples, ...incoming.examples }
-      : incoming.examples ?? existing.examples;
+      : (incoming.examples ?? existing.examples);
 
   return {
     ...existing,

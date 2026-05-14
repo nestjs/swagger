@@ -44,8 +44,7 @@ export function getEnumType(
   if (hasString) {
     return 'string';
   }
-  const hasBoolean =
-    values.filter((v) => typeof v === 'boolean').length > 0;
+  const hasBoolean = values.filter((v) => typeof v === 'boolean').length > 0;
   return hasBoolean ? 'boolean' : 'number';
 }
 
