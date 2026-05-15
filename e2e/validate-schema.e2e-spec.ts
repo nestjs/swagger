@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
 import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
+import type { BaseIssue, BaseSchema } from 'valibot';
 import {
   DocumentBuilder,
   getSchemaPath,
@@ -23,6 +24,7 @@ import { ValidationErrorDto } from './src/common/dto/validation-error.dto.js';
 import { ExpressController } from './src/express.controller.js';
 import { createSchema } from 'zod-openapi';
 import { toJsonSchema } from '@valibot/to-json-schema';
+import type { ZodType } from 'zod';
 import SwaggerParser = require('@apidevtools/swagger-parser');
 
 function asResponseObject(
@@ -164,7 +166,9 @@ describe('Validate OpenAPI schema', () => {
         ]
       }
     }));
-    const document = SwaggerModule.createDocument(app, options, documentOptions);
+    const document = SwaggerModule.createDocument(app, options, {
+      standardSchemaConverter: createTestStandardSchemaConverter()
+    });
 
     const doc = JSON.stringify(document, null, 2);
     writeFileSync(join(__dirname, 'api-spec.json'), doc);
@@ -480,31 +484,46 @@ describe('Validate OpenAPI schema', () => {
 
 function createTestStandardSchemaConverter(): SwaggerDocumentOptions['standardSchemaConverter'] {
   return (schema, { schemaType }) => {
-    const vendor = (schema as { '~standard'?: { vendor?: string } })[
-      '~standard'
-    ]?.vendor;
-
-    switch (vendor) {
-      case 'zod': {
-        const converted = createSchema(schema as never, {
-          io: schemaType,
-          openapiVersion: '3.0.0'
-        });
-        return {
-          schema: converted.schema as SchemaObject | ReferenceObject,
-          components:
-            converted.components as unknown as Record<string, SchemaObject>
-        };
-      }
-      case 'valibot':
-        return {
-          schema: toJsonSchema(schema as any, {
-            target: 'openapi-3.0',
-            typeMode: schemaType
-          }) as unknown as SchemaObject | ReferenceObject
-        };
-      default:
-        return undefined;
+    if (isZodStandardSchema(schema)) {
+      const converted = createSchema(schema, {
+        io: schemaType,
+        openapiVersion: '3.0.0'
+      });
+      return {
+        schema: converted.schema as SchemaObject | ReferenceObject,
+        components:
+          converted.components as unknown as Record<string, SchemaObject>
+      };
     }
+
+    if (isValibotStandardSchema(schema)) {
+      return {
+        schema: toJsonSchema(schema, {
+          target: 'openapi-3.0',
+          typeMode: schemaType
+        }) as unknown as SchemaObject | ReferenceObject
+      };
+    }
+
+    return undefined;
   };
+}
+
+type ValibotSchema = BaseSchema<unknown, unknown, BaseIssue<unknown>>;
+
+function hasVendor(schema: unknown, vendor: string) {
+  return (
+    !!schema &&
+    typeof schema === 'object' &&
+    (schema as { '~standard'?: { vendor?: string } })['~standard']?.vendor ===
+      vendor
+  );
+}
+
+function isZodStandardSchema(schema: unknown): schema is ZodType {
+  return hasVendor(schema, 'zod');
+}
+
+function isValibotStandardSchema(schema: unknown): schema is ValibotSchema {
+  return hasVendor(schema, 'valibot');
 }

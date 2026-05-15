@@ -8,7 +8,9 @@ import {
   FastifyAdapter,
   NestFastifyApplication
 } from '@nestjs/platform-fastify';
+import type { BaseIssue, BaseSchema } from 'valibot';
 import { toJsonSchema } from '@valibot/to-json-schema';
+import type { ZodType } from 'zod';
 import { createSchema } from 'zod-openapi';
 import {
   DocumentBuilder,
@@ -85,34 +87,49 @@ describe.each([
 function createTestStandardSchemaOptions(): SwaggerDocumentOptions {
   return {
     standardSchemaConverter: (schema, { schemaType }) => {
-      const vendor = (schema as { '~standard'?: { vendor?: string } })[
-        '~standard'
-      ]?.vendor;
-
-      switch (vendor) {
-        case 'zod': {
-          const converted = createSchema(schema as never, {
-            io: schemaType,
-            openapiVersion: '3.0.0'
-          });
-          return {
-            schema: converted.schema as SchemaObject | ReferenceObject,
-            components:
-              converted.components as unknown as Record<string, SchemaObject>
-          };
-        }
-        case 'valibot':
-          return {
-            schema: toJsonSchema(schema as any, {
-              target: 'openapi-3.0',
-              typeMode: schemaType
-            }) as unknown as SchemaObject | ReferenceObject
-          };
-        default:
-          return undefined;
+      if (isZodStandardSchema(schema)) {
+        const converted = createSchema(schema, {
+          io: schemaType,
+          openapiVersion: '3.0.0'
+        });
+        return {
+          schema: converted.schema as SchemaObject | ReferenceObject,
+          components:
+            converted.components as unknown as Record<string, SchemaObject>
+        };
       }
+
+      if (isValibotStandardSchema(schema)) {
+        return {
+          schema: toJsonSchema(schema, {
+            target: 'openapi-3.0',
+            typeMode: schemaType
+          }) as unknown as SchemaObject | ReferenceObject
+        };
+      }
+
+      return undefined;
     }
   };
+}
+
+type ValibotSchema = BaseSchema<unknown, unknown, BaseIssue<unknown>>;
+
+function hasVendor(schema: unknown, vendor: string) {
+  return (
+    !!schema &&
+    typeof schema === 'object' &&
+    (schema as { '~standard'?: { vendor?: string } })['~standard']?.vendor ===
+      vendor
+  );
+}
+
+function isZodStandardSchema(schema: unknown): schema is ZodType {
+  return hasVendor(schema, 'zod');
+}
+
+function isValibotStandardSchema(schema: unknown): schema is ValibotSchema {
+  return hasVendor(schema, 'valibot');
 }
 
 function getOperation(

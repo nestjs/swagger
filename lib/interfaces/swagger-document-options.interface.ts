@@ -2,10 +2,6 @@ import type {
   StandardJSONSchemaV1,
   StandardSchemaV1
 } from '@standard-schema/spec';
-import {
-  ReferenceObject,
-  SchemaObject
-} from './open-api-spec.interface.js';
 
 export type OperationIdFactory = (
   controllerKey: string,
@@ -18,12 +14,12 @@ export type StandardJsonSchemaConverter = StandardJSONSchemaV1.Converter;
 export type StandardSchemaObject = StandardSchemaV1 | StandardJSONSchemaV1;
 
 export interface StandardSchemaConversionResult {
-  schema: SchemaObject | ReferenceObject;
-  components?: Record<string, SchemaObject>;
+  schema: unknown;
+  components?: Record<string, any>;
 }
 
 export type StandardSchemaConverter = (
-  schema: StandardSchemaObject,
+  schema: unknown,
   options: {
     schemaType: 'input' | 'output';
   }
@@ -115,6 +111,10 @@ export interface SwaggerDocumentOptions {
   /**
    * Optional adapter that converts a Standard Schema instance supplied to Nest
    * route decorators into an OpenAPI schema.
+   *
+   * The callback receives the raw schema value so consumers can narrow it to
+   * library-specific types (for example `z.ZodType`) without resorting to
+   * unsafe casts.
    */
   standardSchemaConverter?: StandardSchemaConverter;
 }
