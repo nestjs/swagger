@@ -16,10 +16,9 @@ import {
 import { GlobalResponsesStorage } from '../storages/global-responses.storage.js';
 import { mergeAndUniq } from '../utils/merge-and-uniq.util.js';
 
-const responseObjectFactory = new ResponseObjectFactory();
-
 export const exploreGlobalApiResponseMetadata = (
   schemas: Record<string, SchemaObject>,
+  responseObjectFactory: ResponseObjectFactory,
   metatype: Type<unknown>,
   factories: FactoriesNeededByResponseFactory
 ) => {
@@ -32,6 +31,7 @@ export const exploreGlobalApiResponseMetadata = (
     ? mapResponsesToSwaggerResponses(
         globalResponses,
         schemas,
+        responseObjectFactory,
         undefined,
         factories
       )
@@ -45,6 +45,7 @@ export const exploreGlobalApiResponseMetadata = (
           ...mapResponsesToSwaggerResponses(
             responses,
             schemas,
+            responseObjectFactory,
             produces,
             factories
           )
@@ -59,6 +60,7 @@ export const exploreGlobalApiResponseMetadata = (
 
 export const exploreApiResponseMetadata = (
   schemas: Record<string, SchemaObject>,
+  responseObjectFactory: ResponseObjectFactory,
   factories: FactoriesNeededByResponseFactory,
   instance: object,
   prototype: Type<unknown>,
@@ -81,6 +83,7 @@ export const exploreApiResponseMetadata = (
     return mapResponsesToSwaggerResponses(
       responses,
       schemas,
+      responseObjectFactory,
       produces,
       factories
     );
@@ -113,6 +116,7 @@ const omitParamType = (param: Record<string, any>) => omit(param, 'type');
 const mapResponsesToSwaggerResponses = (
   responses: ApiResponseMetadata[] | Record<string, ApiResponseMetadata>,
   schemas: Record<string, SchemaObject>,
+  responseObjectFactory: ResponseObjectFactory,
   produces: string[] = ['application/json'],
   factories: FactoriesNeededByResponseFactory
 ) => {

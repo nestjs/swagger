@@ -1,8 +1,15 @@
-import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
-import { DECORATORS } from '../../lib/constants';
 import { Logger } from '@nestjs/common';
+import { toJsonSchema } from '@valibot/to-json-schema';
+import * as v from 'valibot';
+import { z } from 'zod';
+import { createSchema } from 'zod-openapi';
+import { DECORATORS } from '../../lib/constants';
+import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
+import { StandardSchemaConverter } from '../../lib/interfaces';
 import {
   BaseParameterObject,
+  ReferenceObject,
+  SchemaObject,
   SchemasObject
 } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
@@ -21,7 +28,8 @@ describe('SchemaObjectFactory', () => {
     swaggerTypesMapper = new SwaggerTypesMapper();
     schemaObjectFactory = new SchemaObjectFactory(
       modelPropertiesAccessor,
-      swaggerTypesMapper
+      swaggerTypesMapper,
+      testStandardSchemaConverter
     );
   });
 
@@ -56,6 +64,294 @@ describe('SchemaObjectFactory', () => {
       @ApiProperty({ enum: Role, enumName: 'Role' })
       role: Role;
     }
+
+    it('should convert zod standard schemas into an OpenAPI override', () => {
+      class QueryDto {
+        value: number;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: QueryDto,
+          name: 'filter',
+          required: true,
+          standardSchema: z.object({
+            value: z.string(),
+            tags: z.array(z.number())
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          in: 'query',
+          name: 'filter',
+          required: true,
+          schema: expect.objectContaining({
+            type: 'object',
+            properties: {
+              value: { type: 'string' },
+              tags: {
+                type: 'array',
+                items: { type: 'number' }
+              }
+            },
+            required: ['value', 'tags']
+          })
+        })
+      ]);
+    });
+
+    it('should preserve OpenAPI metadata on zod overrides', () => {
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: String,
+          name: 'filter',
+          required: true,
+          standardSchema: z.string().meta({
+            description: 'filter description',
+            example: 'cats'
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          schema: {
+            type: 'string',
+            description: 'filter description',
+            example: 'cats'
+          }
+        })
+      ]);
+    });
+
+    it('should preserve zod unions, enums, and nested OpenAPI metadata on overrides', () => {
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          name: 'filter',
+          type: Object,
+          required: true,
+          standardSchema: z.object({
+            species: z.enum(['cat', 'dog']).meta({
+              title: 'Species',
+              description: 'Species enum from Zod',
+              example: 'cat'
+            }),
+            contact: z
+              .union([
+                z.string().email(),
+                z.object({
+                  phone: z.string().meta({
+                    description: 'Phone number from Zod',
+                    example: '123-456'
+                  })
+                })
+              ])
+              .meta({
+                title: 'PreferredContact',
+                description: 'Preferred contact from Zod',
+                examples: ['owner@example.com']
+              }),
+            profile: z
+              .object({
+                nickname: z.string().meta({
+                  description: 'Nested nickname from Zod',
+                  example: 'Captain Whiskers'
+                })
+              })
+              .meta({
+                title: 'CatProfile',
+                description: 'Nested cat profile from Zod'
+              })
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+      const parameter = result[0] as any;
+
+      expect(parameter.schema.properties.species).toEqual({
+        type: 'string',
+        enum: ['cat', 'dog'],
+        title: 'Species',
+        description: 'Species enum from Zod',
+        example: 'cat'
+      });
+      expect(parameter.schema.properties.contact).toEqual(
+        expect.objectContaining({
+          title: 'PreferredContact',
+          description: 'Preferred contact from Zod'
+        })
+      );
+      expect(parameter.schema.properties.profile).toEqual(
+        expect.objectContaining({
+          title: 'CatProfile',
+          description: 'Nested cat profile from Zod',
+          properties: expect.objectContaining({
+            nickname: {
+              type: 'string',
+              description: 'Nested nickname from Zod',
+              example: 'Captain Whiskers'
+            }
+          })
+        })
+      );
+    });
+
+    it('should convert valibot standard schemas into query properties', () => {
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: Object,
+          required: true,
+          standardSchema: v.object({
+            page: v.number(),
+            search: v.optional(v.string())
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          in: 'query',
+          name: 'page',
+          required: true,
+          schema: { type: 'number' }
+        }),
+        expect.objectContaining({
+          in: 'query',
+          name: 'search',
+          required: false,
+          schema: { type: 'string' }
+        })
+      ]);
+    });
+
+    it('should preserve OpenAPI metadata on valibot overrides', () => {
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: Object,
+          required: true,
+          standardSchema: v.object({
+            name: v.pipe(v.string(), v.description('cat name')),
+            search: v.pipe(v.optional(v.string()), v.title('Search term'))
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          name: 'name',
+          required: true,
+          schema: { type: 'string', description: 'cat name' }
+        }),
+        expect.objectContaining({
+          name: 'search',
+          required: false,
+          schema: { type: 'string', title: 'Search term' }
+        })
+      ]);
+    });
+
+    it('should expand valibot unions, enums, and nested metadata into query parameters', () => {
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: Object,
+          required: true,
+          standardSchema: v.object({
+            mode: v.pipe(
+              v.picklist(['simple', 'advanced']),
+              v.description('Mode enum from Valibot'),
+              v.examples(['simple'])
+            ),
+            filter: v.pipe(
+              v.union([
+                v.string(),
+                v.object({
+                  nested: v.pipe(
+                    v.string(),
+                    v.description('Nested filter from Valibot'),
+                    v.examples(['persian'])
+                  )
+                })
+              ]),
+              v.title('FilterTitle'),
+              v.description('Filter union from Valibot')
+            ),
+            details: v.pipe(
+              v.object({
+                label: v.pipe(
+                  v.string(),
+                  v.description('Nested label from Valibot'),
+                  v.examples(['primary'])
+                )
+              }),
+              v.title('Details title from Valibot'),
+              v.description('Nested details from Valibot')
+            )
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+      const mode = result.find(
+        (parameter: any) => parameter.name === 'mode'
+      ) as any;
+      const filter = result.find(
+        (parameter: any) => parameter.name === 'filter'
+      ) as any;
+      const details = result.find(
+        (parameter: any) => parameter.name === 'details'
+      ) as any;
+
+      expect(mode.schema).toEqual(
+        expect.objectContaining({
+          type: 'string',
+          enum: ['simple', 'advanced'],
+          description: 'Mode enum from Valibot'
+        })
+      );
+      expect((mode.schema.examples ?? [mode.schema.example])[0]).toBe('simple');
+      expect(filter.schema).toEqual(
+        expect.objectContaining({
+          title: 'FilterTitle',
+          description: 'Filter union from Valibot'
+        })
+      );
+      expect(details.schema).toEqual(
+        expect.objectContaining({
+          type: 'object',
+          title: 'Details title from Valibot',
+          description: 'Nested details from Valibot',
+          properties: expect.objectContaining({
+            label: expect.objectContaining({
+              type: 'string',
+              description: 'Nested label from Valibot'
+            })
+          })
+        })
+      );
+    });
 
     class Person {
       @ApiProperty({ enum: Role, enumName: 'Role' })
@@ -213,7 +509,7 @@ describe('SchemaObjectFactory', () => {
         required: ['roles']
       });
     });
-    
+
     it('should support enumName with oneOf', () => {
       enum Status {
         Active = 'active',
@@ -237,14 +533,13 @@ describe('SchemaObjectFactory', () => {
         type: 'string',
         enum: ['active', 'inactive']
       });
-      expect(schemas.DtoWithEnumOneOf.properties.status).toEqual({
-        oneOf: [
-          { type: 'string' },
-          { $ref: '#/components/schemas/Status' }
-        ]
+      expect(
+        (schemas.DtoWithEnumOneOf as SchemaObject).properties?.status
+      ).toEqual({
+        oneOf: [{ type: 'string' }, { $ref: '#/components/schemas/Status' }]
       });
       expect(
-        schemas.DtoWithEnumOneOf.properties.status
+        (schemas.DtoWithEnumOneOf as SchemaObject).properties?.status
       ).not.toHaveProperty('allOf');
     });
 
@@ -894,7 +1189,7 @@ describe('SchemaObjectFactory', () => {
 
     it('should resolve nested array type to the correct leaf type', () => {
       class NestedArrayDto {
-        @ApiProperty({ type: [[String]] })
+        @ApiProperty({ type: [[String]] } as any)
         matrix: string[][];
       }
 
@@ -954,10 +1249,7 @@ describe('SchemaObjectFactory', () => {
       });
       expect(result).toEqual(
         expect.objectContaining({
-          oneOf: [
-            { type: 'number' },
-            { $ref: '#/components/schemas/MyEnum' }
-          ]
+          oneOf: [{ type: 'number' }, { $ref: '#/components/schemas/MyEnum' }]
         })
       );
       expect(result).not.toHaveProperty('allOf');
@@ -987,10 +1279,7 @@ describe('SchemaObjectFactory', () => {
       });
       expect(result).toEqual(
         expect.objectContaining({
-          anyOf: [
-            { type: 'number' },
-            { $ref: '#/components/schemas/MyEnum' }
-          ]
+          anyOf: [{ type: 'number' }, { $ref: '#/components/schemas/MyEnum' }]
         })
       );
       expect(result).not.toHaveProperty('allOf');
@@ -1040,6 +1329,119 @@ describe('SchemaObjectFactory', () => {
   });
 
   describe('createFromModel', () => {
+    it('should override an inferred named query type with a standard schema', () => {
+      class QueryDto {
+        value: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: QueryDto,
+          name: 'filter',
+          required: true,
+          standardSchema: createStandardSchema({
+            type: 'string',
+            pattern: '^foo'
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          in: 'query',
+          name: 'filter',
+          schema: {
+            type: 'string',
+            pattern: '^foo'
+          }
+        })
+      ]);
+    });
+
+    it('should override an inferred body type with a standard schema', () => {
+      class BodyDto {
+        value: number;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      const bodyParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'body',
+          type: BodyDto,
+          required: true,
+          standardSchema: z.object({
+            value: z.string()
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(bodyParams, schemas);
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          in: 'body',
+          name: 'BodyDto',
+          schema: expect.objectContaining({
+            type: 'object',
+            properties: {
+              value: { type: 'string' }
+            },
+            required: ['value']
+          })
+        })
+      ]);
+    });
+
+    it('should expand unnamed query standard schemas into parameter properties', () => {
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: Object,
+          required: true,
+          standardSchema: createStandardSchema({
+            type: 'object',
+            required: ['limit'],
+            properties: {
+              limit: {
+                type: 'integer',
+                minimum: 1
+              },
+              search: {
+                type: 'string'
+              }
+            }
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          in: 'query',
+          name: 'limit',
+          required: true,
+          schema: {
+            type: 'integer',
+            minimum: 1
+          }
+        }),
+        expect.objectContaining({
+          in: 'query',
+          name: 'search',
+          required: false,
+          schema: {
+            type: 'string'
+          }
+        })
+      ]);
+    });
+
     it('should preserve parent example when a non-body param property has a DTO type', () => {
       class ChildDto {
         @ApiProperty({ example: 'child DTO example 1' })
@@ -1067,10 +1469,7 @@ describe('SchemaObjectFactory', () => {
         } as any
       ];
 
-      const result = schemaObjectFactory.createFromModel(
-        queryParams,
-        schemas
-      );
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
 
       expect(result).toHaveLength(1);
       const paramResult = result[0] as any;
@@ -1105,10 +1504,7 @@ describe('SchemaObjectFactory', () => {
         } as any
       ];
 
-      const result = schemaObjectFactory.createFromModel(
-        queryParams,
-        schemas
-      );
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
 
       expect(result).toHaveLength(1);
       const paramResult = result[0] as any;
@@ -1157,7 +1553,9 @@ describe('SchemaObjectFactory', () => {
       expect(paramResult.schema.allOf).toEqual(
         expect.arrayContaining([
           { $ref: '#/components/schemas/TagDto' },
-          expect.objectContaining({ $ref: expect.stringContaining('FilterDto') })
+          expect.objectContaining({
+            $ref: expect.stringContaining('FilterDto')
+          })
         ])
       );
       expect(paramResult.schema.$ref).toBeUndefined();
@@ -1197,6 +1595,51 @@ describe('SchemaObjectFactory', () => {
       );
     });
   });
+
+  function createStandardSchema(schema: Record<string, unknown>) {
+    return {
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: () => schema
+        }
+      }
+    };
+  }
+
+  const testStandardSchemaConverter: StandardSchemaConverter = (
+    schema,
+    { schemaType }
+  ) => {
+    const vendor = (schema as { '~standard'?: { vendor?: string } })[
+      '~standard'
+    ]?.vendor;
+
+    switch (vendor) {
+      case 'zod': {
+        const converted = createSchema(schema as never, {
+          io: schemaType,
+          openapiVersion: '3.0.0'
+        });
+        return {
+          schema: converted.schema as SchemaObject | ReferenceObject,
+          components:
+            converted.components as unknown as Record<string, SchemaObject>
+        };
+      }
+      case 'valibot':
+        return {
+          schema: toJsonSchema(schema as any, {
+            target: 'openapi-3.0',
+            typeMode: schemaType
+          }) as unknown as SchemaObject | ReferenceObject
+        };
+      default:
+        return undefined;
+    }
+  };
 
   describe('transformToArraySchemaProperty', () => {
     it('should preserve items schema when metadata.items is already defined and type is string', () => {

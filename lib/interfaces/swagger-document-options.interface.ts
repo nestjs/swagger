@@ -1,8 +1,33 @@
+import type {
+  StandardJSONSchemaV1,
+  StandardSchemaV1
+} from '@standard-schema/spec';
+import {
+  ReferenceObject,
+  SchemaObject
+} from './open-api-spec.interface.js';
+
 export type OperationIdFactory = (
   controllerKey: string,
   methodKey: string,
   version?: string
 ) => string;
+
+export type StandardJsonSchemaConverter = StandardJSONSchemaV1.Converter;
+
+export type StandardSchemaObject = StandardSchemaV1 | StandardJSONSchemaV1;
+
+export interface StandardSchemaConversionResult {
+  schema: SchemaObject | ReferenceObject;
+  components?: Record<string, SchemaObject>;
+}
+
+export type StandardSchemaConverter = (
+  schema: StandardSchemaObject,
+  options: {
+    schemaType: 'input' | 'output';
+  }
+) => StandardSchemaConversionResult | undefined;
 
 /**
  * @publicApi
@@ -86,4 +111,10 @@ export interface SwaggerDocumentOptions {
    * @default undefined
    */
   exampleMaxDepth?: number;
+
+  /**
+   * Optional adapter that converts a Standard Schema instance supplied to Nest
+   * route decorators into an OpenAPI schema.
+   */
+  standardSchemaConverter?: StandardSchemaConverter;
 }
