@@ -213,7 +213,7 @@ describe('SchemaObjectFactory', () => {
         required: ['roles']
       });
     });
-    
+
     it('should support enumName with oneOf', () => {
       enum Status {
         Active = 'active',
@@ -238,14 +238,11 @@ describe('SchemaObjectFactory', () => {
         enum: ['active', 'inactive']
       });
       expect(schemas.DtoWithEnumOneOf.properties.status).toEqual({
-        oneOf: [
-          { type: 'string' },
-          { $ref: '#/components/schemas/Status' }
-        ]
+        oneOf: [{ type: 'string' }, { $ref: '#/components/schemas/Status' }]
       });
-      expect(
-        schemas.DtoWithEnumOneOf.properties.status
-      ).not.toHaveProperty('allOf');
+      expect(schemas.DtoWithEnumOneOf.properties.status).not.toHaveProperty(
+        'allOf'
+      );
     });
 
     it('should log a warning when detecting duplicate DTOs with different schemas', () => {
@@ -779,6 +776,42 @@ describe('SchemaObjectFactory', () => {
           'Represents a user update.'
         );
       });
+
+      it('should register raw top-level schemas with combinators', () => {
+        @ApiSchema({
+          name: 'Pet',
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              cat: '#/components/schemas/Cat',
+              dog: '#/components/schemas/Dog'
+            }
+          }
+        })
+        class PetDto {}
+
+        const schemas: Record<string, SchemasObject> = {};
+
+        schemaObjectFactory.exploreModelSchema(PetDto, schemas);
+
+        expect(schemas['Pet']).toEqual({
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              cat: '#/components/schemas/Cat',
+              dog: '#/components/schemas/Dog'
+            }
+          }
+        });
+      });
     });
 
     it('should include extension properties', () => {
@@ -954,10 +987,7 @@ describe('SchemaObjectFactory', () => {
       });
       expect(result).toEqual(
         expect.objectContaining({
-          oneOf: [
-            { type: 'number' },
-            { $ref: '#/components/schemas/MyEnum' }
-          ]
+          oneOf: [{ type: 'number' }, { $ref: '#/components/schemas/MyEnum' }]
         })
       );
       expect(result).not.toHaveProperty('allOf');
@@ -987,10 +1017,7 @@ describe('SchemaObjectFactory', () => {
       });
       expect(result).toEqual(
         expect.objectContaining({
-          anyOf: [
-            { type: 'number' },
-            { $ref: '#/components/schemas/MyEnum' }
-          ]
+          anyOf: [{ type: 'number' }, { $ref: '#/components/schemas/MyEnum' }]
         })
       );
       expect(result).not.toHaveProperty('allOf');
@@ -1067,10 +1094,7 @@ describe('SchemaObjectFactory', () => {
         } as any
       ];
 
-      const result = schemaObjectFactory.createFromModel(
-        queryParams,
-        schemas
-      );
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
 
       expect(result).toHaveLength(1);
       const paramResult = result[0] as any;
@@ -1105,10 +1129,7 @@ describe('SchemaObjectFactory', () => {
         } as any
       ];
 
-      const result = schemaObjectFactory.createFromModel(
-        queryParams,
-        schemas
-      );
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
 
       expect(result).toHaveLength(1);
       const paramResult = result[0] as any;
@@ -1157,7 +1178,9 @@ describe('SchemaObjectFactory', () => {
       expect(paramResult.schema.allOf).toEqual(
         expect.arrayContaining([
           { $ref: '#/components/schemas/TagDto' },
-          expect.objectContaining({ $ref: expect.stringContaining('FilterDto') })
+          expect.objectContaining({
+            $ref: expect.stringContaining('FilterDto')
+          })
         ])
       );
       expect(paramResult.schema.$ref).toBeUndefined();
