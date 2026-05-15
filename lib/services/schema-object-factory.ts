@@ -36,6 +36,8 @@ import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
 import { SwaggerTypesMapper } from './swagger-types-mapper.js';
 
+const schemaCombinators = ['oneOf', 'anyOf', 'allOf'] as const;
+
 export class SchemaObjectFactory {
   constructor(
     private readonly modelPropertiesAccessor: ModelPropertiesAccessor,
@@ -320,7 +322,6 @@ export class SchemaObjectFactory {
         throw err;
       }
 
-      const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
       const declaredSchemaCombinator = schemaCombinators.find(
         (combinator) => combinator in property
       );
@@ -370,27 +371,36 @@ export class SchemaObjectFactory {
       Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
 
     const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
+    const isRawSchema = this.isRawSchema(schemaProperties);
 
-    const typeDefinition: SchemaObject = {
-      type: 'object',
-      properties: mapValues(keyBy(propertiesWithType, 'name'), (property) => {
-        const keysToOmit = [
-          'name',
-          'isArray',
-          'enumName',
-          'enumSchema',
-          'selfRequired'
-        ];
-
-        if ('required' in property && Array.isArray(property.required)) {
-          return omit(property, keysToOmit);
+    const typeDefinition: SchemaObject = isRawSchema
+      ? {
+          ...extensionProperties,
+          ...schemaProperties
         }
+      : {
+          type: 'object',
+          properties: mapValues(
+            keyBy(propertiesWithType, 'name'),
+            (property) => {
+              const keysToOmit = [
+                'name',
+                'isArray',
+                'enumName',
+                'enumSchema',
+                'selfRequired'
+              ];
 
-        return omit(property, [...keysToOmit, 'required']);
-      }) as Record<string, SchemaObject | ReferenceObject>,
-      ...extensionProperties,
-      ...schemaProperties
-    };
+              if ('required' in property && Array.isArray(property.required)) {
+                return omit(property, keysToOmit);
+              }
+
+              return omit(property, [...keysToOmit, 'required']);
+            }
+          ) as Record<string, SchemaObject | ReferenceObject>,
+          ...extensionProperties,
+          ...schemaProperties
+        };
 
     const typeDefinitionRequiredFields = propertiesWithType
       .filter((property) =>
@@ -400,7 +410,7 @@ export class SchemaObjectFactory {
       )
       .map((property) => property.name);
 
-    if (typeDefinitionRequiredFields.length > 0) {
+    if (!isRawSchema && typeDefinitionRequiredFields.length > 0) {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
 
@@ -422,6 +432,12 @@ export class SchemaObjectFactory {
       Reflect.getOwnMetadata(DECORATORS.API_SCHEMA, type) ?? [];
     const { name, ...schemaProperties } = schemas[schemas.length - 1] ?? {};
     return { schemaName: name ?? type.name, schemaProperties };
+  }
+
+  private isRawSchema(schemaProperties: Omit<ApiSchemaOptions, 'name'>) {
+    return schemaCombinators.some(
+      (combinator) => combinator in schemaProperties
+    );
   }
 
   mergePropertyWithMetadata(
