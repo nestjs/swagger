@@ -18,6 +18,9 @@ export class ParametersMetadataMapper {
     parameters: ParamsWithType
   ): ParamWithTypeMetadata[] {
     const properties = flatMap(parameters, (param: ParamWithTypeMetadata) => {
+      if (param.standardSchema) {
+        return param;
+      }
       if (!param || param.type === Object || !param.type) {
         return undefined;
       }
