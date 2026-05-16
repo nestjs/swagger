@@ -435,7 +435,9 @@ export class SchemaObjectFactory {
       metadata =
         omit(
           Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key),
-          'link'
+          'link',
+          'style',
+          'explode'
         ) || {};
     }
 
