@@ -1,5 +1,5 @@
-import { OpenAPIObject } from './open-api-spec.interface';
-import { SwaggerUiOptions } from './swagger-ui-options.interface';
+import { OpenAPIObject } from './open-api-spec.interface.js';
+import { SwaggerUiOptions } from './swagger-ui-options.interface.js';
 
 /**
  * @publicApi

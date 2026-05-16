@@ -1,5 +1,5 @@
 import { Logger, Type } from '@nestjs/common';
-import { isUndefined } from '@nestjs/common/utils/shared.utils';
+import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
 import {
   flatten,
   isEqual,
@@ -10,31 +10,31 @@ import {
   omit,
   omitBy,
   pick
-} from 'lodash';
-import { DECORATORS } from '../constants';
-import { ApiSchemaOptions } from '../decorators';
-import { getTypeIsArrayTuple } from '../decorators/helpers';
-import { exploreGlobalApiExtraModelsMetadata } from '../explorers/api-extra-models.explorer';
+} from 'es-toolkit/compat';
+import { DECORATORS } from '../constants.js';
+import { getTypeIsArrayTuple } from '../decorators/helpers.js';
+import { ApiSchemaOptions } from '../decorators/index.js';
+import { exploreGlobalApiExtraModelsMetadata } from '../explorers/api-extra-models.explorer.js';
 import {
   BaseParameterObject,
   ParameterObject,
   ReferenceObject,
   SchemaObject
-} from '../interfaces/open-api-spec.interface';
-import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
-import { getSchemaPath } from '../utils';
+} from '../interfaces/open-api-spec.interface.js';
+import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface.js';
 import {
   getEnumType,
   getEnumValues,
   isEnumArray,
   isEnumMetadata
-} from '../utils/enum.utils';
-import { isBodyParameter } from '../utils/is-body-parameter.util';
-import { isBuiltInType } from '../utils/is-built-in-type.util';
-import { isDateCtor } from '../utils/is-date-ctor.util';
-import { ModelPropertiesAccessor } from './model-properties-accessor';
-import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
-import { SwaggerTypesMapper } from './swagger-types-mapper';
+} from '../utils/enum.utils.js';
+import { getSchemaPath } from '../utils/index.js';
+import { isBodyParameter } from '../utils/is-body-parameter.util.js';
+import { isBuiltInType } from '../utils/is-built-in-type.util.js';
+import { isDateCtor } from '../utils/is-date-ctor.util.js';
+import { ModelPropertiesAccessor } from './model-properties-accessor.js';
+import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
+import { SwaggerTypesMapper } from './swagger-types-mapper.js';
 
 export class SchemaObjectFactory {
   constructor(
@@ -155,7 +155,11 @@ export class SchemaObjectFactory {
           // keys next to $ref). Merge with any pre-existing allOf entries from
           // either the schema itself or the parameter rather than overwriting.
           if ('$ref' in existingSchema) {
-            const { $ref, allOf: existingAllOf, ...restSchema } = existingSchema;
+            const {
+              $ref,
+              allOf: existingAllOf,
+              ...restSchema
+            } = existingSchema;
             const { allOf: paramAllOf, ...restParamOptions } =
               schemaOptionsFromParam;
             const mergedAllOf = [
@@ -502,10 +506,14 @@ export class SchemaObjectFactory {
         ? { type: 'array', items: { $ref } }
         : { $ref };
 
-    return omit(
-      { ...param, schema: newSchema },
-      ['isArray', 'items', 'enumName', 'enum', 'x-enumNames', 'enumSchema']
-    );
+    return omit({ ...param, schema: newSchema }, [
+      'isArray',
+      'items',
+      'enumName',
+      'enum',
+      'x-enumNames',
+      'enumSchema'
+    ]);
   }
 
   createEnumSchemaType(

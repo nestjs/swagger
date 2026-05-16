@@ -5,10 +5,10 @@ import {
 } from '@nestjs/platform-express';
 import path from 'path';
 import request from 'supertest';
-import SwaggerParser from 'swagger-parser';
-import { DocumentBuilder, SwaggerModule } from '../lib';
-import { ApplicationModule } from './src/app.module';
-import { ExpressController } from './src/express.controller';
+import { DocumentBuilder, SwaggerModule } from '../lib/index.js';
+import { ApplicationModule } from './src/app.module.js';
+import { ExpressController } from './src/express.controller.js';
+import SwaggerParser = require('@apidevtools/swagger-parser');
 
 describe('Express Swagger', () => {
   let app: NestExpressApplication;

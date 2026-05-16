@@ -1,12 +1,12 @@
-import { isNil, isUndefined, negate, pickBy } from 'lodash';
-import { DECORATORS } from '../constants';
+import { isNil, isUndefined, negate, pickBy } from 'es-toolkit/compat';
+import { DECORATORS } from '../constants.js';
 import {
   ParameterLocation,
   ParameterObject
-} from '../interfaces/open-api-spec.interface';
-import { SwaggerEnumType } from '../types/swagger-enum.type';
-import { getEnumType, getEnumValues } from '../utils/enum.utils';
-import { createClassDecorator, createParamDecorator } from './helpers';
+} from '../interfaces/open-api-spec.interface.js';
+import { SwaggerEnumType } from '../types/swagger-enum.type.js';
+import { getEnumType, getEnumValues } from '../utils/enum.utils.js';
+import { createClassDecorator, createParamDecorator } from './helpers.js';
 
 export interface ApiHeaderOptions extends Omit<ParameterObject, 'in'> {
   enum?: SwaggerEnumType;

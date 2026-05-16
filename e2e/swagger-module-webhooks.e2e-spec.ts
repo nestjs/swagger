@@ -1,6 +1,6 @@
 import { Controller, Module, Post } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { ApiWebhook, DocumentBuilder, SwaggerModule } from '../lib';
+import { ApiWebhook, DocumentBuilder, SwaggerModule } from '../lib/index.js';
 
 describe('SwaggerModule webhooks handling', () => {
   @Controller()

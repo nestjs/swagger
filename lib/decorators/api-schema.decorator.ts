@@ -1,6 +1,6 @@
-import { DECORATORS } from '../constants';
-import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
-import { createClassDecorator } from './helpers';
+import { DECORATORS } from '../constants.js';
+import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface.js';
+import { createClassDecorator } from './helpers.js';
 
 export interface ApiSchemaOptions extends Pick<SchemaObjectMetadata, 'name'> {
   /**

@@ -1,12 +1,12 @@
 import { posix } from 'path';
 import * as ts from 'typescript';
-import { PluginOptions } from '../merge-options';
-import { pluginDebugLogger } from '../plugin-debug-logger';
+import { PluginOptions } from '../merge-options.js';
+import { pluginDebugLogger } from '../plugin-debug-logger.js';
 import {
   convertPath,
   getOutputExtension,
   replaceImportPath
-} from './plugin-utils';
+} from './plugin-utils.js';
 
 export function typeReferenceToIdentifier(
   typeReferenceDescriptor: {

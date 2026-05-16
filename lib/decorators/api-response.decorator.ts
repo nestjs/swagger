@@ -1,12 +1,12 @@
 import { HttpStatus, Type } from '@nestjs/common';
-import { omit } from 'lodash';
-import { DECORATORS } from '../constants';
+import { omit } from 'es-toolkit/compat';
+import { DECORATORS } from '../constants.js';
 import {
   ReferenceObject,
   ResponseObject,
   SchemaObject
-} from '../interfaces/open-api-spec.interface';
-import { getTypeIsArrayTuple } from './helpers';
+} from '../interfaces/open-api-spec.interface.js';
+import { getTypeIsArrayTuple } from './helpers.js';
 
 type ApiResponseExampleValue = any;
 export interface ApiResponseExamples {
@@ -127,7 +127,7 @@ function mergeResponseEntry(
   const mergedExamples =
     existing.examples && incoming.examples
       ? { ...existing.examples, ...incoming.examples }
-      : incoming.examples ?? existing.examples;
+      : (incoming.examples ?? existing.examples);
 
   return {
     ...existing,

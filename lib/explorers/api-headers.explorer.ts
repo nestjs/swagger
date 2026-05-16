@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { DECORATORS } from '../constants';
+import { DECORATORS } from '../constants.js';
 
 export const exploreGlobalApiHeaderMetadata = (metatype: Type<unknown>) => {
   const headers = Reflect.getMetadata(DECORATORS.API_HEADERS, metatype);

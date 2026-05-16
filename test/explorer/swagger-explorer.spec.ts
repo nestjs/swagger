@@ -7,12 +7,13 @@ import {
   Post,
   Query,
   Version,
+  VERSION_NEUTRAL,
   VersioningType
 } from '@nestjs/common';
-import { VERSION_NEUTRAL, VersionValue } from '@nestjs/common/interfaces';
+import { VersionValue } from '@nestjs/common/internal';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { upperFirst } from 'lodash';
+import { upperFirst } from 'es-toolkit/compat';
 import {
   ApiBadRequestResponse,
   ApiBody,
