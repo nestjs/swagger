@@ -5,3 +5,4 @@ export * from './interfaces';
 export * from './swagger-module';
 export * from './type-helpers';
 export * from './utils';
+export * from './constants';
