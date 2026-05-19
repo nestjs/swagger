@@ -78,6 +78,40 @@ describe('DocumentBuilder', () => {
       });
     });
 
+    it('should add tag with summary option', () => {
+      const builder = new DocumentBuilder();
+      builder.addTag('Cats', 'Cat operations', undefined, {
+        summary: 'Cats'
+      });
+      const doc = builder.build();
+
+      expect(doc.tags).toHaveLength(1);
+      expect(doc.tags[0]).toEqual({
+        name: 'Cats',
+        description: 'Cat operations',
+        summary: 'Cats'
+      });
+    });
+
+    it('should add tag with summary, parent and kind options', () => {
+      const builder = new DocumentBuilder();
+      builder.addTag('Cats', 'Cat operations', undefined, {
+        summary: 'Cats',
+        parent: 'Animals',
+        kind: 'navigation'
+      });
+      const doc = builder.build();
+
+      expect(doc.tags).toHaveLength(1);
+      expect(doc.tags[0]).toEqual({
+        name: 'Cats',
+        description: 'Cat operations',
+        summary: 'Cats',
+        parent: 'Animals',
+        kind: 'navigation'
+      });
+    });
+
     it('should add tag with externalDocs and hierarchy options', () => {
       const builder = new DocumentBuilder();
       builder.addTag(
