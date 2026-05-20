@@ -1,9 +1,14 @@
 import 'reflect-metadata';
+import { Logger } from '@nestjs/common';
 import { ApiTags } from '../../lib/decorators/api-use-tags.decorator';
 import {
   exploreApiTagsMetadata,
   exploreGlobalApiTagsMetadata
 } from '../../lib/explorers/api-use-tags.explorer';
+
+// Some fixtures below declare hierarchy fields (parent/kind) on @ApiTags, which
+// emit a warning at class-decoration time. Silence it to keep test output clean.
+vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
 
 describe('api-use-tags.explorer', () => {
   describe('exploreGlobalApiTagsMetadata', () => {
