@@ -194,6 +194,7 @@ export type LinkParametersObject = Record<string, any>;
 export type HeaderObject = BaseParameterObject;
 export interface TagObject {
   name: string;
+  summary?: string;
   description?: string;
   externalDocs?: ExternalDocumentationObject;
   parent?: string;

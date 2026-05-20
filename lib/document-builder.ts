@@ -118,12 +118,13 @@ export class DocumentBuilder {
     name: string,
     description = '',
     externalDocs?: ExternalDocumentationObject,
-    options?: { parent?: string; kind?: string }
+    options?: { summary?: string; parent?: string; kind?: string }
   ): this {
     this.document.tags = this.document.tags.concat(
       pickBy(
         {
           name,
+          summary: options?.summary,
           description,
           externalDocs,
           parent: options?.parent,
