@@ -584,8 +584,13 @@ export class SchemaObjectFactory {
     pendingSchemaRefs: string[]
   ): SchemaObjectMetadata {
     if (isUndefined(trueMetadataType)) {
+      const errorIn =
+        pendingSchemaRefs?.length > 0
+          ? `in "${pendingSchemaRefs[pendingSchemaRefs.length - 1]}" `
+          : '';
+
       throw new Error(
-        `A circular dependency has been detected (property key: "${key}"). To resolve this, use a lazy resolver for the property type ("type: () => ClassType") on each side of the relationship, or break the cycle by introducing a reference via @ApiExtraModels.`
+        `A circular dependency has been detected ${errorIn}(property key: "${key}"). To resolve this, use a lazy resolver for the property type ("type: () => ClassType") on each side of the relationship, or break the cycle by introducing a reference via @ApiExtraModels.`
       );
     }
     let { schemaName: schemaObjectName } = this.getSchemaMetadata(
