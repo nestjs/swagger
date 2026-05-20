@@ -197,13 +197,23 @@ export interface TagObject {
   description?: string;
   externalDocs?: ExternalDocumentationObject;
   parent?: string;
-  kind?: 'navigation' | 'reference';
+  /**
+   * A machine-readable string to categorize the tag (OpenAPI 3.2+).
+   * The value is free-form; commonly used values are `nav`, `badge`
+   * and `audience`.
+   */
+  kind?: string;
 }
 
 export interface ApiTagOptions {
   name: string;
   parent?: string;
-  kind?: 'navigation' | 'reference';
+  /**
+   * A machine-readable string to categorize the tag (OpenAPI 3.2+).
+   * The value is free-form; commonly used values are `nav`, `badge`
+   * and `audience`.
+   */
+  kind?: string;
 }
 
 export type ExamplesObject = Record<string, ExampleObject | ReferenceObject>;

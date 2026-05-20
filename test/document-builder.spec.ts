@@ -34,7 +34,7 @@ describe('DocumentBuilder', () => {
     it('should add tag with kind option', () => {
       const builder = new DocumentBuilder();
       builder.addTag('Internal', 'Internal APIs', undefined, {
-        kind: 'reference'
+        kind: 'audience'
       });
       const doc = builder.build();
 
@@ -42,7 +42,22 @@ describe('DocumentBuilder', () => {
       expect(doc.tags[0]).toEqual({
         name: 'Internal',
         description: 'Internal APIs',
-        kind: 'reference'
+        kind: 'audience'
+      });
+    });
+
+    it('should add tag with a free-form (custom) kind value', () => {
+      const builder = new DocumentBuilder();
+      builder.addTag('Beta', 'Beta endpoints', undefined, {
+        kind: 'lifecycle-stage'
+      });
+      const doc = builder.build();
+
+      expect(doc.tags).toHaveLength(1);
+      expect(doc.tags[0]).toEqual({
+        name: 'Beta',
+        description: 'Beta endpoints',
+        kind: 'lifecycle-stage'
       });
     });
 
@@ -50,7 +65,7 @@ describe('DocumentBuilder', () => {
       const builder = new DocumentBuilder();
       builder.addTag('Cats', 'Cat operations', undefined, {
         parent: 'Animals',
-        kind: 'navigation'
+        kind: 'nav'
       });
       const doc = builder.build();
 
@@ -59,7 +74,7 @@ describe('DocumentBuilder', () => {
         name: 'Cats',
         description: 'Cat operations',
         parent: 'Animals',
-        kind: 'navigation'
+        kind: 'nav'
       });
     });
 
@@ -69,7 +84,7 @@ describe('DocumentBuilder', () => {
         'Cats',
         'Cat operations',
         { url: 'https://example.com/cats' },
-        { parent: 'Animals', kind: 'navigation' }
+        { parent: 'Animals', kind: 'nav' }
       );
       const doc = builder.build();
 
@@ -79,7 +94,7 @@ describe('DocumentBuilder', () => {
         description: 'Cat operations',
         externalDocs: { url: 'https://example.com/cats' },
         parent: 'Animals',
-        kind: 'navigation'
+        kind: 'nav'
       });
     });
 

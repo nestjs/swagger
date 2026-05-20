@@ -118,7 +118,7 @@ export class DocumentBuilder {
     name: string,
     description = '',
     externalDocs?: ExternalDocumentationObject,
-    options?: { parent?: string; kind?: 'navigation' | 'reference' }
+    options?: { parent?: string; kind?: string }
   ): this {
     this.document.tags = this.document.tags.concat(
       pickBy(
