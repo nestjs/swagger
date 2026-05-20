@@ -14,11 +14,7 @@ export function ApiTags(...tags: (string | ApiTagOptions)[]) {
       return tag;
     }
     if (tag.parent !== undefined || tag.kind !== undefined) {
-      logger.warn(
-        `Tag "${tag.name}" was declared with hierarchy fields (parent/kind) on @ApiTags, ` +
-          `which are dropped. Define them via DocumentBuilder.addTag("${tag.name}", ` +
-          `description, { parent, kind }) so they reach the root-level tags of the document.`
-      );
+      logger.warn(`Tag "${tag.name}" includes hierarchy fields (parent/kind) defined via @ApiTags, but those values are ignored there. Define them with DocumentBuilder.addTag("${tag.name}", description, { parent, kind }) to include them in the document's root-level tags.`);
     }
     return tag.name;
   });
