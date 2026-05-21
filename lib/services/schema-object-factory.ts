@@ -321,6 +321,14 @@ export class SchemaObjectFactory {
         (combinator) => combinator in property
       );
       if (declaredSchemaCombinator) {
+        const reflectedPropertyMetadata = Reflect.getMetadata(
+          DECORATORS.API_MODEL_PROPERTIES,
+          prototype,
+          key
+        );
+        const hasDeclaredSchemaCombinator = schemaCombinators.some(
+          (combinator) => combinator in (reflectedPropertyMetadata || {})
+        );
         const schemaObjectMetadata = property as SchemaObjectMetadata;
 
         if (
@@ -331,7 +339,7 @@ export class SchemaObjectFactory {
           schemaObjectMetadata.items[declaredSchemaCombinator] =
             property[declaredSchemaCombinator];
           delete property[declaredSchemaCombinator];
-        } else if (!schemaObjectMetadata['nullable']) {
+        } else if (hasDeclaredSchemaCombinator) {
           delete schemaObjectMetadata.type;
         }
       }

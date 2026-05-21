@@ -533,6 +533,30 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should drop inferred type for nullable oneOf properties (issue #3928)', () => {
+      class DtoWithNullablePrimitiveUnion {
+        @ApiProperty({
+          oneOf: [{ type: 'string' }, { type: 'number' }],
+          nullable: true
+        })
+        value: string | number | null;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        DtoWithNullablePrimitiveUnion,
+        schemas
+      );
+
+      expect(
+        (schemas['DtoWithNullablePrimitiveUnion'] as Record<string, any>)
+          .properties.value
+      ).toEqual({
+        nullable: true,
+        oneOf: [{ type: 'string' }, { type: 'number' }]
+      });
+    });
+
     it('should purge linked types from properties', () => {
       class Human {
         @ApiProperty()

@@ -2277,6 +2277,18 @@
               }
             ]
           },
+          "nullablePrimitiveUnion": {
+            "description": "nullable primitive union",
+            "nullable": true,
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
           "xEnumTest": {
             "description": "The x-enumNames test",
             "allOf": [
@@ -2304,6 +2316,7 @@
           "enumArr",
           "enumWithRef",
           "nullableTag",
+          "nullablePrimitiveUnion",
           "xEnumTest"
         ]
       },
