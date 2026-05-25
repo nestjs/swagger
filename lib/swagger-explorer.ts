@@ -63,14 +63,18 @@ import {
   OpenAPIObject,
   SchemaObject
 } from './interfaces/open-api-spec.interface.js';
+import { StandardSchemaConverter } from './interfaces/swagger-document-options.interface.js';
 import { MimetypeContentWrapper } from './services/mimetype-content-wrapper.js';
+import { ResponseObjectFactory } from './services/response-object-factory.js';
 import { SchemaObjectFactory } from './services/schema-object-factory.js';
 import { isBodyParameter } from './utils/is-body-parameter.util.js';
 import { mergeAndUniq } from './utils/merge-and-uniq.util.js';
+
 export class SwaggerExplorer {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
   private readonly metadataScanner = new MetadataScanner();
   private readonly schemas: Record<string, SchemaObject> = {};
+  private readonly responseObjectFactory: ResponseObjectFactory;
   private operationIdFactory: OperationIdFactory = (
     controllerKey: string,
     methodKey: string,
@@ -97,8 +101,13 @@ export class SwaggerExplorer {
     private readonly schemaObjectFactory: SchemaObjectFactory,
     private readonly options: {
       httpAdapterType?: string;
+      standardSchemaConverter?: StandardSchemaConverter;
     } = {}
-  ) {}
+  ) {
+    this.responseObjectFactory = new ResponseObjectFactory(
+      this.options.standardSchemaConverter
+    );
+  }
 
   public exploreController(
     wrapper: InstanceWrapper<Controller>,
@@ -132,16 +141,25 @@ export class SwaggerExplorer {
       root: [
         this.exploreRoutePathAndMethod,
         exploreApiOperationMetadata,
-        exploreApiParametersMetadata.bind(null, this.schemas)
+        exploreApiParametersMetadata.bind(
+          null,
+          this.schemas,
+          this.schemaObjectFactory
+        )
       ],
       security: [exploreApiSecurityMetadata],
       tags: [exploreApiTagsMetadata],
       callbacks: [exploreApiCallbacksMetadata],
       responses: [
-        exploreApiResponseMetadata.bind(null, this.schemas, {
-          operationId: this.operationIdFactory,
-          linkName: this.linkNameFactory
-        })
+        exploreApiResponseMetadata.bind(
+          null,
+          this.schemas,
+          this.responseObjectFactory,
+          {
+            operationId: this.operationIdFactory,
+            linkName: this.linkNameFactory
+          }
+        )
       ]
     };
     return this.generateDenormalizedDocument(
@@ -295,7 +313,11 @@ export class SwaggerExplorer {
     const globalExplorers = [
       exploreGlobalApiTagsMetadata(options.autoTagControllers),
       exploreGlobalApiSecurityMetadata,
-      exploreGlobalApiResponseMetadata.bind(null, this.schemas),
+      exploreGlobalApiResponseMetadata.bind(
+        null,
+        this.schemas,
+        this.responseObjectFactory
+      ),
       exploreGlobalApiHeaderMetadata
     ];
     const globalMetadata = globalExplorers
