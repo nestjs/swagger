@@ -6,9 +6,11 @@ import {
   ResponseObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface.js';
+import { StandardSchemaObject } from '../interfaces/swagger-document-options.interface.js';
 import { getTypeIsArrayTuple } from './helpers.js';
 
 type ApiResponseExampleValue = any;
+
 export interface ApiResponseExamples {
   summary: string;
   value: ApiResponseExampleValue;
@@ -20,6 +22,7 @@ export interface ApiResponseCommonMetadata extends Omit<
 > {
   status?: number | 'default' | '1XX' | '2XX' | '3XX' | '4XX' | '5XX';
   type?: Type<unknown> | Function | [Function] | string;
+  standardSchema?: StandardSchemaObject;
   isArray?: boolean;
   description?: string;
   nullable?: boolean;
@@ -59,6 +62,7 @@ export function ApiResponse(
   { overrideExisting } = { overrideExisting: true }
 ): MethodDecorator & ClassDecorator {
   const apiResponseMetadata = options as ApiResponseMetadata;
+
   const [type, isArray] = getTypeIsArrayTuple(
     apiResponseMetadata.type,
     apiResponseMetadata.isArray

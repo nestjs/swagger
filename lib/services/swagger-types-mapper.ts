@@ -20,6 +20,7 @@ type KeysToRemove =
   | 'properties'
   | 'enumName'
   | 'enumSchema'
+  | 'standardSchema'
   | 'selfRequired';
 
 export class SwaggerTypesMapper {
@@ -29,6 +30,7 @@ export class SwaggerTypesMapper {
     'enumName',
     'enumSchema',
     '$ref',
+    'standardSchema',
     'selfRequired',
     ...this.getSchemaOptionsKeys()
   ];

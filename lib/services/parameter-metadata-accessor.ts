@@ -10,11 +10,13 @@ import {
   ParameterLocation,
   SchemaObject
 } from '../interfaces/open-api-spec.interface.js';
+import { StandardSchemaObject } from '../interfaces/swagger-document-options.interface.js';
 import { reverseObjectKeys } from '../utils/reverse-object-keys.util.js';
 
 interface ParamMetadata {
   index: number;
   data?: string | number | object;
+  schema?: StandardSchemaObject;
 }
 type ParamsMetadata = Record<string, ParamMetadata>;
 
@@ -22,6 +24,7 @@ export interface ParamWithTypeMetadata {
   name?: string | number | object;
   type?: Type<unknown>;
   in?: ParameterLocation | 'body' | typeof PARAM_TOKEN_PLACEHOLDER;
+  standardSchema?: StandardSchemaObject;
   isArray?: boolean;
   items?: SchemaObject;
   required?: boolean;
@@ -61,6 +64,7 @@ export class ParameterMetadataAccessor {
         ({
           type: types[param.index],
           name: param.data,
+          standardSchema: param.schema,
           required: true
         }) as unknown as ParamWithTypeMetadata
     ) as unknown as ParamsWithType;

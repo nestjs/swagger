@@ -7,13 +7,16 @@ import {
 } from '../decorators/index.js';
 import {
   LinksObject,
+  ReferenceObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface.js';
+import { StandardSchemaConverter } from '../interfaces/swagger-document-options.interface.js';
 import { isBuiltInType } from '../utils/is-built-in-type.util.js';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import { ResponseObjectMapper } from './response-object-mapper.js';
 import { SchemaObjectFactory } from './schema-object-factory.js';
+import { StandardSchemaOpenApiConverter } from './standard-schema-openapi.converter.js';
 import { SwaggerTypesMapper } from './swagger-types-mapper.js';
 
 export type FactoriesNeededByResponseFactory = {
@@ -29,11 +32,18 @@ export class ResponseObjectFactory {
   private readonly mimetypeContentWrapper = new MimetypeContentWrapper();
   private readonly modelPropertiesAccessor = new ModelPropertiesAccessor();
   private readonly swaggerTypesMapper = new SwaggerTypesMapper();
+  private readonly standardSchemaOpenApiConverter =
+    new StandardSchemaOpenApiConverter(this.standardSchemaConverter);
   private readonly schemaObjectFactory = new SchemaObjectFactory(
     this.modelPropertiesAccessor,
-    this.swaggerTypesMapper
+    this.swaggerTypesMapper,
+    this.standardSchemaConverter
   );
   private readonly responseObjectMapper = new ResponseObjectMapper();
+
+  constructor(
+    private readonly standardSchemaConverter?: StandardSchemaConverter
+  ) {}
 
   create(
     response: ApiResponseMetadata,
@@ -42,7 +52,18 @@ export class ResponseObjectFactory {
     factories: FactoriesNeededByResponseFactory
   ) {
     const { type, isArray } = response;
-    response = omit(response, ['isArray']);
+    const schemaOverride = this.getSchemaOverride(response, schemas);
+    response = omit(response, ['isArray', 'standardSchema']);
+
+    if (schemaOverride) {
+      return this.responseObjectMapper.wrapSchemaWithContent(
+        {
+          ...omit(response, ['type']),
+          schema: schemaOverride
+        } as ApiResponseSchemaHost & ApiResponseMetadata,
+        produces
+      );
+    }
 
     if (!type) {
       return this.responseObjectMapper.wrapSchemaWithContent(
@@ -174,5 +195,26 @@ export class ResponseObjectFactory {
       );
     }
     return this.responseObjectMapper.toRefObject(response, name, produces);
+  }
+
+  private getSchemaOverride(
+    response: ApiResponseMetadata,
+    schemas: Record<string, SchemaObject>
+  ): SchemaObject | ReferenceObject | undefined {
+    if (!response.standardSchema) {
+      return undefined;
+    }
+
+    const convertedSchema = this.standardSchemaOpenApiConverter.convert(
+      response.standardSchema,
+      'output'
+    );
+
+    if (convertedSchema) {
+      Object.assign(schemas, convertedSchema.components);
+      return convertedSchema.schema;
+    }
+
+    return undefined;
   }
 }

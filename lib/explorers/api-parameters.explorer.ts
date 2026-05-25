@@ -26,13 +26,9 @@ const parametersMetadataMapper = new ParametersMetadataMapper(
   modelPropertiesAccessor
 );
 const swaggerTypesMapper = new SwaggerTypesMapper();
-const schemaObjectFactory = new SchemaObjectFactory(
-  modelPropertiesAccessor,
-  swaggerTypesMapper
-);
-
 export const exploreApiParametersMetadata = (
   schemas: Record<string, SchemaObject>,
+  schemaObjectFactory: SchemaObjectFactory,
   instance: object,
   prototype: Type<unknown>,
   method: Function
@@ -59,8 +55,23 @@ export const exploreApiParametersMetadata = (
 
   let properties = reflectedParametersAsProperties;
   if (!noExplicitAndGlobalMetadata) {
+    const hasSameParameterIdentity = (
+      left: { in?: string; name?: string | number | object },
+      right: { in?: string; name?: string | number | object }
+    ) => {
+      if (left.in === 'body' && right.in === 'body') {
+        return true;
+      }
+      return left.name === right.name && left.in === right.in;
+    };
+
     const mergeImplicitAndExplicit = (item: ParamWithTypeMetadata) =>
-      assign(item, find(explicitParameters, ['name', item.name]));
+      assign(
+        item,
+        find(explicitParameters, (explicitParam) =>
+          hasSameParameterIdentity(item, explicitParam)
+        )
+      );
 
     properties = removeBodyMetadataIfExplicitExists(
       properties,
@@ -72,7 +83,7 @@ export const exploreApiParametersMetadata = (
       explicitParameters,
       globalParameters,
       (arrVal, othVal) => {
-        return arrVal.name === othVal.name && arrVal.in === othVal.in;
+        return hasSameParameterIdentity(arrVal, othVal);
       }
     );
   }
@@ -91,7 +102,16 @@ function removeBodyMetadataIfExplicitExists(
 ) {
   const isBodyReflected = some(properties, (p) => p.in === 'body');
   const isBodyDefinedExplicitly = some(explicitParams, (p) => p.in === 'body');
-  if (isBodyReflected && isBodyDefinedExplicitly) {
+  const hasReflectedBodyStandardSchema = some(
+    properties,
+    (p) => p.in === 'body' && !!p.standardSchema
+  );
+
+  if (
+    isBodyReflected &&
+    isBodyDefinedExplicitly &&
+    !hasReflectedBodyStandardSchema
+  ) {
     return omitBy(
       properties,
       (p) => p.in === 'body'
