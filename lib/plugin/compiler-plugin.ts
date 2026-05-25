@@ -1,9 +1,9 @@
 import * as ts from 'typescript';
-import { mergePluginOptions } from './merge-options';
-import { pluginDebugLogger } from './plugin-debug-logger';
-import { isFilenameMatched } from './utils/is-filename-matched.util';
-import { ControllerClassVisitor } from './visitors/controller-class.visitor';
-import { ModelClassVisitor } from './visitors/model-class.visitor';
+import { mergePluginOptions } from './merge-options.js';
+import { pluginDebugLogger } from './plugin-debug-logger.js';
+import { isFilenameMatched } from './utils/is-filename-matched.util.js';
+import { ControllerClassVisitor } from './visitors/controller-class.visitor.js';
+import { ModelClassVisitor } from './visitors/model-class.visitor.js';
 
 const modelClassVisitor = new ModelClassVisitor();
 const controllerClassVisitor = new ControllerClassVisitor();

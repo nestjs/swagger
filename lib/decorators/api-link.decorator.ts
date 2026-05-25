@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { DECORATORS } from '../constants';
+import { DECORATORS } from '../constants.js';
 
 export interface ApiLinkOptions {
   from: Type<unknown> | Function;

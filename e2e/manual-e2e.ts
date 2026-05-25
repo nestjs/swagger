@@ -9,8 +9,8 @@ import {
   NestFastifyApplication
 } from '@nestjs/platform-fastify';
 import { join } from 'path';
-import { DocumentBuilder, SwaggerModule } from '../lib';
-import { ApplicationModule } from './src/app.module';
+import { DocumentBuilder, SwaggerModule } from '../lib/index.js';
+import { ApplicationModule } from './src/app.module.js';
 
 const port = 4001;
 const host = 'localhost';

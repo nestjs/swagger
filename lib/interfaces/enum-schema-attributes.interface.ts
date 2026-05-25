@@ -1,4 +1,4 @@
-import { SchemaObject } from './open-api-spec.interface';
+import { SchemaObject } from './open-api-spec.interface.js';
 
 export type EnumSchemaAttributes = Pick<
   SchemaObject,

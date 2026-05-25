@@ -1,6 +1,6 @@
 import { Type } from '@nestjs/common';
-import { EnumSchemaAttributes } from './enum-schema-attributes.interface';
-import { ReferenceObject, SchemaObject } from './open-api-spec.interface';
+import { EnumSchemaAttributes } from './enum-schema-attributes.interface.js';
+import { ReferenceObject, SchemaObject } from './open-api-spec.interface.js';
 
 export type EnumAllowedTypes =
   | any[]

@@ -1,34 +1,36 @@
 import { INestApplication, InjectionToken, Type } from '@nestjs/common';
-import { MODULE_PATH } from '@nestjs/common/constants';
+import { MODULE_PATH } from '@nestjs/common/constants.js';
 import { ApplicationConfig, NestContainer } from '@nestjs/core';
-import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { Module } from '@nestjs/core/injector/module';
-import { flatten, isEmpty } from 'lodash';
+import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
+import { Module } from '@nestjs/core/injector/module.js';
+import { flatten, isEmpty } from 'es-toolkit/compat';
 import {
   OpenAPIObject,
   OperationIdFactory,
   SwaggerDocumentOptions
-} from './interfaces';
-import { ModuleRoute } from './interfaces/module-route.interface';
+} from './interfaces/index.js';
+import { ModuleRoute } from './interfaces/module-route.interface.js';
 import {
   ReferenceObject,
   SchemaObject
-} from './interfaces/open-api-spec.interface';
-import { ModelPropertiesAccessor } from './services/model-properties-accessor';
-import { SchemaObjectFactory } from './services/schema-object-factory';
-import { SwaggerTypesMapper } from './services/swagger-types-mapper';
-import { SwaggerExplorer } from './swagger-explorer';
-import { SwaggerTransformer } from './swagger-transformer';
-import { applyExampleMaxDepth } from './utils/apply-example-max-depth.util';
-import { getGlobalPrefix } from './utils/get-global-prefix';
-import { stripDynamicDefaults } from './utils/strip-dynamic-defaults.util';
-import { stripLastSlash } from './utils/strip-last-slash.util';
+} from './interfaces/open-api-spec.interface.js';
+import { ModelPropertiesAccessor } from './services/model-properties-accessor.js';
+import { SchemaObjectFactory } from './services/schema-object-factory.js';
+import { SwaggerTypesMapper } from './services/swagger-types-mapper.js';
+import { SwaggerExplorer } from './swagger-explorer.js';
+import { SwaggerTransformer } from './swagger-transformer.js';
+import { applyExampleMaxDepth } from './utils/apply-example-max-depth.util.js';
+import { getGlobalPrefix } from './utils/get-global-prefix.js';
+import { stripDynamicDefaults } from './utils/strip-dynamic-defaults.util.js';
+import { stripLastSlash } from './utils/strip-last-slash.util.js';
 
 export class SwaggerScanner {
   private readonly transformer = new SwaggerTransformer();
-  private readonly schemaObjectFactory = new SchemaObjectFactory(
-    new ModelPropertiesAccessor(),
-    new SwaggerTypesMapper()
+  private readonly modelPropertiesAccessor = new ModelPropertiesAccessor();
+  private readonly swaggerTypesMapper = new SwaggerTypesMapper();
+  private schemaObjectFactory = new SchemaObjectFactory(
+    this.modelPropertiesAccessor,
+    this.swaggerTypesMapper
   );
   private explorer: SwaggerExplorer | undefined;
 
@@ -46,14 +48,21 @@ export class SwaggerScanner {
       autoTagControllers = true,
       onlyIncludeDecoratedEndpoints = false,
       excludeDynamicDefaults = false,
-      exampleMaxDepth
+      exampleMaxDepth,
+      standardSchemaConverter
     } = options;
+
+    this.schemaObjectFactory = new SchemaObjectFactory(
+      this.modelPropertiesAccessor,
+      this.swaggerTypesMapper,
+      standardSchemaConverter
+    );
 
     const untypedApp = app as any;
     const container = untypedApp.container as NestContainer;
     const internalConfigRef = untypedApp.config as ApplicationConfig;
     const httpAdapterType = app.getHttpAdapter().getType();
-    this.initializeSwaggerExplorer(httpAdapterType);
+    this.initializeSwaggerExplorer(httpAdapterType, standardSchemaConverter);
 
     const modules: Module[] = this.getModules(
       container.getModules(),
@@ -180,12 +189,13 @@ export class SwaggerScanner {
     return modulePath ?? Reflect.getMetadata(MODULE_PATH, metatype);
   }
 
-  private initializeSwaggerExplorer(httpAdapterType: string) {
-    if (this.explorer) {
-      return;
-    }
+  private initializeSwaggerExplorer(
+    httpAdapterType: string,
+    standardSchemaConverter?: SwaggerDocumentOptions['standardSchemaConverter']
+  ) {
     this.explorer = new SwaggerExplorer(this.schemaObjectFactory, {
-      httpAdapterType
+      httpAdapterType,
+      standardSchemaConverter
     });
   }
 }

@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import { OPENAPI_NAMESPACE, OPENAPI_PACKAGE_NAME } from '../plugin-constants';
+import { OPENAPI_NAMESPACE, OPENAPI_PACKAGE_NAME } from '../plugin-constants.js';
 
 const [major, minor] = ts.versionMajorMinor.split('.').map((x) => +x);
 

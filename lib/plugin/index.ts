@@ -1,2 +1,2 @@
-export * from './compiler-plugin';
-export * from './visitors/readonly.visitor';
+export * from './compiler-plugin.js';
+export * from './visitors/readonly.visitor.js';

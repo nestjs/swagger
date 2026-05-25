@@ -1,4 +1,4 @@
-import { ApiProperty } from '../../../../lib';
+import { ApiProperty } from '../../../../lib/index.js';
 
 export class ValidationErrorDto {
   @ApiProperty({

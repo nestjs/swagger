@@ -1,8 +1,8 @@
 import * as ts from 'typescript';
-import { PluginOptions, mergePluginOptions } from '../merge-options';
-import { isFilenameMatched } from '../utils/is-filename-matched.util';
-import { ControllerClassVisitor } from './controller-class.visitor';
-import { ModelClassVisitor } from './model-class.visitor';
+import { PluginOptions, mergePluginOptions } from '../merge-options.js';
+import { isFilenameMatched } from '../utils/is-filename-matched.util.js';
+import { ControllerClassVisitor } from './controller-class.visitor.js';
+import { ModelClassVisitor } from './model-class.visitor.js';
 
 /**
  * Collects source file names from all transitively referenced TypeScript projects.

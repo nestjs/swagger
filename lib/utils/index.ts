@@ -1,2 +1,2 @@
-export * from './get-schema-path.util';
-export * from './generate-schema.util';
+export * from './get-schema-path.util.js';
+export * from './generate-schema.util.js';

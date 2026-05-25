@@ -23,7 +23,7 @@ import {
   TypeNode,
   UnionTypeNode
 } from 'typescript';
-import { isDynamicallyAdded } from './plugin-utils';
+import { isDynamicallyAdded } from './plugin-utils.js';
 
 export function renderDocNode(docNode: DocNode) {
   let result: string = '';

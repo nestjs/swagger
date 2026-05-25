@@ -1,5 +1,5 @@
 import { Logger, Type } from '@nestjs/common';
-import { isUndefined } from '@nestjs/common/utils/shared.utils';
+import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
 import {
   flatten,
   isEqual,
@@ -10,36 +10,42 @@ import {
   omit,
   omitBy,
   pick
-} from 'lodash';
-import { DECORATORS } from '../constants';
-import { ApiSchemaOptions } from '../decorators';
-import { getTypeIsArrayTuple } from '../decorators/helpers';
-import { exploreGlobalApiExtraModelsMetadata } from '../explorers/api-extra-models.explorer';
+} from 'es-toolkit/compat';
+import { DECORATORS } from '../constants.js';
+import { getTypeIsArrayTuple } from '../decorators/helpers.js';
+import { ApiSchemaOptions } from '../decorators/index.js';
+import { exploreGlobalApiExtraModelsMetadata } from '../explorers/api-extra-models.explorer.js';
 import {
   BaseParameterObject,
   ParameterObject,
   ReferenceObject,
   SchemaObject
-} from '../interfaces/open-api-spec.interface';
-import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
-import { getSchemaPath } from '../utils';
+} from '../interfaces/open-api-spec.interface.js';
+import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface.js';
+import { StandardSchemaConverter } from '../interfaces/swagger-document-options.interface.js';
 import {
   getEnumType,
   getEnumValues,
   isEnumArray,
   isEnumMetadata
-} from '../utils/enum.utils';
-import { isBodyParameter } from '../utils/is-body-parameter.util';
-import { isBuiltInType } from '../utils/is-built-in-type.util';
-import { isDateCtor } from '../utils/is-date-ctor.util';
-import { ModelPropertiesAccessor } from './model-properties-accessor';
-import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
-import { SwaggerTypesMapper } from './swagger-types-mapper';
+} from '../utils/enum.utils.js';
+import { getSchemaPath } from '../utils/index.js';
+import { isBodyParameter } from '../utils/is-body-parameter.util.js';
+import { isBuiltInType } from '../utils/is-built-in-type.util.js';
+import { isDateCtor } from '../utils/is-date-ctor.util.js';
+import { ModelPropertiesAccessor } from './model-properties-accessor.js';
+import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
+import { StandardSchemaOpenApiConverter } from './standard-schema-openapi.converter.js';
+import { SwaggerTypesMapper } from './swagger-types-mapper.js';
 
 export class SchemaObjectFactory {
+  private readonly standardSchemaOpenApiConverter =
+    new StandardSchemaOpenApiConverter(this.standardSchemaConverter);
+
   constructor(
     private readonly modelPropertiesAccessor: ModelPropertiesAccessor,
-    private readonly swaggerTypesMapper: SwaggerTypesMapper
+    private readonly swaggerTypesMapper: SwaggerTypesMapper,
+    private readonly standardSchemaConverter?: StandardSchemaConverter
   ) {}
 
   createFromModel(
@@ -47,6 +53,16 @@ export class SchemaObjectFactory {
     schemas: Record<string, SchemaObject>
   ): Array<ParamWithTypeMetadata | BaseParameterObject> {
     const parameterObjects = parameters.map((param) => {
+      const schemaOverride = this.getSchemaOverride(param, schemas);
+      if (schemaOverride) {
+        const overriddenParam = this.createSchemaOverrideParam(
+          param,
+          schemaOverride
+        );
+        if (overriddenParam) {
+          return overriddenParam;
+        }
+      }
       if (this.isLazyTypeFunc(param.type)) {
         [param.type, param.isArray] = getTypeIsArrayTuple(
           (param.type as Function)(),
@@ -155,7 +171,11 @@ export class SchemaObjectFactory {
           // keys next to $ref). Merge with any pre-existing allOf entries from
           // either the schema itself or the parameter rather than overwriting.
           if ('$ref' in existingSchema) {
-            const { $ref, allOf: existingAllOf, ...restSchema } = existingSchema;
+            const {
+              $ref,
+              allOf: existingAllOf,
+              ...restSchema
+            } = existingSchema;
             const { allOf: paramAllOf, ...restParamOptions } =
               schemaOptionsFromParam;
             const mergedAllOf = [
@@ -510,10 +530,14 @@ export class SchemaObjectFactory {
         ? { type: 'array', items: { $ref } }
         : { $ref };
 
-    return omit(
-      { ...param, schema: newSchema },
-      ['isArray', 'items', 'enumName', 'enum', 'x-enumNames', 'enumSchema']
-    );
+    return omit({ ...param, schema: newSchema }, [
+      'isArray',
+      'items',
+      'enumName',
+      'enum',
+      'x-enumNames',
+      'enumSchema'
+    ]);
   }
 
   createEnumSchemaType(
@@ -1003,5 +1027,75 @@ export class SchemaObjectFactory {
       'pattern'
     ];
     return [pick(metadata, modifierKeys), modifierKeys];
+  }
+
+  private createSchemaOverrideParam(
+    param: ParamWithTypeMetadata,
+    schema: SchemaObject | ReferenceObject
+  ):
+    | ParamWithTypeMetadata
+    | BaseParameterObject
+    | Array<ParamWithTypeMetadata | BaseParameterObject>
+    | undefined {
+    const baseParam = omit(param, [
+      'isArray',
+      'standardSchema',
+      'type'
+    ]) as Omit<ParamWithTypeMetadata, 'isArray' | 'standardSchema' | 'type'>;
+
+    if (isBodyParameter(param)) {
+      const name =
+        param.name || (isFunction(param.type) ? param.type.name : param.type);
+      return {
+        ...baseParam,
+        name,
+        schema
+      };
+    }
+
+    if (param.name) {
+      return {
+        ...baseParam,
+        schema
+      };
+    }
+
+    if (
+      'type' in schema &&
+      schema.type === 'object' &&
+      'properties' in schema
+    ) {
+      const requiredProperties = new Set(
+        Array.isArray((schema as SchemaObject).required)
+          ? (schema as SchemaObject).required
+          : []
+      );
+      return Object.entries((schema as SchemaObject).properties || {}).map(
+        ([name, propertySchema]) => ({
+          ...baseParam,
+          name,
+          required: requiredProperties.has(name),
+          schema: propertySchema as SchemaObject | ReferenceObject
+        })
+      );
+    }
+
+    return undefined;
+  }
+
+  private getSchemaOverride(
+    param: ParamWithTypeMetadata,
+    schemas: Record<string, SchemaObject>
+  ): SchemaObject | ReferenceObject | undefined {
+    const convertedSchema = this.standardSchemaOpenApiConverter.convert(
+      param.standardSchema,
+      isBodyParameter(param) ? 'input' : 'input'
+    );
+    if (!convertedSchema) {
+      return undefined;
+    }
+
+    Object.assign(schemas, convertedSchema.components);
+    return convertedSchema.schema;
   }
 }

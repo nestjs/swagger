@@ -1,4 +1,4 @@
-import { OpenAPIObject } from '../interfaces';
+import { OpenAPIObject } from '../interfaces/index.js';
 
 export const buildDocumentBase = (): Omit<OpenAPIObject, 'paths'> => ({
   openapi: '3.0.0',

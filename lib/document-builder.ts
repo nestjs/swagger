@@ -1,8 +1,15 @@
 import { Logger } from '@nestjs/common';
-import { clone, isString, isUndefined, negate, omit, pickBy } from 'lodash';
-import { ApiResponseOptions } from './decorators/api-response.decorator';
-import { buildDocumentBase } from './fixtures/document.base';
-import { OpenAPIObject } from './interfaces';
+import {
+  clone,
+  isString,
+  isUndefined,
+  negate,
+  omit,
+  pickBy
+} from 'es-toolkit/compat';
+import { ApiResponseOptions } from './decorators/api-response.decorator.js';
+import { buildDocumentBase } from './fixtures/document.base.js';
+import { OpenAPIObject } from './interfaces/index.js';
 import {
   ExtensionLocation,
   ExternalDocumentationObject,
@@ -11,9 +18,9 @@ import {
   SecuritySchemeObject,
   ServerVariableObject,
   TagObject
-} from './interfaces/open-api-spec.interface';
-import { GlobalParametersStorage } from './storages/global-parameters.storage';
-import { GlobalResponsesStorage } from './storages/global-responses.storage';
+} from './interfaces/open-api-spec.interface.js';
+import { GlobalParametersStorage } from './storages/global-parameters.storage.js';
+import { GlobalResponsesStorage } from './storages/global-responses.storage.js';
 
 /**
  * @publicApi

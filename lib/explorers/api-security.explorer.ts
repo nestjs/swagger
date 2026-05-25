@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { DECORATORS } from '../constants';
+import { DECORATORS } from '../constants.js';
 
 export const exploreGlobalApiSecurityMetadata = (metatype: Type<unknown>) => {
   const security = Reflect.getMetadata(DECORATORS.API_SECURITY, metatype);

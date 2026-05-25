@@ -1,16 +1,24 @@
 import { Type } from '@nestjs/common';
-import { assign, find, isNil, map, omitBy, some, unionWith } from 'lodash';
-import { DECORATORS } from '../constants';
-import { SchemaObject } from '../interfaces/open-api-spec.interface';
-import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
+import {
+  assign,
+  find,
+  isNil,
+  map,
+  omitBy,
+  some,
+  unionWith
+} from 'es-toolkit/compat';
+import { DECORATORS } from '../constants.js';
+import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
+import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
 import {
   ParameterMetadataAccessor,
   ParamWithTypeMetadata
-} from '../services/parameter-metadata-accessor';
-import { ParametersMetadataMapper } from '../services/parameters-metadata-mapper';
-import { SchemaObjectFactory } from '../services/schema-object-factory';
-import { SwaggerTypesMapper } from '../services/swagger-types-mapper';
-import { GlobalParametersStorage } from '../storages/global-parameters.storage';
+} from '../services/parameter-metadata-accessor.js';
+import { ParametersMetadataMapper } from '../services/parameters-metadata-mapper.js';
+import { SchemaObjectFactory } from '../services/schema-object-factory.js';
+import { SwaggerTypesMapper } from '../services/swagger-types-mapper.js';
+import { GlobalParametersStorage } from '../storages/global-parameters.storage.js';
 
 const parameterMetadataAccessor = new ParameterMetadataAccessor();
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
@@ -18,13 +26,9 @@ const parametersMetadataMapper = new ParametersMetadataMapper(
   modelPropertiesAccessor
 );
 const swaggerTypesMapper = new SwaggerTypesMapper();
-const schemaObjectFactory = new SchemaObjectFactory(
-  modelPropertiesAccessor,
-  swaggerTypesMapper
-);
-
 export const exploreApiParametersMetadata = (
   schemas: Record<string, SchemaObject>,
+  schemaObjectFactory: SchemaObjectFactory,
   instance: object,
   prototype: Type<unknown>,
   method: Function
@@ -51,8 +55,23 @@ export const exploreApiParametersMetadata = (
 
   let properties = reflectedParametersAsProperties;
   if (!noExplicitAndGlobalMetadata) {
+    const hasSameParameterIdentity = (
+      left: { in?: string; name?: string | number | object },
+      right: { in?: string; name?: string | number | object }
+    ) => {
+      if (left.in === 'body' && right.in === 'body') {
+        return true;
+      }
+      return left.name === right.name && left.in === right.in;
+    };
+
     const mergeImplicitAndExplicit = (item: ParamWithTypeMetadata) =>
-      assign(item, find(explicitParameters, ['name', item.name]));
+      assign(
+        item,
+        find(explicitParameters, (explicitParam) =>
+          hasSameParameterIdentity(item, explicitParam)
+        )
+      );
 
     properties = removeBodyMetadataIfExplicitExists(
       properties,
@@ -64,7 +83,7 @@ export const exploreApiParametersMetadata = (
       explicitParameters,
       globalParameters,
       (arrVal, othVal) => {
-        return arrVal.name === othVal.name && arrVal.in === othVal.in;
+        return hasSameParameterIdentity(arrVal, othVal);
       }
     );
   }
@@ -83,7 +102,16 @@ function removeBodyMetadataIfExplicitExists(
 ) {
   const isBodyReflected = some(properties, (p) => p.in === 'body');
   const isBodyDefinedExplicitly = some(explicitParams, (p) => p.in === 'body');
-  if (isBodyReflected && isBodyDefinedExplicitly) {
+  const hasReflectedBodyStandardSchema = some(
+    properties,
+    (p) => p.in === 'body' && !!p.standardSchema
+  );
+
+  if (
+    isBodyReflected &&
+    isBodyDefinedExplicitly &&
+    !hasReflectedBodyStandardSchema
+  ) {
     return omitBy(
       properties,
       (p) => p.in === 'body'

@@ -1,10 +1,10 @@
 import { HttpStatus } from '@nestjs/common';
-import { compact, head } from 'lodash';
+import { compact, head } from 'es-toolkit/compat';
 import { posix } from 'path';
 import * as ts from 'typescript';
-import { ApiOperation, ApiQuery, ApiResponse } from '../../decorators';
-import { PluginOptions } from '../merge-options';
-import { OPENAPI_NAMESPACE } from '../plugin-constants';
+import { ApiOperation, ApiQuery, ApiResponse } from '../../decorators/index.js';
+import { PluginOptions } from '../merge-options.js';
+import { OPENAPI_NAMESPACE } from '../plugin-constants.js';
 import {
   createLiteralFromAnyValue,
   getDecoratorArguments,
@@ -12,7 +12,7 @@ import {
   getMainCommentOfNode,
   getTsDocErrorsOfNode,
   getTsDocTagsOfNode
-} from '../utils/ast-utils';
+} from '../utils/ast-utils.js';
 import {
   convertPath,
   getDecoratorOrUndefinedByNames,
@@ -20,9 +20,9 @@ import {
   getTypeReferenceAsString,
   hasPropertyKey,
   normalizePackagePath
-} from '../utils/plugin-utils';
-import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util';
-import { AbstractFileVisitor } from './abstract.visitor';
+} from '../utils/plugin-utils.js';
+import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util.js';
+import { AbstractFileVisitor } from './abstract.visitor.js';
 
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
@@ -280,7 +280,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     ];
 
     const tags = getTsDocTagsOfNode(node, typeChecker);
-    const existingPropsArray = factory.createNodeArray(apiOperationExistingProps);
+    const existingPropsArray = factory.createNodeArray(
+      apiOperationExistingProps
+    );
     const hasRemarksKey = hasPropertyKey('description', existingPropsArray);
     // Helper so we never unshift a key the user has already written in the
     // explicit @ApiOperation({...}) call; otherwise the generated object

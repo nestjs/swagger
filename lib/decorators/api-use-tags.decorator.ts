@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
-import { DECORATORS } from '../constants';
-import { ApiTagOptions } from '../interfaces/open-api-spec.interface';
-import { createMixedDecorator } from './helpers';
+import { DECORATORS } from '../constants.js';
+import { ApiTagOptions } from '../interfaces/open-api-spec.interface.js';
+import { createMixedDecorator } from './helpers.js';
 
 const logger = new Logger('ApiTags');
 

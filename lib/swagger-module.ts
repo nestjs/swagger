@@ -1,27 +1,29 @@
 import { INestApplication, NotFoundException } from '@nestjs/common';
-import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
+import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface.js';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import * as jsyaml from 'js-yaml';
+import { createRequire } from 'node:module';
 import {
   OpenAPIObject,
   SwaggerCustomOptions,
   SwaggerDocumentOptions
-} from './interfaces';
-import { MetadataLoader } from './plugin/metadata-loader';
-import { SwaggerScanner } from './swagger-scanner';
+} from './interfaces/index.js';
+import { MetadataLoader } from './plugin/metadata-loader.js';
+import { SwaggerScanner } from './swagger-scanner.js';
 import {
   buildSwaggerHTML,
   buildSwaggerInitJS,
   getSwaggerAssetsAbsoluteFSPath
-} from './swagger-ui';
-import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
-import { getGlobalPrefix } from './utils/get-global-prefix';
-import { isOas31OrLater } from './utils/is-oas31-or-later.util';
-import { normalizeRelPath } from './utils/normalize-rel-path';
-import { resolvePath } from './utils/resolve-path.util';
-import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
-import { validatePath } from './utils/validate-path.util';
+} from './swagger-ui/index.js';
+import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep.js';
+import { getGlobalPrefix } from './utils/get-global-prefix.js';
+import { isOas31OrLater } from './utils/is-oas31-or-later.util.js';
+import { normalizeRelPath } from './utils/normalize-rel-path.js';
+import { resolvePath } from './utils/resolve-path.util.js';
+import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
+import { validatePath } from './utils/validate-path.util.js';
+
+const require = createRequire(import.meta.url);
 
 /**
  * @publicApi
@@ -108,7 +110,9 @@ export class SwaggerModule {
       : getSwaggerAssetsAbsoluteFSPath();
 
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
-      (app as NestFastifyApplication).useStaticAssets({
+      const fastifyStatic = require('@fastify/static');
+
+      httpAdapter.getInstance().register(fastifyStatic, {
         root: swaggerAssetsPath,
         prefix: finalPath,
         decorateReply: false

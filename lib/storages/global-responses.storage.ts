@@ -1,4 +1,4 @@
-import { ApiResponseOptions } from '../decorators';
+import { ApiResponseOptions } from '../decorators/index.js';
 
 type GlobalResponesMap = Record<string, Omit<ApiResponseOptions, 'status'>>;
 

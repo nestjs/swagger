@@ -1,11 +1,18 @@
-import { isFunction, isString, isUndefined, omit, omitBy, pick } from 'lodash';
-import { ApiPropertyOptions } from '../decorators';
+import {
+  isFunction,
+  isString,
+  isUndefined,
+  omit,
+  omitBy,
+  pick
+} from 'es-toolkit/compat';
+import { ApiPropertyOptions } from '../decorators/index.js';
 import {
   BaseParameterObject,
   ReferenceObject,
   SchemaObject
-} from '../interfaces/open-api-spec.interface';
-import { ParamWithTypeMetadata } from './parameter-metadata-accessor';
+} from '../interfaces/open-api-spec.interface.js';
+import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
 
 type KeysToRemove =
   | keyof ApiPropertyOptions
@@ -13,6 +20,7 @@ type KeysToRemove =
   | 'properties'
   | 'enumName'
   | 'enumSchema'
+  | 'standardSchema'
   | 'selfRequired';
 
 export class SwaggerTypesMapper {
@@ -22,6 +30,7 @@ export class SwaggerTypesMapper {
     'enumName',
     'enumSchema',
     '$ref',
+    'standardSchema',
     'selfRequired',
     ...this.getSchemaOptionsKeys()
   ];
