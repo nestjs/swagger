@@ -10,6 +10,8 @@ export interface PluginOptions {
   controllerKeyOfComment?: string;
   introspectComments?: boolean;
   esmCompatible?: boolean;
+  /** @internal */
+  esmCompatibleWasConfigured?: boolean;
   readonly?: boolean;
   pathToSource?: string;
   debug?: boolean;
@@ -63,6 +65,10 @@ const defaultOptions: PluginOptions = {
 export const mergePluginOptions = (
   options: Record<string, any> = {}
 ): PluginOptions => {
+  const esmCompatibleWasConfigured = Object.prototype.hasOwnProperty.call(
+    options,
+    'esmCompatible'
+  );
   if (isString(options.dtoFileNameSuffix)) {
     options.dtoFileNameSuffix = [options.dtoFileNameSuffix];
   }
@@ -80,8 +86,17 @@ export const mergePluginOptions = (
       }
     }
   }
-  return {
+  const mergedOptions = {
     ...defaultOptions,
     ...options
   };
+
+  Object.defineProperty(mergedOptions, 'esmCompatibleWasConfigured', {
+    value: esmCompatibleWasConfigured,
+    enumerable: false,
+    writable: true,
+    configurable: true
+  });
+
+  return mergedOptions;
 };

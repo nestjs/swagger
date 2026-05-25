@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 import { before } from '../../lib/plugin/compiler-plugin';
 import { pluginDebugLogger } from '../../lib/plugin/plugin-debug-logger';
+import { isEsmOutputFile } from '../../lib/plugin/utils/module-format.util';
 import {
   changedCatDtoText,
   changedCatDtoTextTranspiled,
@@ -325,7 +326,7 @@ describe('API model properties', () => {
         ]
       }
     });
-    expect(result.outputText).toEqual(parameterPropertyDtoTextTranspiled());
+    expect(result.outputText).toEqual(parameterPropertyDtoTextTranspiled(true));
 
     const esmResult = ts.transpileModule(parameterPropertyDtoText, {
       compilerOptions: options,
@@ -347,6 +348,24 @@ describe('API model properties', () => {
     expect(esmResult.outputText).toEqual(
       parameterPropertyDtoTextTranspiled(true)
     );
+  });
+
+  it('should infer ESM-compatible output for NodeNext ESM files', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      target: ts.ScriptTarget.ES2020
+    };
+    const filename = '/Users/Mysliwiec/Projects/swagger/parameter-property.dto.ts';
+    const sourceFile = ts.createSourceFile(
+      filename,
+      parameterPropertyDtoText,
+      ts.ScriptTarget.ES2020,
+      false,
+      ts.ScriptKind.TS
+    );
+
+    expect(isEsmOutputFile(sourceFile, options)).toBe(true);
   });
 
   it('should ignore Exclude decorator', () => {

@@ -21,6 +21,7 @@ import {
   hasPropertyKey,
   normalizePackagePath
 } from '../utils/plugin-utils.js';
+import { resolvePluginOptionsForFile } from '../utils/module-format.util.js';
 import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util.js';
 import { AbstractFileVisitor } from './abstract.visitor.js';
 
@@ -32,6 +33,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     Record<string, ClassMetadata>
   > = {};
   private readonly _typeImports: Record<string, string> = {};
+  private readonly _fileOutputExtensions: Record<string, string> = {};
 
   get typeImports() {
     return this._typeImports;
@@ -43,7 +45,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const metadataWithImports = [];
     Object.keys(this._collectedMetadata).forEach((filePath) => {
       const metadata = this._collectedMetadata[filePath];
-      const fileExt = options.esmCompatible ? getOutputExtension(filePath) : '';
+      const fileExt =
+        this._fileOutputExtensions[filePath] ??
+        (options.esmCompatible ? getOutputExtension(filePath) : '');
       let path = filePath.replace(/\.[jt]s$/, fileExt);
       path = normalizePackagePath(path);
       const importExpr = ts.factory.createCallExpression(
@@ -62,9 +66,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     program: ts.Program,
     options: PluginOptions
   ) {
+    options = resolvePluginOptionsForFile(
+      options,
+      sourceFile,
+      program.getCompilerOptions()
+    );
     const typeChecker = program.getTypeChecker();
     if (!options.readonly) {
-      sourceFile = this.updateImports(sourceFile, ctx.factory, program);
+      sourceFile = this.updateImports(sourceFile, ctx.factory, program, options);
     }
 
     const visitNode = (node: ts.Node): ts.Node => {
@@ -86,6 +95,9 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
               options.pathToSource,
               sourceFile.fileName
             );
+            this._fileOutputExtensions[filePath] = options.esmCompatible
+              ? getOutputExtension(sourceFile.fileName)
+              : '';
 
             if (!this._collectedMetadata[filePath]) {
               this._collectedMetadata[filePath] = {};
