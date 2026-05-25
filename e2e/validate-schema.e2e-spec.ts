@@ -327,6 +327,18 @@ describe('Validate OpenAPI schema', () => {
     });
   });
 
+  it('should omit inferred type when nullable is used with oneOf (issue #3928)', () => {
+    const document = SwaggerModule.createDocument(app, options);
+    const createCatDtoSchema = document.components?.schemas
+      ?.CreateCatDto as SchemaObject;
+
+    expect(createCatDtoSchema.properties.nullablePrimitiveUnion).toEqual({
+      description: 'nullable primitive union',
+      nullable: true,
+      oneOf: [{ type: 'string' }, { type: 'number' }]
+    });
+  });
+
   it('should not add optional properties to required list', () => {
     const document = SwaggerModule.createDocument(app, options);
     const required = (document.components?.schemas?.Cat as SchemaObject)

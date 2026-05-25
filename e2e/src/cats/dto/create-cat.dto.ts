@@ -107,6 +107,13 @@ export class CreateCatDto {
   })
   readonly nullableTag: TagDto;
 
+  @ApiProperty({
+    description: 'nullable primitive union',
+    nullable: true,
+    oneOf: [{ type: 'string' }, { type: 'number' }]
+  })
+  readonly nullablePrimitiveUnion: string | number | null;
+
   nested: {
     first: string;
     second: number;

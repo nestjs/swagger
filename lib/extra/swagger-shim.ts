@@ -273,3 +273,5 @@ export function generateSchema() {
 }
 export const ApiPropertyOptions = {};
 export const OpenAPIObject = {};
+export const DECORATORS_PREFIX = '';
+export const DECORATORS = {};

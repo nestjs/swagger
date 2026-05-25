@@ -1,6 +1,13 @@
 import 'reflect-metadata';
+import { Logger } from '@nestjs/common';
 import { DECORATORS } from '../../lib/constants';
 import { ApiTags } from '../../lib/decorators/api-use-tags.decorator';
+
+// Hierarchy fields (parent/kind) on @ApiTags emit a warning when the decorator
+// runs — which, for class-level decorators, happens at collection time. Mock
+// the logger at module scope so that output stays clean; the dedicated suite
+// below clears and asserts on this same spy.
+const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
 
 describe('ApiTags', () => {
   describe('with string arguments (backward compatibility)', () => {
@@ -100,6 +107,64 @@ describe('ApiTags', () => {
         TestController.prototype.complexMixed
       );
       expect(tags).toEqual(['Cats', 'Dogs', 'Birds']);
+    });
+  });
+
+  describe('warns when hierarchy fields are used', () => {
+    beforeEach(() => {
+      warnSpy.mockClear();
+    });
+
+    it('should warn when parent is set on @ApiTags', () => {
+      class TestController {
+        @ApiTags({ name: 'Cats', parent: 'Animals' })
+        withParent() {}
+      }
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain('"Cats"');
+      expect(warnSpy.mock.calls[0][0]).toContain('parent/kind');
+    });
+
+    it('should warn when kind is set on @ApiTags', () => {
+      class TestController {
+        @ApiTags({ name: 'Internal', kind: 'reference' })
+        withKind() {}
+      }
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain('"Internal"');
+    });
+
+    it('should warn once per object tag carrying hierarchy fields', () => {
+      class TestController {
+        @ApiTags(
+          { name: 'Cats', parent: 'Animals' },
+          'Dogs',
+          { name: 'Birds', kind: 'navigation' }
+        )
+        mixed() {}
+      }
+
+      expect(warnSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should not warn for plain string tags', () => {
+      class TestController {
+        @ApiTags('Cats', 'Pets')
+        plain() {}
+      }
+
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not warn for object tags without hierarchy fields', () => {
+      class TestController {
+        @ApiTags({ name: 'Cats' })
+        nameOnly() {}
+      }
+
+      expect(warnSpy).not.toHaveBeenCalled();
     });
   });
 
