@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import * as ts from 'typescript';
 import { before } from '../../lib/plugin/compiler-plugin';
 import { pluginDebugLogger } from '../../lib/plugin/plugin-debug-logger';
@@ -356,7 +357,7 @@ describe('API model properties', () => {
       moduleResolution: ts.ModuleResolutionKind.NodeNext,
       target: ts.ScriptTarget.ES2020
     };
-    const filename = '/Users/Mysliwiec/Projects/swagger/parameter-property.dto.ts';
+    const filename = resolve(process.cwd(), 'parameter-property.dto.ts');
     const sourceFile = ts.createSourceFile(
       filename,
       parameterPropertyDtoText,
