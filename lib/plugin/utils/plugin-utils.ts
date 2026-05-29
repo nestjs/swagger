@@ -129,6 +129,122 @@ export function getTypeReferenceAsString(
 }
 
 /**
+ * Best-effort extraction of a package-level import specifier from a type node.
+ * For a type imported as `import { ItemStatus } from '@repro/shared/messages';`,
+ * this returns `import("@repro/shared/messages").ItemStatus`.
+ */
+export function getImportedTypeReference(
+  typeNode: ts.TypeNode | undefined,
+  typeChecker: ts.TypeChecker
+): string | undefined {
+  const typeReferenceNode = getImportableTypeReferenceNode(typeNode);
+  if (!typeReferenceNode) {
+    return;
+  }
+
+  const typeName = typeReferenceNode.typeName;
+  if (ts.isQualifiedName(typeName)) {
+    const namespaceSymbol = typeChecker.getSymbolAtLocation(typeName.left);
+    const namespaceImport = namespaceSymbol?.declarations?.find(
+      ts.isNamespaceImport
+    );
+
+    if (
+      !namespaceImport ||
+      !ts.isImportDeclaration(namespaceImport.parent.parent) ||
+      !ts.isStringLiteral(namespaceImport.parent.parent.moduleSpecifier)
+    ) {
+      return;
+    }
+
+    const moduleSpecifier = namespaceImport.parent.parent.moduleSpecifier.text;
+    if (!isPackageSpecifier(moduleSpecifier)) {
+      return;
+    }
+    return `import("${moduleSpecifier}").${typeName.right.text}`;
+  }
+
+  const symbol = typeChecker.getSymbolAtLocation(typeName);
+  const declaration = symbol?.declarations?.find(
+    (item): item is ts.ImportClause | ts.ImportSpecifier =>
+      ts.isImportClause(item) || ts.isImportSpecifier(item)
+  );
+
+  if (!declaration) {
+    return;
+  }
+
+  const importDeclaration = ts.isImportClause(declaration)
+    ? declaration.parent
+    : declaration.parent.parent.parent;
+  if (
+    !ts.isImportDeclaration(importDeclaration) ||
+    !ts.isStringLiteral(importDeclaration.moduleSpecifier)
+  ) {
+    return;
+  }
+
+  const moduleSpecifier = importDeclaration.moduleSpecifier.text;
+  if (!isPackageSpecifier(moduleSpecifier)) {
+    return;
+  }
+
+  const importedName = ts.isImportClause(declaration)
+    ? 'default'
+    : (declaration.propertyName?.text ?? declaration.name.text);
+  return `import("${moduleSpecifier}").${importedName}`;
+}
+
+function getImportableTypeReferenceNode(
+  typeNode: ts.TypeNode | undefined
+): ts.TypeReferenceNode | undefined {
+  if (!typeNode) {
+    return undefined;
+  }
+  if (ts.isTypeReferenceNode(typeNode)) {
+    if (
+      ts.isIdentifier(typeNode.typeName) &&
+      ['Array', 'ReadonlyArray'].includes(typeNode.typeName.text) &&
+      typeNode.typeArguments?.length === 1
+    ) {
+      return getImportableTypeReferenceNode(typeNode.typeArguments[0]);
+    }
+    return typeNode;
+  }
+  if (ts.isArrayTypeNode(typeNode)) {
+    return getImportableTypeReferenceNode(typeNode.elementType);
+  }
+  if (ts.isUnionTypeNode(typeNode)) {
+    const candidates = typeNode.types.filter(
+      (item) =>
+        item.kind !== ts.SyntaxKind.UndefinedKeyword &&
+        item.kind !== ts.SyntaxKind.NullKeyword &&
+        !(
+          ts.isLiteralTypeNode(item) &&
+          item.literal.kind === ts.SyntaxKind.NullKeyword
+        )
+    );
+    return candidates.length === 1
+      ? getImportableTypeReferenceNode(candidates[0])
+      : undefined;
+  }
+  if (ts.isParenthesizedTypeNode(typeNode)) {
+    return getImportableTypeReferenceNode(typeNode.type);
+  }
+  if (ts.isTypeOperatorNode(typeNode)) {
+    return getImportableTypeReferenceNode(typeNode.type);
+  }
+}
+
+function isPackageSpecifier(moduleSpecifier: string): boolean {
+  return (
+    !moduleSpecifier.startsWith('.') &&
+    !isAbsolute(moduleSpecifier) &&
+    (moduleSpecifier.startsWith('@') || moduleSpecifier.includes('/'))
+  );
+}
+
+/**
  * Returns `true` when the supplied type text refers to a top-level
  * `Promise<...>` or `Observable<...>` instantiation.
  *
@@ -177,7 +293,7 @@ export function replaceImportPath(
     );
   }
 
-  let importPath = /\(\"([^)]).+(\")/.exec(typeReference)[0];
+  let importPath = /\("([^)]).+(")/.exec(typeReference)[0];
   if (!importPath) {
     return { typeReference: undefined, importPath: null };
   }
@@ -188,6 +304,10 @@ export function replaceImportPath(
   // have introduced in the import path so that posix.relative can correctly
   // compute a relative path against the (non-encoded) file name.
   const decodedImportPath = safeDecodeURIComponent(importPath);
+  const isPackagePath =
+    (decodedImportPath.startsWith('@') || decodedImportPath.includes('/')) &&
+    !decodedImportPath.startsWith('.') &&
+    !isAbsolute(decodedImportPath);
 
   try {
     if (isAbsolute(decodedImportPath)) {
@@ -204,6 +324,36 @@ export function replaceImportPath(
       importPath: null
     };
   } catch {
+    if (isPackagePath) {
+      const packageTypeReference = options.esmCompatible
+        ? typeReference
+        : typeReference.replace('import', 'require');
+
+      if (options.readonly) {
+        const { typeName, typeImportStatement } =
+          convertToAsyncImport(packageTypeReference);
+        return {
+          typeReference: typeImportStatement ?? packageTypeReference,
+          typeName,
+          importPath: decodedImportPath
+        };
+      }
+
+      if (options.esmCompatible) {
+        const { typeName, typeImportStatement } =
+          convertToAsyncImport(typeReference);
+        return {
+          typeReference: `(${typeImportStatement}).${typeName}`,
+          importPath: decodedImportPath
+        };
+      }
+
+      return {
+        typeReference: packageTypeReference,
+        importPath: decodedImportPath
+      };
+    }
+
     const from = options?.readonly
       ? safeDecodeURIComponent(convertPath(options.pathToSource))
       : getOutputDir(fileName, options);

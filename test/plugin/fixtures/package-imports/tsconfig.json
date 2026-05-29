@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "experimentalDecorators": true,
+    "module": "CommonJS",
+    "newLine": "lf",
+    "noEmitHelpers": true,
+    "outDir": "apps/api/dist",
+    "paths": {
+      "@repro/shared/messages": ["packages/shared/dist/messages/item.d.ts"]
+    },
+    "rootDir": "apps/api/src",
+    "strict": true,
+    "target": "ES2020"
+  },
+  "include": ["apps/api/src/**/*.ts"]
+}
