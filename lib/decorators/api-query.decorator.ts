@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { omit } from 'lodash';
+import { clone, omit } from 'lodash';
 import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
 import {
   ParameterObject,
@@ -29,6 +29,8 @@ interface ApiQueryCommonMetadata extends ParameterOptions {
     | (string & {});
   isArray?: boolean;
   enum?: SwaggerEnumType;
+  // Allow passing custom OpenAPI extensions for parameters
+  extensions?: Record<string, any>;
 }
 
 export type ApiQueryMetadata =
@@ -67,7 +69,7 @@ export function ApiQuery(
   const param: ApiQueryMetadata & Record<string, any> = {
     name: 'name' in options ? options.name : defaultQueryOptions.name,
     in: 'query',
-    ...omit(options, 'enum'),
+    ...omit(options, ['enum', 'extensions']),
     type
   };
 
@@ -79,6 +81,19 @@ export function ApiQuery(
 
   if (isArray) {
     param.isArray = isArray;
+  }
+
+  // Merge custom OpenAPI extensions into parameter metadata.
+  // Accept an `extensions` bag on the options similar to how `@ApiExtension` works
+  // (and consistent with `@ApiParam`).
+  const extensions = (options as ApiQueryCommonMetadata).extensions;
+  if (extensions && typeof extensions === 'object') {
+    const cloned = clone(extensions);
+    for (const [key, value] of Object.entries(cloned)) {
+      // Ensure extension keys are prefixed with 'x-'
+      const extKey = key.startsWith('x-') ? key : `x-${key}`;
+      param[extKey] = value;
+    }
   }
 
   return createParamDecorator(param, defaultQueryOptions);
