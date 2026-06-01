@@ -132,18 +132,29 @@ export function DeepPartialType<T>(
         }
       }
 
-      // Unwrap array type: [SomeDto] → SomeDto
+      // Unwrap array type: [SomeDto] → SomeDto. An array can be expressed
+      // either through the `isArray` flag or by wrapping the type in a
+      // single-element tuple (commonly returned from a lazy factory, e.g.
+      // `type: () => [SomeDto]`). Capture the array-ness so it can be
+      // re-applied when we replace `type` with the wrapped nested class.
+      let isArray = metadata.isArray === true;
       if (Array.isArray(resolvedType) && resolvedType.length === 1) {
         resolvedType = resolvedType[0];
+        isArray = true;
       }
 
-      const nestedType = isDtoClass(resolvedType)
+      const isNestedDto = isDtoClass(resolvedType);
+      const nestedType = isNestedDto
         ? DeepPartialType(resolvedType, options)
         : metadata.type;
 
       const decoratorFactory = ApiProperty({
         ...metadata,
         type: nestedType,
+        // Preserve array semantics that may have been encoded inside a lazy
+        // factory; without this the unwrapped nested type would be emitted as
+        // a single object instead of an array.
+        ...(isNestedDto ? { isArray } : {}),
         required: false
       });
       decoratorFactory(DeepPartialTypeClass.prototype, key);

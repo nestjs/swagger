@@ -49,8 +49,9 @@ describe('DeepPartialType', () => {
     class UpdateUserDto extends DeepPartialType(UserDto) {}
 
     it('should mark all top-level properties as optional', () => {
-      const fields =
-        modelPropertiesAccessor.getModelProperties(UpdateUserDto.prototype);
+      const fields = modelPropertiesAccessor.getModelProperties(
+        UpdateUserDto.prototype
+      );
       expect(fields).toContain('name');
       expect(fields).toContain('age');
       expect(fields).toContain('profile');
@@ -128,6 +129,53 @@ describe('DeepPartialType', () => {
       class UpdateUserDto extends DeepPartialType(UserDto) {}
       expect(getMetadata(UpdateUserDto, 'name').type).toBe(String);
       expect(getMetadata(UpdateUserDto, 'age').type).toBe(Number);
+    });
+  });
+
+  describe('array of nested DTO properties', () => {
+    class TagDto {
+      @ApiProperty({ type: String, required: true })
+      label: string;
+    }
+
+    class ArticleDto {
+      @ApiProperty({ type: String, required: true })
+      title: string;
+
+      // Array expressed through a lazy factory returning a tuple.
+      @ApiProperty({ type: () => [TagDto], required: true })
+      lazyTags: TagDto[];
+
+      // Array expressed through a tuple literal.
+      @ApiProperty({ type: [TagDto], required: true })
+      tupleTags: TagDto[];
+    }
+
+    it('should preserve array-ness for a lazy factory returning a tuple', () => {
+      class UpdateArticleDto extends DeepPartialType(ArticleDto) {}
+      const meta = getMetadata(UpdateArticleDto, 'lazyTags');
+
+      expect(meta.isArray).toBe(true);
+      expect(meta.required).toBe(false);
+      // Type is the wrapped nested partial, not the original TagDto.
+      expect(meta.type).not.toBe(TagDto);
+      expect(typeof meta.type).toBe('function');
+      expect(
+        Reflect.getMetadata(
+          DECORATORS.API_MODEL_PROPERTIES,
+          meta.type.prototype,
+          'label'
+        ).required
+      ).toBe(false);
+    });
+
+    it('should preserve array-ness for a tuple literal type', () => {
+      class UpdateArticleDto extends DeepPartialType(ArticleDto) {}
+      const meta = getMetadata(UpdateArticleDto, 'tupleTags');
+
+      expect(meta.isArray).toBe(true);
+      expect(meta.required).toBe(false);
+      expect(meta.type).not.toBe(TagDto);
     });
   });
 
