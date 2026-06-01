@@ -349,9 +349,23 @@ export function createLiteralFromAnyValue(
   factory: ts.NodeFactory,
   item: unknown
 ) {
-  return Array.isArray(item)
-    ? factory.createArrayLiteralExpression(
-        item.map((item) => createLiteralFromAnyValue(factory, item))
+  if (Array.isArray(item)) {
+    return factory.createArrayLiteralExpression(
+      item.map((item) => createLiteralFromAnyValue(factory, item))
+    );
+  }
+  if (item === null) {
+    return factory.createNull();
+  }
+  if (typeof item === 'object') {
+    return factory.createObjectLiteralExpression(
+      Object.entries(item).map(([key, value]) =>
+        factory.createPropertyAssignment(
+          factory.createStringLiteral(key),
+          createLiteralFromAnyValue(factory, value)
+        )
       )
-    : createPrimitiveLiteral(factory, item);
+    );
+  }
+  return createPrimitiveLiteral(factory, item);
 }
