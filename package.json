@@ -17,6 +17,7 @@
     "./plugin": {
       "types": "./dist/plugin/index.d.ts",
       "import": "./dist/plugin/index.js",
+      "require": "./dist/plugin/index.js",
       "default": "./dist/plugin/index.js"
     },
     "./package.json": "./package.json"
