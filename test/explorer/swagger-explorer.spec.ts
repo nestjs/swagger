@@ -1716,6 +1716,58 @@ describe('SwaggerExplorer', () => {
       expect(schemas.ExtraModel2).toBeDefined();
       expect(schemas.ExtraModel).toBeDefined();
     });
+
+    it('when an extra model uses a raw top-level schema', () => {
+      @ApiSchema({
+        oneOf: [
+          { $ref: '#/components/schemas/Cat' },
+          { $ref: '#/components/schemas/Dog' }
+        ],
+        discriminator: {
+          propertyName: 'type',
+          mapping: {
+            cat: '#/components/schemas/Cat',
+            dog: '#/components/schemas/Dog'
+          }
+        }
+      })
+      class ExtraUnionModel {}
+
+      @Controller()
+      @ApiExtraModels(ExtraUnionModel)
+      class FooController {
+        @Get()
+        find() {
+          return true;
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      const schemas = explorer.getSchemas();
+
+      expect(schemas.ExtraUnionModel).toEqual({
+        oneOf: [
+          { $ref: '#/components/schemas/Cat' },
+          { $ref: '#/components/schemas/Dog' }
+        ],
+        discriminator: {
+          propertyName: 'type',
+          mapping: {
+            cat: '#/components/schemas/Cat',
+            dog: '#/components/schemas/Dog'
+          }
+        }
+      });
+    });
   });
   describe('when a controller is excluded', () => {
     class Foo {}
