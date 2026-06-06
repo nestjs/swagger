@@ -23,9 +23,11 @@ import {
 import {
   canReferenceNode,
   convertPath,
+  createAdditionalPropertiesValueSchema,
   extractTypeArgumentIfArray,
   getDecoratorOrUndefinedByNames,
   getOutputExtension,
+  getRecordValueType,
   getStringLiteralUnionValues,
   getTypeReferenceAsString,
   hasPropertyKey,
@@ -547,6 +549,40 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         ];
       }
       return [];
+    }
+
+    // Record<string, V> / index-signature objects ({ [key: string]: V }) —
+    // emit `type: () => ({ type: 'object', additionalProperties: <valueSchema> })`
+    // so the OpenAPI schema describes the value type instead of an empty object.
+    const recordValueType = getRecordValueType(type, typeChecker);
+    if (recordValueType) {
+      const additionalPropertiesExpr = createAdditionalPropertiesValueSchema(
+        recordValueType,
+        typeChecker,
+        factory
+      );
+      const schemaObjectLiteral = factory.createObjectLiteralExpression(
+        [
+          factory.createPropertyAssignment(
+            'type',
+            factory.createStringLiteral('object')
+          ),
+          factory.createPropertyAssignment(
+            'additionalProperties',
+            additionalPropertiesExpr
+          )
+        ],
+        false
+      );
+      const initializer = factory.createArrowFunction(
+        undefined,
+        undefined,
+        [],
+        undefined,
+        undefined,
+        factory.createParenthesizedExpression(schemaObjectLiteral)
+      );
+      return [factory.createPropertyAssignment(key, initializer)];
     }
 
     const typeReferenceDescriptor = getTypeReferenceAsString(type, typeChecker);
