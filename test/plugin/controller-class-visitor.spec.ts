@@ -21,6 +21,11 @@ import {
   appControllerOptionalQueryTextTranspiled
 } from './fixtures/app.controller-optional-query';
 import {
+  appControllerParamDescriptionText,
+  appControllerParamDescriptionTextTranspiled,
+  appControllerParamDescriptionNoIntrospectTranspiled
+} from './fixtures/app.controller-param-description';
+import {
   appControllerWithoutModifiersText,
   appControllerWithoutModifiersTextTranspiled
 } from './fixtures/app.controller-without-modifiers';
@@ -120,6 +125,52 @@ describe('Controller methods', () => {
       }
     });
     expect(result.outputText).toEqual(appControllerOptionalQueryTextTranspiled);
+  });
+
+  it('should infer @ApiQuery/@ApiParam descriptions from JSDoc @param tags (issue #2784)', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerParamDescriptionText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(
+      appControllerParamDescriptionTextTranspiled
+    );
+  });
+
+  it('should not infer @param descriptions when introspectComments is disabled (issue #2784)', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerParamDescriptionText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: false }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(
+      appControllerParamDescriptionNoIntrospectTranspiled
+    );
   });
 
   it('should still auto-infer the default 2xx response when only error @Api*Response decorators are present (issue #3862)', () => {
