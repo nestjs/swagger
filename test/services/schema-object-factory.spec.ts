@@ -213,7 +213,7 @@ describe('SchemaObjectFactory', () => {
         required: ['roles']
       });
     });
-    
+
     it('should support enumName with oneOf', () => {
       enum Status {
         Active = 'active',
@@ -238,14 +238,11 @@ describe('SchemaObjectFactory', () => {
         enum: ['active', 'inactive']
       });
       expect(schemas.DtoWithEnumOneOf.properties.status).toEqual({
-        oneOf: [
-          { type: 'string' },
-          { $ref: '#/components/schemas/Status' }
-        ]
+        oneOf: [{ type: 'string' }, { $ref: '#/components/schemas/Status' }]
       });
-      expect(
-        schemas.DtoWithEnumOneOf.properties.status
-      ).not.toHaveProperty('allOf');
+      expect(schemas.DtoWithEnumOneOf.properties.status).not.toHaveProperty(
+        'allOf'
+      );
     });
 
     it('should log a warning when detecting duplicate DTOs with different schemas', () => {
@@ -978,10 +975,7 @@ describe('SchemaObjectFactory', () => {
       });
       expect(result).toEqual(
         expect.objectContaining({
-          oneOf: [
-            { type: 'number' },
-            { $ref: '#/components/schemas/MyEnum' }
-          ]
+          oneOf: [{ type: 'number' }, { $ref: '#/components/schemas/MyEnum' }]
         })
       );
       expect(result).not.toHaveProperty('allOf');
@@ -1011,10 +1005,7 @@ describe('SchemaObjectFactory', () => {
       });
       expect(result).toEqual(
         expect.objectContaining({
-          anyOf: [
-            { type: 'number' },
-            { $ref: '#/components/schemas/MyEnum' }
-          ]
+          anyOf: [{ type: 'number' }, { $ref: '#/components/schemas/MyEnum' }]
         })
       );
       expect(result).not.toHaveProperty('allOf');
@@ -1091,10 +1082,7 @@ describe('SchemaObjectFactory', () => {
         } as any
       ];
 
-      const result = schemaObjectFactory.createFromModel(
-        queryParams,
-        schemas
-      );
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
 
       expect(result).toHaveLength(1);
       const paramResult = result[0] as any;
@@ -1129,10 +1117,7 @@ describe('SchemaObjectFactory', () => {
         } as any
       ];
 
-      const result = schemaObjectFactory.createFromModel(
-        queryParams,
-        schemas
-      );
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
 
       expect(result).toHaveLength(1);
       const paramResult = result[0] as any;
@@ -1181,7 +1166,9 @@ describe('SchemaObjectFactory', () => {
       expect(paramResult.schema.allOf).toEqual(
         expect.arrayContaining([
           { $ref: '#/components/schemas/TagDto' },
-          expect.objectContaining({ $ref: expect.stringContaining('FilterDto') })
+          expect.objectContaining({
+            $ref: expect.stringContaining('FilterDto')
+          })
         ])
       );
       expect(paramResult.schema.$ref).toBeUndefined();
@@ -1603,6 +1590,68 @@ describe('SchemaObjectFactory', () => {
       expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).not.toContain(
         'InfoPostDTO'
       );
+    });
+  });
+
+  describe('Record/additionalProperties (plugin output)', () => {
+    it('should preserve additionalProperties emitted for Record<string, V>', () => {
+      class RecordDto {
+        @ApiProperty({
+          type: 'object',
+          additionalProperties: { type: 'string' }
+        })
+        attributes: Record<string, string>;
+      }
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(RecordDto, schemas);
+
+      expect(schemas['RecordDto'].properties['attributes']).toEqual({
+        type: 'object',
+        additionalProperties: { type: 'string' }
+      });
+    });
+
+    it('should preserve additionalProperties: true for Record<string, any>', () => {
+      class AnyRecordDto {
+        @ApiProperty({ type: 'object', additionalProperties: true })
+        attributes: Record<string, any>;
+      }
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(AnyRecordDto, schemas);
+
+      expect(schemas['AnyRecordDto'].properties['attributes']).toEqual({
+        type: 'object',
+        additionalProperties: true
+      });
+    });
+
+    it('should resolve the flat metadata the CLI plugin generates without a circular dependency', () => {
+      class PluginRecordDto {
+        @ApiProperty()
+        attributes: Record<string, string>;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            attributes: {
+              required: true,
+              type: 'object',
+              additionalProperties: { type: 'string' }
+            }
+          };
+        }
+      }
+
+      const schemas: Record<string, any> = {};
+      expect(() =>
+        schemaObjectFactory.exploreModelSchema(PluginRecordDto, schemas)
+      ).not.toThrow();
+
+      expect(schemas['PluginRecordDto'].properties['attributes']).toEqual({
+        type: 'object',
+        additionalProperties: { type: 'string' }
+      });
     });
   });
 });

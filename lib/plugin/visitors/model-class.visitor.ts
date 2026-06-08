@@ -23,9 +23,11 @@ import {
 import {
   canReferenceNode,
   convertPath,
+  createAdditionalPropertiesValueSchema,
   extractTypeArgumentIfArray,
   getDecoratorOrUndefinedByNames,
   getOutputExtension,
+  getRecordValueType,
   getStringLiteralUnionValues,
   getTypeReferenceAsString,
   hasPropertyKey,
@@ -398,6 +400,28 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     return factory.createObjectLiteralExpression(compact(flatten(properties)));
   }
 
+  private createRecordTypePropertyAssignment(
+    factory: ts.NodeFactory,
+    recordValueType: ts.Type,
+    typeChecker: ts.TypeChecker
+  ): ts.PropertyAssignment[] {
+    const additionalPropertiesExpr = createAdditionalPropertiesValueSchema(
+      recordValueType,
+      typeChecker,
+      factory
+    );
+    return [
+      factory.createPropertyAssignment(
+        'type',
+        factory.createStringLiteral('object')
+      ),
+      factory.createPropertyAssignment(
+        'additionalProperties',
+        additionalPropertiesExpr
+      )
+    ];
+  }
+
   /**
    * Returns an array with 0..2 "ts.PropertyAssignment"s.
    * The first one is the "type" property assignment, the second one is the "nullable" property assignment.
@@ -434,6 +458,23 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           options
         );
         return [factory.createPropertyAssignment(key, initializer)];
+      }
+
+      // Inline index signature ({ [key: string]: V }) — treat like Record<string, V>.
+      if (
+        ts.isTypeLiteralNode(node) &&
+        node.members.length > 0 &&
+        node.members.every(ts.isIndexSignatureDeclaration)
+      ) {
+        const literalType = typeChecker.getTypeAtLocation(node);
+        const recordValueType = getRecordValueType(literalType, typeChecker);
+        if (recordValueType) {
+          return this.createRecordTypePropertyAssignment(
+            factory,
+            recordValueType,
+            typeChecker
+          );
+        }
       }
 
       // Inline object literal
@@ -547,6 +588,17 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         ];
       }
       return [];
+    }
+
+    // Record<string, V> describes the value type via additionalProperties
+    // instead of degrading to an empty object schema.
+    const recordValueType = getRecordValueType(type, typeChecker);
+    if (recordValueType) {
+      return this.createRecordTypePropertyAssignment(
+        factory,
+        recordValueType,
+        typeChecker
+      );
     }
 
     const typeReferenceDescriptor = getTypeReferenceAsString(type, typeChecker);
