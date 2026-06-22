@@ -2,6 +2,30 @@ import { Type } from '@nestjs/common';
 import { identity } from 'lodash';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 
+function capitalizeFirstLetter(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function sanitizeTypeNameSegment(value: string | number | symbol): string {
+  return String(value).replace(/[^A-Za-z0-9_$]/g, '_');
+}
+
+export function setMappedTypeClassName<T, K extends keyof T>(
+  target: Function,
+  prefix: string,
+  classRef: Type<T>,
+  keys: readonly K[] = []
+) {
+  const parentTypeName = classRef.name || 'Anonymous';
+  const mappedProperties = keys
+    .map((key) => capitalizeFirstLetter(sanitizeTypeNameSegment(key)))
+    .join('');
+
+  Object.defineProperty(target, 'name', {
+    value: `${prefix}${parentTypeName}${mappedProperties}`
+  });
+}
+
 export function clonePluginMetadataFactory(
   target: Type<unknown>,
   parent: Type<unknown>,

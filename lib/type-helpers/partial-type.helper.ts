@@ -12,7 +12,10 @@ import { ApiProperty } from '../decorators';
 import { MetadataLoader } from '../plugin/metadata-loader';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
-import { clonePluginMetadataFactory } from './mapped-types.utils';
+import {
+  clonePluginMetadataFactory,
+  setMappedTypeClassName
+} from './mapped-types.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
@@ -45,6 +48,7 @@ export function PartialType<T>(
       inheritPropertyInitializers(this, classRef);
     }
   }
+  setMappedTypeClassName(PartialTypeClass, 'Partial', classRef);
   const keysWithValidationConstraints = inheritValidationMetadata(
     classRef,
     PartialTypeClass

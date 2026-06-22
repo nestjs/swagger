@@ -10,29 +10,12 @@ import { ApiProperty } from '../decorators';
 import { MetadataLoader } from '../plugin/metadata-loader';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor';
-import { clonePluginMetadataFactory } from './mapped-types.utils';
+import {
+  clonePluginMetadataFactory,
+  setMappedTypeClassName
+} from './mapped-types.utils';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
-
-function capitalizeFirstLetter(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function sanitizeTypeNameSegment(value: string | number | symbol): string {
-  return String(value).replace(/[^A-Za-z0-9_$]/g, '_');
-}
-
-function getPickTypeClassName<T, K extends keyof T>(
-  classRef: Type<T>,
-  keys: readonly K[]
-): string {
-  const parentTypeName = classRef.name || 'Anonymous';
-  const pickedProperties = keys
-    .map((key) => capitalizeFirstLetter(sanitizeTypeNameSegment(key)))
-    .join('');
-
-  return `Pick${parentTypeName}${pickedProperties}`;
-}
 
 /**
  * @publicApi
@@ -53,9 +36,7 @@ export function PickType<T, K extends keyof T>(
       inheritPropertyInitializers(this, classRef, isInheritedPredicate);
     }
   }
-  Object.defineProperty(PickTypeClass, 'name', {
-    value: getPickTypeClassName(classRef, keys)
-  });
+  setMappedTypeClassName(PickTypeClass, 'Pick', classRef, keys);
 
   inheritValidationMetadata(classRef, PickTypeClass, isInheritedPredicate);
   inheritTransformationMetadata(classRef, PickTypeClass, isInheritedPredicate);

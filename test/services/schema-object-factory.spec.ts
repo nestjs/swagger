@@ -9,7 +9,7 @@ import { ModelPropertiesAccessor } from '../../lib/services/model-properties-acc
 import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
-import { PickType } from '../../lib/type-helpers';
+import { OmitType, PartialType, PickType } from '../../lib/type-helpers';
 import { CreateUserDto } from './fixtures/create-user.dto';
 
 describe('SchemaObjectFactory', () => {
@@ -421,6 +421,114 @@ describe('SchemaObjectFactory', () => {
           name: { type: 'string' }
         },
         required: ['id', 'name']
+      });
+    });
+
+    it('should keep inline OmitType schemas distinct', () => {
+      class ActivityContentDto {
+        @ApiProperty()
+        title: string;
+
+        @ApiProperty()
+        description: string;
+
+        @ApiProperty({ isArray: true, type: String })
+        categories: string[];
+      }
+
+      class UserDto {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty()
+        name: string;
+      }
+
+      class ActivityResponseDto {
+        @ApiProperty({ type: OmitType(ActivityContentDto, ['description']) })
+        content: Omit<ActivityContentDto, 'description'>;
+
+        @ApiProperty({ type: OmitType(UserDto, ['name']) })
+        organizer: Omit<UserDto, 'name'>;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ActivityResponseDto, schemas);
+
+      expect(schemas.ActivityResponseDto.properties).toEqual({
+        content: {
+          $ref: '#/components/schemas/OmitActivityContentDtoDescription'
+        },
+        organizer: { $ref: '#/components/schemas/OmitUserDtoName' }
+      });
+      expect(schemas.OmitActivityContentDtoDescription).toEqual({
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          categories: {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        },
+        required: ['title', 'categories']
+      });
+      expect(schemas.OmitUserDtoName).toEqual({
+        type: 'object',
+        properties: {
+          id: { type: 'string' }
+        },
+        required: ['id']
+      });
+    });
+
+    it('should keep inline PartialType schemas distinct', () => {
+      class ActivityContentDto {
+        @ApiProperty()
+        title: string;
+
+        @ApiProperty({ isArray: true, type: String })
+        categories: string[];
+      }
+
+      class UserDto {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty()
+        name: string;
+      }
+
+      class ActivityResponseDto {
+        @ApiProperty({ type: PartialType(ActivityContentDto) })
+        content: Partial<ActivityContentDto>;
+
+        @ApiProperty({ type: PartialType(UserDto) })
+        organizer: Partial<UserDto>;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ActivityResponseDto, schemas);
+
+      expect(schemas.ActivityResponseDto.properties).toEqual({
+        content: { $ref: '#/components/schemas/PartialActivityContentDto' },
+        organizer: { $ref: '#/components/schemas/PartialUserDto' }
+      });
+      expect(schemas.PartialActivityContentDto).toEqual({
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          categories: {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        }
+      });
+      expect(schemas.PartialUserDto).toEqual({
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' }
+        }
       });
     });
 
