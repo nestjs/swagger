@@ -9,6 +9,7 @@ import { ModelPropertiesAccessor } from '../../lib/services/model-properties-acc
 import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
+import { PickType } from '../../lib/type-helpers';
 import { CreateUserDto } from './fixtures/create-user.dto';
 
 describe('SchemaObjectFactory', () => {
@@ -347,6 +348,80 @@ describe('SchemaObjectFactory', () => {
       expect(loggerWarnSpy).not.toHaveBeenCalled();
 
       loggerWarnSpy.mockRestore();
+    });
+
+    it('should keep inline PickType schemas distinct', () => {
+      class ActivityContentDto {
+        @ApiProperty()
+        title: string;
+
+        @ApiProperty()
+        description: string;
+
+        @ApiProperty({ isArray: true, type: String })
+        categories: string[];
+      }
+
+      class UserDto {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty()
+        name: string;
+      }
+
+      class ActivityResponseDto {
+        @ApiProperty({
+          type: PickType(ActivityContentDto, [
+            'title',
+            'description',
+            'categories'
+          ])
+        })
+        content: Pick<
+          ActivityContentDto,
+          'title' | 'description' | 'categories'
+        >;
+
+        @ApiProperty({ type: PickType(UserDto, ['id', 'name']) })
+        organizer: Pick<UserDto, 'id' | 'name'>;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ActivityResponseDto, schemas);
+
+      expect(schemas.ActivityResponseDto).toEqual({
+        type: 'object',
+        properties: {
+          content: {
+            $ref: '#/components/schemas/PickActivityContentDtoTitleDescriptionCategories'
+          },
+          organizer: {
+            $ref: '#/components/schemas/PickUserDtoIdName'
+          }
+        },
+        required: ['content', 'organizer']
+      });
+      expect(schemas.PickActivityContentDtoTitleDescriptionCategories).toEqual({
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          description: { type: 'string' },
+          categories: {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        },
+        required: ['title', 'description', 'categories']
+      });
+      expect(schemas.PickUserDtoIdName).toEqual({
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' }
+        },
+        required: ['id', 'name']
+      });
     });
 
     it('should create openapi schema', () => {
