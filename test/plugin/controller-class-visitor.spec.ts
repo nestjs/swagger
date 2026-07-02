@@ -36,6 +36,10 @@ import {
   appControllerPromisePrefixText,
   appControllerPromisePrefixTextTranspiled
 } from './fixtures/app.controller-promise-prefix';
+import {
+  appControllerParamEnumText,
+  appControllerParamEnumTextTranspiled
+} from './fixtures/app.controller-param-enum';
 
 describe('Controller methods', () => {
   it('should add response based on the return value (spaces)', () => {
@@ -231,5 +235,26 @@ describe('Controller methods', () => {
       }
     });
     expect(result.outputText).toEqual(appControllerPromisePrefixTextTranspiled);
+  });
+
+  it('should emit @ApiParam({ enum }) for @Param with a literal-union type', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerParamEnumText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({}, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(appControllerParamEnumTextTranspiled);
   });
 });
