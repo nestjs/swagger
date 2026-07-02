@@ -158,6 +158,24 @@ describe('DocumentBuilder', () => {
     });
   });
 
+  describe('addSecurityRequirements', () => {
+    it('should add an anonymous security requirement', () => {
+      const builder = new DocumentBuilder();
+      builder.addSecurityRequirements({});
+      const doc = builder.build();
+
+      expect(doc.security).toEqual([{}]);
+    });
+
+    it('should add anonymous and named security alternatives', () => {
+      const builder = new DocumentBuilder();
+      builder.addSecurityRequirements({}).addSecurityRequirements('bearer');
+      const doc = builder.build();
+
+      expect(doc.security).toEqual([{}, { bearer: [] }]);
+    });
+  });
+
   describe('setOpenAPIVersion', () => {
     it('accepts a three-part numeric version with single-digit segments', () => {
       const builder = new DocumentBuilder().setOpenAPIVersion('3.1.0');
