@@ -292,6 +292,80 @@ export function getDecoratorName(decorator: Decorator) {
   return getIdentifierFromName(decorator.expression).getText();
 }
 
+/**
+ * Collects the literal `name` of every `@<apiDecoratorName>({ name: '...' })`
+ * already present on a method, so generation can skip params the developer has
+ * already documented.
+ *
+ * Returns `null` when any such decorator cannot be reliably introspected (its
+ * argument is not an object literal, or its `name` is not a string literal) —
+ * the caller should treat this as "skip generation for the whole method" to
+ * avoid emitting duplicate metadata.
+ */
+export function collectExistingApiParamNames(
+  methodDecorators: readonly Decorator[],
+  apiDecoratorName: string
+): Set<string> | null {
+  const names = new Set<string>();
+  for (const decorator of methodDecorators) {
+    let decoratorName: string | undefined;
+    try {
+      decoratorName = getDecoratorName(decorator);
+    } catch {
+      continue;
+    }
+    if (decoratorName !== apiDecoratorName) {
+      continue;
+    }
+    const optionsExpr = getDecoratorArguments(decorator)[0];
+    if (!optionsExpr || !ts.isObjectLiteralExpression(optionsExpr)) {
+      return null;
+    }
+    const nameProp = optionsExpr.properties.find(
+      (p) =>
+        ts.isPropertyAssignment(p) &&
+        p.name !== undefined &&
+        ((ts.isIdentifier(p.name) && p.name.text === 'name') ||
+          (ts.isStringLiteral(p.name) && p.name.text === 'name'))
+    ) as ts.PropertyAssignment | undefined;
+    if (nameProp && ts.isStringLiteral(nameProp.initializer)) {
+      names.add(nameProp.initializer.text);
+    } else {
+      return null;
+    }
+  }
+  return names;
+}
+
+/**
+ * Returns the literal name passed to a parameter decorator (e.g. the `'foo'`
+ * in `@Query('foo')` or `@Param('foo')`), or `undefined` when the parameter
+ * has no such decorator or the decorator has no string-literal argument (e.g.
+ * a bare `@Query()` referring to the whole object).
+ */
+export function getNamedParamDecoratorArg(
+  parameter: ts.ParameterDeclaration,
+  decoratorName: string
+): string | undefined {
+  const paramDecorators =
+    (ts.canHaveDecorators(parameter) && ts.getDecorators(parameter)) || [];
+  const decorator = paramDecorators.find((d) => {
+    try {
+      return getDecoratorName(d) === decoratorName;
+    } catch {
+      return false;
+    }
+  });
+  if (!decorator) {
+    return undefined;
+  }
+  const firstArg = getDecoratorArguments(decorator)[0];
+  if (!firstArg || !ts.isStringLiteral(firstArg)) {
+    return undefined;
+  }
+  return firstArg.text;
+}
+
 function getIdentifierFromName(expression: LeftHandSideExpression) {
   const identifier = getNameFromExpression(expression);
   if (expression && expression.kind !== SyntaxKind.Identifier) {
