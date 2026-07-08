@@ -50,7 +50,7 @@
     "swagger-ui-dist": "5.32.8"
   },
   "devDependencies": {
-    "@commitlint/cli": "21.2.0",
+    "@commitlint/cli": "21.2.1",
     "@commitlint/config-angular": "21.2.0",
     "@fastify/compress": "^9.0.0",
     "@fastify/static": "9.1.3",
