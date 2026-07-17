@@ -188,7 +188,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         const decoratorName = getDecoratorName(item);
         // Error factories (4xx/5xx) must not suppress the auto-inferred 2xx.
         if (decoratorName === ApiResponse.name) {
-          return this.isSuccessOrRedirectApiResponseArg(item);
+          return this.isSuccessOrRedirectApiResponseArg(item, typeChecker);
         }
         const statusNameMatch = decoratorName.match(/^Api(.+)Response$/);
         if (!statusNameMatch) return false;
@@ -760,7 +760,10 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     return relativePath;
   }
 
-  private isSuccessOrRedirectApiResponseArg(decorator: ts.Decorator): boolean {
+  private isSuccessOrRedirectApiResponseArg(
+    decorator: ts.Decorator,
+    typeChecker: ts.TypeChecker
+  ): boolean {
     const [firstArg] = getDecoratorArguments(decorator);
     if (!firstArg || !ts.isObjectLiteralExpression(firstArg)) return true;
     const statusProp = firstArg.properties.find(
@@ -780,7 +783,26 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         init.text === 'default'
       );
     }
-    // Non-literal (e.g. HttpStatus.OK) — can't evaluate at compile time; preserve pre-PR behavior.
+    if (
+      ts.isPropertyAccessExpression(init) ||
+      ts.isElementAccessExpression(init)
+    ) {
+      const constantValue = typeChecker.getConstantValue(init);
+      if (typeof constantValue === 'number') {
+        return constantValue < 400;
+      }
+      if (
+        ts.isPropertyAccessExpression(init) &&
+        ts.isIdentifier(init.expression) &&
+        init.expression.text === 'HttpStatus'
+      ) {
+        const status = HttpStatus[init.name.text as keyof typeof HttpStatus];
+        if (typeof status === 'number') {
+          return status < 400;
+        }
+      }
+    }
+    // Unknown expressions cannot be safely evaluated at compile time.
     return true;
   }
 }
