@@ -84,16 +84,21 @@ export function buildSwaggerHTML(
   const explorerCss = explorer
     ? ''
     : '.swagger-ui .topbar .download-url-wrapper { display: none }';
+
+  // The replacement values below are user-controlled (e.g. customCss,
+  // customSiteTitle, customfavIcon). Each is passed to `String.prototype.replace`
+  // through a callback rather than as a string so that `$$`, `$&`, "$`", "$'" and
+  // `$1`-`$9` sequences inside those values are inserted verbatim instead of being
+  // interpreted as replacement patterns (which would silently corrupt the output).
   return htmlTemplateString
-    .replace('<% customCss %>', customCss)
-    .replace('<% explorerCss %>', explorerCss)
-    .replace('<% favIconString %>', favIconString)
-    .replace(/<% baseUrl %>/g, baseUrl)
-    .replace('<% customJs %>', toTags(customJs, toExternalScriptTag))
-    .replace('<% customJsStr %>', toTags(customJsStr, toInlineScriptTag))
-    .replace(
-      '<% customCssUrl %>',
+    .replace('<% customCss %>', () => customCss)
+    .replace('<% explorerCss %>', () => explorerCss)
+    .replace('<% favIconString %>', () => favIconString)
+    .replace(/<% baseUrl %>/g, () => baseUrl)
+    .replace('<% customJs %>', () => toTags(customJs, toExternalScriptTag))
+    .replace('<% customJsStr %>', () => toTags(customJsStr, toInlineScriptTag))
+    .replace('<% customCssUrl %>', () =>
       toTags(customCssUrl, toExternalStylesheetTag)
     )
-    .replace('<% title %>', customSiteTitle);
+    .replace('<% title %>', () => customSiteTitle);
 }
