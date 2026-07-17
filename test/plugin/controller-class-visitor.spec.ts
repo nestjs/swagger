@@ -149,6 +149,77 @@ describe('Controller methods', () => {
     );
   });
 
+  it('should auto-infer the default 2xx response for enum error statuses', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+    const source = `import { Controller, Get, HttpStatus } from '@nestjs/common';
+import { ApiResponse } from '@nestjs/swagger';
+
+@Controller('example')
+export class AppController {
+  @Get()
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad request' })
+  get(): string {
+    return 'ok';
+  }
+}`;
+
+    const result = ts.transpileModule(source, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toContain(
+      'openapi.ApiResponse({ status: 200, type: String })'
+    );
+    expect(result.outputText).toContain(
+      'ApiResponse)({ status: common_1.HttpStatus.BAD_REQUEST'
+    );
+  });
+
+  it('should not auto-infer a response when an enum success status is explicit', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+    const source = `import { Controller, Get, HttpStatus } from '@nestjs/common';
+import { ApiResponse } from '@nestjs/swagger';
+
+@Controller('example')
+export class AppController {
+  @Get()
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Created' })
+  get(): string {
+    return 'ok';
+  }
+}`;
+
+    const result = ts.transpileModule(source, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).not.toContain(
+      'openapi.ApiResponse({ status: 200, type: String })'
+    );
+  });
+
   it('should add response based on the return value (without modifiers)', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
