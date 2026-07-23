@@ -102,6 +102,15 @@ export class ReadonlyVisitor {
 
   visit(program: ts.Program, sf: ts.SourceFile) {
     const factoryHost = { factory: ts.factory } as any;
+
+    const compilerOptions = program.getCompilerOptions();
+    if (compilerOptions.outDir) {
+      this.options.outDir ??= compilerOptions.outDir;
+    }
+    if (compilerOptions.rootDir) {
+      this.options.rootDir ??= compilerOptions.rootDir;
+    }
+
     const parsedOptions: Record<string, any> = mergePluginOptions(this.options);
 
     if (isFilenameMatched(parsedOptions.dtoFileNameSuffix, sf.fileName)) {

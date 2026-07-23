@@ -294,7 +294,10 @@ export function replaceImportPath(
     };
   } catch {
     const from = options?.readonly
-      ? safeDecodeURIComponent(convertPath(options.pathToSource))
+      ? rebaseToOutputDir(
+          safeDecodeURIComponent(convertPath(options.pathToSource)),
+          options
+        )
       : getOutputDir(fileName, options);
 
     const targetPath =
@@ -356,6 +359,17 @@ function getOutputDir(fileName: string, options: PluginOptions): string {
   const sourceDir = posix.dirname(
     safeDecodeURIComponent(convertPath(fileName))
   );
+  return rebaseToOutputDir(sourceDir, options);
+}
+
+/**
+ * Rebases a source-tree directory onto the output tree using outDir/rootDir,
+ * the same transform getOutputDir() applies to a compiled file's directory.
+ * Used directly by the readonly (SWC/metadata.ts) path, where the "source
+ * directory" is pathToSource rather than a per-file directory, since the
+ * generated metadata.ts lives at the output location.
+ */
+function rebaseToOutputDir(sourceDir: string, options: PluginOptions): string {
   if (options.outDir && options.rootDir) {
     const outDir = convertPath(options.outDir);
     const rootDir = convertPath(options.rootDir);
