@@ -109,6 +109,84 @@ describe('Validate OpenAPI schema', () => {
     };
   });
 
+  it('should generate reusable union schemas', () => {
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
+    const schemas = document.components.schemas as Record<string, SchemaObject>;
+
+    expect(
+      asResponseObject(
+        document.paths['/api/cats/union-schema']['get']['responses']['200']
+      ).content!['application/json'].schema
+    ).toEqual({ $ref: '#/components/schemas/Pet' });
+
+    expect(schemas.Pet).toEqual({
+      oneOf: [
+        { $ref: '#/components/schemas/UnionCatDto' },
+        { $ref: '#/components/schemas/UnionDogDto' }
+      ],
+      discriminator: {
+        propertyName: 'type',
+        mapping: {
+          cat: '#/components/schemas/UnionCatDto',
+          dog: '#/components/schemas/UnionDogDto'
+        }
+      }
+    });
+
+    expect(schemas.PetListDto.properties?.pets).toEqual({
+      type: 'array',
+      items: { $ref: '#/components/schemas/Pet' }
+    });
+
+    expect(schemas.Scalar).toEqual({
+      oneOf: [{ type: 'string' }, { type: 'number' }]
+    });
+
+    expect(schemas.UnionResult).toEqual({
+      oneOf: [
+        { $ref: '#/components/schemas/Pet' },
+        { $ref: '#/components/schemas/UnionErrorDto' },
+        { type: 'string' }
+      ]
+    });
+    expect(schemas.UnionCatDto).toBeDefined();
+    expect(schemas.UnionDogDto).toBeDefined();
+    expect(schemas.UnionErrorDto).toBeDefined();
+  });
+
+  it('should isolate reusable union metadata between generated documents', async () => {
+    const firstDocument = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
+    await SwaggerParser.validate(firstDocument as any);
+
+    const secondDocument = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
+
+    expect(secondDocument.components.schemas.Pet).toEqual({
+      oneOf: [
+        { $ref: '#/components/schemas/UnionCatDto' },
+        { $ref: '#/components/schemas/UnionDogDto' }
+      ],
+      discriminator: {
+        propertyName: 'type',
+        mapping: {
+          cat: '#/components/schemas/UnionCatDto',
+          dog: '#/components/schemas/UnionDogDto'
+        }
+      }
+    });
+  });
+
   it('should produce a valid OpenAPI 3.0 schema', async () => {
     await SwaggerModule.loadPluginMetadata(async () => ({
       '@nestjs/swagger': {
@@ -218,7 +296,11 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should preserve example metadata for named type query params (issue #3335)', () => {
-    const document = SwaggerModule.createDocument(app, options, documentOptions);
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
     const params =
       document.paths['/api/cats/with-named-type-example']['get']['parameters'];
     const filterParam = params.find(
@@ -232,7 +314,11 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should preserve example/examples for built-in scalar response types', () => {
-    const document = SwaggerModule.createDocument(app, options, documentOptions);
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
 
     const scalarExample = asResponseObject(
       document.paths['/api/cats/scalar-with-example']['get']['responses']['200']
@@ -268,7 +354,11 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should fix colons in url', async () => {
-    const document = SwaggerModule.createDocument(app, options, documentOptions);
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
     expect(
       document.paths['/api/v1/express:colon:another/{prop}']
     ).toBeDefined();
@@ -297,13 +387,17 @@ describe('Validate OpenAPI schema', () => {
       }
     };
 
-    const document = SwaggerModule.createDocument(app, {
-      ...options,
-      components: {
-        ...options.components,
-        ...components
-      }
-    }, documentOptions);
+    const document = SwaggerModule.createDocument(
+      app,
+      {
+        ...options,
+        components: {
+          ...options.components,
+          ...components
+        }
+      },
+      documentOptions
+    );
 
     const api = (await SwaggerParser.validate(
       document as any
@@ -314,7 +408,11 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should consider explicit config over auto-detected schema', () => {
-    const document = SwaggerModule.createDocument(app, options, documentOptions);
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
     expect(document.paths['/api/cats/download'].get.responses).toEqual({
       '200': {
         description: 'binary file for download',
@@ -329,7 +427,11 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should include type field when nullable is used with allOf (issue #3274)', () => {
-    const document = SwaggerModule.createDocument(app, options, documentOptions);
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
     const createCatDtoSchema = document.components?.schemas
       ?.CreateCatDto as SchemaObject;
     expect(createCatDtoSchema.properties.nullableTag).toEqual({
@@ -353,7 +455,11 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should not add optional properties to required list', () => {
-    const document = SwaggerModule.createDocument(app, options, documentOptions);
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
     const required = (document.components?.schemas?.Cat as SchemaObject)
       ?.required;
     expect(required).not.toContain('optionalRawDefinition');
@@ -368,19 +474,31 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should add extension to root', () => {
-    const document = SwaggerModule.createDocument(app, options, documentOptions);
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
     expect(document['x-test']).toEqual({ test: 'test' });
   });
 
   it('should add extension to info', () => {
-    const document = SwaggerModule.createDocument(app, options, documentOptions);
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
     expect(document.info['x-logo']).toEqual({
       url: 'https://example.com/logo.png'
     });
   });
 
   it('should add server to the root', () => {
-    const document = SwaggerModule.createDocument(app, options, documentOptions);
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
     expect(document.servers).toBeDefined();
     expect(document.servers).toHaveLength(1);
     expect(document.servers?.[0]).toEqual({
@@ -503,8 +621,10 @@ function createTestStandardSchemaConverter(): SwaggerDocumentOptions['standardSc
       });
       return {
         schema: converted.schema as SchemaObject | ReferenceObject,
-        components:
-          converted.components as unknown as Record<string, SchemaObject>
+        components: converted.components as unknown as Record<
+          string,
+          SchemaObject
+        >
       };
     }
 

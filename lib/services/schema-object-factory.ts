@@ -1,6 +1,7 @@
 import { Logger, Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
 import {
+  cloneDeep,
   flatten,
   isEqual,
   isFunction,
@@ -394,6 +395,29 @@ export class SchemaObjectFactory {
       Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
 
     const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
+    const unionSchema = Reflect.getOwnMetadata(
+      DECORATORS.API_UNION_SCHEMA,
+      type
+    ) as SchemaObject | undefined;
+
+    if (unionSchema) {
+      const typeDefinition = cloneDeep({
+        ...extensionProperties,
+        ...unionSchema
+      });
+      if (
+        schemas[schemaName] &&
+        !isEqual(schemas[schemaName], typeDefinition)
+      ) {
+        Logger.warn(
+          `Duplicate DTO detected: "${schemaName}" is defined multiple times with different schemas.\n` +
+            `Consider using unique class names or applying @ApiExtraModels() decorator with custom schema names.\n` +
+            `Note: This will throw an error in the next major version.`
+        );
+      }
+      schemas[schemaName] = typeDefinition;
+      return schemaName;
+    }
 
     const typeDefinition: SchemaObject = {
       type: 'object',
