@@ -1,4 +1,4 @@
-import { Type } from '@nestjs/common';
+import { Abstract, Type } from '@nestjs/common';
 import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
 import { SchemaObjectFactory } from '../services/schema-object-factory.js';
@@ -22,7 +22,7 @@ import { SwaggerTypesMapper } from '../services/swagger-types-mapper.js';
  * ```
  */
 export function generateSchema<T = any>(
-  target: Type<T>,
+  target: Type<T> | Abstract<T>,
   extraSchemas: Record<string, SchemaObject> = {}
 ): { schema: SchemaObject; schemas: Record<string, SchemaObject> } {
   const factory = new SchemaObjectFactory(
@@ -31,7 +31,7 @@ export function generateSchema<T = any>(
   );
 
   const schemas: Record<string, SchemaObject> = { ...extraSchemas };
-  factory.exploreModelSchema(target, schemas);
+  const schemaName = factory.exploreModelSchema(target, schemas);
 
-  return { schema: schemas[target.name], schemas };
+  return { schema: schemas[schemaName], schemas };
 }

@@ -30,6 +30,12 @@ import { Cat } from './classes/cat.class.js';
 import { CreateCatDto } from './dto/create-cat.dto.js';
 import { LettersEnum, PaginationQuery } from './dto/pagination-query.dto.js';
 import { TagDto } from './dto/tag.dto.js';
+import {
+  Pet,
+  PetListDto,
+  Scalar,
+  UnionResult
+} from './dto/union-api-schema.dto.js';
 import { CatBreed } from './enums/cat-breed.enum.js';
 
 const standardBodySchema = z.object({
@@ -63,38 +69,42 @@ const standardBodyRichSchema = z.object({
       title: 'PreferredContact',
       examples: ['owner@example.com']
     }),
-  profile: z.object({
-    nickname: z.string().meta({
-      description: 'Nested nickname from Zod',
-      example: 'Captain Whiskers'
-    }),
-    temperament: z.enum(['playful', 'calm']).meta({
-      description: 'Nested temperament from Zod',
-      example: 'playful'
-    }),
-    notes: z.string().default('Indoor only').meta({
-      description: 'Nested notes from Zod',
-      example: 'Indoor only',
-      deprecated: true
-    }),
-    traits: z.array(
-      z.object({
-        label: z.string().meta({
-          description: 'Trait label from Zod',
-          example: 'affectionate'
-        }),
-        score: z.number().min(0).max(10).meta({
-          description: 'Trait score from Zod',
-          example: 8
+  profile: z
+    .object({
+      nickname: z.string().meta({
+        description: 'Nested nickname from Zod',
+        example: 'Captain Whiskers'
+      }),
+      temperament: z.enum(['playful', 'calm']).meta({
+        description: 'Nested temperament from Zod',
+        example: 'playful'
+      }),
+      notes: z.string().default('Indoor only').meta({
+        description: 'Nested notes from Zod',
+        example: 'Indoor only',
+        deprecated: true
+      }),
+      traits: z
+        .array(
+          z.object({
+            label: z.string().meta({
+              description: 'Trait label from Zod',
+              example: 'affectionate'
+            }),
+            score: z.number().min(0).max(10).meta({
+              description: 'Trait score from Zod',
+              example: 8
+            })
+          })
+        )
+        .meta({
+          description: 'Nested trait list from Zod'
         })
-      })
-    ).meta({
-      description: 'Nested trait list from Zod'
     })
-  }).meta({
-    title: 'CatProfile',
-    description: 'Nested cat profile from Zod'
-  })
+    .meta({
+      title: 'CatProfile',
+      description: 'Nested cat profile from Zod'
+    })
 });
 
 const standardQuerySchema = v.object({
@@ -178,23 +188,27 @@ const standardResponseRichSchema = z.object({
       description: 'Response union from Zod',
       examples: [{ kind: 'message', message: 'No cat available' }]
     }),
-  meta: z.object({
-    source: z.string().meta({
-      description: 'Nested response source from Zod',
-      example: 'cache'
-    }),
-    tags: z.array(
-      z.object({
-        label: z.string().meta({
-          description: 'Response tag label from Zod',
-          example: 'featured'
-        })
-      })
-    ).meta({ description: 'Response tags from Zod' })
-  }).meta({
-    title: 'ResponseMeta',
-    description: 'Nested response metadata from Zod'
-  })
+  meta: z
+    .object({
+      source: z.string().meta({
+        description: 'Nested response source from Zod',
+        example: 'cache'
+      }),
+      tags: z
+        .array(
+          z.object({
+            label: z.string().meta({
+              description: 'Response tag label from Zod',
+              example: 'featured'
+            })
+          })
+        )
+        .meta({ description: 'Response tags from Zod' })
+    })
+    .meta({
+      title: 'ResponseMeta',
+      description: 'Nested response metadata from Zod'
+    })
 });
 
 @ApiSecurity('basic')
@@ -588,5 +602,31 @@ export class CatsController {
   })
   arrayOfScalarWithExample(): string[] {
     return ['Mau', 'Persian'];
+  }
+
+  @Get('union-schema')
+  @ApiResponse({ status: HttpStatus.OK, type: () => Pet })
+  getUnionSchema(): Pet {
+    return { type: 'cat', meow: 'meow' };
+  }
+
+  @Get('union-schema-list')
+  @ApiResponse({ status: HttpStatus.OK, type: PetListDto })
+  getUnionSchemaList(): PetListDto {
+    return {
+      pets: [{ type: 'cat', meow: 'meow' }]
+    };
+  }
+
+  @Get('scalar-union-schema')
+  @ApiResponse({ status: HttpStatus.OK, type: () => Scalar })
+  getScalarUnionSchema(): Scalar {
+    return 42;
+  }
+
+  @Get('nested-union-schema')
+  @ApiResponse({ status: HttpStatus.OK, type: () => UnionResult })
+  getNestedUnionSchema(): UnionResult {
+    return { type: 'error', message: 'failed' };
   }
 }

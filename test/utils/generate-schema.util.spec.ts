@@ -1,4 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '../../lib/decorators';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiSchema
+} from '../../lib/decorators';
 import { generateSchema } from '../../lib/utils/generate-schema.util';
 
 describe('generateSchema', () => {
@@ -61,5 +65,14 @@ describe('generateSchema', () => {
     };
     expect(composedSchema.oneOf).toHaveLength(2);
     expect(composedSchema.oneOf[0]).toBe(addressSchema);
+  });
+
+  it('returns a schema by its custom component name', () => {
+    @ApiSchema({ name: 'Address' })
+    class CustomAddressDto extends AddressDto {}
+
+    const { schema, schemas } = generateSchema(CustomAddressDto);
+
+    expect(schema).toBe(schemas.Address);
   });
 });
