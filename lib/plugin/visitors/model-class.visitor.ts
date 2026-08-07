@@ -25,6 +25,7 @@ import {
   convertPath,
   createAdditionalPropertiesValueSchema,
   extractTypeArgumentIfArray,
+  getImportedTypeReference,
   getDecoratorOrUndefinedByNames,
   getOutputExtension,
   getRecordValueType,
@@ -364,7 +365,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         typeChecker,
         existingProperties,
         hostFilename,
-        options
+        options,
+        sourceFile
       ),
       ...this.createDescriptionAndTsDocTagPropertyAssignments(
         factory,
@@ -439,7 +441,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     typeChecker: ts.TypeChecker,
     existingProperties: ts.NodeArray<ts.PropertyAssignment>,
     hostFilename: string,
-    options: PluginOptions
+    options: PluginOptions,
+    sourceFile?: ts.SourceFile
   ): ts.PropertyAssignment[] {
     const key = 'type';
     if (hasPropertyKey(key, existingProperties)) {
@@ -547,7 +550,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             typeChecker,
             existingProperties,
             hostFilename,
-            options
+            options,
+            sourceFile
           );
           if (!isNullable) {
             return propertyAssignments;
@@ -602,6 +606,13 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
 
     const typeReferenceDescriptor = getTypeReferenceAsString(type, typeChecker);
+    if (node && typeReferenceDescriptor.typeName) {
+      const importedTypeReference = getImportedTypeReference(node, typeChecker);
+      if (importedTypeReference) {
+        typeReferenceDescriptor.typeName = importedTypeReference;
+      }
+    }
+
     if (!typeReferenceDescriptor.typeName) {
       return [];
     }
@@ -820,6 +831,18 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
 
     const typeReferenceDescriptor = { typeName: getText(type, typeChecker) };
+    if (typeReferenceDescriptor.typeName) {
+      const typeNode = (node as any).type;
+      if (typeNode) {
+        const importedTypeReference = getImportedTypeReference(
+          typeNode,
+          typeChecker
+        );
+        if (importedTypeReference) {
+          typeReferenceDescriptor.typeName = importedTypeReference;
+        }
+      }
+    }
     const enumIdentifier = typeReferenceToIdentifier(
       typeReferenceDescriptor,
       hostFilename,
