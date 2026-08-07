@@ -701,9 +701,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     if (!typeReferenceDescriptor.typeName) {
       return undefined;
     }
-    if (typeReferenceDescriptor.typeName.includes('node_modules')) {
-      return undefined;
-    }
     const identifier = typeReferenceToIdentifier(
       typeReferenceDescriptor,
       hostFilename,

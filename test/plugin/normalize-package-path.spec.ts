@@ -46,4 +46,11 @@ describe('normalizePackagePath', () => {
       normalizePackagePath('../../../packages/product-warehouse/dist/index')
     ).toBe('../../../packages/product-warehouse/dist/index');
   });
+
+  // #4006: mechanism-layer only — does not exercise the controller guard removal.
+  it('should strip node_modules prefix for a workspace-package response type (#4006)', () => {
+    expect(
+      normalizePackagePath('../node_modules/@repro/shared/dist/index')
+    ).toBe('@repro/shared/dist');
+  });
 });
