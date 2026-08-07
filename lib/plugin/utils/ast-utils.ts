@@ -52,8 +52,7 @@ export function getTypeArguments(type: Type) {
 
 export function isBoolean(type: Type) {
   return (
-    hasFlag(type, TypeFlags.Boolean) ||
-    hasFlag(type, TypeFlags.BooleanLiteral)
+    hasFlag(type, TypeFlags.Boolean) || hasFlag(type, TypeFlags.BooleanLiteral)
   );
 }
 
@@ -368,7 +367,7 @@ export function getNamedParamDecoratorArg(
 
 function getIdentifierFromName(expression: LeftHandSideExpression) {
   const identifier = getNameFromExpression(expression);
-  if (expression && expression.kind !== SyntaxKind.Identifier) {
+  if (identifier && identifier.kind !== SyntaxKind.Identifier) {
     throw new Error();
   }
   return identifier;
