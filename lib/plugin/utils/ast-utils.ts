@@ -153,6 +153,30 @@ export function getMainCommentOfNode(node: Node): string {
   return renderDocNode(docComment.summarySection).trim();
 }
 
+/**
+ * Extracts the descriptions of the JSDoc/TSDoc `@param` tags of a node, keyed
+ * by the documented parameter name (i.e. the variable name, which may differ
+ * from the route parameter name passed to `@Query('...')`/`@Param('...')`).
+ */
+export function getJSDocParamDescriptionsOfNode(
+  node: Node
+): Record<string, string> {
+  const docComment = getDocComment(node);
+  const descriptions: Record<string, string> = {};
+  for (const paramBlock of docComment.params.blocks) {
+    // Collapse internal whitespace so wrapped multi-line descriptions keep a
+    // word boundary between lines (renderDocNode concatenates soft breaks
+    // without inserting a space).
+    const description = renderDocNode(paramBlock.content)
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (paramBlock.parameterName && description) {
+      descriptions[paramBlock.parameterName] = description;
+    }
+  }
+  return descriptions;
+}
+
 export function parseCommentDocValue(docValue: string, type: ts.Type) {
   let value = docValue.replace(/'/g, '"').trim();
 
