@@ -1,5 +1,6 @@
 import { INestApplication, NotFoundException } from '@nestjs/common';
 import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface.js';
+import { loadPackageSync } from '@nestjs/common/utils/load-package.util.js';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as jsyaml from 'js-yaml';
 import { createRequire } from 'node:module';
@@ -110,7 +111,13 @@ export class SwaggerModule {
       : getSwaggerAssetsAbsoluteFSPath();
 
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
-      const fastifyStatic = require('@fastify/static');
+      const fastifyStaticModule = loadPackageSync(
+        '@fastify/static',
+        'SwaggerModule',
+        () => require('@fastify/static')
+      );
+      // The package may be published as either CommonJS or ESM.
+      const fastifyStatic = fastifyStaticModule.default ?? fastifyStaticModule;
 
       httpAdapter.getInstance().register(fastifyStatic, {
         root: swaggerAssetsPath,

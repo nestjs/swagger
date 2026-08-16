@@ -378,6 +378,247 @@ describe('StandardSchemaOpenApiConverter', () => {
     );
     expect((converted?.schema as any).properties.kind.const).toBeUndefined();
   });
+
+  it('should narrow const to the constant value even when a wider enum is present', () => {
+    const converted = converter.convert({
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: () => ({
+            type: 'object',
+            properties: {
+              kind: { type: 'string', const: 'a', enum: ['a', 'b'] }
+            }
+          })
+        }
+      }
+    });
+
+    expect((converted?.schema as any).properties.kind).toEqual({
+      type: 'string',
+      enum: ['a']
+    });
+  });
+
+  it('should not treat property names as schema keywords inside nested definitions', () => {
+    const converted = converter.convert({
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: () => ({
+            type: 'object',
+            properties: {
+              node: { $ref: '#/$defs/Node' }
+            },
+            $defs: {
+              Node: {
+                type: 'object',
+                properties: {
+                  // A property whose name collides with a schema keyword, one
+                  // level down from the root schema.
+                  const: { type: 'string' },
+                  nested: {
+                    type: 'object',
+                    properties: {
+                      examples: { type: 'boolean' }
+                    }
+                  }
+                }
+              }
+            }
+          })
+        }
+      }
+    });
+
+    expect(converted?.components.Node).toEqual({
+      type: 'object',
+      properties: {
+        const: { type: 'string' },
+        nested: {
+          type: 'object',
+          properties: {
+            examples: { type: 'boolean' }
+          }
+        }
+      }
+    });
+  });
+
+  it('should normalize const and examples inside definitions', () => {
+    const converted = converter.convert({
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: () => ({
+            $ref: '#/$defs/Kind',
+            $defs: {
+              Kind: {
+                type: 'object',
+                properties: {
+                  kind: { type: 'string', const: 'cat' },
+                  label: { type: 'string', examples: ['first', 'second'] }
+                }
+              }
+            }
+          })
+        }
+      }
+    });
+
+    expect((converted?.components.Kind as any).properties).toEqual({
+      kind: { type: 'string', enum: ['cat'] },
+      // OpenAPI 3.0 uses a singular "example" keyword.
+      label: { type: 'string', example: 'first' }
+    });
+  });
+
+  it('should rewrite a root-level $ref to the components location', () => {
+    // Named/registered schemas convert to a bare `$ref` at the root; leaving it
+    // pointing at "#/$defs/..." would dangle, since definitions are emitted
+    // under "#/components/schemas/...".
+    const converted = converter.convert({
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: () => ({
+            $ref: '#/$defs/Cat',
+            $defs: {
+              Cat: { type: 'object', properties: { name: { type: 'string' } } }
+            }
+          })
+        }
+      }
+    });
+
+    expect(converted?.schema).toEqual({ $ref: '#/components/schemas/Cat' });
+    expect(converted?.components.Cat).toEqual({
+      type: 'object',
+      properties: { name: { type: 'string' } }
+    });
+  });
+
+  it('should rewrite a root-level $ref returned by a custom converter', () => {
+    const customConverter = new StandardSchemaOpenApiConverter(() => ({
+      schema: { $ref: '#/$defs/Tag' } as any,
+      components: { Tag: { type: 'object' } as any }
+    }));
+
+    const converted = customConverter.convert({
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value })
+      }
+    });
+
+    expect(converted?.schema).toEqual({ $ref: '#/components/schemas/Tag' });
+  });
+
+  it('should rewrite refs while preserving sibling keywords', () => {
+    const converted = converter.convert({
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: () => ({
+            type: 'object',
+            properties: {
+              tag: {
+                $ref: '#/definitions/Tag',
+                description: 'Sibling description'
+              }
+            },
+            definitions: {
+              Tag: { type: 'object', properties: { id: { type: 'string' } } }
+            }
+          })
+        }
+      }
+    });
+
+    expect((converted?.schema as any).properties.tag).toEqual({
+      $ref: '#/components/schemas/Tag',
+      description: 'Sibling description'
+    });
+    expect(converted?.components.Tag).toBeDefined();
+  });
+
+  it('should rewrite refs inside composition keywords and arrays', () => {
+    const converted = converter.convert({
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: () => ({
+            type: 'object',
+            properties: {
+              items: {
+                type: 'array',
+                items: { $ref: '#/$defs/Item' }
+              },
+              either: {
+                anyOf: [{ $ref: '#/$defs/Item' }, { type: 'null' }]
+              }
+            },
+            $defs: {
+              Item: { type: 'object', properties: { id: { type: 'string' } } }
+            }
+          })
+        }
+      }
+    });
+
+    const schema = converted?.schema as any;
+    expect(schema.properties.items.items).toEqual({
+      $ref: '#/components/schemas/Item'
+    });
+    expect(schema.properties.either.anyOf[0]).toEqual({
+      $ref: '#/components/schemas/Item'
+    });
+  });
+
+  it('should not treat property names as schema keywords', () => {
+    const converted = converter.convert({
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: () => ({
+            type: 'object',
+            properties: {
+              const: { type: 'string' },
+              examples: { type: 'number' },
+              name: { type: 'string' }
+            },
+            required: ['const', 'examples', 'name']
+          })
+        }
+      }
+    });
+
+    // A property literally named "const"/"examples" must survive untouched.
+    expect(converted?.schema).toEqual({
+      type: 'object',
+      properties: {
+        const: { type: 'string' },
+        examples: { type: 'number' },
+        name: { type: 'string' }
+      },
+      required: ['const', 'examples', 'name']
+    });
+  });
 });
 
 const testStandardSchemaConverter: StandardSchemaConverter = (

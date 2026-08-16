@@ -186,6 +186,67 @@ describe('ResponseObjectFactory', () => {
       });
     });
 
+    it('should wrap a standard schema response override in an array when isArray is set', () => {
+      const result = factory.create(
+        {
+          description: 'OK',
+          isArray: true,
+          standardSchema: z.object({ name: z.string() })
+        } as any,
+        produces,
+        {},
+        factories
+      ) as any;
+
+      const schema = result.content['application/json'].schema;
+      expect(schema.type).toBe('array');
+      expect(schema.items).toEqual(
+        expect.objectContaining({
+          type: 'object',
+          properties: expect.objectContaining({ name: { type: 'string' } })
+        })
+      );
+    });
+
+    it('should wrap a referenced standard schema in an array when isArray is set', () => {
+      const schemas = {};
+      const result = factory.create(
+        {
+          description: 'OK',
+          isArray: true,
+          standardSchema: {
+            '~standard': {
+              version: 1,
+              vendor: 'test',
+              validate: (value: unknown) => ({ value }),
+              jsonSchema: {
+                output: () => ({
+                  $ref: '#/$defs/Cat',
+                  $defs: {
+                    Cat: {
+                      type: 'object',
+                      properties: { name: { type: 'string' } }
+                    }
+                  }
+                })
+              }
+            }
+          }
+        } as any,
+        produces,
+        schemas,
+        factories
+      ) as any;
+
+      const schema = result.content['application/json'].schema;
+      expect(schema).toEqual({
+        type: 'array',
+        items: { $ref: '#/components/schemas/Cat' }
+      });
+      // The referenced definition must still reach the document components.
+      expect(schemas).toHaveProperty('Cat');
+    });
+
     it('should preserve a standardSchema passed through ApiResponse metadata', () => {
       class Controller {
         @ApiResponse({

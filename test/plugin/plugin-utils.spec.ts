@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   convertPath,
   replaceImportPath,
@@ -185,6 +188,54 @@ describe('plugin-utils', () => {
       const result = replaceImportPath(typeReference, fileName, options);
 
       expect(result.typeReference).toContain('../entities/test.entity');
+    });
+
+    it('should keep bare package specifiers untouched instead of relativizing them', () => {
+      // Resolvable bare specifiers must not be rewritten into a relative path.
+      const typeReference = 'import("typescript").Program';
+      const fileName = '/project/src/dto/test.dto.ts';
+
+      const result = replaceImportPath(typeReference, fileName, {
+        esmCompatible: true
+      });
+
+      expect(result.importPath).toBeNull();
+      expect(result.typeReference).toBe('import("typescript").Program');
+      expect(result.typeReference).not.toContain('..');
+    });
+
+    it('should resolve bare package specifiers in the emitted ESM build', () => {
+      // The test runner transforms modules and supplies a `require` shim, so
+      // the bare-specifier branch must be exercised in a real Node process
+      // against the built output, where CommonJS `require` is not in scope.
+      const builtEntry = new URL(
+        '../../dist/plugin/utils/plugin-utils.js',
+        import.meta.url
+      );
+      if (!existsSync(fileURLToPath(builtEntry))) {
+        return;
+      }
+
+      const output = execFileSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          `const m = await import(${JSON.stringify(builtEntry.href)});
+           const r = m.replaceImportPath(
+             'import("typescript").Program',
+             '/project/src/dto/test.dto.ts',
+             { esmCompatible: true }
+           );
+           console.log(JSON.stringify(r));`
+        ],
+        { encoding: 'utf8' }
+      );
+
+      expect(JSON.parse(output)).toEqual({
+        typeReference: 'import("typescript").Program',
+        importPath: null
+      });
     });
   });
 });

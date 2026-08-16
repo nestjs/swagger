@@ -2,7 +2,11 @@ import { resolve } from 'node:path';
 import * as ts from 'typescript';
 import { before } from '../../lib/plugin/compiler-plugin';
 import { pluginDebugLogger } from '../../lib/plugin/plugin-debug-logger';
-import { isEsmOutputFile } from '../../lib/plugin/utils/module-format.util';
+import {
+  isEsmOutputFile,
+  resolvePluginOptionsForFile
+} from '../../lib/plugin/utils/module-format.util';
+import { mergePluginOptions } from '../../lib/plugin/merge-options';
 import {
   changedCatDtoText,
   changedCatDtoTextTranspiled,
@@ -367,6 +371,78 @@ describe('API model properties', () => {
     );
 
     expect(isEsmOutputFile(sourceFile, options)).toBe(true);
+  });
+
+  it('should emit the CommonJS openapi import when esmCompatible is explicitly disabled', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      target: ts.ScriptTarget.ES2020,
+      experimentalDecorators: true
+    };
+    // An ".mts" file is unambiguously ESM, so auto-detection and the explicit
+    // opt-out disagree — which is exactly what makes this a regression guard.
+    const filename = 'create-cat.dto.mts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const transpileWith = (pluginOptions: Record<string, any>) =>
+      ts.transpileModule(createCatDtoText, {
+        compilerOptions: options,
+        fileName: filename,
+        transformers: {
+          before: [
+            before(
+              {
+                ...pluginOptions,
+                dtoFileNameSuffix: ['.dto.ts', '.dto.mts']
+              },
+              fakeProgram
+            )
+          ]
+        }
+      }).outputText;
+
+    const openapiImportOf = (output: string) =>
+      output.split('\n').find((line) => line.includes('openapi'));
+
+    expect(openapiImportOf(transpileWith({}))).toContain(
+      'import * as openapi from "@nestjs/swagger"'
+    );
+    expect(openapiImportOf(transpileWith({ esmCompatible: true }))).toContain(
+      'import * as openapi from "@nestjs/swagger"'
+    );
+    // The user's explicit opt-out must survive per-file option resolution.
+    expect(openapiImportOf(transpileWith({ esmCompatible: false }))).toContain(
+      'require("@nestjs/swagger")'
+    );
+  });
+
+  it('should honor an explicit esmCompatible opt-out through the resolved options', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      target: ts.ScriptTarget.ES2020
+    };
+    const filename = resolve(process.cwd(), 'parameter-property.dto.ts');
+    const sourceFile = ts.createSourceFile(
+      filename,
+      parameterPropertyDtoText,
+      ts.ScriptTarget.ES2020,
+      false,
+      ts.ScriptKind.TS
+    );
+    const pluginOptions = mergePluginOptions({ esmCompatible: false });
+
+    // The explicit setting must survive the per-file resolution, which spreads
+    // the options object before handing it to the import-updating visitors.
+    const resolvedOptions = resolvePluginOptionsForFile(
+      pluginOptions,
+      sourceFile,
+      options
+    );
+
+    expect(resolvedOptions.esmCompatible).toBe(false);
+    expect(isEsmOutputFile(sourceFile, options, resolvedOptions)).toBe(false);
   });
 
   it('should ignore Exclude decorator', () => {

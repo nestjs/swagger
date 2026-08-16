@@ -86,17 +86,9 @@ export const mergePluginOptions = (
       }
     }
   }
-  const mergedOptions = {
+  return {
     ...defaultOptions,
-    ...options
+    ...options,
+    esmCompatibleWasConfigured
   };
-
-  Object.defineProperty(mergedOptions, 'esmCompatibleWasConfigured', {
-    value: esmCompatibleWasConfigured,
-    enumerable: false,
-    writable: true,
-    configurable: true
-  });
-
-  return mergedOptions;
 };

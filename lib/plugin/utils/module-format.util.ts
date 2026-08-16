@@ -8,7 +8,10 @@ export function resolvePluginOptionsForFile(
 ): PluginOptions {
   return {
     ...options,
-    esmCompatible: isEsmOutputFile(sourceFile, compilerOptions, options)
+    esmCompatible: isEsmOutputFile(sourceFile, compilerOptions, options),
+    // Mark the resolved value as configured so downstream consumers (e.g.
+    // `updateImports`) reuse it instead of re-running the file system lookup.
+    esmCompatibleWasConfigured: true
   };
 }
 
@@ -33,6 +36,13 @@ export function isEsmOutputFile(
   return isEsmModuleKind(compilerOptions.module);
 }
 
+/**
+ * Resolving the implied module format walks every `package.json` from the source
+ * file up to the file system root. The transformer runs per file, so the result
+ * is memoized to keep that walk off the hot path.
+ */
+const impliedNodeFormatCache = new Map<string, ts.ResolutionMode | undefined>();
+
 function getImpliedNodeFormat(
   sourceFile: ts.SourceFile,
   compilerOptions: ts.CompilerOptions
@@ -41,12 +51,19 @@ function getImpliedNodeFormat(
     return undefined;
   }
 
-  return ts.getImpliedNodeFormatForFile(
+  const cacheKey = sourceFile.fileName;
+  if (impliedNodeFormatCache.has(cacheKey)) {
+    return impliedNodeFormatCache.get(cacheKey);
+  }
+
+  const impliedNodeFormat = ts.getImpliedNodeFormatForFile(
     sourceFile.fileName,
     undefined,
     ts.sys,
     compilerOptions
   );
+  impliedNodeFormatCache.set(cacheKey, impliedNodeFormat);
+  return impliedNodeFormat;
 }
 
 function isEsmModuleKind(moduleKind?: ts.ModuleKind): boolean {

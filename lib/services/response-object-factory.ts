@@ -59,7 +59,9 @@ export class ResponseObjectFactory {
       return this.responseObjectMapper.wrapSchemaWithContent(
         {
           ...omit(response, ['type']),
-          schema: schemaOverride
+          schema: isArray
+            ? { type: 'array', items: schemaOverride }
+            : schemaOverride
         } as ApiResponseSchemaHost & ApiResponseMetadata,
         produces
       );
@@ -201,20 +203,10 @@ export class ResponseObjectFactory {
     response: ApiResponseMetadata,
     schemas: Record<string, SchemaObject>
   ): SchemaObject | ReferenceObject | undefined {
-    if (!response.standardSchema) {
-      return undefined;
-    }
-
-    const convertedSchema = this.standardSchemaOpenApiConverter.convert(
+    return this.standardSchemaOpenApiConverter.convertInto(
       response.standardSchema,
+      schemas,
       'output'
     );
-
-    if (convertedSchema) {
-      Object.assign(schemas, convertedSchema.components);
-      return convertedSchema.schema;
-    }
-
-    return undefined;
   }
 }

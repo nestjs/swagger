@@ -1087,15 +1087,11 @@ export class SchemaObjectFactory {
     param: ParamWithTypeMetadata,
     schemas: Record<string, SchemaObject>
   ): SchemaObject | ReferenceObject | undefined {
-    const convertedSchema = this.standardSchemaOpenApiConverter.convert(
+    // Parameters describe incoming data, so they always use the input schema.
+    return this.standardSchemaOpenApiConverter.convertInto(
       param.standardSchema,
-      isBodyParameter(param) ? 'input' : 'input'
+      schemas,
+      'input'
     );
-    if (!convertedSchema) {
-      return undefined;
-    }
-
-    Object.assign(schemas, convertedSchema.components);
-    return convertedSchema.schema;
   }
 }

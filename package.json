@@ -12,6 +12,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
+      "require": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./plugin": {
@@ -21,6 +22,9 @@
       "default": "./dist/plugin/index.js"
     },
     "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

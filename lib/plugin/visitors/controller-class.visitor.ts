@@ -16,10 +16,8 @@ import {
 import {
   convertPath,
   getDecoratorOrUndefinedByNames,
-  getOutputExtension,
   getTypeReferenceAsString,
-  hasPropertyKey,
-  normalizePackagePath
+  hasPropertyKey
 } from '../utils/plugin-utils.js';
 import { resolvePluginOptionsForFile } from '../utils/module-format.util.js';
 import { typeReferenceToIdentifier } from '../utils/type-reference-to-identifier.util.js';
@@ -33,31 +31,15 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     Record<string, ClassMetadata>
   > = {};
   private readonly _typeImports: Record<string, string> = {};
-  private readonly _fileOutputExtensions: Record<string, string> = {};
 
   get typeImports() {
     return this._typeImports;
   }
 
-  collectedMetadata(
-    options: PluginOptions
-  ): Array<[ts.CallExpression, Record<string, ClassMetadata>]> {
-    const metadataWithImports = [];
-    Object.keys(this._collectedMetadata).forEach((filePath) => {
-      const metadata = this._collectedMetadata[filePath];
-      const fileExt =
-        this._fileOutputExtensions[filePath] ??
-        (options.esmCompatible ? getOutputExtension(filePath) : '');
-      let path = filePath.replace(/\.[jt]s$/, fileExt);
-      path = normalizePackagePath(path);
-      const importExpr = ts.factory.createCallExpression(
-        ts.factory.createToken(ts.SyntaxKind.ImportKeyword) as ts.Expression,
-        undefined,
-        [ts.factory.createStringLiteral(path)]
-      );
-      metadataWithImports.push([importExpr, metadata]);
-    });
-    return metadataWithImports;
+  collectedMetadata(): Array<
+    [ts.CallExpression, Record<string, ClassMetadata>]
+  > {
+    return this.buildMetadataImports(this._collectedMetadata);
   }
 
   visit(
@@ -95,9 +77,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
               options.pathToSource,
               sourceFile.fileName
             );
-            this._fileOutputExtensions[filePath] = options.esmCompatible
-              ? getOutputExtension(sourceFile.fileName)
-              : '';
+            this.registerOutputExtension(filePath, sourceFile, options);
 
             if (!this._collectedMetadata[filePath]) {
               this._collectedMetadata[filePath] = {};
