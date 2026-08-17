@@ -175,6 +175,40 @@ describe('plugin-utils', () => {
       expect(result.typeReference).not.toContain('/src/');
     });
 
+    it('should adjust relative path depth in readonly mode when outDir is deeper than rootDir', () => {
+      // Readonly (SWC/metadata.ts generation) mode must rebase pathToSource
+      // through outDir/rootDir the same way normal mode rebases the source
+      // file's directory, since the generated metadata.ts effectively lives
+      // at the output location, not the source location.
+      const typeReference =
+        'import("/project/src/entities/test.entity").TestEnum';
+      const fileName = '/project/src/dto/nested/test.dto.ts';
+      const readonlyOptions = {
+        readonly: true,
+        pathToSource: '/project/src/dto/nested',
+        rootDir: '/project/src',
+        outDir: '/project/dist'
+      };
+      const nonReadonlyOptions = {
+        rootDir: '/project/src',
+        outDir: '/project/dist'
+      };
+
+      const readonlyResult = replaceImportPath(
+        typeReference,
+        fileName,
+        readonlyOptions
+      );
+      const nonReadonlyResult = replaceImportPath(
+        typeReference,
+        fileName,
+        nonReadonlyOptions
+      );
+
+      expect(readonlyResult.importPath).not.toContain('/dist/');
+      expect(readonlyResult.importPath).toBe(nonReadonlyResult.importPath);
+    });
+
     it('should fall back to source-based path when outDir/rootDir are absent', () => {
       // Baseline behaviour must be preserved when options do not include outDir/rootDir.
       const typeReference =
