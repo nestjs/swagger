@@ -1,5 +1,6 @@
 import { DECORATORS } from '../../lib/constants';
 import { ApiProperty } from '../../lib/decorators';
+import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { DeepPartialType } from '../../lib/type-helpers';
 
@@ -176,6 +177,232 @@ describe('DeepPartialType', () => {
       expect(meta.isArray).toBe(true);
       expect(meta.required).toBe(false);
       expect(meta.type).not.toBe(TagDto);
+    });
+  });
+
+  describe('plugin-generated metadata', () => {
+    class PluginAddressDto {
+      street: string;
+      city: string;
+
+      static [METADATA_FACTORY_NAME]() {
+        return {
+          street: { required: true, type: () => String },
+          city: { required: true, type: () => String }
+        };
+      }
+    }
+
+    class PluginProfileDto {
+      bio: string;
+      address: PluginAddressDto;
+
+      static [METADATA_FACTORY_NAME]() {
+        return {
+          bio: { required: true, type: () => String },
+          address: { required: true, type: () => PluginAddressDto }
+        };
+      }
+    }
+
+    class PluginUserDto {
+      name: string;
+      profile: PluginProfileDto;
+
+      static [METADATA_FACTORY_NAME]() {
+        return {
+          name: { required: true, type: () => String },
+          profile: { required: true, type: () => PluginProfileDto }
+        };
+      }
+    }
+
+    class UpdatePluginUserDto extends DeepPartialType(PluginUserDto) {}
+
+    beforeAll(() => {
+      modelPropertiesAccessor.applyMetadataFactory(
+        UpdatePluginUserDto.prototype
+      );
+    });
+
+    it('should mark plugin-declared top-level properties as optional', () => {
+      expect(getMetadata(UpdatePluginUserDto, 'name').required).toBe(false);
+      expect(getMetadata(UpdatePluginUserDto, 'profile').required).toBe(false);
+    });
+
+    it('should leave plugin-declared primitive types unchanged', () => {
+      const nameMeta = getMetadata(UpdatePluginUserDto, 'name');
+      expect(typeof nameMeta.type).toBe('function');
+      expect(nameMeta.type()).toBe(String);
+    });
+
+    it('should wrap nested DTOs declared only in the metadata factory', () => {
+      const NestedProfileType = getMetadata(
+        UpdatePluginUserDto,
+        'profile'
+      ).type;
+
+      expect(NestedProfileType).not.toBe(PluginProfileDto);
+
+      const bioMeta = Reflect.getMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        NestedProfileType.prototype,
+        'bio'
+      );
+      expect(bioMeta.required).toBe(false);
+    });
+
+    it('should recursively wrap deeply nested plugin DTOs', () => {
+      const NestedProfileType = getMetadata(
+        UpdatePluginUserDto,
+        'profile'
+      ).type;
+      const NestedAddressType = Reflect.getMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        NestedProfileType.prototype,
+        'address'
+      ).type;
+
+      expect(NestedAddressType).not.toBe(PluginAddressDto);
+
+      const streetMeta = Reflect.getMetadata(
+        DECORATORS.API_MODEL_PROPERTIES,
+        NestedAddressType.prototype,
+        'street'
+      );
+      expect(streetMeta.required).toBe(false);
+    });
+  });
+
+  describe('plugin-generated arrays', () => {
+    class PluginTagDto {
+      label: string;
+
+      static [METADATA_FACTORY_NAME]() {
+        return { label: { required: true, type: () => String } };
+      }
+    }
+
+    class PluginArticleDto {
+      tags: PluginTagDto[];
+
+      static [METADATA_FACTORY_NAME]() {
+        return { tags: { required: true, type: () => [PluginTagDto] } };
+      }
+    }
+
+    it('should preserve array-ness for a plugin-declared nested DTO array', () => {
+      class UpdatePluginArticleDto extends DeepPartialType(PluginArticleDto) {}
+      const meta = getMetadata(UpdatePluginArticleDto, 'tags');
+
+      expect(meta.isArray).toBe(true);
+      expect(meta.required).toBe(false);
+      expect(meta.type).not.toBe(PluginTagDto);
+      expect(
+        Reflect.getMetadata(
+          DECORATORS.API_MODEL_PROPERTIES,
+          meta.type.prototype,
+          'label'
+        ).required
+      ).toBe(false);
+    });
+  });
+
+  describe('lazy factory that throws', () => {
+    it('should leave the property type alone instead of propagating the error', () => {
+      class ThrowingPluginDto {
+        broken: unknown;
+
+        static [METADATA_FACTORY_NAME]() {
+          return {
+            broken: {
+              required: true,
+              type: () => {
+                throw new Error('circular import not resolved yet');
+              }
+            }
+          };
+        }
+      }
+
+      expect(() => DeepPartialType(ThrowingPluginDto)).not.toThrow();
+    });
+
+    it('should leave an explicitly decorated throwing factory alone', () => {
+      class ThrowingExplicitDto {
+        @ApiProperty({
+          type: () => {
+            throw new Error('circular import not resolved yet');
+          }
+        })
+        broken: unknown;
+      }
+
+      expect(() => DeepPartialType(ThrowingExplicitDto)).not.toThrow();
+    });
+  });
+
+  describe('mixed explicit and plugin-generated metadata', () => {
+    class MixedTagDto {
+      @ApiProperty({ type: String, required: true })
+      label: string;
+    }
+
+    class MixedSettingsDto {
+      theme: string;
+
+      static [METADATA_FACTORY_NAME]() {
+        return { theme: { required: true, type: () => String } };
+      }
+    }
+
+    class MixedAccountDto {
+      @ApiProperty({ type: () => MixedTagDto, required: true })
+      tag: MixedTagDto;
+
+      settings: MixedSettingsDto;
+
+      static [METADATA_FACTORY_NAME]() {
+        return {
+          settings: { required: true, type: () => MixedSettingsDto }
+        };
+      }
+    }
+
+    class UpdateMixedAccountDto extends DeepPartialType(MixedAccountDto) {}
+
+    beforeAll(() => {
+      modelPropertiesAccessor.applyMetadataFactory(
+        UpdateMixedAccountDto.prototype
+      );
+    });
+
+    it('should wrap the explicitly decorated nested DTO', () => {
+      const meta = getMetadata(UpdateMixedAccountDto, 'tag');
+
+      expect(meta.required).toBe(false);
+      expect(meta.type).not.toBe(MixedTagDto);
+      expect(
+        Reflect.getMetadata(
+          DECORATORS.API_MODEL_PROPERTIES,
+          meta.type.prototype,
+          'label'
+        ).required
+      ).toBe(false);
+    });
+
+    it('should wrap the plugin-declared nested DTO on the same class', () => {
+      const meta = getMetadata(UpdateMixedAccountDto, 'settings');
+
+      expect(meta.required).toBe(false);
+      expect(meta.type).not.toBe(MixedSettingsDto);
+      expect(
+        Reflect.getMetadata(
+          DECORATORS.API_MODEL_PROPERTIES,
+          meta.type.prototype,
+          'theme'
+        ).required
+      ).toBe(false);
     });
   });
 
