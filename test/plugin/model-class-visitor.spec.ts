@@ -721,4 +721,38 @@ describe('API model properties', () => {
       `gender: { required: true, type: () => Object, enum: ['a', 1] }`
     );
   });
+
+  it('should handle decorators that use namepsace imports', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'decorator-with-namespace-import.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      import * as class_validator from 'class-validator';
+
+      export class HasNamespaceImportDecoratorDto {
+        @class_validator.IsIn(["red", "green", "blue"])
+        color: string;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classValidatorShim: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `color: { required: true, type: () => String, enum: ["red", "green", "blue"] }`
+    );
+  });
 });
