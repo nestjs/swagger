@@ -10,7 +10,10 @@ import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
-import { clonePluginMetadataFactory } from './mapped-types.utils.js';
+import {
+  clonePluginMetadataFactory,
+  setMappedTypeClassName
+} from './mapped-types.utils.js';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
@@ -33,6 +36,7 @@ export function PickType<T, K extends keyof T>(
       inheritPropertyInitializers(this, classRef, isInheritedPredicate);
     }
   }
+  setMappedTypeClassName(PickTypeClass, 'Pick', classRef, keys);
 
   inheritValidationMetadata(classRef, PickTypeClass, isInheritedPredicate);
   inheritTransformationMetadata(classRef, PickTypeClass, isInheritedPredicate);

@@ -58,6 +58,85 @@ describe('ApiQuery', () => {
     });
   });
 
+  describe('extensions support', () => {
+    it('should merge extensions into parameter metadata when provided (method level)', () => {
+      class TestAppController {
+        @Get()
+        @ApiQuery({
+          name: 'search',
+          extensions: { 'x-permissions': ['test.customer.add'] }
+        })
+        public get(@Query('search') search: string): string {
+          return search;
+        }
+      }
+
+      const controller = new TestAppController();
+      expect(
+        Reflect.hasMetadata(DECORATORS.API_PARAMETERS, controller.get)
+      ).toBeTruthy();
+      expect(
+        Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)
+      ).toEqual([
+        {
+          in: 'query',
+          name: 'search',
+          required: true,
+          'x-permissions': ['test.customer.add']
+        }
+      ]);
+    });
+
+    it('should auto-prefix extension keys without x- (class level)', () => {
+      @ApiQuery({
+        name: 'search',
+        extensions: { permissions: ['test.customer.add'] }
+      })
+      @Controller('test')
+      class TestAppController {
+        @Get()
+        public get(@Query('search') search: string): string {
+          return search;
+        }
+      }
+
+      const controller = new TestAppController();
+      expect(
+        Reflect.hasMetadata(DECORATORS.API_PARAMETERS, controller.get)
+      ).toBeTruthy();
+      expect(
+        Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)
+      ).toEqual([
+        {
+          in: 'query',
+          name: 'search',
+          required: true,
+          'x-permissions': ['test.customer.add']
+        }
+      ]);
+    });
+
+    it('should not leave a raw "extensions" key in the parameter metadata', () => {
+      class TestAppController {
+        @Get()
+        @ApiQuery({
+          name: 'search',
+          extensions: { 'x-permissions': ['test.customer.add'] }
+        })
+        public get(@Query('search') search: string): string {
+          return search;
+        }
+      }
+
+      const controller = new TestAppController();
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_PARAMETERS,
+        controller.get
+      );
+      expect(metadata[0]).not.toHaveProperty('extensions');
+    });
+  });
+
   describe('when type is specified', () => {
     class TestAppController {
       @Get('string')

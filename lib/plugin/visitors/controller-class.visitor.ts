@@ -11,17 +11,20 @@ import {
 import { PluginOptions } from '../merge-options.js';
 import { OPENAPI_NAMESPACE } from '../plugin-constants.js';
 import {
+  collectExistingApiParamNames,
   createLiteralFromAnyValue,
   getDecoratorArguments,
   getDecoratorName,
   getJSDocParamDescriptionsOfNode,
   getMainCommentOfNode,
+  getNamedParamDecoratorArg,
   getTsDocErrorsOfNode,
   getTsDocTagsOfNode
 } from '../utils/ast-utils.js';
 import {
   convertPath,
   getDecoratorOrUndefinedByNames,
+  getStringLiteralUnionValues,
   getTypeReferenceAsString,
   hasPropertyKey
 } from '../utils/plugin-utils.js';
@@ -162,7 +165,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       factory,
       compilerNode,
       decorators,
-      options
+      options,
+      typeChecker
     );
 
     const removeExistingApiOperationDecorator =
@@ -179,7 +183,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         const decoratorName = getDecoratorName(item);
         // Error factories (4xx/5xx) must not suppress the auto-inferred 2xx.
         if (decoratorName === ApiResponse.name) {
-          return this.isSuccessOrRedirectApiResponseArg(item);
+          return this.isSuccessOrRedirectApiResponseArg(item, typeChecker);
         }
         const statusNameMatch = decoratorName.match(/^Api(.+)Response$/);
         if (!statusNameMatch) return false;
@@ -460,7 +464,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     const paramDescriptions = options.introspectComments
       ? getJSDocParamDescriptionsOfNode(node)
       : {};
-    const existingApiQueryNames = this.collectExistingApiDecoratorNames(
+    const existingApiQueryNames = collectExistingApiParamNames(
       methodDecorators,
       ApiQuery.name
     );
@@ -470,27 +474,10 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
     const generated: ts.Decorator[] = [];
     for (const parameter of parameters) {
-      const paramDecorators =
-        (ts.canHaveDecorators(parameter) && ts.getDecorators(parameter)) || [];
-
-      const queryDecorator = paramDecorators.find((d) => {
-        try {
-          return getDecoratorName(d) === 'Query';
-        } catch {
-          return false;
-        }
-      });
-      if (!queryDecorator) {
+      const queryName = getNamedParamDecoratorArg(parameter, 'Query');
+      if (queryName === undefined) {
         continue;
       }
-
-      const firstArg = head(getDecoratorArguments(queryDecorator));
-      if (!firstArg || !ts.isStringLiteral(firstArg)) {
-        // `@Query()` without a literal name refers to the whole query object
-        // and does not map to a single OpenAPI parameter; skip it.
-        continue;
-      }
-      const queryName = firstArg.text;
 
       if (existingApiQueryNames.has(queryName)) {
         continue;
@@ -551,10 +538,13 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
   }
 
   /**
-   * Inspects the method's parameters and, for each `@Param('name')` parameter
-   * documented with a JSDoc `@param` tag, emits an
-   * `@ApiParam({ name, description })` decorator so the documented description
-   * surfaces in the generated OpenAPI spec.
+   * Inspects the method's parameters and, for each `@Param('name')` parameter,
+   * emits an `@ApiParam({ name, description?, enum? })` decorator carrying the
+   * metadata that can be inferred statically:
+   *   - `description`, from the parameter's JSDoc `@param` tag (only when
+   *     comment introspection is enabled)
+   *   - `enum`, when the parameter's type resolves to a string- or
+   *     number-literal union
    *
    * An existing `@ApiParam` decorator on the method for the same name takes
    * precedence and is left untouched. If the method already uses
@@ -566,21 +556,21 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     factory: ts.NodeFactory,
     node: ts.MethodDeclaration,
     methodDecorators: readonly ts.Decorator[],
-    options: PluginOptions
+    options: PluginOptions,
+    typeChecker: ts.TypeChecker
   ): ts.Decorator[] {
     const parameters = node.parameters;
     if (!parameters || parameters.length === 0) {
       return [];
     }
 
-    // `@ApiParam` decorators are emitted purely to carry JSDoc-sourced
-    // descriptions, so generation is gated on comment introspection.
-    if (!options.introspectComments) {
-      return [];
-    }
-
-    const paramDescriptions = getJSDocParamDescriptionsOfNode(node);
-    const existingApiParamNames = this.collectExistingApiDecoratorNames(
+    // Descriptions are sourced from JSDoc comments, so they are only inferred
+    // when comment introspection is enabled; the `enum` inference below is
+    // independent of comments and always applies.
+    const paramDescriptions = options.introspectComments
+      ? getJSDocParamDescriptionsOfNode(node)
+      : {};
+    const existingApiParamNames = collectExistingApiParamNames(
       methodDecorators,
       ApiParam.name
     );
@@ -590,27 +580,10 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
 
     const generated: ts.Decorator[] = [];
     for (const parameter of parameters) {
-      const paramDecorators =
-        (ts.canHaveDecorators(parameter) && ts.getDecorators(parameter)) || [];
-
-      const paramDecorator = paramDecorators.find((d) => {
-        try {
-          return getDecoratorName(d) === 'Param';
-        } catch {
-          return false;
-        }
-      });
-      if (!paramDecorator) {
+      const paramName = getNamedParamDecoratorArg(parameter, 'Param');
+      if (paramName === undefined) {
         continue;
       }
-
-      const firstArg = head(getDecoratorArguments(paramDecorator));
-      if (!firstArg || !ts.isStringLiteral(firstArg)) {
-        // `@Param()` without a literal name refers to the whole params object
-        // and does not map to a single OpenAPI parameter; skip it.
-        continue;
-      }
-      const paramName = firstArg.text;
 
       if (existingApiParamNames.has(paramName)) {
         continue;
@@ -620,21 +593,57 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         parameter,
         paramDescriptions
       );
-      if (!description) {
+
+      let type: ts.Type | undefined;
+      try {
+        type = typeChecker.getTypeAtLocation(parameter);
+      } catch {
+        type = undefined;
+      }
+      const literalUnion = type ? getStringLiteralUnionValues(type) : undefined;
+      const enumValues =
+        literalUnion && literalUnion.values.length > 0
+          ? literalUnion.values
+          : undefined;
+
+      if (!description && !enumValues) {
+        // Nothing to contribute: emitting an `@ApiParam` with just a name
+        // would only duplicate metadata Nest already infers.
         continue;
       }
 
-      const objectLiteral = factory.createObjectLiteralExpression(
-        [
-          factory.createPropertyAssignment(
-            'name',
-            factory.createStringLiteral(paramName)
-          ),
+      const properties: ts.PropertyAssignment[] = [
+        factory.createPropertyAssignment(
+          'name',
+          factory.createStringLiteral(paramName)
+        )
+      ];
+      if (description) {
+        properties.push(
           factory.createPropertyAssignment(
             'description',
             factory.createStringLiteral(description)
           )
-        ],
+        );
+      }
+      if (enumValues) {
+        properties.push(
+          factory.createPropertyAssignment(
+            'enum',
+            factory.createArrayLiteralExpression(
+              enumValues.map((value) =>
+                typeof value === 'number'
+                  ? factory.createNumericLiteral(value)
+                  : factory.createStringLiteral(value)
+              ),
+              false
+            )
+          )
+        );
+      }
+
+      const objectLiteral = factory.createObjectLiteralExpression(
+        properties,
         false
       );
 
@@ -670,51 +679,6 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       return undefined;
     }
     return paramDescriptions[parameter.name.text];
-  }
-
-  /**
-   * Collects the literal `name` values of the existing `@ApiQuery`/`@ApiParam`
-   * decorators already present on a method, so auto-generation can defer to
-   * user-authored decorators.
-   *
-   * Returns `null` to signal that generation should be skipped entirely for
-   * the method: an existing decorator uses a shape we cannot reliably
-   * introspect (a non-object-literal argument, or no literal `name` property),
-   * so emitting more metadata risks duplicating it.
-   */
-  private collectExistingApiDecoratorNames(
-    methodDecorators: readonly ts.Decorator[],
-    decoratorName: string
-  ): Set<string> | null {
-    const names = new Set<string>();
-    for (const decorator of methodDecorators) {
-      let name: string | undefined;
-      try {
-        name = getDecoratorName(decorator);
-      } catch {
-        continue;
-      }
-      if (name !== decoratorName) {
-        continue;
-      }
-      const optionsExpr = head(getDecoratorArguments(decorator));
-      if (!optionsExpr || !ts.isObjectLiteralExpression(optionsExpr)) {
-        return null;
-      }
-      const nameProp = optionsExpr.properties.find(
-        (p) =>
-          ts.isPropertyAssignment(p) &&
-          p.name !== undefined &&
-          ((ts.isIdentifier(p.name) && p.name.text === 'name') ||
-            (ts.isStringLiteral(p.name) && p.name.text === 'name'))
-      ) as ts.PropertyAssignment | undefined;
-      if (nameProp && ts.isStringLiteral(nameProp.initializer)) {
-        names.add(nameProp.initializer.text);
-      } else {
-        return null;
-      }
-    }
-    return names;
   }
 
   /**
@@ -873,7 +837,10 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     return relativePath;
   }
 
-  private isSuccessOrRedirectApiResponseArg(decorator: ts.Decorator): boolean {
+  private isSuccessOrRedirectApiResponseArg(
+    decorator: ts.Decorator,
+    typeChecker: ts.TypeChecker
+  ): boolean {
     const [firstArg] = getDecoratorArguments(decorator);
     if (!firstArg || !ts.isObjectLiteralExpression(firstArg)) return true;
     const statusProp = firstArg.properties.find(
@@ -893,7 +860,26 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         init.text === 'default'
       );
     }
-    // Non-literal (e.g. HttpStatus.OK) — can't evaluate at compile time; preserve pre-PR behavior.
+    if (
+      ts.isPropertyAccessExpression(init) ||
+      ts.isElementAccessExpression(init)
+    ) {
+      const constantValue = typeChecker.getConstantValue(init);
+      if (typeof constantValue === 'number') {
+        return constantValue < 400;
+      }
+      if (
+        ts.isPropertyAccessExpression(init) &&
+        ts.isIdentifier(init.expression) &&
+        init.expression.text === 'HttpStatus'
+      ) {
+        const status = HttpStatus[init.name.text as keyof typeof HttpStatus];
+        if (typeof status === 'number') {
+          return status < 400;
+        }
+      }
+    }
+    // Unknown expressions cannot be safely evaluated at compile time.
     return true;
   }
 }

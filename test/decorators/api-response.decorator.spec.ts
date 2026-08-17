@@ -54,6 +54,29 @@ describe('ApiResponse', () => {
       });
     });
 
+    it('should attach summary metadata to a given method (OpenAPI 3.2)', () => {
+      @Controller('tests/:testId')
+      class SummaryController {
+        @Get()
+        @ApiOkResponse({ summary: 'List of cats', description: 'All cats' })
+        public get(@Param('testId') testId: string): string {
+          return testId;
+        }
+      }
+
+      const controller = new SummaryController();
+      expect(
+        Reflect.getMetadata(DECORATORS.API_RESPONSE, controller.get)
+      ).toEqual({
+        [HttpStatus.OK]: {
+          summary: 'List of cats',
+          description: 'All cats',
+          isArray: undefined,
+          type: undefined
+        }
+      });
+    });
+
     it.each([
       { decorator: ApiOkResponse, status: HttpStatus.OK },
       { decorator: ApiCreatedResponse, status: HttpStatus.CREATED },

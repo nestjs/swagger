@@ -37,10 +37,24 @@ function isDtoClass(typeRef: unknown): typeRef is Type<unknown> {
   ) {
     return false;
   }
+  // A lazy factory that throws is handed back as-is by the caller, and an arrow
+  // function has no prototype. Bail out before `getModelProperties` dereferences
+  // it, otherwise resolving the type would throw instead of leaving it alone.
+  if (!(typeRef as Type<unknown>).prototype) {
+    return false;
+  }
   const fields = modelPropertiesAccessor.getModelProperties(
     (typeRef as Type<unknown>).prototype
   );
-  return fields.length > 0;
+  if (fields.length > 0) {
+    return true;
+  }
+  // A DTO written with the CLI plugin carries no `@ApiProperty()` metadata of
+  // its own; its properties only exist in the generated metadata factory, which
+  // is not applied to the prototype until the schema is explored.
+  return (
+    typeof (typeRef as Type<unknown>)[METADATA_FACTORY_NAME] === 'function'
+  );
 }
 
 /**
@@ -105,23 +119,14 @@ export function DeepPartialType<T>(
         mapValues(metadata, (item) => ({ ...item, required: false }))
     );
 
-    if (DeepPartialTypeClass[METADATA_FACTORY_NAME]) {
-      const pluginFields = Object.keys(
-        DeepPartialTypeClass[METADATA_FACTORY_NAME]()
-      );
-      pluginFields.forEach((key) =>
-        applyPartialDecoratorFn(DeepPartialTypeClass, key)
-      );
-    }
-
-    fields.forEach((key) => {
-      const metadata =
-        Reflect.getMetadata(
-          DECORATORS.API_MODEL_PROPERTIES,
-          classRef.prototype,
-          key
-        ) || {};
-
+    // Applies the recursive type substitution for a single property. Shared by
+    // the explicitly decorated properties and by the ones that only exist in
+    // the plugin-generated metadata factory, so both routes end up with the
+    // nested DTO wrapped in `DeepPartialType`.
+    function applyDeepPartialProperty(
+      metadata: Record<string, any>,
+      key: string
+    ) {
       // Resolve the effective type, supporting lazy factory functions
       let resolvedType = metadata.type;
       if (typeof resolvedType === 'function' && resolvedType.length === 0) {
@@ -132,23 +137,56 @@ export function DeepPartialType<T>(
         }
       }
 
-      // Unwrap array type: [SomeDto] → SomeDto
+      // Unwrap array type: [SomeDto] -> SomeDto. An array can be expressed
+      // either through the `isArray` flag or by wrapping the type in a
+      // single-element tuple (commonly returned from a lazy factory, e.g.
+      // `type: () => [SomeDto]`). Capture the array-ness so it can be
+      // re-applied when we replace `type` with the wrapped nested class.
+      let isArray = metadata.isArray === true;
       if (Array.isArray(resolvedType) && resolvedType.length === 1) {
         resolvedType = resolvedType[0];
+        isArray = true;
       }
 
-      const nestedType = isDtoClass(resolvedType)
+      const isNestedDto = isDtoClass(resolvedType);
+      const nestedType = isNestedDto
         ? DeepPartialType(resolvedType, options)
         : metadata.type;
 
       const decoratorFactory = ApiProperty({
         ...metadata,
         type: nestedType,
+        // Preserve array semantics that may have been encoded inside a lazy
+        // factory; without this the unwrapped nested type would be emitted as
+        // a single object instead of an array.
+        ...(isNestedDto ? { isArray } : {}),
         required: false
       });
       decoratorFactory(DeepPartialTypeClass.prototype, key);
+    }
+
+    fields.forEach((key) => {
+      const metadata =
+        Reflect.getMetadata(
+          DECORATORS.API_MODEL_PROPERTIES,
+          classRef.prototype,
+          key
+        ) || {};
+
+      applyDeepPartialProperty(metadata, key);
       applyPartialDecoratorFn(DeepPartialTypeClass, key);
     });
+
+    if (DeepPartialTypeClass[METADATA_FACTORY_NAME]) {
+      const pluginMetadata = DeepPartialTypeClass[METADATA_FACTORY_NAME]();
+      const pluginFields = Object.keys(pluginMetadata);
+      pluginFields.forEach((key) => {
+        if (!fields.includes(key)) {
+          applyDeepPartialProperty(pluginMetadata[key], key);
+        }
+        applyPartialDecoratorFn(DeepPartialTypeClass, key);
+      });
+    }
   }
   applyFields(fields);
 

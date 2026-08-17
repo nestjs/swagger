@@ -132,6 +132,95 @@ export function getTypeReferenceAsString(
   }
 }
 
+export function getRecordValueType(
+  type: ts.Type,
+  typeChecker: ts.TypeChecker
+): ts.Type | undefined {
+  const indexInfo =
+    typeChecker.getIndexInfoOfType(type, ts.IndexKind.String) ??
+    typeChecker.getIndexInfoOfType(type, ts.IndexKind.Number);
+  if (indexInfo?.type && type.getProperties().length === 0) {
+    return indexInfo.type;
+  }
+  if (type.aliasSymbol?.getName() === 'Record') {
+    const aliasArgs = type.aliasTypeArguments;
+    if (aliasArgs?.length === 2) {
+      return aliasArgs[1]; // [0] = key, [1] = value
+    }
+  }
+  return undefined;
+}
+
+export function createAdditionalPropertiesValueSchema(
+  valueType: ts.Type,
+  typeChecker: ts.TypeChecker,
+  factory: ts.NodeFactory
+): ts.Expression {
+  const text = getText(valueType, typeChecker);
+  const objType = (t: string) =>
+    factory.createObjectLiteralExpression(
+      [
+        factory.createPropertyAssignment('type', factory.createStringLiteral(t))
+      ],
+      false
+    );
+
+  if (
+    isString(valueType) ||
+    isStringLiteral(valueType) ||
+    isStringMapping(valueType)
+  ) {
+    return objType('string');
+  }
+  if (isNumber(valueType) || isBigInt(valueType)) {
+    return objType('number');
+  }
+  if (isBoolean(valueType)) {
+    return objType('boolean');
+  }
+  if (text === 'any' || text === 'unknown' || text === 'object') {
+    return factory.createTrue();
+  }
+
+  const nested = getRecordValueType(valueType, typeChecker);
+  if (nested) {
+    return factory.createObjectLiteralExpression(
+      [
+        factory.createPropertyAssignment(
+          'type',
+          factory.createStringLiteral('object')
+        ),
+        factory.createPropertyAssignment(
+          'additionalProperties',
+          createAdditionalPropertiesValueSchema(nested, typeChecker, factory)
+        )
+      ],
+      false
+    );
+  }
+  if (isArray(valueType)) {
+    const elementType = getTypeArguments(valueType)[0];
+    return factory.createObjectLiteralExpression(
+      [
+        factory.createPropertyAssignment(
+          'type',
+          factory.createStringLiteral('array')
+        ),
+        factory.createPropertyAssignment(
+          'items',
+          createAdditionalPropertiesValueSchema(
+            elementType,
+            typeChecker,
+            factory
+          )
+        )
+      ],
+      false
+    );
+  }
+  return factory.createTrue();
+}
+
 /**
  * Returns `true` when the supplied type text refers to a top-level
  * `Promise<...>` or `Observable<...>` instantiation.
@@ -209,7 +298,10 @@ export function replaceImportPath(
     };
   } catch {
     const from = options?.readonly
-      ? safeDecodeURIComponent(convertPath(options.pathToSource))
+      ? rebaseToOutputDir(
+          safeDecodeURIComponent(convertPath(options.pathToSource)),
+          options
+        )
       : getOutputDir(fileName, options);
 
     const targetPath =
@@ -271,6 +363,17 @@ function getOutputDir(fileName: string, options: PluginOptions): string {
   const sourceDir = posix.dirname(
     safeDecodeURIComponent(convertPath(fileName))
   );
+  return rebaseToOutputDir(sourceDir, options);
+}
+
+/**
+ * Rebases a source-tree directory onto the output tree using outDir/rootDir,
+ * the same transform getOutputDir() applies to a compiled file's directory.
+ * Used directly by the readonly (SWC/metadata.ts) path, where the "source
+ * directory" is pathToSource rather than a per-file directory, since the
+ * generated metadata.ts lives at the output location.
+ */
+function rebaseToOutputDir(sourceDir: string, options: PluginOptions): string {
   if (options.outDir && options.rootDir) {
     const outDir = convertPath(options.outDir);
     const rootDir = convertPath(options.rootDir);

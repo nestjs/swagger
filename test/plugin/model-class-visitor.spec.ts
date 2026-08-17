@@ -62,9 +62,11 @@ import {
   booleanLiteralDtoText,
   booleanLiteralDtoTextTranspiled
 } from './fixtures/boolean-literal.dto';
+import { stringLiteralUnionDtoText } from './fixtures/string-literal-union.dto';
 import {
-  stringLiteralUnionDtoText
-} from './fixtures/string-literal-union.dto';
+  recordDtoText,
+  recordDtoTextTranspiled
+} from './fixtures/record-type.dto';
 
 describe('API model properties', () => {
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
@@ -206,6 +208,33 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(nullableDtoTextTranspiled);
+  });
+
+  it('should emit additionalProperties for Record/index-signature types', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'record-type.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(recordDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(recordDtoTextTranspiled);
   });
 
   it('should remove properties from metadata when properties removed from dto', () => {
@@ -658,11 +687,16 @@ describe('API model properties', () => {
       fileName: filename,
       transformers: {
         before: [
-          before({ introspectComments: true, classValidatorShim: false }, fakeProgram)
+          before(
+            { introspectComments: true, classValidatorShim: false },
+            fakeProgram
+          )
         ]
       }
     });
-    expect(resultWithoutOption.outputText).not.toContain(`enumName: "StatusEnum"`);
+    expect(resultWithoutOption.outputText).not.toContain(
+      `enumName: "StatusEnum"`
+    );
 
     const resultWithOption = ts.transpileModule(enumDtoText, {
       compilerOptions: options,
@@ -670,7 +704,11 @@ describe('API model properties', () => {
       transformers: {
         before: [
           before(
-            { introspectComments: true, classValidatorShim: false, autoFillEnumName: true },
+            {
+              introspectComments: true,
+              classValidatorShim: false,
+              autoFillEnumName: true
+            },
             fakeProgram
           )
         ]
@@ -720,13 +758,27 @@ describe('API model properties', () => {
       }
     });
 
-    expect(result.outputText).toContain(`color: { required: true, enum: ["red", "green", "blue"] }`);
-    expect(result.outputText).toContain(`optionalColor: { required: false, enum: ["red", "green", "blue"] }`);
-    expect(result.outputText).toContain(`nullableColor: { required: true, nullable: true, enum: ["red", "green", "blue"] }`);
-    expect(result.outputText).toContain(`inlineUnion: { required: true, enum: ["active", "inactive"] }`);
-    expect(result.outputText).toContain(`nullableInlineUnion: { required: true, nullable: true, enum: ["active", "inactive"] }`);
-    expect(result.outputText).toContain(`statusCode: { required: true, enum: [200, 400, 500] }`);
-    expect(result.outputText).toContain(`inlineNumberUnion: { required: true, enum: [1, 2, 3] }`);
+    expect(result.outputText).toContain(
+      `color: { required: true, enum: ["red", "green", "blue"] }`
+    );
+    expect(result.outputText).toContain(
+      `optionalColor: { required: false, enum: ["red", "green", "blue"] }`
+    );
+    expect(result.outputText).toContain(
+      `nullableColor: { required: true, nullable: true, enum: ["red", "green", "blue"] }`
+    );
+    expect(result.outputText).toContain(
+      `inlineUnion: { required: true, enum: ["active", "inactive"] }`
+    );
+    expect(result.outputText).toContain(
+      `nullableInlineUnion: { required: true, nullable: true, enum: ["active", "inactive"] }`
+    );
+    expect(result.outputText).toContain(
+      `statusCode: { required: true, enum: [200, 400, 500] }`
+    );
+    expect(result.outputText).toContain(
+      `inlineNumberUnion: { required: true, enum: [1, 2, 3] }`
+    );
     expect(result.outputText).not.toContain(`type: () => Object`);
   });
 
@@ -763,6 +815,40 @@ describe('API model properties', () => {
 
     expect(result.outputText).toContain(
       `gender: { required: true, type: () => Object, enum: ['a', 1] }`
+    );
+  });
+
+  it('should handle decorators that use namepsace imports', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'decorator-with-namespace-import.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      import * as class_validator from 'class-validator';
+
+      export class HasNamespaceImportDecoratorDto {
+        @class_validator.IsIn(["red", "green", "blue"])
+        color: string;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classValidatorShim: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `color: { required: true, type: () => String, enum: ["red", "green", "blue"] }`
     );
   });
 });

@@ -163,6 +163,7 @@ export interface ResponsesObject extends Record<
 }
 
 export interface ResponseObject {
+  summary?: string;
   description: string;
   headers?: HeadersObject;
   content?: ContentObject;

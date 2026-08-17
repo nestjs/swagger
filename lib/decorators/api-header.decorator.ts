@@ -1,4 +1,4 @@
-import { isNil, isUndefined, negate, pickBy } from 'es-toolkit/compat';
+import { clone, isNil, isUndefined, negate, pickBy } from 'es-toolkit/compat';
 import { DECORATORS } from '../constants.js';
 import {
   ParameterLocation,
@@ -10,6 +10,8 @@ import { createClassDecorator, createParamDecorator } from './helpers.js';
 
 export interface ApiHeaderOptions extends Omit<ParameterObject, 'in'> {
   enum?: SwaggerEnumType;
+  // Allow passing custom OpenAPI extensions for parameters
+  extensions?: Record<string, any>;
 }
 
 const defaultHeaderOptions: Partial<ApiHeaderOptions> = {
@@ -58,6 +60,19 @@ export function ApiHeader(
       enum: enumValues,
       type: getEnumType(enumValues)
     };
+  }
+
+  // Merge custom OpenAPI extensions into parameter metadata.
+  // Accept an `extensions` bag on the options similar to how `@ApiExtension` works
+  // (and consistent with `@ApiParam` and `@ApiQuery`).
+  const extensions = options.extensions;
+  if (extensions && typeof extensions === 'object') {
+    const cloned = clone(extensions);
+    for (const [key, value] of Object.entries(cloned)) {
+      // Ensure extension keys are prefixed with 'x-'
+      const extKey = key.startsWith('x-') ? key : `x-${key}`;
+      (param as Record<string, any>)[extKey] = value;
+    }
   }
 
   return (

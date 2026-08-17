@@ -34,7 +34,11 @@ export default async () => {
                 isArray: true
               },
               beforeDate: { required: true, type: () => Date },
-              filter: { required: true, type: () => Object }
+              filter: {
+                required: true,
+                type: 'object',
+                additionalProperties: true
+              }
             }
           }
         ],

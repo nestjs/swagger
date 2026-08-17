@@ -114,4 +114,109 @@ describe('ApiHeader', () => {
       ]);
     });
   });
+
+  describe('extensions support', () => {
+    it('should merge extensions into parameter metadata when provided (method level)', () => {
+      class TestAppController {
+        @ApiHeader({
+          name: 'X-Api-Key',
+          extensions: { 'x-permissions': ['test.customer.add'] }
+        })
+        @Get()
+        public get(): void {}
+      }
+
+      const controller = new TestAppController();
+      expect(
+        Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)
+      ).toEqual([
+        {
+          name: 'X-Api-Key',
+          in: 'header',
+          schema: { type: 'string' },
+          'x-permissions': ['test.customer.add']
+        }
+      ]);
+    });
+
+    it('should auto-prefix extension keys without x- (method level)', () => {
+      class TestAppController {
+        @ApiHeader({
+          name: 'X-Api-Key',
+          extensions: { permissions: ['test.customer.add'] }
+        })
+        @Get()
+        public get(): void {}
+      }
+
+      const controller = new TestAppController();
+      expect(
+        Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)
+      ).toEqual([
+        {
+          name: 'X-Api-Key',
+          in: 'header',
+          schema: { type: 'string' },
+          'x-permissions': ['test.customer.add']
+        }
+      ]);
+    });
+
+    it('should merge extensions into header metadata when provided (class level)', () => {
+      @ApiHeader({
+        name: 'X-Api-Key',
+        extensions: { 'x-permissions': ['test.customer.add'] }
+      })
+      @Controller('test')
+      class TestAppController {}
+
+      expect(
+        Reflect.getMetadata(DECORATORS.API_HEADERS, TestAppController)
+      ).toEqual([
+        {
+          name: 'X-Api-Key',
+          in: 'header',
+          schema: { type: 'string' },
+          'x-permissions': ['test.customer.add']
+        }
+      ]);
+    });
+
+    it('should not leave a raw "extensions" key in the parameter metadata', () => {
+      class TestAppController {
+        @ApiHeader({
+          name: 'X-Api-Key',
+          extensions: { 'x-permissions': ['test.customer.add'] }
+        })
+        @Get()
+        public get(): void {}
+      }
+
+      const controller = new TestAppController();
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_PARAMETERS,
+        controller.get
+      );
+      expect(metadata[0]).not.toHaveProperty('extensions');
+    });
+
+    it('should not change metadata when extensions is not provided (no-op)', () => {
+      class TestAppController {
+        @ApiHeader({ name: 'X-Api-Key' })
+        @Get()
+        public get(): void {}
+      }
+
+      const controller = new TestAppController();
+      expect(
+        Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)
+      ).toEqual([
+        {
+          name: 'X-Api-Key',
+          in: 'header',
+          schema: { type: 'string' }
+        }
+      ]);
+    });
+  });
 });
