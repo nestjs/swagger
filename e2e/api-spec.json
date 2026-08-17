@@ -737,6 +737,371 @@
         }
       }
     },
+    "/api/cats/standard-body": {
+      "post": {
+        "operationId": "CatsController_createWithStandardBody",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "Cat name from Zod",
+                    "example": "Milo",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "age": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  },
+                  "breed": {
+                    "type": "string"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "age",
+                  "breed"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/standard-body-rich": {
+      "post": {
+        "operationId": "CatsController_createWithRichStandardBody",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "species": {
+                    "description": "Species enum from Zod",
+                    "title": "Species",
+                    "example": "cat",
+                    "type": "string",
+                    "enum": [
+                      "cat",
+                      "dog"
+                    ]
+                  },
+                  "contact": {
+                    "description": "Preferred contact from Zod",
+                    "title": "PreferredContact",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "email",
+                        "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "phone": {
+                            "description": "Phone number from Zod",
+                            "example": "123-456",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "phone"
+                        ]
+                      }
+                    ],
+                    "example": "owner@example.com"
+                  },
+                  "profile": {
+                    "title": "CatProfile",
+                    "description": "Nested cat profile from Zod",
+                    "type": "object",
+                    "properties": {
+                      "nickname": {
+                        "description": "Nested nickname from Zod",
+                        "example": "Captain Whiskers",
+                        "type": "string"
+                      },
+                      "temperament": {
+                        "description": "Nested temperament from Zod",
+                        "example": "playful",
+                        "type": "string",
+                        "enum": [
+                          "playful",
+                          "calm"
+                        ]
+                      },
+                      "notes": {
+                        "description": "Nested notes from Zod",
+                        "example": "Indoor only",
+                        "deprecated": true,
+                        "default": "Indoor only",
+                        "type": "string"
+                      },
+                      "traits": {
+                        "description": "Nested trait list from Zod",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "description": "Trait label from Zod",
+                              "example": "affectionate",
+                              "type": "string"
+                            },
+                            "score": {
+                              "description": "Trait score from Zod",
+                              "example": 8,
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 10
+                            }
+                          },
+                          "required": [
+                            "label",
+                            "score"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "nickname",
+                      "temperament",
+                      "traits"
+                    ]
+                  }
+                },
+                "required": [
+                  "species",
+                  "contact",
+                  "profile"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/standard-body-conflict": {
+      "post": {
+        "operationId": "CatsController_createWithConflictingStandardBody",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "description": "Explicit body decorator metadata",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "override": {
+                    "description": "Body override from Zod",
+                    "example": "zod-body",
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "override",
+                  "count"
+                ]
+              },
+              "examples": {
+                "legacy": {
+                  "summary": "Explicit body example",
+                  "value": {
+                    "legacy": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
     "/api/cats/{id}": {
       "get": {
         "operationId": "CatsController_findOne",
@@ -997,6 +1362,307 @@
                   "foo"
                 ]
               }
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/standard-query": {
+      "get": {
+        "operationId": "CatsController_findAllWithStandardQuery",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "description": "Page number from Valibot"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "title": "Search term"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/standard-query-rich": {
+      "get": {
+        "operationId": "CatsController_findAllWithRichStandardQuery",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "mode",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "simple",
+                "advanced"
+              ],
+              "type": "string",
+              "description": "Mode enum from Valibot",
+              "example": "simple"
+            }
+          },
+          {
+            "name": "filter",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "nested": {
+                      "type": "string",
+                      "description": "Nested filter from Valibot",
+                      "example": "persian"
+                    }
+                  },
+                  "required": [
+                    "nested"
+                  ]
+                }
+              ],
+              "description": "Filter union from Valibot",
+              "title": "FilterTitle"
+            }
+          },
+          {
+            "name": "details",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Nested label from Valibot",
+                  "example": "primary"
+                },
+                "flags": {
+                  "type": "array",
+                  "items": {
+                    "type": "boolean"
+                  },
+                  "title": "Flag list from Valibot"
+                }
+              },
+              "required": [
+                "label",
+                "flags"
+              ],
+              "title": "Details title from Valibot",
+              "description": "Nested details from Valibot"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/standard-query-conflict": {
+      "get": {
+        "operationId": "CatsController_findAllWithConflictingStandardQuery",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "filter",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "description": "Query override from Zod",
+              "example": 3,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "active",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "description": "Boolean flag from Zod",
+              "example": true,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "description": "Explicit query decorator description",
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -1387,6 +2053,505 @@
         "responses": {
           "200": {
             "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/standard-param/{id}": {
+      "get": {
+        "operationId": "CatsController_getWithStandardParam",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "description": "Cat identifier from Zod",
+              "type": "string",
+              "minLength": 3,
+              "pattern": "^cat_[0-9]+$"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/standard-param-rich/{state}": {
+      "get": {
+        "operationId": "CatsController_getWithRichStandardParam",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "state",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "description": "Cat state enum from Zod",
+              "title": "CatState",
+              "type": "string",
+              "enum": [
+                "available",
+                "resting"
+              ],
+              "example": "available"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/standard-param-conflict/{state}": {
+      "get": {
+        "operationId": "CatsController_getWithConflictingStandardParam",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "state",
+            "required": true,
+            "in": "path",
+            "description": "Explicit param decorator description",
+            "schema": {
+              "description": "Param override from Zod",
+              "example": "resting",
+              "type": "string",
+              "enum": [
+                "available",
+                "resting"
+              ]
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/standard-response": {
+      "get": {
+        "operationId": "CatsController_getWithStandardResponse",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Standard schema response override",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "title": "CatResponseState",
+                      "description": "Response status enum from Zod",
+                      "example": "available",
+                      "type": "string",
+                      "enum": [
+                        "available",
+                        "resting"
+                      ]
+                    },
+                    "result": {
+                      "title": "StandardResponseResult",
+                      "description": "Response union from Zod",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "cat"
+                              ]
+                            },
+                            "cat": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "description": "Returned cat name from Zod",
+                                  "example": "Milo",
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "name"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "cat"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "message"
+                              ]
+                            },
+                            "message": {
+                              "description": "Returned message from Zod",
+                              "example": "No cat available",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ],
+                      "example": {
+                        "kind": "message",
+                        "message": "No cat available"
+                      }
+                    },
+                    "meta": {
+                      "title": "ResponseMeta",
+                      "description": "Nested response metadata from Zod",
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "description": "Nested response source from Zod",
+                          "example": "cache",
+                          "type": "string"
+                        },
+                        "tags": {
+                          "description": "Response tags from Zod",
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "label": {
+                                "description": "Response tag label from Zod",
+                                "example": "featured",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "label"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "source",
+                        "tags"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "result",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "key2": [],
+            "key1": []
+          },
+          {
+            "bearer": []
+          },
+          {
+            "basic": []
+          }
+        ],
+        "tags": [
+          "cats"
+        ],
+        "x-foo": {
+          "from-controller": true
+        }
+      }
+    },
+    "/api/cats/standard-response-conflict": {
+      "get": {
+        "operationId": "CatsController_getWithConflictingStandardResponse",
+        "parameters": [
+          {
+            "name": "header",
+            "in": "header",
+            "description": "Test",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "test",
+              "default": "test"
+            }
+          },
+          {
+            "name": "x-tenant-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Standard schema response conflict override",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "description": "Response override from Zod",
+                      "example": "ok",
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "result",
+                    "count"
+                  ],
+                  "additionalProperties": false
+                },
+                "examples": {
+                  "legacy": {
+                    "summary": "Decorator response example",
+                    "value": {
+                      "legacy": true
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad request",

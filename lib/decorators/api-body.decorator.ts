@@ -1,20 +1,20 @@
 import { Type } from '@nestjs/common';
-import { omit } from 'lodash';
+import { omit } from 'es-toolkit/compat';
 import {
   EncodingObject,
   ExamplesObject,
   ReferenceObject,
   RequestBodyObject,
   SchemaObject
-} from '../interfaces/open-api-spec.interface';
-import { SwaggerEnumType } from '../types/swagger-enum.type';
+} from '../interfaces/open-api-spec.interface.js';
+import { SwaggerEnumType } from '../types/swagger-enum.type.js';
 import {
   addEnumArraySchema,
   addEnumSchema,
   isEnumArray,
   isEnumDefined
-} from '../utils/enum.utils';
-import { createParamDecorator, getTypeIsArrayTuple } from './helpers';
+} from '../utils/enum.utils.js';
+import { createParamDecorator, getTypeIsArrayTuple } from './helpers.js';
 
 type RequestBodyOptions = Omit<RequestBodyObject, 'content'>;
 

@@ -1,5 +1,5 @@
-import { DECORATORS } from '../constants';
-import { createMethodDecorator } from './helpers';
+import { DECORATORS } from '../constants.js';
+import { createMethodDecorator } from './helpers.js';
 
 /**
  * OpenAPI 3.1 adds top-level `webhooks`, a map of out-of-band callbacks

@@ -1,6 +1,6 @@
-import { isString } from '@nestjs/common/utils/shared.utils';
-import { DECORATORS } from '../constants';
-import { ApiSchemaOptions } from '../decorators/api-schema.decorator';
+import { isString } from '@nestjs/common/utils/shared.utils.js';
+import { DECORATORS } from '../constants.js';
+import { ApiSchemaOptions } from '../decorators/api-schema.decorator.js';
 
 export function getSchemaPath(model: string | Function): string {
   const modelName = isString(model) ? model : getSchemaNameByClass(model);

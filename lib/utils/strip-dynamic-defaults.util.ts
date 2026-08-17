@@ -1,4 +1,4 @@
-import { SchemaObject } from '../interfaces/open-api-spec.interface';
+import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 
 /**
  * Returns true when a default value is "dynamic" — i.e. it is a runtime

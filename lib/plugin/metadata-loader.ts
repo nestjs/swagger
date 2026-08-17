@@ -1,4 +1,4 @@
-import { METADATA_FACTORY_NAME } from './plugin-constants';
+import { METADATA_FACTORY_NAME } from './plugin-constants.js';
 
 export class MetadataLoader {
   private static readonly refreshHooks = new Array<() => void>();

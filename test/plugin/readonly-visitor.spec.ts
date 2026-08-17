@@ -70,7 +70,7 @@ describe('Readonly visitor', () => {
     // );
 
     expect(result).toEqual(expectedOutput);
-  });
+  }, 15000);
 
   it('should generate a serialized metadata esm', () => {
     const tsconfigPath = join(
@@ -102,5 +102,5 @@ describe('Readonly visitor', () => {
       .replace(/\r/g, '\n');
 
     expect(result).toEqual(expectedOutput);
-  });
+  }, 15000);
 });

@@ -1,5 +1,5 @@
-import { isString } from '@nestjs/common/utils/shared.utils';
-import { pluginDebugLogger } from './plugin-debug-logger';
+import { isString } from '@nestjs/common/utils/shared.utils.js';
+import { pluginDebugLogger } from './plugin-debug-logger.js';
 
 export interface PluginOptions {
   dtoFileNameSuffix?: string | string[];
@@ -10,6 +10,8 @@ export interface PluginOptions {
   controllerKeyOfComment?: string;
   introspectComments?: boolean;
   esmCompatible?: boolean;
+  /** @internal */
+  esmCompatibleWasConfigured?: boolean;
   readonly?: boolean;
   pathToSource?: string;
   debug?: boolean;
@@ -63,6 +65,10 @@ const defaultOptions: PluginOptions = {
 export const mergePluginOptions = (
   options: Record<string, any> = {}
 ): PluginOptions => {
+  const esmCompatibleWasConfigured = Object.prototype.hasOwnProperty.call(
+    options,
+    'esmCompatible'
+  );
   if (isString(options.dtoFileNameSuffix)) {
     options.dtoFileNameSuffix = [options.dtoFileNameSuffix];
   }
@@ -82,6 +88,7 @@ export const mergePluginOptions = (
   }
   return {
     ...defaultOptions,
-    ...options
+    ...options,
+    esmCompatibleWasConfigured
   };
 };

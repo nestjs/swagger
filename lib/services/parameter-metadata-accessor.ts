@@ -2,19 +2,21 @@ import { Type } from '@nestjs/common';
 import {
   PARAMTYPES_METADATA,
   ROUTE_ARGS_METADATA
-} from '@nestjs/common/constants';
-import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum';
-import { isEmpty, mapValues, omitBy } from 'lodash';
-import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface';
+} from '@nestjs/common/constants.js';
+import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum.js';
+import { isEmpty, mapValues, omitBy } from 'es-toolkit/compat';
+import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface.js';
 import {
   ParameterLocation,
   SchemaObject
-} from '../interfaces/open-api-spec.interface';
-import { reverseObjectKeys } from '../utils/reverse-object-keys.util';
+} from '../interfaces/open-api-spec.interface.js';
+import { StandardSchemaObject } from '../interfaces/swagger-document-options.interface.js';
+import { reverseObjectKeys } from '../utils/reverse-object-keys.util.js';
 
 interface ParamMetadata {
   index: number;
   data?: string | number | object;
+  schema?: StandardSchemaObject;
 }
 type ParamsMetadata = Record<string, ParamMetadata>;
 
@@ -22,6 +24,7 @@ export interface ParamWithTypeMetadata {
   name?: string | number | object;
   type?: Type<unknown>;
   in?: ParameterLocation | 'body' | typeof PARAM_TOKEN_PLACEHOLDER;
+  standardSchema?: StandardSchemaObject;
   isArray?: boolean;
   items?: SchemaObject;
   required?: boolean;
@@ -61,6 +64,7 @@ export class ParameterMetadataAccessor {
         ({
           type: types[param.index],
           name: param.data,
+          standardSchema: param.schema,
           required: true
         }) as unknown as ParamWithTypeMetadata
     ) as unknown as ParamsWithType;

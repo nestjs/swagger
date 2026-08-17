@@ -1,7 +1,7 @@
-import { isString } from 'lodash';
-import { SchemaObject } from '../interfaces/open-api-spec.interface';
-import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface';
-import { SwaggerEnumType } from '../types/swagger-enum.type';
+import { isString } from 'es-toolkit/compat';
+import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
+import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface.js';
+import { SwaggerEnumType } from '../types/swagger-enum.type.js';
 
 export function getEnumValues(
   enumType: SwaggerEnumType | (() => SwaggerEnumType)
@@ -44,8 +44,7 @@ export function getEnumType(
   if (hasString) {
     return 'string';
   }
-  const hasBoolean =
-    values.filter((v) => typeof v === 'boolean').length > 0;
+  const hasBoolean = values.filter((v) => typeof v === 'boolean').length > 0;
   return hasBoolean ? 'boolean' : 'number';
 }
 

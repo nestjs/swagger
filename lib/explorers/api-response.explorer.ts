@@ -1,22 +1,24 @@
 import { HttpStatus, RequestMethod, Type } from '@nestjs/common';
-import { HTTP_CODE_METADATA, METHOD_METADATA } from '@nestjs/common/constants';
-import { isEmpty } from '@nestjs/common/utils/shared.utils';
-import { mapValues, omit } from 'lodash';
-import { DECORATORS } from '../constants';
-import { ApiResponse, ApiResponseMetadata } from '../decorators';
-import { SchemaObject } from '../interfaces/open-api-spec.interface';
-import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants';
+import {
+  HTTP_CODE_METADATA,
+  METHOD_METADATA
+} from '@nestjs/common/constants.js';
+import { isEmpty } from '@nestjs/common/utils/shared.utils.js';
+import { mapValues, omit } from 'es-toolkit/compat';
+import { DECORATORS } from '../constants.js';
+import { ApiResponse, ApiResponseMetadata } from '../decorators/index.js';
+import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
+import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 import {
   FactoriesNeededByResponseFactory,
   ResponseObjectFactory
-} from '../services/response-object-factory';
-import { GlobalResponsesStorage } from '../storages/global-responses.storage';
-import { mergeAndUniq } from '../utils/merge-and-uniq.util';
-
-const responseObjectFactory = new ResponseObjectFactory();
+} from '../services/response-object-factory.js';
+import { GlobalResponsesStorage } from '../storages/global-responses.storage.js';
+import { mergeAndUniq } from '../utils/merge-and-uniq.util.js';
 
 export const exploreGlobalApiResponseMetadata = (
   schemas: Record<string, SchemaObject>,
+  responseObjectFactory: ResponseObjectFactory,
   metatype: Type<unknown>,
   factories: FactoriesNeededByResponseFactory
 ) => {
@@ -29,6 +31,7 @@ export const exploreGlobalApiResponseMetadata = (
     ? mapResponsesToSwaggerResponses(
         globalResponses,
         schemas,
+        responseObjectFactory,
         undefined,
         factories
       )
@@ -42,6 +45,7 @@ export const exploreGlobalApiResponseMetadata = (
           ...mapResponsesToSwaggerResponses(
             responses,
             schemas,
+            responseObjectFactory,
             produces,
             factories
           )
@@ -56,6 +60,7 @@ export const exploreGlobalApiResponseMetadata = (
 
 export const exploreApiResponseMetadata = (
   schemas: Record<string, SchemaObject>,
+  responseObjectFactory: ResponseObjectFactory,
   factories: FactoriesNeededByResponseFactory,
   instance: object,
   prototype: Type<unknown>,
@@ -78,6 +83,7 @@ export const exploreApiResponseMetadata = (
     return mapResponsesToSwaggerResponses(
       responses,
       schemas,
+      responseObjectFactory,
       produces,
       factories
     );
@@ -110,6 +116,7 @@ const omitParamType = (param: Record<string, any>) => omit(param, 'type');
 const mapResponsesToSwaggerResponses = (
   responses: ApiResponseMetadata[] | Record<string, ApiResponseMetadata>,
   schemas: Record<string, SchemaObject>,
+  responseObjectFactory: ResponseObjectFactory,
   produces: string[] = ['application/json'],
   factories: FactoriesNeededByResponseFactory
 ) => {

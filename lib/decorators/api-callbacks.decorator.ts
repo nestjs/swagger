@@ -1,6 +1,6 @@
-import { DECORATORS } from '../constants';
-import { createMixedDecorator } from './helpers';
-import { CallBackObject } from '../interfaces/callback-object.interface';
+import { DECORATORS } from '../constants.js';
+import { createMixedDecorator } from './helpers.js';
+import { CallBackObject } from '../interfaces/callback-object.interface.js';
 
 /**
  * @publicApi

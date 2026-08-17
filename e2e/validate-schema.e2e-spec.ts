@@ -3,23 +3,43 @@ import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
 import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
-import SwaggerParser from 'swagger-parser';
+import type { BaseIssue, BaseSchema } from 'valibot';
 import {
   DocumentBuilder,
   getSchemaPath,
   OpenAPIObject,
+  SwaggerDocumentOptions,
   SwaggerModule
-} from '../lib';
-import { ParameterObject, SchemaObject } from '../lib/interfaces/open-api-spec.interface';
-import { ApplicationModule } from './src/app.module';
-import { Cat } from './src/cats/classes/cat.class';
-import { TagDto } from './src/cats/dto/tag.dto';
-import { ValidationErrorDto } from './src/common/dto/validation-error.dto';
-import { ExpressController } from './src/express.controller';
+} from '../lib/index.js';
+import {
+  ParameterObject,
+  ReferenceObject,
+  ResponseObject,
+  SchemaObject
+} from '../lib/interfaces/open-api-spec.interface.js';
+import { ApplicationModule } from './src/app.module.js';
+import { Cat } from './src/cats/classes/cat.class.js';
+import { TagDto } from './src/cats/dto/tag.dto.js';
+import { ValidationErrorDto } from './src/common/dto/validation-error.dto.js';
+import { ExpressController } from './src/express.controller.js';
+import { createSchema } from 'zod-openapi';
+import { toJsonSchema } from '@valibot/to-json-schema';
+import type { ZodType } from 'zod';
+import SwaggerParser = require('@apidevtools/swagger-parser');
+
+function asResponseObject(
+  response: ResponseObject | { $ref: string } | undefined
+) {
+  if (!response || '$ref' in response) {
+    throw new Error('Expected an inlined response object');
+  }
+  return response;
+}
 
 describe('Validate OpenAPI schema', () => {
   let app: INestApplication;
   let options: Omit<OpenAPIObject, 'paths'>;
+  let documentOptions: SwaggerDocumentOptions;
 
   beforeEach(async () => {
     app = await NestFactory.create(
@@ -83,6 +103,10 @@ describe('Validate OpenAPI schema', () => {
         }
       )
       .build();
+
+    documentOptions = {
+      standardSchemaConverter: createTestStandardSchemaConverter()
+    };
   });
 
   it('should produce a valid OpenAPI 3.0 schema', async () => {
@@ -142,7 +166,9 @@ describe('Validate OpenAPI schema', () => {
         ]
       }
     }));
-    const document = SwaggerModule.createDocument(app, options);
+    const document = SwaggerModule.createDocument(app, options, {
+      standardSchemaConverter: createTestStandardSchemaConverter()
+    });
 
     const doc = JSON.stringify(document, null, 2);
     writeFileSync(join(__dirname, 'api-spec.json'), doc);
@@ -192,7 +218,7 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should preserve example metadata for named type query params (issue #3335)', () => {
-    const document = SwaggerModule.createDocument(app, options);
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
     const params =
       document.paths['/api/cats/with-named-type-example']['get']['parameters'];
     const filterParam = params.find(
@@ -206,30 +232,35 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should preserve example/examples for built-in scalar response types', () => {
-    const document = SwaggerModule.createDocument(app, options);
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
 
-    const scalarExample =
-      document.paths['/api/cats/scalar-with-example']['get']['responses']['200'];
-    expect(scalarExample.content['application/json'].example).toEqual(42);
+    const scalarExample = asResponseObject(
+      document.paths['/api/cats/scalar-with-example']['get']['responses']['200']
+    );
+    expect(scalarExample.content!['application/json'].example).toEqual(42);
     expect((scalarExample as any).example).toBeUndefined();
 
-    const scalarExamples =
-      document.paths['/api/cats/scalar-with-examples']['get']['responses']['200'];
-    expect(scalarExamples.content['application/json'].examples).toEqual({
+    const scalarExamples = asResponseObject(
+      document.paths['/api/cats/scalar-with-examples']['get']['responses'][
+        '200'
+      ]
+    );
+    expect(scalarExamples.content!['application/json'].examples).toEqual({
       adult: { value: 5, summary: 'Adult cat age' },
       kitten: { value: 1, summary: 'Kitten age' }
     });
     expect((scalarExamples as any).examples).toBeUndefined();
 
-    const arrayExample =
+    const arrayExample = asResponseObject(
       document.paths['/api/cats/array-of-scalar-with-example']['get'][
         'responses'
-      ]['200'];
-    expect(arrayExample.content['application/json'].schema).toEqual({
+      ]['200']
+    );
+    expect(arrayExample.content!['application/json'].schema).toEqual({
       type: 'array',
       items: { type: 'string' }
     });
-    expect(arrayExample.content['application/json'].example).toEqual([
+    expect(arrayExample.content!['application/json'].example).toEqual([
       'Mau',
       'Persian'
     ]);
@@ -237,7 +268,7 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should fix colons in url', async () => {
-    const document = SwaggerModule.createDocument(app, options);
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
     expect(
       document.paths['/api/v1/express:colon:another/{prop}']
     ).toBeDefined();
@@ -272,7 +303,7 @@ describe('Validate OpenAPI schema', () => {
         ...options.components,
         ...components
       }
-    });
+    }, documentOptions);
 
     const api = (await SwaggerParser.validate(
       document as any
@@ -283,7 +314,7 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should consider explicit config over auto-detected schema', () => {
-    const document = SwaggerModule.createDocument(app, options);
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
     expect(document.paths['/api/cats/download'].get.responses).toEqual({
       '200': {
         description: 'binary file for download',
@@ -298,7 +329,7 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should include type field when nullable is used with allOf (issue #3274)', () => {
-    const document = SwaggerModule.createDocument(app, options);
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
     const createCatDtoSchema = document.components?.schemas
       ?.CreateCatDto as SchemaObject;
     expect(createCatDtoSchema.properties.nullableTag).toEqual({
@@ -322,7 +353,7 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should not add optional properties to required list', () => {
-    const document = SwaggerModule.createDocument(app, options);
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
     const required = (document.components?.schemas?.Cat as SchemaObject)
       ?.required;
     expect(required).not.toContain('optionalRawDefinition');
@@ -337,19 +368,19 @@ describe('Validate OpenAPI schema', () => {
   });
 
   it('should add extension to root', () => {
-    const document = SwaggerModule.createDocument(app, options);
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
     expect(document['x-test']).toEqual({ test: 'test' });
   });
 
   it('should add extension to info', () => {
-    const document = SwaggerModule.createDocument(app, options);
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
     expect(document.info['x-logo']).toEqual({
       url: 'https://example.com/logo.png'
     });
   });
 
   it('should add server to the root', () => {
-    const document = SwaggerModule.createDocument(app, options);
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
     expect(document.servers).toBeDefined();
     expect(document.servers).toHaveLength(1);
     expect(document.servers?.[0]).toEqual({
@@ -377,7 +408,11 @@ describe('Validate OpenAPI schema', () => {
         .addTag('Cats', 'Cat operations', undefined, { parent: 'Animals' })
         .build();
 
-      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+      const document = SwaggerModule.createDocument(
+        app,
+        hierarchicalOptions,
+        documentOptions
+      );
 
       expect(document.tags).toBeDefined();
       expect(document.tags).toHaveLength(2);
@@ -399,7 +434,11 @@ describe('Validate OpenAPI schema', () => {
         .addTag('Internal', 'Internal APIs', undefined, { kind: 'reference' })
         .build();
 
-      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+      const document = SwaggerModule.createDocument(
+        app,
+        hierarchicalOptions,
+        documentOptions
+      );
 
       expect(document.tags).toBeDefined();
       expect(document.tags).toHaveLength(1);
@@ -421,7 +460,11 @@ describe('Validate OpenAPI schema', () => {
         })
         .build();
 
-      const document = SwaggerModule.createDocument(app, hierarchicalOptions);
+      const document = SwaggerModule.createDocument(
+        app,
+        hierarchicalOptions,
+        documentOptions
+      );
 
       expect(document.tags).toBeDefined();
       expect(document.tags).toHaveLength(2);
@@ -434,15 +477,65 @@ describe('Validate OpenAPI schema', () => {
     });
 
     it('should keep operation tags as string arrays', async () => {
-      const document = SwaggerModule.createDocument(app, options);
+      const document = SwaggerModule.createDocument(
+        app,
+        options,
+        documentOptions
+      );
 
       // Check that operation-level tags are string arrays (from @ApiTags decorator)
       const createCatOperation = document.paths['/api/cats']?.post;
       expect(createCatOperation?.tags).toBeDefined();
       expect(Array.isArray(createCatOperation?.tags)).toBe(true);
-      expect(createCatOperation?.tags?.every((tag) => typeof tag === 'string')).toBe(
-        true
-      );
+      expect(
+        createCatOperation?.tags?.every((tag) => typeof tag === 'string')
+      ).toBe(true);
     });
   });
 });
+
+function createTestStandardSchemaConverter(): SwaggerDocumentOptions['standardSchemaConverter'] {
+  return (schema, { schemaType }) => {
+    if (isZodStandardSchema(schema)) {
+      const converted = createSchema(schema, {
+        io: schemaType,
+        openapiVersion: '3.0.0'
+      });
+      return {
+        schema: converted.schema as SchemaObject | ReferenceObject,
+        components:
+          converted.components as unknown as Record<string, SchemaObject>
+      };
+    }
+
+    if (isValibotStandardSchema(schema)) {
+      return {
+        schema: toJsonSchema(schema, {
+          target: 'openapi-3.0',
+          typeMode: schemaType
+        }) as unknown as SchemaObject | ReferenceObject
+      };
+    }
+
+    return undefined;
+  };
+}
+
+type ValibotSchema = BaseSchema<unknown, unknown, BaseIssue<unknown>>;
+
+function hasVendor(schema: unknown, vendor: string) {
+  return (
+    !!schema &&
+    typeof schema === 'object' &&
+    (schema as { '~standard'?: { vendor?: string } })['~standard']?.vendor ===
+      vendor
+  );
+}
+
+function isZodStandardSchema(schema: unknown): schema is ZodType {
+  return hasVendor(schema, 'zod');
+}
+
+function isValibotStandardSchema(schema: unknown): schema is ValibotSchema {
+  return hasVendor(schema, 'valibot');
+}

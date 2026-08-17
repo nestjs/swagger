@@ -1,13 +1,13 @@
 import { Type } from '@nestjs/common';
-import { isFunction } from '@nestjs/common/utils/shared.utils';
-import { flatMap, identity } from 'lodash';
-import { DECORATORS } from '../constants';
-import { isBodyParameter } from '../utils/is-body-parameter.util';
-import { ModelPropertiesAccessor } from './model-properties-accessor';
+import { isFunction } from '@nestjs/common/utils/shared.utils.js';
+import { flatMap, identity } from 'es-toolkit/compat';
+import { DECORATORS } from '../constants.js';
+import { isBodyParameter } from '../utils/is-body-parameter.util.js';
+import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import {
   ParamWithTypeMetadata,
   ParamsWithType
-} from './parameter-metadata-accessor';
+} from './parameter-metadata-accessor.js';
 
 export class ParametersMetadataMapper {
   constructor(
@@ -18,7 +18,13 @@ export class ParametersMetadataMapper {
     parameters: ParamsWithType
   ): ParamWithTypeMetadata[] {
     const properties = flatMap(parameters, (param: ParamWithTypeMetadata) => {
-      if (!param || param.type === Object || !param.type) {
+      if (!param) {
+        return undefined;
+      }
+      if (param.standardSchema) {
+        return param;
+      }
+      if (param.type === Object || !param.type) {
         return undefined;
       }
       if (param.name) {

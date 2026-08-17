@@ -1,5 +1,5 @@
-import { DECORATORS } from '../constants';
-import { createClassDecorator } from './helpers';
+import { DECORATORS } from '../constants.js';
+import { createClassDecorator } from './helpers.js';
 
 /**
  * @publicApi

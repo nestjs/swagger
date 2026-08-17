@@ -1,4 +1,4 @@
-import { ApiSecurity } from './api-security.decorator';
+import { ApiSecurity } from './api-security.decorator.js';
 
 /**
  * @publicApi

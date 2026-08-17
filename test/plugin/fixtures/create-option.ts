@@ -19,7 +19,8 @@ export const mergedCliPluginMultiOption = {
   esmCompatible: false,
   readonly: false,
   debug: false,
-  skipDefaultValues: false
+  skipDefaultValues: false,
+  esmCompatibleWasConfigured: false
 };
 
 export const mergedCliPluginSingleOption = {
@@ -33,5 +34,6 @@ export const mergedCliPluginSingleOption = {
   esmCompatible: false,
   readonly: false,
   debug: false,
-  skipDefaultValues: false
+  skipDefaultValues: false,
+  esmCompatibleWasConfigured: false
 };

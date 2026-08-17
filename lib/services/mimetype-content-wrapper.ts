@@ -1,6 +1,6 @@
-import { cloneDeep } from 'lodash';
-import { ContentObject } from '../interfaces/open-api-spec.interface';
-import { removeUndefinedKeys } from '../utils/remove-undefined-keys';
+import { cloneDeep } from 'es-toolkit/compat';
+import { ContentObject } from '../interfaces/open-api-spec.interface.js';
+import { removeUndefinedKeys } from '../utils/remove-undefined-keys.js';
 
 export class MimetypeContentWrapper {
   wrap(

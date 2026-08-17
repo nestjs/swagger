@@ -1,4 +1,4 @@
-import { SchemaObject } from '../interfaces/open-api-spec.interface';
+import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 
 /**
  * Recursively walks every schema in `schemas` and truncates `example` /

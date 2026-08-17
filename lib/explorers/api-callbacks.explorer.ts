@@ -1,7 +1,7 @@
 import { Type } from '@nestjs/common';
-import { DECORATORS } from '../constants';
-import { getSchemaPath } from '../utils';
-import { CallBackObject } from '../interfaces/callback-object.interface';
+import { DECORATORS } from '../constants.js';
+import { getSchemaPath } from '../utils/index.js';
+import { CallBackObject } from '../interfaces/callback-object.interface.js';
 
 export const exploreApiCallbacksMetadata = (
   instance: object,

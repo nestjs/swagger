@@ -1,7 +1,8 @@
-import { head } from 'lodash';
+import { head } from 'es-toolkit/compat';
+import { createRequire } from 'node:module';
 import { isAbsolute, posix } from 'path';
 import * as ts from 'typescript';
-import { PluginOptions } from '../merge-options';
+import { PluginOptions } from '../merge-options.js';
 import {
   getDecoratorName,
   getText,
@@ -16,7 +17,10 @@ import {
   isString,
   isStringLiteral,
   isStringMapping
-} from './ast-utils';
+} from './ast-utils.js';
+
+// The plugin is emitted as ESM, where the CommonJS `require` is not in scope.
+const moduleRequire = createRequire(import.meta.url);
 
 export function getDecoratorOrUndefinedByNames(
   names: string[],
@@ -283,7 +287,7 @@ export function replaceImportPath(
       throw {};
     }
 
-    require.resolve(decodedImportPath);
+    moduleRequire.resolve(decodedImportPath);
     if (!options.esmCompatible) {
       typeReference = typeReference.replace('import', 'require');
     }

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "declaration": true,
     "noImplicitAny": false,
     "removeComments": true,
@@ -10,7 +11,6 @@
     "target": "ES2021",
     "sourceMap": false,
     "outDir": "./dist",
-    "rootDir": "./lib",
     "skipLibCheck": true,
     "strictNullChecks": false,
     "types": ["vitest/globals"]

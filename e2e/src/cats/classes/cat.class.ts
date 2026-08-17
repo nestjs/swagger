@@ -1,5 +1,5 @@
-import { ApiExtension, ApiProperty } from '../../../../lib';
-import { LettersEnum } from '../dto/pagination-query.dto';
+import { ApiExtension, ApiProperty } from '../../../../lib/index.js';
+import { LettersEnum } from '../dto/pagination-query.dto.js';
 
 @ApiExtension('x-schema-extension', { test: 'test' })
 @ApiExtension('x-schema-extension-multiple', { test: 'test*2' })
@@ -102,10 +102,7 @@ export class Cat {
   @ApiProperty({
     enum: LettersEnum,
     enumName: 'LettersEnum',
-    oneOf: [
-      { type: 'string' },
-      { type: 'number' }
-    ],
+    oneOf: [{ type: 'string' }, { type: 'number' }],
     description: 'Enum named reference combined with oneOf combinators'
   })
   enumNamedWithOneOf?: LettersEnum | string | number;
