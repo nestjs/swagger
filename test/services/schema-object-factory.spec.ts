@@ -1099,6 +1099,42 @@ describe('SchemaObjectFactory', () => {
           'Represents a user update.'
         );
       });
+
+      it('should register raw top-level schemas with combinators', () => {
+        @ApiSchema({
+          name: 'Pet',
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              cat: '#/components/schemas/Cat',
+              dog: '#/components/schemas/Dog'
+            }
+          }
+        })
+        class PetDto {}
+
+        const schemas: Record<string, SchemasObject> = {};
+
+        schemaObjectFactory.exploreModelSchema(PetDto, schemas);
+
+        expect(schemas['Pet']).toEqual({
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              cat: '#/components/schemas/Cat',
+              dog: '#/components/schemas/Dog'
+            }
+          }
+        });
+      });
     });
 
     it('should include extension properties', () => {
