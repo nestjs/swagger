@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '../../lib/decorators';
-import { generateSchema } from '../../lib/utils/generate-schema.util';
+import { generateSchema, SchemaObject } from '../../lib';
 
 describe('generateSchema', () => {
   class AddressDto {
@@ -61,5 +61,10 @@ describe('generateSchema', () => {
     };
     expect(composedSchema.oneOf).toHaveLength(2);
     expect(composedSchema.oneOf[0]).toBe(addressSchema);
+  });
+
+  it('returned schema is assignable to the public SchemaObject type', () => {
+    const { schema }: { schema: SchemaObject } = generateSchema(AddressDto);
+    expect(schema).toBeDefined();
   });
 });
