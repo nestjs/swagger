@@ -66,7 +66,7 @@
     "@nestjs/platform-fastify": "next",
     "@types/js-yaml": "4.0.9",
     "@types/node": "24.13.3",
-    "@valibot/to-json-schema": "1.7.0",
+    "@valibot/to-json-schema": "1.7.1",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
     "express": "5.2.1",
