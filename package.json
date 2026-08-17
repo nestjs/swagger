@@ -55,7 +55,7 @@
     "swagger-ui-dist": "5.32.13"
   },
   "devDependencies": {
-    "@apidevtools/swagger-parser": "10.0.3",
+    "@apidevtools/swagger-parser": "12.1.0",
     "@commitlint/cli": "21.2.2",
     "@commitlint/config-angular": "21.2.2",
     "@fastify/compress": "^9.0.0",
