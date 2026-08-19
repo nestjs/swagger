@@ -109,6 +109,84 @@ describe('Validate OpenAPI schema', () => {
     };
   });
 
+  it('should generate reusable union schemas', () => {
+    const document = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
+    const schemas = document.components.schemas as Record<string, SchemaObject>;
+
+    expect(
+      asResponseObject(
+        document.paths['/api/cats/union-schema']['get']['responses']['200']
+      ).content!['application/json'].schema
+    ).toEqual({ $ref: '#/components/schemas/Pet' });
+
+    expect(schemas.Pet).toEqual({
+      oneOf: [
+        { $ref: '#/components/schemas/UnionCatDto' },
+        { $ref: '#/components/schemas/UnionDogDto' }
+      ],
+      discriminator: {
+        propertyName: 'type',
+        mapping: {
+          cat: '#/components/schemas/UnionCatDto',
+          dog: '#/components/schemas/UnionDogDto'
+        }
+      }
+    });
+
+    expect(schemas.PetListDto.properties?.pets).toEqual({
+      type: 'array',
+      items: { $ref: '#/components/schemas/Pet' }
+    });
+
+    expect(schemas.Scalar).toEqual({
+      oneOf: [{ type: 'string' }, { type: 'number' }]
+    });
+
+    expect(schemas.UnionResult).toEqual({
+      oneOf: [
+        { $ref: '#/components/schemas/Pet' },
+        { $ref: '#/components/schemas/UnionErrorDto' },
+        { type: 'string' }
+      ]
+    });
+    expect(schemas.UnionCatDto).toBeDefined();
+    expect(schemas.UnionDogDto).toBeDefined();
+    expect(schemas.UnionErrorDto).toBeDefined();
+  });
+
+  it('should isolate reusable union metadata between generated documents', async () => {
+    const firstDocument = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
+    await SwaggerParser.validate(firstDocument as any);
+
+    const secondDocument = SwaggerModule.createDocument(
+      app,
+      options,
+      documentOptions
+    );
+
+    expect(secondDocument.components.schemas.Pet).toEqual({
+      oneOf: [
+        { $ref: '#/components/schemas/UnionCatDto' },
+        { $ref: '#/components/schemas/UnionDogDto' }
+      ],
+      discriminator: {
+        propertyName: 'type',
+        mapping: {
+          cat: '#/components/schemas/UnionCatDto',
+          dog: '#/components/schemas/UnionDogDto'
+        }
+      }
+    });
+  });
+
   it('should produce a valid OpenAPI 3.0 schema', async () => {
     await SwaggerModule.loadPluginMetadata(async () => ({
       '@nestjs/swagger': {

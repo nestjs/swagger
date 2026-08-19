@@ -12,6 +12,7 @@ import {
   ReferenceObject,
   SchemaObject
 } from '../interfaces/open-api-spec.interface.js';
+import { isBuiltInType } from '../utils/is-built-in-type.util.js';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
 
 type KeysToRemove =
@@ -98,6 +99,20 @@ export class SwaggerTypesMapper {
       return;
     }
     return (type as string).charAt(0).toLowerCase() + (type as string).slice(1);
+  }
+
+  mapTypeToOpenAPISchema(type: Function): SchemaObject | undefined {
+    if (type === Date) {
+      return { type: 'string', format: 'date-time' };
+    }
+    if (type === BigInt) {
+      return { type: 'integer', format: 'int64' };
+    }
+    if (!isBuiltInType(type) || type === Array) {
+      return undefined;
+    }
+
+    return { type: this.mapTypeToOpenAPIType(type.name) };
   }
 
   mapEnumArrayType(param: Record<string, any>, keysToRemove: KeysToRemove[]) {
