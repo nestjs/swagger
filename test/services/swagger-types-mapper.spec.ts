@@ -46,4 +46,21 @@ describe('SwaggerTypesMapper', () => {
       expect(result[0].schema.type).toBe('array');
     });
   });
+
+  describe('mapTypeToOpenAPISchema', () => {
+    it.each([
+      [String, { type: 'string' }],
+      [Number, { type: 'number' }],
+      [Boolean, { type: 'boolean' }],
+      [Object, { type: 'object' }],
+      [Date, { type: 'string', format: 'date-time' }],
+      [BigInt, { type: 'integer', format: 'int64' }]
+    ])('maps %p to its schema', (type, schema) => {
+      expect(mapper.mapTypeToOpenAPISchema(type)).toEqual(schema);
+    });
+
+    it('does not emit a permissive schema for Array', () => {
+      expect(mapper.mapTypeToOpenAPISchema(Array)).toBeUndefined();
+    });
+  });
 });

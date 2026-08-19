@@ -5,7 +5,12 @@ import * as v from 'valibot';
 import { z, type ZodType } from 'zod';
 import { createSchema } from 'zod-openapi';
 import { DECORATORS } from '../../lib/constants';
-import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
+import {
+  ApiExtension,
+  ApiExtraModels,
+  ApiProperty,
+  ApiSchema
+} from '../../lib/decorators';
 import { StandardSchemaConverter } from '../../lib/interfaces';
 import {
   BaseParameterObject,
@@ -1281,6 +1286,113 @@ describe('SchemaObjectFactory', () => {
         expect(schemas[UpdateUserDto.name].description).toEqual(
           'Represents a user update.'
         );
+      });
+
+      it('should register an empty metadata host as a raw combinator schema', () => {
+        @ApiSchema({
+          name: 'Pet',
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              cat: '#/components/schemas/Cat',
+              dog: '#/components/schemas/Dog'
+            }
+          }
+        })
+        class PetSchema {}
+
+        const schemas: Record<string, SchemaObject> = {};
+        schemaObjectFactory.exploreModelSchema(PetSchema, schemas);
+
+        expect(schemas.Pet).toEqual({
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              cat: '#/components/schemas/Cat',
+              dog: '#/components/schemas/Dog'
+            }
+          }
+        });
+      });
+
+      it.each(['oneOf', 'anyOf'] as const)(
+        'should skip model properties for raw %s schemas',
+        (combinator) => {
+          class IgnoredModel {}
+          class ExtraModel {}
+
+          @ApiExtraModels(ExtraModel)
+          class RawAlternativeSchema {
+            @ApiProperty({ type: IgnoredModel })
+            ignoredModel: IgnoredModel;
+
+            @ApiProperty({ type: () => undefined })
+            invalidProperty: unknown;
+          }
+
+          ApiSchema({
+            [combinator]: [{ type: 'string' }, { type: 'number' }]
+          })(RawAlternativeSchema);
+
+          const schemas: Record<string, SchemaObject> = {};
+          schemaObjectFactory.exploreModelSchema(RawAlternativeSchema, schemas);
+
+          expect(schemas.RawAlternativeSchema).toEqual({
+            [combinator]: [{ type: 'string' }, { type: 'number' }]
+          });
+          expect(schemas.ExtraModel).toBeDefined();
+          expect(schemas.IgnoredModel).toBeUndefined();
+        }
+      );
+
+      it('should preserve model properties alongside allOf', () => {
+        @ApiSchema({
+          allOf: [{ $ref: '#/components/schemas/BaseModel' }],
+          description: 'Extended model'
+        })
+        class ExtendedModel {
+          @ApiProperty()
+          ownProperty: string;
+        }
+
+        const schemas: Record<string, SchemaObject> = {};
+        schemaObjectFactory.exploreModelSchema(ExtendedModel, schemas);
+
+        expect(schemas.ExtendedModel).toEqual({
+          type: 'object',
+          properties: {
+            ownProperty: { type: 'string' }
+          },
+          allOf: [{ $ref: '#/components/schemas/BaseModel' }],
+          description: 'Extended model',
+          required: ['ownProperty']
+        });
+      });
+
+      it('should ignore explicitly undefined combinators', () => {
+        @ApiSchema({
+          oneOf: undefined,
+          description: 'Regular object schema'
+        })
+        class RegularModel {}
+
+        const schemas: Record<string, SchemaObject> = {};
+        schemaObjectFactory.exploreModelSchema(RegularModel, schemas);
+
+        expect(schemas.RegularModel).toEqual({
+          type: 'object',
+          properties: {},
+          description: 'Regular object schema'
+        });
+        expect(schemas.RegularModel).not.toHaveProperty('oneOf');
       });
     });
 
