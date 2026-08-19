@@ -19,6 +19,7 @@ import {
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep.js';
 import { getGlobalPrefix } from './utils/get-global-prefix.js';
 import { isOas31OrLater } from './utils/is-oas31-or-later.util.js';
+import { rewriteNullableForOas31 } from './utils/rewrite-nullable-for-oas31.util.js';
 import { normalizeRelPath } from './utils/normalize-rel-path.js';
 import { resolvePath } from './utils/resolve-path.util.js';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
@@ -76,19 +77,23 @@ export class SwaggerModule {
       ...documentWithoutWebhooks
     };
 
-    if (shouldIncludeWebhooks) {
-      return {
-        ...baseDocument,
-        ...(mergedWebhooks ? { webhooks: mergedWebhooks } : {})
-      };
+    const documentForVersion = shouldIncludeWebhooks
+      ? {
+          ...baseDocument,
+          ...(mergedWebhooks ? { webhooks: mergedWebhooks } : {})
+        }
+      : {
+          ...baseDocument,
+          paths: webhookPaths
+            ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
+            : baseDocument.paths
+        };
+
+    if (isOas31OrLater(documentForVersion.openapi ?? '3.0.0')) {
+      rewriteNullableForOas31(documentForVersion);
     }
 
-    return {
-      ...baseDocument,
-      paths: webhookPaths
-        ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
-        : baseDocument.paths
-    };
+    return documentForVersion;
   }
 
   public static async loadPluginMetadata(
