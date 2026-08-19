@@ -29,3 +29,4 @@ export * from './api-schema.decorator.js';
 export * from './api-security.decorator.js';
 export * from './api-use-tags.decorator.js';
 export * from './api-webhook.decorator.js';
+export * from './union-api-schema.factory.js';

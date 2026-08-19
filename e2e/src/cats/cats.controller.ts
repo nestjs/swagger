@@ -30,6 +30,12 @@ import { Cat } from './classes/cat.class.js';
 import { CreateCatDto } from './dto/create-cat.dto.js';
 import { LettersEnum, PaginationQuery } from './dto/pagination-query.dto.js';
 import { TagDto } from './dto/tag.dto.js';
+import {
+  Pet,
+  PetListDto,
+  Scalar,
+  UnionResult
+} from './dto/union-api-schema.dto.js';
 import { CatBreed } from './enums/cat-breed.enum.js';
 
 const standardBodySchema = z.object({
@@ -588,5 +594,31 @@ export class CatsController {
   })
   arrayOfScalarWithExample(): string[] {
     return ['Mau', 'Persian'];
+  }
+
+  @Get('union-schema')
+  @ApiResponse({ status: HttpStatus.OK, type: () => Pet })
+  getUnionSchema(): Pet {
+    return { type: 'cat', meow: 'meow' };
+  }
+
+  @Get('union-schema-list')
+  @ApiResponse({ status: HttpStatus.OK, type: PetListDto })
+  getUnionSchemaList(): PetListDto {
+    return {
+      pets: [{ type: 'cat', meow: 'meow' }]
+    };
+  }
+
+  @Get('scalar-union-schema')
+  @ApiResponse({ status: HttpStatus.OK, type: () => Scalar })
+  getScalarUnionSchema(): Scalar {
+    return 42;
+  }
+
+  @Get('nested-union-schema')
+  @ApiResponse({ status: HttpStatus.OK, type: () => UnionResult })
+  getNestedUnionSchema(): UnionResult {
+    return { type: 'error', message: 'failed' };
   }
 }
