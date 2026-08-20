@@ -3,6 +3,7 @@ import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import * as jsyaml from 'js-yaml';
+import { omit } from 'lodash';
 import {
   OpenAPIObject,
   SwaggerCustomOptions,
@@ -18,6 +19,7 @@ import {
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep';
 import { getGlobalPrefix } from './utils/get-global-prefix';
 import { isOas31OrLater } from './utils/is-oas31-or-later.util';
+import { isOas32OrLater } from './utils/is-oas32-or-later.util';
 import { normalizeRelPath } from './utils/normalize-rel-path';
 import { resolvePath } from './utils/resolve-path.util';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util';
@@ -37,6 +39,31 @@ export class SwaggerModule {
       return undefined;
     }
     return assignTwoLevelsDeep({}, configWebhooks || {}, scannedWebhooks || {});
+  }
+
+  private static stripQueryOperations(
+    paths: OpenAPIObject['paths'] | undefined
+  ): OpenAPIObject['paths'] | undefined {
+    if (!paths) {
+      return paths;
+    }
+    let hasQueryOperation = false;
+    const sanitizedPaths = Object.entries(paths).reduce(
+      (acc, [path, pathItem]) => {
+        if (!pathItem || !('query' in pathItem)) {
+          acc[path] = pathItem;
+          return acc;
+        }
+        hasQueryOperation = true;
+        const pathItemWithoutQuery = omit(pathItem, 'query');
+        if (Object.keys(pathItemWithoutQuery).length > 0) {
+          acc[path] = pathItemWithoutQuery;
+        }
+        return acc;
+      },
+      {} as OpenAPIObject['paths']
+    );
+    return hasQueryOperation ? sanitizedPaths : paths;
   }
 
   public static createDocument(
@@ -65,13 +92,20 @@ export class SwaggerModule {
       configWebhooks,
       scannedWebhooks
     );
-    const shouldIncludeWebhooks = isOas31OrLater(config.openapi ?? '3.0.0');
+    const openApiVersion = config.openapi ?? '3.0.0';
+    const shouldIncludeWebhooks = isOas31OrLater(openApiVersion);
     const baseDocument: OpenAPIObject = {
       openapi: '3.0.0',
       paths: {},
       ...configWithoutWebhooks,
       ...documentWithoutWebhooks
     };
+
+    if (!isOas32OrLater(openApiVersion)) {
+      baseDocument.paths = SwaggerModule.stripQueryOperations(
+        baseDocument.paths
+      );
+    }
 
     if (shouldIncludeWebhooks) {
       return {
@@ -80,11 +114,15 @@ export class SwaggerModule {
       };
     }
 
+    const mergedPaths = webhookPaths
+      ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
+      : baseDocument.paths;
+
     return {
       ...baseDocument,
-      paths: webhookPaths
-        ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
-        : baseDocument.paths
+      paths: isOas32OrLater(openApiVersion)
+        ? mergedPaths
+        : SwaggerModule.stripQueryOperations(mergedPaths)
     };
   }
 
