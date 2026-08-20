@@ -18,6 +18,7 @@ import {
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep.js';
 import { getGlobalPrefix } from './utils/get-global-prefix.js';
 import { isOas31OrLater } from './utils/is-oas31-or-later.util.js';
+import { isOas32OrLater } from './utils/is-oas32-or-later.util.js';
 import { normalizeRelPath } from './utils/normalize-rel-path.js';
 import { convertNullableToOas31 } from './utils/nullable-to-oas31.util.js';
 import { resolvePath } from './utils/resolve-path.util.js';
@@ -38,6 +39,31 @@ export class SwaggerModule {
       return undefined;
     }
     return assignTwoLevelsDeep({}, configWebhooks || {}, scannedWebhooks || {});
+  }
+
+  private static stripQueryOperations(
+    paths: OpenAPIObject['paths'] | undefined
+  ): OpenAPIObject['paths'] | undefined {
+    if (!paths) {
+      return paths;
+    }
+    let hasQueryOperation = false;
+    const sanitizedPaths = Object.entries(paths).reduce(
+      (acc, [path, pathItem]) => {
+        if (!pathItem || !('query' in pathItem)) {
+          acc[path] = pathItem;
+          return acc;
+        }
+        hasQueryOperation = true;
+        const { query, ...pathItemWithoutQuery } = pathItem;
+        if (Object.keys(pathItemWithoutQuery).length > 0) {
+          acc[path] = pathItemWithoutQuery;
+        }
+        return acc;
+      },
+      {} as OpenAPIObject['paths']
+    );
+    return hasQueryOperation ? sanitizedPaths : paths;
   }
 
   public static createDocument(
@@ -66,7 +92,8 @@ export class SwaggerModule {
       configWebhooks,
       scannedWebhooks
     );
-    const isOas31 = isOas31OrLater(config.openapi ?? '3.0.0');
+    const openApiVersion = config.openapi ?? '3.0.0';
+    const isOas31 = isOas31OrLater(openApiVersion);
     const baseDocument: OpenAPIObject = {
       openapi: '3.0.0',
       paths: {},
@@ -91,6 +118,14 @@ export class SwaggerModule {
     if (isOas31) {
       // 3.1 is JSON Schema 2020-12, which removed the "nullable" keyword.
       convertNullableToOas31(finalDocument);
+    }
+
+    // The `query` operation is only a valid Path Item field from OpenAPI 3.2
+    // onwards. For older documents, drop it so the output stays spec-compliant.
+    if (!isOas32OrLater(openApiVersion) && finalDocument.paths) {
+      finalDocument.paths = SwaggerModule.stripQueryOperations(
+        finalDocument.paths
+      );
     }
 
     return finalDocument;
