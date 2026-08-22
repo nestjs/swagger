@@ -225,6 +225,10 @@ export interface ReferenceObject {
 }
 
 export interface SchemaObject {
+  /**
+   * OpenAPI 3.0 only. In 3.1 documents nullability is a type union
+   * (`type: ['string', 'null']`) and the keyword is rewritten on output.
+   */
   nullable?: boolean;
   discriminator?: DiscriminatorObject;
   readOnly?: boolean;
@@ -234,7 +238,8 @@ export interface SchemaObject {
   example?: any;
   examples?: any[] | Record<string, any>;
   deprecated?: boolean;
-  type?: string;
+  /** An array of types is only valid in OpenAPI 3.1 or later. */
+  type?: string | string[];
   allOf?: (SchemaObject | ReferenceObject)[];
   oneOf?: (SchemaObject | ReferenceObject)[];
   anyOf?: (SchemaObject | ReferenceObject)[];

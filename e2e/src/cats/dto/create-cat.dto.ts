@@ -114,6 +114,20 @@ export class CreateCatDto {
   })
   readonly nullablePrimitiveUnion: string | number | null;
 
+  @ApiProperty({
+    description: 'nullable primitive',
+    type: String,
+    nullable: true
+  })
+  readonly nullablePrimitive: string | null;
+
+  @ApiProperty({
+    description: 'nullable enum',
+    enum: LettersEnum,
+    nullable: true
+  })
+  readonly nullableEnum: LettersEnum | null;
+
   nested: {
     first: string;
     second: number;
