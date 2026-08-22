@@ -82,7 +82,7 @@
     "release-it": "21.0.2",
     "rxjs": "7.8.2",
     "supertest": "7.2.2",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vite": "^8.0.8",
     "valibot": "1.4.2",
     "vitest": "4.1.10",
