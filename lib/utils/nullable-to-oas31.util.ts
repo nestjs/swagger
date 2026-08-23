@@ -8,140 +8,65 @@ type UnknownRecord = Record<string, any>;
 
 const COMBINATOR_KEYS = ['allOf', 'oneOf', 'anyOf'] as const;
 
-const OPERATION_KEYS = [
-  'get',
-  'put',
-  'post',
-  'delete',
-  'options',
-  'head',
-  'patch',
-  'trace',
-  'query'
-] as const;
+/**
+ * Keywords whose values are arbitrary user data rather than subschemas. The
+ * OpenAPI/JSON Schema object model has no other free-form positions, so
+ * skipping these (plus `x-` extensions) is enough to never mistake a data
+ * key for the `nullable` keyword.
+ */
+const DATA_KEYS = new Set(['example', 'examples', 'default', 'const', 'enum']);
+
+/**
+ * Maps whose keys are user-chosen names. Their keys must never be matched
+ * against the rules above — a property or header may legitimately be called
+ * `example` or `x-total`.
+ */
+const NAME_KEYED_MAPS = new Set([
+  'properties',
+  'patternProperties',
+  '$defs',
+  'schemas',
+  'headers'
+]);
 
 /**
  * Rewrites the OpenAPI 3.0 `nullable` keyword into its OpenAPI 3.1 (JSON
  * Schema 2020-12) equivalent everywhere in the document, in place.
- *
- * JSON Schema 2020-12 removed `nullable` and ignores unknown keywords, so a
- * 3.1 document that keeps the keyword silently loses the null case. The 3.1
- * spellings are a type union (`{ "type": ["string", "null"] }`) for typed
- * schemas and an `anyOf` union for references and composite schemas — the
- * same pattern the response object factory already uses for inline responses.
- *
- * Callers are responsible for the version check: this must only run for
- * documents declaring OpenAPI 3.1 or later (see `isOas31OrLater`).
  */
 export function convertNullableToOas31(document: OpenAPIObject): void {
-  if (!document || typeof document !== 'object') {
+  walk(document);
+}
+
+function walk(node: unknown): void {
+  if (Array.isArray(node)) {
+    node.forEach(walk);
     return;
   }
-  walkPaths(document.paths as UnknownRecord);
-  walkPaths((document as UnknownRecord).webhooks);
-  walkComponents((document as UnknownRecord).components);
-}
-
-function walkComponents(components: UnknownRecord | undefined): void {
-  if (!isObject(components)) {
-    return;
-  }
-  walkRecord(components.schemas, walkSchema);
-  walkRecord(components.parameters, walkParameterLike);
-  walkRecord(components.headers, walkParameterLike);
-  walkRecord(components.requestBodies, walkBodyLike);
-  walkRecord(components.responses, walkResponse);
-  walkRecord(components.callbacks, walkPaths);
-  walkRecord(components.pathItems, walkPathItem);
-}
-
-function walkPaths(paths: UnknownRecord | undefined): void {
-  walkRecord(paths, walkPathItem);
-}
-
-function walkPathItem(pathItem: UnknownRecord | undefined): void {
-  if (!isObject(pathItem)) {
-    return;
-  }
-  walkArray(pathItem.parameters, walkParameterLike);
-  for (const key of OPERATION_KEYS) {
-    walkOperation(pathItem[key]);
-  }
-}
-
-function walkOperation(operation: UnknownRecord | undefined): void {
-  if (!isObject(operation)) {
-    return;
-  }
-  walkArray(operation.parameters, walkParameterLike);
-  walkBodyLike(operation.requestBody);
-  walkRecord(operation.responses, walkResponse);
-  walkRecord(operation.callbacks, walkPaths);
-}
-
-function walkResponse(response: UnknownRecord | undefined): void {
-  if (!isObject(response)) {
-    return;
-  }
-  walkRecord(response.headers, walkParameterLike);
-  walkContent(response.content);
-}
-
-function walkBodyLike(body: UnknownRecord | undefined): void {
-  if (!isObject(body)) {
-    return;
-  }
-  walkContent(body.content);
-}
-
-/** Parameters and headers share the `schema` / `content` shape. */
-function walkParameterLike(parameter: UnknownRecord | undefined): void {
-  if (!isObject(parameter)) {
-    return;
-  }
-  walkSchema(parameter.schema);
-  walkContent(parameter.content);
-}
-
-function walkContent(content: UnknownRecord | undefined): void {
-  walkRecord(content, (mediaType) => {
-    if (!isObject(mediaType)) {
-      return;
-    }
-    walkSchema(mediaType.schema);
-    walkRecord(mediaType.encoding, (encoding) => {
-      if (isObject(encoding)) {
-        walkRecord(encoding.headers, walkParameterLike);
-      }
-    });
-  });
-}
-
-function walkSchema(schema: UnknownRecord | undefined): void {
-  if (!isObject(schema)) {
+  if (!isObject(node)) {
     return;
   }
 
   // Children first: converting a node may move it inside an `anyOf` union,
   // and its subschemas must already be in their final shape by then.
-  walkRecord(schema.properties, walkSchema);
-  walkRecord(schema.patternProperties, walkSchema);
-  walkSchema(schema.additionalProperties);
-  walkSchema(schema.items);
-  walkSchema(schema.not);
-  walkArray(schema.prefixItems, walkSchema);
-  for (const key of COMBINATOR_KEYS) {
-    walkArray(schema[key], walkSchema);
+  for (const [key, value] of Object.entries(node)) {
+    if (DATA_KEYS.has(key) || key.startsWith('x-')) {
+      continue;
+    }
+    if (NAME_KEYED_MAPS.has(key) && isObject(value)) {
+      Object.values(value).forEach(walk);
+    } else {
+      walk(value);
+    }
   }
 
-  convertSchema(schema);
+  convertSchema(node);
 }
 
 function convertSchema(schema: UnknownRecord): void {
-  if (!('nullable' in schema)) {
+  if (typeof schema.nullable !== 'boolean') {
     return;
   }
-  const isNullable = schema.nullable === true;
+  const isNullable = schema.nullable;
   delete schema.nullable;
 
   if (!isNullable) {
@@ -162,7 +87,9 @@ function convertSchema(schema: UnknownRecord): void {
     schema.type = types.includes('null') ? types : [...types, 'null'];
   }
 
-  appendNullEnumValue(schema);
+  if (Array.isArray(schema.enum) && !schema.enum.includes(null)) {
+    schema.enum = [...schema.enum, null];
+  }
 }
 
 /**
@@ -200,30 +127,6 @@ function extractInnerSchema(
   }
 
   return inner as SchemaObject | ReferenceObject;
-}
-
-function appendNullEnumValue(schema: UnknownRecord): void {
-  if (Array.isArray(schema.enum) && !schema.enum.includes(null)) {
-    schema.enum = [...schema.enum, null];
-  }
-}
-
-function walkRecord(record: unknown, visit: (value: any) => void): void {
-  if (!isObject(record)) {
-    return;
-  }
-  for (const value of Object.values(record)) {
-    visit(value);
-  }
-}
-
-function walkArray(array: unknown, visit: (value: any) => void): void {
-  if (!Array.isArray(array)) {
-    return;
-  }
-  for (const value of array) {
-    visit(value);
-  }
 }
 
 function isObject(value: unknown): value is UnknownRecord {

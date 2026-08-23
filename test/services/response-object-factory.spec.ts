@@ -13,7 +13,7 @@ describe('ResponseObjectFactory', () => {
   let factory: ResponseObjectFactory;
 
   beforeEach(() => {
-    factory = new ResponseObjectFactory(testStandardSchemaConverter, '3.1.0');
+    factory = new ResponseObjectFactory(testStandardSchemaConverter);
   });
 
   const produces = ['application/json'];
@@ -81,7 +81,7 @@ describe('ResponseObjectFactory', () => {
       expect(result).not.toHaveProperty('examples');
     });
 
-    it('should wrap built-in scalar in oneOf with type: null when nullable: true', () => {
+    it('should mark a nullable built-in scalar with the keyword', () => {
       const result = factory.create(
         { type: String, description: 'OK', nullable: true } as any,
         produces,
@@ -91,11 +91,11 @@ describe('ResponseObjectFactory', () => {
 
       expect(result).not.toHaveProperty('nullable');
       expect(result.content['application/json']).toEqual({
-        schema: { oneOf: [{ type: 'string' }, { type: 'null' }] }
+        schema: { type: 'string', nullable: true }
       });
     });
 
-    it('should wrap built-in scalar array in oneOf with type: null when nullable: true', () => {
+    it('should mark a nullable built-in scalar array with the keyword', () => {
       const result = factory.create(
         { type: Number, isArray: true, description: 'OK', nullable: true } as any,
         produces,
@@ -106,10 +106,9 @@ describe('ResponseObjectFactory', () => {
       expect(result).not.toHaveProperty('nullable');
       expect(result.content['application/json']).toEqual({
         schema: {
-          oneOf: [
-            { type: 'array', items: { type: 'number' } },
-            { type: 'null' }
-          ]
+          type: 'array',
+          items: { type: 'number' },
+          nullable: true
         }
       });
     });
@@ -130,7 +129,7 @@ describe('ResponseObjectFactory', () => {
       expect(result).not.toHaveProperty('nullable');
       expect(result).not.toHaveProperty('example');
       expect(result.content['application/json']).toEqual({
-        schema: { oneOf: [{ type: 'string' }, { type: 'null' }] },
+        schema: { type: 'string', nullable: true },
         example: 'hello'
       });
     });
@@ -297,51 +296,6 @@ describe('ResponseObjectFactory', () => {
           message: {
             type: 'string'
           }
-        }
-      });
-    });
-  });
-
-  describe('OpenAPI 3.0 documents', () => {
-    let oas30Factory: ResponseObjectFactory;
-
-    beforeEach(() => {
-      oas30Factory = new ResponseObjectFactory(testStandardSchemaConverter);
-    });
-
-    it('should mark a nullable built-in scalar with the keyword', () => {
-      const result = oas30Factory.create(
-        { type: String, description: 'OK', nullable: true } as any,
-        produces,
-        {},
-        factories
-      ) as any;
-
-      expect(result).not.toHaveProperty('nullable');
-      expect(result.content['application/json']).toEqual({
-        schema: { type: 'string', nullable: true }
-      });
-    });
-
-    it('should mark a nullable built-in scalar array with the keyword', () => {
-      const result = oas30Factory.create(
-        {
-          type: Number,
-          isArray: true,
-          description: 'OK',
-          nullable: true
-        } as any,
-        produces,
-        {},
-        factories
-      ) as any;
-
-      expect(result).not.toHaveProperty('nullable');
-      expect(result.content['application/json']).toEqual({
-        schema: {
-          type: 'array',
-          items: { type: 'number' },
-          nullable: true
         }
       });
     });

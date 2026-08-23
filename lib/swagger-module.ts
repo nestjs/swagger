@@ -49,11 +49,7 @@ export class SwaggerModule {
     options: SwaggerDocumentOptions = {}
   ): OpenAPIObject {
     const swaggerScanner = new SwaggerScanner();
-    const document = swaggerScanner.scanApplication(
-      app,
-      options,
-      config.openapi ?? '3.0.0'
-    );
+    const document = swaggerScanner.scanApplication(app, options);
     const { webhooks: configWebhooks, ...configWithoutWebhooks } =
       config as OpenAPIObject;
 
