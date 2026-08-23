@@ -768,10 +768,10 @@
                 "type": "object",
                 "properties": {
                   "name": {
-                    "description": "Cat name from Zod",
-                    "example": "Milo",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "Cat name from Zod",
+                    "example": "Milo"
                   },
                   "age": {
                     "type": "integer",
@@ -866,18 +866,16 @@
                 "type": "object",
                 "properties": {
                   "species": {
-                    "description": "Species enum from Zod",
-                    "title": "Species",
-                    "example": "cat",
                     "type": "string",
                     "enum": [
                       "cat",
                       "dog"
-                    ]
+                    ],
+                    "description": "Species enum from Zod",
+                    "title": "Species",
+                    "example": "cat"
                   },
                   "contact": {
-                    "description": "Preferred contact from Zod",
-                    "title": "PreferredContact",
                     "anyOf": [
                       {
                         "type": "string",
@@ -888,9 +886,9 @@
                         "type": "object",
                         "properties": {
                           "phone": {
+                            "type": "string",
                             "description": "Phone number from Zod",
-                            "example": "123-456",
-                            "type": "string"
+                            "example": "123-456"
                           }
                         },
                         "required": [
@@ -898,65 +896,67 @@
                         ]
                       }
                     ],
+                    "description": "Preferred contact from Zod",
+                    "title": "PreferredContact",
                     "example": "owner@example.com"
                   },
                   "profile": {
-                    "title": "CatProfile",
-                    "description": "Nested cat profile from Zod",
                     "type": "object",
                     "properties": {
                       "nickname": {
+                        "type": "string",
                         "description": "Nested nickname from Zod",
-                        "example": "Captain Whiskers",
-                        "type": "string"
+                        "example": "Captain Whiskers"
                       },
                       "temperament": {
-                        "description": "Nested temperament from Zod",
-                        "example": "playful",
                         "type": "string",
                         "enum": [
                           "playful",
                           "calm"
-                        ]
+                        ],
+                        "description": "Nested temperament from Zod",
+                        "example": "playful"
                       },
                       "notes": {
+                        "default": "Indoor only",
                         "description": "Nested notes from Zod",
                         "example": "Indoor only",
                         "deprecated": true,
-                        "default": "Indoor only",
                         "type": "string"
                       },
                       "traits": {
-                        "description": "Nested trait list from Zod",
                         "type": "array",
                         "items": {
                           "type": "object",
                           "properties": {
                             "label": {
+                              "type": "string",
                               "description": "Trait label from Zod",
-                              "example": "affectionate",
-                              "type": "string"
+                              "example": "affectionate"
                             },
                             "score": {
-                              "description": "Trait score from Zod",
-                              "example": 8,
                               "type": "number",
                               "minimum": 0,
-                              "maximum": 10
+                              "maximum": 10,
+                              "description": "Trait score from Zod",
+                              "example": 8
                             }
                           },
                           "required": [
                             "label",
                             "score"
                           ]
-                        }
+                        },
+                        "description": "Nested trait list from Zod"
                       }
                     },
                     "required": [
                       "nickname",
                       "temperament",
                       "traits"
-                    ]
+                    ],
+                    "title": "CatProfile",
+                    "description": "Nested cat profile from Zod"
                   }
                 },
                 "required": [
@@ -1038,9 +1038,9 @@
                 "type": "object",
                 "properties": {
                   "override": {
+                    "type": "string",
                     "description": "Body override from Zod",
-                    "example": "zod-body",
-                    "type": "string"
+                    "example": "zod-body"
                   },
                   "count": {
                     "type": "integer",
@@ -1639,11 +1639,11 @@
             "required": true,
             "in": "query",
             "schema": {
-              "description": "Query override from Zod",
-              "example": 3,
               "type": "integer",
               "minimum": 1,
-              "maximum": 9007199254740991
+              "maximum": 9007199254740991,
+              "description": "Query override from Zod",
+              "example": 3
             }
           },
           {
@@ -1651,9 +1651,9 @@
             "required": true,
             "in": "query",
             "schema": {
+              "type": "boolean",
               "description": "Boolean flag from Zod",
-              "example": true,
-              "type": "boolean"
+              "example": true
             }
           },
           {
@@ -2108,10 +2108,10 @@
             "required": true,
             "in": "path",
             "schema": {
-              "description": "Cat identifier from Zod",
               "type": "string",
               "minLength": 3,
-              "pattern": "^cat_[0-9]+$"
+              "pattern": "^cat_[0-9]+$",
+              "description": "Cat identifier from Zod"
             }
           },
           {
@@ -2180,13 +2180,13 @@
             "required": true,
             "in": "path",
             "schema": {
-              "description": "Cat state enum from Zod",
-              "title": "CatState",
               "type": "string",
               "enum": [
                 "available",
                 "resting"
               ],
+              "description": "Cat state enum from Zod",
+              "title": "CatState",
               "example": "available"
             }
           },
@@ -2257,13 +2257,13 @@
             "in": "path",
             "description": "Explicit param decorator description",
             "schema": {
-              "description": "Param override from Zod",
-              "example": "resting",
               "type": "string",
               "enum": [
                 "available",
                 "resting"
-              ]
+              ],
+              "description": "Param override from Zod",
+              "example": "resting"
             }
           },
           {
@@ -2344,18 +2344,16 @@
                   "type": "object",
                   "properties": {
                     "status": {
-                      "title": "CatResponseState",
-                      "description": "Response status enum from Zod",
-                      "example": "available",
                       "type": "string",
                       "enum": [
                         "available",
                         "resting"
-                      ]
+                      ],
+                      "title": "CatResponseState",
+                      "description": "Response status enum from Zod",
+                      "example": "available"
                     },
                     "result": {
-                      "title": "StandardResponseResult",
-                      "description": "Response union from Zod",
                       "anyOf": [
                         {
                           "type": "object",
@@ -2370,9 +2368,9 @@
                               "type": "object",
                               "properties": {
                                 "name": {
+                                  "type": "string",
                                   "description": "Returned cat name from Zod",
-                                  "example": "Milo",
-                                  "type": "string"
+                                  "example": "Milo"
                                 }
                               },
                               "required": [
@@ -2397,9 +2395,9 @@
                               ]
                             },
                             "message": {
+                              "type": "string",
                               "description": "Returned message from Zod",
-                              "example": "No cat available",
-                              "type": "string"
+                              "example": "No cat available"
                             }
                           },
                           "required": [
@@ -2409,45 +2407,47 @@
                           "additionalProperties": false
                         }
                       ],
+                      "title": "StandardResponseResult",
+                      "description": "Response union from Zod",
                       "example": {
                         "kind": "message",
                         "message": "No cat available"
                       }
                     },
                     "meta": {
-                      "title": "ResponseMeta",
-                      "description": "Nested response metadata from Zod",
                       "type": "object",
                       "properties": {
                         "source": {
+                          "type": "string",
                           "description": "Nested response source from Zod",
-                          "example": "cache",
-                          "type": "string"
+                          "example": "cache"
                         },
                         "tags": {
-                          "description": "Response tags from Zod",
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
                               "label": {
+                                "type": "string",
                                 "description": "Response tag label from Zod",
-                                "example": "featured",
-                                "type": "string"
+                                "example": "featured"
                               }
                             },
                             "required": [
                               "label"
                             ],
                             "additionalProperties": false
-                          }
+                          },
+                          "description": "Response tags from Zod"
                         }
                       },
                       "required": [
                         "source",
                         "tags"
                       ],
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "title": "ResponseMeta",
+                      "description": "Nested response metadata from Zod"
                     }
                   },
                   "required": [
@@ -2526,9 +2526,9 @@
                   "type": "object",
                   "properties": {
                     "result": {
+                      "type": "string",
                       "description": "Response override from Zod",
-                      "example": "ok",
-                      "type": "string"
+                      "example": "ok"
                     },
                     "count": {
                       "type": "integer",
@@ -3454,6 +3454,21 @@
               }
             ]
           },
+          "nullablePrimitive": {
+            "type": "string",
+            "description": "nullable primitive",
+            "nullable": true
+          },
+          "nullableEnum": {
+            "type": "string",
+            "description": "nullable enum",
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ],
+            "nullable": true
+          },
           "xEnumTest": {
             "description": "The x-enumNames test",
             "allOf": [
@@ -3482,6 +3497,8 @@
           "enumWithRef",
           "nullableTag",
           "nullablePrimitiveUnion",
+          "nullablePrimitive",
+          "nullableEnum",
           "xEnumTest"
         ]
       },

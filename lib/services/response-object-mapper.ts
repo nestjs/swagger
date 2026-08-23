@@ -20,7 +20,7 @@ export class ResponseObjectMapper {
       items: { $ref: getSchemaPath(name) }
     };
     const schema = response.nullable
-      ? { oneOf: [arraySchema, { type: 'null' }] }
+      ? { ...arraySchema, nullable: true }
       : arraySchema;
     return {
       ...omit(response, [...exampleKeys, 'nullable']),
@@ -33,8 +33,15 @@ export class ResponseObjectMapper {
 
   toRefObject(response: Record<string, any>, name: string, produces: string[]) {
     const exampleKeys = ['example', 'examples'];
+    // A `$ref` cannot carry sibling keywords, hence the `allOf` wrapper --
+    // the same shape the schema object factory emits for nullable properties.
+    // 3.1 documents get this rewritten into a union by convertNullableToOas31.
     const schema = response.nullable
-      ? { oneOf: [{ $ref: getSchemaPath(name) }, { type: 'null' }] }
+      ? {
+          nullable: true,
+          type: 'object',
+          allOf: [{ $ref: getSchemaPath(name) }]
+        }
       : { $ref: getSchemaPath(name) };
     return {
       ...omit(response, [...exampleKeys, 'nullable']),

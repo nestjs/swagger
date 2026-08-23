@@ -20,6 +20,7 @@ import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep.js';
 import { getGlobalPrefix } from './utils/get-global-prefix.js';
 import { isOas31OrLater } from './utils/is-oas31-or-later.util.js';
 import { normalizeRelPath } from './utils/normalize-rel-path.js';
+import { convertNullableToOas31 } from './utils/nullable-to-oas31.util.js';
 import { resolvePath } from './utils/resolve-path.util.js';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
 import { validatePath } from './utils/validate-path.util.js';
@@ -68,7 +69,7 @@ export class SwaggerModule {
       configWebhooks,
       scannedWebhooks
     );
-    const shouldIncludeWebhooks = isOas31OrLater(config.openapi ?? '3.0.0');
+    const isOas31 = isOas31OrLater(config.openapi ?? '3.0.0');
     const baseDocument: OpenAPIObject = {
       openapi: '3.0.0',
       paths: {},
@@ -76,19 +77,26 @@ export class SwaggerModule {
       ...documentWithoutWebhooks
     };
 
-    if (shouldIncludeWebhooks) {
-      return {
-        ...baseDocument,
-        ...(mergedWebhooks ? { webhooks: mergedWebhooks } : {})
-      };
+    // Webhooks only exist as a top-level field since 3.1; older documents keep
+    // them as regular paths.
+    const finalDocument: OpenAPIObject = isOas31
+      ? {
+          ...baseDocument,
+          ...(mergedWebhooks ? { webhooks: mergedWebhooks } : {})
+        }
+      : {
+          ...baseDocument,
+          paths: webhookPaths
+            ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
+            : baseDocument.paths
+        };
+
+    if (isOas31) {
+      // 3.1 is JSON Schema 2020-12, which removed the "nullable" keyword.
+      convertNullableToOas31(finalDocument);
     }
 
-    return {
-      ...baseDocument,
-      paths: webhookPaths
-        ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
-        : baseDocument.paths
-    };
+    return finalDocument;
   }
 
   public static async loadPluginMetadata(

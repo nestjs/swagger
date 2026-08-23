@@ -85,10 +85,10 @@ export class ResponseObjectFactory {
         ? { type: 'array', items: { type: swaggerType } }
         : { type: swaggerType };
       // Mirror the nullable handling in ResponseObjectMapper so the
-      // "nullable" flag does not leak into the response object root and
-      // is instead represented as "oneOf: [<schema>, { type: 'null' }]".
+      // "nullable" flag does not leak into the response object root. 3.1
+      // documents get it rewritten into a union by convertNullableToOas31.
       const schema: SchemaObject = response.nullable
-        ? { oneOf: [baseSchema, { type: 'null' }] }
+        ? { ...baseSchema, nullable: true }
         : baseSchema;
       const content = this.mimetypeContentWrapper.wrap(produces, {
         schema,

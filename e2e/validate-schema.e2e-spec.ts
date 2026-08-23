@@ -492,6 +492,109 @@ describe('Validate OpenAPI schema', () => {
       ).toBe(true);
     });
   });
+
+  describe('OpenAPI 3.1 nullability (issue #4063)', () => {
+    const createOas31Document = () =>
+      SwaggerModule.createDocument(
+        app,
+        { ...options, openapi: '3.1.0' },
+        documentOptions
+      );
+
+    const getCreateCatDtoProperties = (document: OpenAPIObject) =>
+      (document.components?.schemas?.CreateCatDto as SchemaObject).properties;
+
+    it('should emit a type union for a nullable primitive', () => {
+      const properties = getCreateCatDtoProperties(createOas31Document());
+
+      expect(properties.nullablePrimitive).toEqual({
+        description: 'nullable primitive',
+        type: ['string', 'null']
+      });
+    });
+
+    it('should add null to the values of a nullable enum', () => {
+      const properties = getCreateCatDtoProperties(createOas31Document());
+
+      expect(properties.nullableEnum).toEqual({
+        description: 'nullable enum',
+        type: ['string', 'null'],
+        enum: ['A', 'B', 'C', null]
+      });
+    });
+
+    it('should emit anyOf for a nullable $ref, without the 3.0 allOf wrapper', () => {
+      const properties = getCreateCatDtoProperties(createOas31Document());
+
+      expect(properties.nullableTag).toEqual({
+        description: 'nullable tag',
+        anyOf: [{ $ref: '#/components/schemas/TagDto' }, { type: 'null' }]
+      });
+    });
+
+    it('should emit anyOf for a nullable composite schema', () => {
+      const properties = getCreateCatDtoProperties(createOas31Document());
+
+      expect(properties.nullablePrimitiveUnion).toEqual({
+        description: 'nullable primitive union',
+        anyOf: [
+          { oneOf: [{ type: 'string' }, { type: 'number' }] },
+          { type: 'null' }
+        ]
+      });
+    });
+
+    it('should convert nullable parameter schemas', () => {
+      const document = createOas31Document();
+      const parameters = document.paths['/api/cats']?.get
+        ?.parameters as ParameterObject[];
+      const sortBy = parameters.find((parameter) => parameter.name === '_sortBy');
+
+      expect(sortBy?.schema).toEqual({
+        example: ['sort1', 'sort2'],
+        type: ['array', 'null'],
+        items: { type: 'string' }
+      });
+    });
+
+    it('should not leave the 3.0 nullable keyword anywhere in the document', () => {
+      const document = createOas31Document();
+
+      expect(JSON.stringify(document)).not.toContain('"nullable"');
+    });
+
+    it('should keep the 3.0 spelling in 3.0 documents', () => {
+      const properties = getCreateCatDtoProperties(
+        SwaggerModule.createDocument(app, options, documentOptions)
+      );
+
+      expect(properties.nullablePrimitive).toEqual({
+        description: 'nullable primitive',
+        type: 'string',
+        nullable: true
+      });
+    });
+
+    it('should produce a valid 3.1 document', async () => {
+      // A minimal config on purpose: the shared `options` above exercise
+      // server variables and extensions that the validator rejects under 3.1
+      // for reasons unrelated to nullability.
+      const document = SwaggerModule.createDocument(
+        app,
+        new DocumentBuilder()
+          .setTitle('Cats example')
+          .setVersion('1.0')
+          .setOpenAPIVersion('3.1.0')
+          .build(),
+        documentOptions
+      );
+
+      await expect(
+        SwaggerParser.validate(JSON.parse(JSON.stringify(document)) as any)
+      ).resolves.toBeDefined();
+    });
+  });
+
 });
 
 function createTestStandardSchemaConverter(): SwaggerDocumentOptions['standardSchemaConverter'] {
