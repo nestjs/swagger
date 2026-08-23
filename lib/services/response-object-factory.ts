@@ -12,6 +12,7 @@ import {
 } from '../interfaces/open-api-spec.interface.js';
 import { StandardSchemaConverter } from '../interfaces/swagger-document-options.interface.js';
 import { isBuiltInType } from '../utils/is-built-in-type.util.js';
+import { isOas31OrLater } from '../utils/is-oas31-or-later.util.js';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import { ResponseObjectMapper } from './response-object-mapper.js';
@@ -39,10 +40,13 @@ export class ResponseObjectFactory {
     this.swaggerTypesMapper,
     this.standardSchemaConverter
   );
-  private readonly responseObjectMapper = new ResponseObjectMapper();
+  private readonly responseObjectMapper = new ResponseObjectMapper(
+    this.openApiVersion
+  );
 
   constructor(
-    private readonly standardSchemaConverter?: StandardSchemaConverter
+    private readonly standardSchemaConverter?: StandardSchemaConverter,
+    private readonly openApiVersion: string = '3.0.0'
   ) {}
 
   create(
@@ -85,10 +89,12 @@ export class ResponseObjectFactory {
         ? { type: 'array', items: { type: swaggerType } }
         : { type: swaggerType };
       // Mirror the nullable handling in ResponseObjectMapper so the
-      // "nullable" flag does not leak into the response object root and
-      // is instead represented as "oneOf: [<schema>, { type: 'null' }]".
+      // "nullable" flag does not leak into the response object root and is
+      // instead spelled the way the declared document version requires.
       const schema: SchemaObject = response.nullable
-        ? { oneOf: [baseSchema, { type: 'null' }] }
+        ? isOas31OrLater(this.openApiVersion)
+          ? { oneOf: [baseSchema, { type: 'null' }] }
+          : { ...baseSchema, nullable: true }
         : baseSchema;
       const content = this.mimetypeContentWrapper.wrap(produces, {
         schema,

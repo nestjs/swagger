@@ -13,7 +13,7 @@ describe('ResponseObjectFactory', () => {
   let factory: ResponseObjectFactory;
 
   beforeEach(() => {
-    factory = new ResponseObjectFactory(testStandardSchemaConverter);
+    factory = new ResponseObjectFactory(testStandardSchemaConverter, '3.1.0');
   });
 
   const produces = ['application/json'];
@@ -301,6 +301,52 @@ describe('ResponseObjectFactory', () => {
       });
     });
   });
+
+  describe('OpenAPI 3.0 documents', () => {
+    let oas30Factory: ResponseObjectFactory;
+
+    beforeEach(() => {
+      oas30Factory = new ResponseObjectFactory(testStandardSchemaConverter);
+    });
+
+    it('should mark a nullable built-in scalar with the keyword', () => {
+      const result = oas30Factory.create(
+        { type: String, description: 'OK', nullable: true } as any,
+        produces,
+        {},
+        factories
+      ) as any;
+
+      expect(result).not.toHaveProperty('nullable');
+      expect(result.content['application/json']).toEqual({
+        schema: { type: 'string', nullable: true }
+      });
+    });
+
+    it('should mark a nullable built-in scalar array with the keyword', () => {
+      const result = oas30Factory.create(
+        {
+          type: Number,
+          isArray: true,
+          description: 'OK',
+          nullable: true
+        } as any,
+        produces,
+        {},
+        factories
+      ) as any;
+
+      expect(result).not.toHaveProperty('nullable');
+      expect(result.content['application/json']).toEqual({
+        schema: {
+          type: 'array',
+          items: { type: 'number' },
+          nullable: true
+        }
+      });
+    });
+  });
+
 });
 
 const testStandardSchemaConverter = (schema: unknown, { schemaType }: any) => {

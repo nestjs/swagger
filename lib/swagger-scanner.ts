@@ -36,7 +36,8 @@ export class SwaggerScanner {
 
   public scanApplication(
     app: INestApplication,
-    options: SwaggerDocumentOptions
+    options: SwaggerDocumentOptions,
+    openApiVersion: string = '3.0.0'
   ): Omit<OpenAPIObject, 'openapi' | 'info'> {
     const {
       deepScanRoutes,
@@ -62,7 +63,11 @@ export class SwaggerScanner {
     const container = untypedApp.container as NestContainer;
     const internalConfigRef = untypedApp.config as ApplicationConfig;
     const httpAdapterType = app.getHttpAdapter().getType();
-    this.initializeSwaggerExplorer(httpAdapterType, standardSchemaConverter);
+    this.initializeSwaggerExplorer(
+      httpAdapterType,
+      standardSchemaConverter,
+      openApiVersion
+    );
 
     const modules: Module[] = this.getModules(
       container.getModules(),
@@ -191,11 +196,13 @@ export class SwaggerScanner {
 
   private initializeSwaggerExplorer(
     httpAdapterType: string,
-    standardSchemaConverter?: SwaggerDocumentOptions['standardSchemaConverter']
+    standardSchemaConverter?: SwaggerDocumentOptions['standardSchemaConverter'],
+    openApiVersion?: string
   ) {
     this.explorer = new SwaggerExplorer(this.schemaObjectFactory, {
       httpAdapterType,
-      standardSchemaConverter
+      standardSchemaConverter,
+      openApiVersion
     });
   }
 }

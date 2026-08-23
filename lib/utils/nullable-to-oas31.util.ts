@@ -208,10 +208,7 @@ function appendNullEnumValue(schema: UnknownRecord): void {
   }
 }
 
-function walkRecord(
-  record: unknown,
-  visit: (value: any) => void
-): void {
+function walkRecord(record: unknown, visit: (value: any) => void): void {
   if (!isObject(record)) {
     return;
   }

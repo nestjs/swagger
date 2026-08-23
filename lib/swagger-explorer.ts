@@ -102,10 +102,12 @@ export class SwaggerExplorer {
     private readonly options: {
       httpAdapterType?: string;
       standardSchemaConverter?: StandardSchemaConverter;
+      openApiVersion?: string;
     } = {}
   ) {
     this.responseObjectFactory = new ResponseObjectFactory(
-      this.options.standardSchemaConverter
+      this.options.standardSchemaConverter,
+      this.options.openApiVersion
     );
   }
 

@@ -4,7 +4,7 @@ describe('ResponseObjectMapper', () => {
   let mapper: ResponseObjectMapper;
 
   beforeEach(() => {
-    mapper = new ResponseObjectMapper();
+    mapper = new ResponseObjectMapper('3.1.0');
   });
 
   const produces = ['application/json'];
@@ -60,6 +60,49 @@ describe('ResponseObjectMapper', () => {
 
     it('should not leak nullable into the response object', () => {
       const result = mapper.toArrayRefObject(
+        { description: 'OK', nullable: true },
+        schemaName,
+        produces
+      );
+      expect(result).not.toHaveProperty('nullable');
+    });
+  });
+
+  describe('OpenAPI 3.0 documents', () => {
+    let oas30Mapper: ResponseObjectMapper;
+
+    beforeEach(() => {
+      oas30Mapper = new ResponseObjectMapper();
+    });
+
+    it('should default to the 3.0 spelling', () => {
+      const result = oas30Mapper.toRefObject(
+        { description: 'OK', nullable: true },
+        schemaName,
+        produces
+      );
+      expect(result.content['application/json'].schema).toEqual({
+        nullable: true,
+        type: 'object',
+        allOf: [{ $ref }]
+      });
+    });
+
+    it('should mark a nullable array response with the keyword', () => {
+      const result = oas30Mapper.toArrayRefObject(
+        { description: 'OK', nullable: true },
+        schemaName,
+        produces
+      );
+      expect(result.content['application/json'].schema).toEqual({
+        type: 'array',
+        items: { $ref },
+        nullable: true
+      });
+    });
+
+    it('should not leak nullable into the response object', () => {
+      const result = oas30Mapper.toRefObject(
         { description: 'OK', nullable: true },
         schemaName,
         produces
