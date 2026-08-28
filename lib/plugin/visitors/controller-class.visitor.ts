@@ -39,7 +39,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     string,
     Record<string, ClassMetadata>
   > = {};
-  private readonly _typeImports: Record<string, string> = {};
+  private _typeImports: Record<string, string> = {};
 
   get typeImports() {
     return this._typeImports;
@@ -64,6 +64,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     );
     const typeChecker = program.getTypeChecker();
     if (!options.readonly) {
+      this._typeImports = {};
       sourceFile = this.updateImports(sourceFile, ctx.factory, program, options);
     }
 
@@ -118,7 +119,19 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         return ts.visitEachChild(node, visitNode, ctx);
       }
     };
-    return ts.visitNode(sourceFile, visitNode);
+    const updatedSourceFile = ts.visitNode(
+      sourceFile,
+      visitNode
+    ) as ts.SourceFile;
+
+    if (options.readonly) {
+      return updatedSourceFile;
+    }
+    return this.prependEsmTypeImports(
+      updatedSourceFile,
+      ctx.factory,
+      this._typeImports
+    );
   }
 
   addDecoratorToNode(

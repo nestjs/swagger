@@ -47,6 +47,39 @@ export class AbstractFileVisitor {
     });
   }
 
+  /**
+   * Hoists the modules referenced by the generated metadata into namespace
+   * imports, so that those references can be resolved synchronously in ESM
+   * output, where `require()` is not available.
+   */
+  protected prependEsmTypeImports(
+    sourceFile: ts.SourceFile,
+    factory: ts.NodeFactory,
+    typeImports: Record<string, string>
+  ): ts.SourceFile {
+    const importPaths = Object.keys(typeImports);
+    if (!importPaths.length) {
+      return sourceFile;
+    }
+    const importDeclarations = importPaths.map((importPath) =>
+      factory.createImportDeclaration(
+        undefined,
+        factory.createImportClause(
+          false,
+          undefined,
+          factory.createNamespaceImport(
+            factory.createIdentifier(typeImports[importPath])
+          )
+        ),
+        factory.createStringLiteral(importPath)
+      )
+    );
+    return factory.updateSourceFile(sourceFile, [
+      ...importDeclarations,
+      ...sourceFile.statements
+    ]);
+  }
+
   updateImports(
     sourceFile: ts.SourceFile,
     factory: ts.NodeFactory | undefined,

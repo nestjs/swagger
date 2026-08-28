@@ -25,10 +25,13 @@ export class ItemDto {
 export const parameterPropertyDtoTextTranspiled = (esmCompatible?: boolean) => {
   const fileName = 'parameter-property.dto';
   const fileImport = esmCompatible
-    ? `(await import("./${fileName}${getOutputExtension(fileName)}"))`
+    ? 'openapi_import_0'
     : `require("./${fileName}")`;
+  const typeImport = esmCompatible
+    ? `import * as openapi_import_0 from "./${fileName}${getOutputExtension(fileName)}";\n`
+    : '';
 
-  return `import * as openapi from "@nestjs/swagger";
+  return `${typeImport}import * as openapi from "@nestjs/swagger";
 export class ParameterPropertyDto {
     constructor(readonlyValue, privateValue, publicValue, regularParameter, protectedValue = '1234') {
         this.readonlyValue = readonlyValue;

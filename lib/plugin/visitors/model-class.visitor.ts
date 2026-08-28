@@ -40,7 +40,7 @@ import { AbstractFileVisitor } from './abstract.visitor.js';
 type ClassMetadata = Record<string, ts.ObjectLiteralExpression>;
 
 export class ModelClassVisitor extends AbstractFileVisitor {
-  private readonly _typeImports: Record<string, string> = {};
+  private _typeImports: Record<string, string> = {};
   private readonly _collectedMetadata: Record<string, ClassMetadata> = {};
 
   get typeImports() {
@@ -63,6 +63,9 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       program.getCompilerOptions()
     );
     const typeChecker = program.getTypeChecker();
+    if (!options.readonly) {
+      this._typeImports = {};
+    }
     sourceFile = this.updateImports(sourceFile, ctx.factory, program, options);
 
     const propertyNodeVisitorFactory =
@@ -144,7 +147,19 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         return ts.visitEachChild(node, visitClassNode, ctx);
       }
     };
-    return ts.visitNode(sourceFile, visitClassNode);
+    const updatedSourceFile = ts.visitNode(
+      sourceFile,
+      visitClassNode
+    ) as ts.SourceFile;
+
+    if (options.readonly) {
+      return updatedSourceFile;
+    }
+    return this.prependEsmTypeImports(
+      updatedSourceFile,
+      ctx.factory,
+      this._typeImports
+    );
   }
 
   visitPropertyNodeDeclaration(

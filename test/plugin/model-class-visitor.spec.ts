@@ -402,6 +402,40 @@ describe('API model properties', () => {
     expect(isEsmOutputFile(sourceFile, options)).toBe(true);
   });
 
+  it('should reference cross-file types through a namespace import in ESM output', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      target: ts.ScriptTarget.ES2022,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const dtoPath = resolve(__dirname, 'fixtures/esm-enum/create-user.dto.ts');
+    const enumPath = resolve(__dirname, 'fixtures/esm-enum/role.enum.ts');
+    const program = ts.createProgram({
+      rootNames: [dtoPath, enumPath],
+      options
+    });
+
+    let outputText: string;
+    program.emit(
+      program.getSourceFile(dtoPath),
+      (_fileName, text) => {
+        outputText = text;
+      },
+      undefined,
+      false,
+      { before: [before({ esmCompatible: true }, program)] }
+    );
+
+    expect(outputText).toContain(
+      'import * as openapi_import_0 from "./role.enum.js";'
+    );
+    expect(outputText).toContain('enum: openapi_import_0.Role');
+    expect(outputText).not.toContain('await');
+  });
+
   it('should emit the CommonJS openapi import when esmCompatible is explicitly disabled', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.NodeNext,

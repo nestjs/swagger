@@ -342,6 +342,7 @@ export function replaceImportPath(
         convertToAsyncImport(typeReference);
       return {
         typeReference: `(${typeImportStatement}).${typeName}`,
+        typeName,
         importPath: relativePath
       };
     }

@@ -1,6 +1,7 @@
 import { posix } from 'path';
 import * as ts from 'typescript';
 import { PluginOptions } from '../merge-options.js';
+import { OPENAPI_NAMESPACE } from '../plugin-constants.js';
 import { pluginDebugLogger } from '../plugin-debug-logger.js';
 import {
   convertPath,
@@ -70,6 +71,22 @@ export function typeReferenceToIdentifier(
       ref = wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
     }
     identifier = factory.createIdentifier(ref);
+  } else if (
+    !options.readonly &&
+    options.esmCompatible &&
+    importPath &&
+    typeName
+  ) {
+    // ESM has no synchronous `require`, and the generated metadata is read
+    // synchronously, so the referenced module is hoisted to a namespace import
+    // instead of being awaited inline.
+    const namespace = registerEsmTypeImport(importPath, typeImports);
+
+    let ref = `${namespace}.${typeName}`;
+    if (typeReferenceDescriptor.isArray) {
+      ref = wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
+    }
+    identifier = factory.createIdentifier(ref);
   } else {
     let ref = typeReference;
     if (typeReferenceDescriptor.isArray) {
@@ -78,6 +95,17 @@ export function typeReferenceToIdentifier(
     identifier = factory.createIdentifier(ref);
   }
   return identifier;
+}
+
+function registerEsmTypeImport(
+  importPath: string,
+  typeImports: Record<string, string>
+) {
+  if (!typeImports[importPath]) {
+    const index = Object.keys(typeImports).length;
+    typeImports[importPath] = `${OPENAPI_NAMESPACE}_import_${index}`;
+  }
+  return typeImports[importPath];
 }
 
 /**
