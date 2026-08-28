@@ -233,9 +233,25 @@ describe('plugin-utils', () => {
         esmCompatible: true
       });
 
+      // Inline ESM mode hands back the parts needed to hoist a static import.
+      expect(result.importPath).toBe('typescript');
+      expect(result.typeName).toBe('Program');
+      expect(result.typeReference).toBe('(await import("typescript")).Program');
+      expect(result.typeReference).not.toContain('..');
+    });
+
+    it('should keep bare package specifiers untouched in readonly ESM mode', () => {
+      const typeReference = 'import("typescript").Program';
+      const fileName = '/project/src/dto/test.dto.ts';
+
+      const result = replaceImportPath(typeReference, fileName, {
+        esmCompatible: true,
+        readonly: true,
+        pathToSource: '/project/src'
+      });
+
       expect(result.importPath).toBeNull();
       expect(result.typeReference).toBe('import("typescript").Program');
-      expect(result.typeReference).not.toContain('..');
     });
 
     it('should resolve bare package specifiers in the emitted ESM build', () => {
@@ -267,8 +283,9 @@ describe('plugin-utils', () => {
       );
 
       expect(JSON.parse(output)).toEqual({
-        typeReference: 'import("typescript").Program',
-        importPath: null
+        typeReference: '(await import("typescript")).Program',
+        typeName: 'Program',
+        importPath: 'typescript'
       });
     });
   });

@@ -63,6 +63,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       program.getCompilerOptions()
     );
     const typeChecker = program.getTypeChecker();
+    this._hoistedTypeImports.clear();
     sourceFile = this.updateImports(sourceFile, ctx.factory, program, options);
 
     const propertyNodeVisitorFactory =
@@ -144,7 +145,14 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         return ts.visitEachChild(node, visitClassNode, ctx);
       }
     };
-    return ts.visitNode(sourceFile, visitClassNode);
+    const visitedSourceFile = ts.visitNode(sourceFile, visitClassNode);
+    if (options.readonly) {
+      return visitedSourceFile;
+    }
+    return this.insertHoistedTypeImports(
+      visitedSourceFile as ts.SourceFile,
+      ctx.factory
+    );
   }
 
   visitPropertyNodeDeclaration(
@@ -602,7 +610,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       options,
       factory,
       type,
-      this._typeImports
+      this._typeImports,
+      this._hoistedTypeImports
     );
 
     const initializer = factory.createArrowFunction(
@@ -816,7 +825,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       options,
       factory,
       type,
-      this._typeImports
+      this._typeImports,
+      this._hoistedTypeImports
     );
 
     const enumProperty = factory.createPropertyAssignment(key, enumIdentifier);

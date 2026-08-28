@@ -446,6 +446,101 @@ describe('API model properties', () => {
     );
   });
 
+  it('should hoist static imports instead of emitting `await import` in inline ESM output', () => {
+    // Regression test for https://github.com/nestjs/swagger/issues/4079:
+    // a cross-file enum/class reference must not produce `await import(...)`
+    // inside the synchronous `_OPENAPI_METADATA_FACTORY()` method.
+    const tsconfigPath = resolve(
+      __dirname,
+      'fixtures',
+      'project',
+      'tsconfig.json'
+    );
+    const parsedCmd = ts.getParsedCommandLineOfConfigFile(
+      tsconfigPath,
+      undefined,
+      ts.sys as unknown as ts.ParseConfigFileHost
+    );
+    const program = ts.createProgram({
+      options: {
+        ...parsedCmd!.options,
+        module: ts.ModuleKind.ES2022,
+        moduleResolution: ts.ModuleResolutionKind.Node10,
+        declaration: false,
+        sourceMap: false,
+        incremental: false,
+        noEmit: false
+      },
+      rootNames: parsedCmd!.fileNames
+    });
+    const dtoPath = resolve(
+      __dirname,
+      'fixtures',
+      'project',
+      'cats',
+      'dto',
+      'create-cat.dto.ts'
+    );
+    const sourceFile = program.getSourceFile(dtoPath);
+    expect(sourceFile).toBeDefined();
+
+    let output = '';
+    program.emit(
+      sourceFile,
+      (fileName, text) => {
+        if (fileName.endsWith('create-cat.dto.js')) {
+          output = text;
+        }
+      },
+      undefined,
+      false,
+      {
+        before: [
+          before(
+            {
+              esmCompatible: true,
+              classValidatorShim: true,
+              introspectComments: true
+            },
+            program
+          )
+        ]
+      }
+    );
+
+    // No lazy `require`/`await import` may remain in the ESM output.
+    expect(output).not.toContain('await import');
+    expect(output).not.toContain('require(');
+
+    // Cross-file references go through hoisted static namespace imports.
+    const enumImport = output.match(
+      /import \* as (openapi_import_\d+) from "\.\/pagination-query\.dto\.js";/
+    );
+    expect(enumImport).toBeTruthy();
+    expect(output).toContain(`enum: ${enumImport![1]}.LettersEnum`);
+
+    const tagImport = output.match(
+      /import \* as (openapi_import_\d+) from "\.\/tag\.dto\.js";/
+    );
+    expect(tagImport).toBeTruthy();
+    expect(output).toContain(`type: () => [${tagImport![1]}.TagDto]`);
+
+    // Same-file types are referenced directly.
+    expect(output).toContain('type: () => SameFileClass');
+    expect(output).toContain('enum: CategoryState');
+
+    // The emitted file must parse as valid ESM (the original bug was a
+    // SyntaxError thrown when loading the compiled file).
+    const emittedFile = ts.createSourceFile(
+      'create-cat.dto.js',
+      output,
+      ts.ScriptTarget.ES2022,
+      true,
+      ts.ScriptKind.JS
+    );
+    expect((emittedFile as any).parseDiagnostics).toEqual([]);
+  });
+
   it('should honor an explicit esmCompatible opt-out through the resolved options', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.NodeNext,

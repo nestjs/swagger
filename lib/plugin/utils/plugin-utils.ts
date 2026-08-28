@@ -289,12 +289,28 @@ export function replaceImportPath(
 
     moduleRequire.resolve(decodedImportPath);
     if (!options.esmCompatible) {
-      typeReference = typeReference.replace('import', 'require');
+      return {
+        typeReference: typeReference.replace('import', 'require'),
+        importPath: null
+      };
     }
 
+    if (options.readonly) {
+      return {
+        typeReference,
+        importPath: null
+      };
+    }
+
+    // Inline ESM output has no synchronous `require()`, so hand the caller the
+    // pieces (typeName + importPath) needed to hoist a static namespace import
+    // instead of leaving a Promise-returning `import("...")` expression behind.
+    const { typeName, typeImportStatement } =
+      convertToAsyncImport(typeReference);
     return {
-      typeReference,
-      importPath: null
+      typeReference: `(${typeImportStatement}).${typeName}`,
+      typeName,
+      importPath: decodedImportPath
     };
   } catch {
     const from = options?.readonly
@@ -342,6 +358,7 @@ export function replaceImportPath(
         convertToAsyncImport(typeReference);
       return {
         typeReference: `(${typeImportStatement}).${typeName}`,
+        typeName,
         importPath: relativePath
       };
     }

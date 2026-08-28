@@ -16,6 +16,49 @@ export class AbstractFileVisitor {
    */
   protected readonly _fileOutputExtensions: Record<string, string> = {};
 
+  /**
+   * Static namespace imports (import path -> namespace identifier) to hoist
+   * into the currently visited file. Inline ESM output cannot use the lazy
+   * `require()` / `await import()` forms inside the synchronous metadata
+   * factory, so cross-file type references go through these imports instead.
+   * Populated per file by `typeReferenceToIdentifier` and flushed by
+   * `insertHoistedTypeImports`.
+   */
+  protected readonly _hoistedTypeImports = new Map<string, string>();
+
+  /**
+   * Prepends the import declarations collected in `_hoistedTypeImports` to the
+   * visited file and clears the collection for the next file.
+   */
+  protected insertHoistedTypeImports(
+    sourceFile: ts.SourceFile,
+    factory: ts.NodeFactory
+  ): ts.SourceFile {
+    if (this._hoistedTypeImports.size === 0) {
+      return sourceFile;
+    }
+    const importDeclarations = Array.from(this._hoistedTypeImports).map(
+      ([importPath, namespaceName]) =>
+        factory.createImportDeclaration(
+          undefined,
+          factory.createImportClause(
+            false,
+            undefined,
+            factory.createNamespaceImport(
+              factory.createIdentifier(namespaceName)
+            )
+          ),
+          factory.createStringLiteral(importPath),
+          undefined
+        )
+    );
+    this._hoistedTypeImports.clear();
+    return factory.updateSourceFile(sourceFile, [
+      ...importDeclarations,
+      ...sourceFile.statements
+    ]);
+  }
+
   protected registerOutputExtension(
     filePath: string,
     sourceFile: ts.SourceFile,
