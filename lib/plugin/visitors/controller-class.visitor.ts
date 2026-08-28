@@ -119,18 +119,11 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         return ts.visitEachChild(node, visitNode, ctx);
       }
     };
-    const updatedSourceFile = ts.visitNode(
-      sourceFile,
-      visitNode
-    ) as ts.SourceFile;
-
-    if (options.readonly) {
-      return updatedSourceFile;
-    }
     return this.prependEsmTypeImports(
-      updatedSourceFile,
+      ts.visitNode(sourceFile, visitNode) as ts.SourceFile,
       ctx.factory,
-      this._typeImports
+      this._typeImports,
+      options
     );
   }
 

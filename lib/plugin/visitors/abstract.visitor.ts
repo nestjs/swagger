@@ -55,8 +55,12 @@ export class AbstractFileVisitor {
   protected prependEsmTypeImports(
     sourceFile: ts.SourceFile,
     factory: ts.NodeFactory,
-    typeImports: Record<string, string>
+    typeImports: Record<string, string>,
+    options: PluginOptions
   ): ts.SourceFile {
+    if (options.readonly) {
+      return sourceFile;
+    }
     const importPaths = Object.keys(typeImports);
     if (!importPaths.length) {
       return sourceFile;

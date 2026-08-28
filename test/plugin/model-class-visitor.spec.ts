@@ -418,7 +418,7 @@ describe('API model properties', () => {
       options
     });
 
-    let outputText: string;
+    let outputText = '';
     program.emit(
       program.getSourceFile(dtoPath),
       (_fileName, text) => {
@@ -434,6 +434,52 @@ describe('API model properties', () => {
     );
     expect(outputText).toContain('enum: openapi_import_0.Role');
     expect(outputText).not.toContain('await');
+  });
+
+  it('should restart namespace import numbering for every emitted file', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      target: ts.ScriptTarget.ES2022,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const createUserDtoPath = resolve(
+      __dirname,
+      'fixtures/esm-enum/create-user.dto.ts'
+    );
+    const updateUserDtoPath = resolve(
+      __dirname,
+      'fixtures/esm-enum/update-user.dto.ts'
+    );
+    const enumPath = resolve(__dirname, 'fixtures/esm-enum/role.enum.ts');
+    const program = ts.createProgram({
+      rootNames: [createUserDtoPath, updateUserDtoPath, enumPath],
+      options
+    });
+    const transformers = {
+      before: [before({ esmCompatible: true }, program)]
+    };
+
+    const outputTexts: string[] = [];
+    for (const dtoPath of [createUserDtoPath, updateUserDtoPath]) {
+      program.emit(
+        program.getSourceFile(dtoPath),
+        (_fileName, text) => {
+          outputTexts.push(text);
+        },
+        undefined,
+        false,
+        transformers
+      );
+    }
+
+    for (const outputText of outputTexts) {
+      expect(outputText).toContain(
+        'import * as openapi_import_0 from "./role.enum.js";'
+      );
+    }
   });
 
   it('should emit the CommonJS openapi import when esmCompatible is explicitly disabled', () => {

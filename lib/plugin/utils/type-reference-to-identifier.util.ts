@@ -77,9 +77,8 @@ export function typeReferenceToIdentifier(
     importPath &&
     typeName
   ) {
-    // ESM has no synchronous `require`, and the generated metadata is read
-    // synchronously, so the referenced module is hoisted to a namespace import
-    // instead of being awaited inline.
+    // The metadata is read synchronously, so the module is hoisted to a
+    // namespace import rather than awaited inline.
     const namespace = registerEsmTypeImport(importPath, typeImports);
 
     let ref = `${namespace}.${typeName}`;
@@ -100,7 +99,7 @@ export function typeReferenceToIdentifier(
 function registerEsmTypeImport(
   importPath: string,
   typeImports: Record<string, string>
-) {
+): string {
   if (!typeImports[importPath]) {
     const index = Object.keys(typeImports).length;
     typeImports[importPath] = `${OPENAPI_NAMESPACE}_import_${index}`;
