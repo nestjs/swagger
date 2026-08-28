@@ -1,5 +1,3 @@
-import { getOutputExtension } from '../../../lib/plugin/utils/plugin-utils';
-
 export const parameterPropertyDtoText = `
 export class ParameterPropertyDto {
   constructor(
@@ -24,9 +22,14 @@ export class ItemDto {
 
 export const parameterPropertyDtoTextTranspiled = (esmCompatible?: boolean) => {
   const fileName = 'parameter-property.dto';
-  const fileImport = esmCompatible
-    ? `(await import("./${fileName}${getOutputExtension(fileName)}"))`
-    : `require("./${fileName}")`;
+  // In ESM-compatible output the synchronous metadata factory cannot use
+  // `await import(...)`, so same-file types are referenced directly.
+  const itemDtoRef = esmCompatible
+    ? 'ItemDto'
+    : `require("./${fileName}").ItemDto`;
+  const lettersEnumRef = esmCompatible
+    ? 'LettersEnum'
+    : `require("./${fileName}").LettersEnum`;
 
   return `import * as openapi from "@nestjs/swagger";
 export class ParameterPropertyDto {
@@ -37,7 +40,7 @@ export class ParameterPropertyDto {
         this.protectedValue = protectedValue;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { readonlyValue: { required: false, type: () => String }, privateValue: { required: true, type: () => String, nullable: true }, publicValue: { required: true, type: () => [${fileImport}.ItemDto] }, protectedValue: { required: true, type: () => String, default: "1234" } };
+        return { readonlyValue: { required: false, type: () => String }, privateValue: { required: true, type: () => String, nullable: true }, publicValue: { required: true, type: () => [${itemDtoRef}] }, protectedValue: { required: true, type: () => String, default: "1234" } };
     }
 }
 export var LettersEnum;
@@ -51,7 +54,7 @@ export class ItemDto {
         this.enumValue = enumValue;
     }
     static _OPENAPI_METADATA_FACTORY() {
-        return { enumValue: { required: true, enum: ${fileImport}.LettersEnum } };
+        return { enumValue: { required: true, enum: ${lettersEnumRef} } };
     }
 }
 `;

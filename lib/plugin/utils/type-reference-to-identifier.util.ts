@@ -4,6 +4,7 @@ import { PluginOptions } from '../merge-options.js';
 import { pluginDebugLogger } from '../plugin-debug-logger.js';
 import {
   convertPath,
+  extractTypeArgumentIfArray,
   getOutputExtension,
   replaceImportPath
 } from './plugin-utils.js';
@@ -18,7 +19,8 @@ export function typeReferenceToIdentifier(
   options: PluginOptions,
   factory: ts.NodeFactory,
   type: ts.Type,
-  typeImports: Record<string, string>
+  typeImports: Record<string, string>,
+  hoistedTypeImports?: Map<string, string>
 ) {
   if (options.readonly) {
     assertReferenceableType(
@@ -70,6 +72,35 @@ export function typeReferenceToIdentifier(
       ref = wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
     }
     identifier = factory.createIdentifier(ref);
+  } else if (
+    !options.readonly &&
+    options.esmCompatible &&
+    typeName &&
+    importPath &&
+    hoistedTypeImports
+  ) {
+    // Inline ESM output: a synchronous factory cannot contain `await import()`,
+    // so reference the type through a hoisted static namespace import instead
+    // (or directly, when the type is declared in the very same file).
+    let elementType = type;
+    for (
+      let depth = typeReferenceDescriptor.arrayDepth ?? 0;
+      depth > 0;
+      depth--
+    ) {
+      const arrayTuple = extractTypeArgumentIfArray(elementType);
+      if (!arrayTuple) {
+        break;
+      }
+      elementType = arrayTuple.type;
+    }
+    let ref = isSameFileUserType(elementType, hostFilename)
+      ? typeName
+      : `${hoistTypeImport(importPath, hoistedTypeImports)}.${typeName}`;
+    if (typeReferenceDescriptor.isArray) {
+      ref = wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
+    }
+    identifier = factory.createIdentifier(ref);
   } else {
     let ref = typeReference;
     if (typeReferenceDescriptor.isArray) {
@@ -78,6 +109,22 @@ export function typeReferenceToIdentifier(
     identifier = factory.createIdentifier(ref);
   }
   return identifier;
+}
+
+/**
+ * Registers `importPath` for hoisting as a static `import * as <ns>` declaration
+ * in the visited file and returns the (stable, per-file) namespace identifier.
+ */
+function hoistTypeImport(
+  importPath: string,
+  hoistedTypeImports: Map<string, string>
+): string {
+  let namespaceName = hoistedTypeImports.get(importPath);
+  if (!namespaceName) {
+    namespaceName = `openapi_import_${hoistedTypeImports.size + 1}`;
+    hoistedTypeImports.set(importPath, namespaceName);
+  }
+  return namespaceName;
 }
 
 /**

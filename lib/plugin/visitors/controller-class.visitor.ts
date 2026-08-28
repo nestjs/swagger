@@ -63,6 +63,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       program.getCompilerOptions()
     );
     const typeChecker = program.getTypeChecker();
+    this._hoistedTypeImports.clear();
     if (!options.readonly) {
       sourceFile = this.updateImports(sourceFile, ctx.factory, program, options);
     }
@@ -118,7 +119,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         return ts.visitEachChild(node, visitNode, ctx);
       }
     };
-    return ts.visitNode(sourceFile, visitNode);
+    const visitedSourceFile = ts.visitNode(sourceFile, visitNode);
+    if (options.readonly) {
+      return visitedSourceFile;
+    }
+    return this.insertHoistedTypeImports(
+      visitedSourceFile as ts.SourceFile,
+      ctx.factory
+    );
   }
 
   addDecoratorToNode(
@@ -787,7 +795,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       options,
       factory,
       type,
-      this._typeImports
+      this._typeImports,
+      this._hoistedTypeImports
     );
     return factory.createPropertyAssignment('type', identifier);
   }
