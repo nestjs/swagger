@@ -64,6 +64,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     );
     const typeChecker = program.getTypeChecker();
     this._hoistedTypeImports.clear();
+    this.refreshSourceImportSpecifiers(sourceFile, typeChecker);
     sourceFile = this.updateImports(sourceFile, ctx.factory, program, options);
 
     const propertyNodeVisitorFactory =
@@ -611,7 +612,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       factory,
       type,
       this._typeImports,
-      this._hoistedTypeImports
+      this._hoistedTypeImports,
+      this._sourceImportSpecifiers
     );
 
     const initializer = factory.createArrowFunction(
@@ -826,7 +828,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       factory,
       type,
       this._typeImports,
-      this._hoistedTypeImports
+      this._hoistedTypeImports,
+      this._sourceImportSpecifiers
     );
 
     const enumProperty = factory.createPropertyAssignment(key, enumIdentifier);
