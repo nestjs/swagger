@@ -53,7 +53,13 @@ export const exploreApiParametersMetadata = (
       parametersMetadata || {}
     );
 
-  let properties = reflectedParametersAsProperties;
+  let properties = reflectedParametersAsProperties.flatMap((param) => {
+    const expanded = schemaObjectFactory.expandStandardSchemaParam(
+      param,
+      schemas
+    );
+    return expanded ?? [param];
+  });
   if (!noExplicitAndGlobalMetadata) {
     const hasSameParameterIdentity = (
       left: { in?: string; name?: string | number | object },
