@@ -1083,6 +1083,23 @@ export class SchemaObjectFactory {
     return undefined;
   }
 
+  expandStandardSchemaParam(
+    param: ParamWithTypeMetadata,
+    schemas: Record<string, SchemaObject>
+  ): ParamWithTypeMetadata[] | undefined {
+    if (!param.standardSchema) {
+      return undefined;
+    }
+    const schema = this.getSchemaOverride(param, schemas);
+    if (!schema) {
+      return undefined;
+    }
+    const expanded = this.createSchemaOverrideParam(param, schema);
+    return Array.isArray(expanded)
+      ? (expanded as ParamWithTypeMetadata[])
+      : undefined;
+  }
+
   private getSchemaOverride(
     param: ParamWithTypeMetadata,
     schemas: Record<string, SchemaObject>
