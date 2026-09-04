@@ -1636,7 +1636,7 @@
           },
           {
             "name": "filter",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
               "type": "integer",
@@ -1644,7 +1644,8 @@
               "maximum": 9007199254740991,
               "description": "Query override from Zod",
               "example": 3
-            }
+            },
+            "description": "Explicit query decorator description"
           },
           {
             "name": "active",
@@ -1654,15 +1655,6 @@
               "type": "boolean",
               "description": "Boolean flag from Zod",
               "example": true
-            }
-          },
-          {
-            "name": "filter",
-            "required": false,
-            "in": "query",
-            "description": "Explicit query decorator description",
-            "schema": {
-              "type": "string"
             }
           },
           {
