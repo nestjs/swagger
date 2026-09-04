@@ -64,6 +64,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     );
     const typeChecker = program.getTypeChecker();
     this._hoistedTypeImports.clear();
+    this.refreshSourceImportSpecifiers(sourceFile, typeChecker);
     if (!options.readonly) {
       sourceFile = this.updateImports(sourceFile, ctx.factory, program, options);
     }
@@ -796,7 +797,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       factory,
       type,
       this._typeImports,
-      this._hoistedTypeImports
+      this._hoistedTypeImports,
+      this._sourceImportSpecifiers
     );
     return factory.createPropertyAssignment('type', identifier);
   }

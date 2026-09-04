@@ -20,7 +20,8 @@ export function typeReferenceToIdentifier(
   factory: ts.NodeFactory,
   type: ts.Type,
   typeImports: Record<string, string>,
-  hoistedTypeImports?: Map<string, string>
+  hoistedTypeImports?: Map<string, string>,
+  sourceImportSpecifiers?: Map<ts.Symbol, string>
 ) {
   if (options.readonly) {
     assertReferenceableType(
@@ -34,7 +35,12 @@ export function typeReferenceToIdentifier(
   const { typeReference, importPath, typeName } = replaceImportPath(
     typeReferenceDescriptor.typeName,
     hostFilename,
-    options
+    options,
+    resolveSourceSpecifier(
+      type,
+      typeReferenceDescriptor.arrayDepth,
+      sourceImportSpecifiers
+    )
   );
 
   let identifier: ts.Identifier;
@@ -109,6 +115,30 @@ export function typeReferenceToIdentifier(
     identifier = factory.createIdentifier(ref);
   }
   return identifier;
+}
+
+/**
+ * Returns the specifier the visited file imports `type` through, if any. Array
+ * types are unwrapped first, so `Status[]` is matched on `Status`.
+ */
+function resolveSourceSpecifier(
+  type: ts.Type,
+  arrayDepth: number | undefined,
+  sourceImportSpecifiers: Map<ts.Symbol, string> | undefined
+): string | undefined {
+  if (!sourceImportSpecifiers?.size || !type) {
+    return undefined;
+  }
+  let elementType = type;
+  for (let depth = arrayDepth ?? 0; depth > 0; depth--) {
+    const arrayTuple = extractTypeArgumentIfArray(elementType);
+    if (!arrayTuple) {
+      break;
+    }
+    elementType = arrayTuple.type;
+  }
+  const symbol = elementType.aliasSymbol ?? elementType.symbol;
+  return symbol ? sourceImportSpecifiers.get(symbol) : undefined;
 }
 
 /**

@@ -3,6 +3,7 @@ import { PluginOptions } from '../merge-options.js';
 import { OPENAPI_NAMESPACE, OPENAPI_PACKAGE_NAME } from '../plugin-constants.js';
 import { isEsmOutputFile } from '../utils/module-format.util.js';
 import {
+  collectSourceImportSpecifiers,
   getOutputExtension,
   normalizePackagePath
 } from '../utils/plugin-utils.js';
@@ -25,6 +26,28 @@ export class AbstractFileVisitor {
    * `insertHoistedTypeImports`.
    */
   protected readonly _hoistedTypeImports = new Map<string, string>();
+
+  /**
+   * Package specifiers (resolved symbol -> specifier) the currently visited
+   * file imports its types through. Refreshed per file by
+   * `refreshSourceImportSpecifiers` and read by `typeReferenceToIdentifier`.
+   */
+  protected _sourceImportSpecifiers = new Map<ts.Symbol, string>();
+
+  /**
+   * Reads the visited file's own import declarations, so that a type coming
+   * from another package is emitted through the specifier the file already
+   * uses instead of the path of the file that declares it.
+   */
+  protected refreshSourceImportSpecifiers(
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker
+  ) {
+    this._sourceImportSpecifiers = collectSourceImportSpecifiers(
+      sourceFile,
+      typeChecker
+    );
+  }
 
   /**
    * Prepends the import declarations collected in `_hoistedTypeImports` to the

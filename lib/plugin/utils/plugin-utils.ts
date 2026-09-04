@@ -257,7 +257,8 @@ export function getOutputExtension(fileName: string): string {
 export function replaceImportPath(
   typeReference: string,
   fileName: string,
-  options: PluginOptions
+  options: PluginOptions,
+  sourceSpecifier?: string
 ) {
   if (!typeReference.includes('import')) {
     return { typeReference, importPath: null };
@@ -335,6 +336,17 @@ export function replaceImportPath(
     const normalizedPath = normalizePackagePath(relativePath);
     if (normalizedPath !== relativePath) {
       relativePath = normalizedPath;
+    } else if (sourceSpecifier) {
+      // The path leads outside the project without passing through
+      // node_modules, so `normalizePackagePath` cannot turn it back into a
+      // package specifier: this is a workspace package, which TypeScript
+      // resolves to the real file that declares the type. The relative path
+      // that would be emitted here reaches into that package's internals and
+      // holds only while the output stays at its current offset on disk, so a
+      // deployed application no longer resolves it. The specifier the visited
+      // file already imports the type through does resolve, at compile time
+      // and at run time alike.
+      relativePath = sourceSpecifier;
     } else if (options.esmCompatible) {
       // Add appropriate extension for non-node_modules imports
       const extension = getOutputExtension(fileName);
@@ -606,6 +618,61 @@ export function safeDecodeURIComponent(path: string) {
  *   ../node_modules/@amk/utils/src/dto/order.dto  →  @amk/utils/src/dto/order.dto
  *   ../../../packages/product-warehouse/dist/index  (no node_modules) → unchanged
  */
+/**
+ * Collects the package specifiers a file imports its types through, keyed by
+ * the symbol each import resolves to.
+ *
+ * Only bare specifiers are collected. A relative specifier is already rebased
+ * onto the output directory by `replaceImportPath`, so it needs no help here;
+ * a package specifier is the one piece of information that cannot be recovered
+ * from the resolved file path, because TypeScript resolves a package to the
+ * real file that declares the type and drops the entry point it went through.
+ */
+export function collectSourceImportSpecifiers(
+  sourceFile: ts.SourceFile,
+  typeChecker: ts.TypeChecker
+): Map<ts.Symbol, string> {
+  const specifiers = new Map<ts.Symbol, string>();
+  for (const statement of sourceFile.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      !statement.importClause
+    ) {
+      continue;
+    }
+    const specifier = statement.moduleSpecifier.text;
+    if (specifier.startsWith('.') || isAbsolute(specifier)) {
+      continue;
+    }
+
+    const { name, namedBindings } = statement.importClause;
+    const importedNames: ts.Identifier[] = name ? [name] : [];
+    if (namedBindings && ts.isNamedImports(namedBindings)) {
+      // A namespace import (`import * as ns`) resolves to the module itself
+      // rather than to any single type, so it is left out on purpose.
+      for (const element of namedBindings.elements) {
+        importedNames.push(element.name);
+      }
+    }
+
+    for (const importedName of importedNames) {
+      const localSymbol = typeChecker.getSymbolAtLocation(importedName);
+      if (!localSymbol) {
+        continue;
+      }
+      const symbol =
+        localSymbol.flags & ts.SymbolFlags.Alias
+          ? typeChecker.getAliasedSymbol(localSymbol)
+          : localSymbol;
+      if (!specifiers.has(symbol)) {
+        specifiers.set(symbol, specifier);
+      }
+    }
+  }
+  return specifiers;
+}
+
 export function normalizePackagePath(importPath: string): string {
   const nodeModulesText = 'node_modules';
   const nodeModulePos = importPath.indexOf(nodeModulesText);
