@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Version,
@@ -2602,6 +2603,139 @@ describe('SwaggerExplorer', () => {
           required: true,
           schema: {
             type: 'number'
+          }
+        }
+      ]);
+    });
+  });
+
+  describe('when ParseUUIDPipe is used', () => {
+    class Foo {}
+
+    class CustomUUIDPipe extends ParseUUIDPipe {}
+
+    @Controller('')
+    class FooController {
+      @Get('foos/:objectId')
+      find(@Param('objectId', ParseUUIDPipe) objectId: string): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+
+      @Get('bars/:objectId')
+      findBar(
+        @Param('objectId', new ParseUUIDPipe({ version: '4' }))
+        objectId: string
+      ): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+
+      @Get('bazs')
+      findBaz(
+        @Query('objectId', ParseUUIDPipe) objectId: string,
+        @Query('name') name: string
+      ): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+
+      @Get('quxs/:objectId')
+      @ApiParam({ name: 'objectId', format: 'custom-format' })
+      findQux(
+        @Param('objectId', ParseUUIDPipe) objectId: string
+      ): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+
+      @Get('corges/:objectId')
+      findCorge(
+        @Param('objectId', CustomUUIDPipe) objectId: string
+      ): Promise<Foo[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    const explore = () =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+    it('should infer the uuid format from the pipe class', () => {
+      expect(explore()[0].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string',
+            format: 'uuid'
+          }
+        }
+      ]);
+    });
+
+    it('should infer the uuid format from a pipe instance', () => {
+      expect(explore()[1].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string',
+            format: 'uuid'
+          }
+        }
+      ]);
+    });
+
+    it('should infer the uuid format for query params and leave other params untouched', () => {
+      expect(explore()[2].root.parameters).toEqual([
+        {
+          in: 'query',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string',
+            format: 'uuid'
+          }
+        },
+        {
+          in: 'query',
+          name: 'name',
+          required: true,
+          schema: {
+            type: 'string'
+          }
+        }
+      ]);
+    });
+
+    it('should let an explicit @ApiParam format win over the inferred one', () => {
+      expect(explore()[3].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string',
+            format: 'custom-format'
+          }
+        }
+      ]);
+    });
+
+    it('should infer the uuid format from a pipe that extends ParseUUIDPipe', () => {
+      expect(explore()[4].root.parameters).toEqual([
+        {
+          in: 'path',
+          name: 'objectId',
+          required: true,
+          schema: {
+            type: 'string',
+            format: 'uuid'
           }
         }
       ]);
