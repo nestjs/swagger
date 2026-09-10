@@ -84,7 +84,7 @@
     "supertest": "7.2.2",
     "typescript": "6.0.3",
     "vite": "^8.0.8",
-    "valibot": "1.4.2",
+    "valibot": "1.5.0",
     "vitest": "5.0.0",
     "zod": "4.5.4",
     "zod-openapi": "6.0.2"
