@@ -14,6 +14,7 @@ import { VersionValue } from '@nestjs/common/internal';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { upperFirst } from 'es-toolkit/compat';
+import { z } from 'zod';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -3242,6 +3243,98 @@ describe('SwaggerExplorer', () => {
 
       expect(routes[0].root.isWebhook).toBe(true);
       expect(routes[0].root.webhookName).toBe('stripeEvent');
+    });
+  });
+
+  describe('when combining standard schema with @ApiQuery', () => {
+    @Controller('items')
+    class ItemsController {
+      @ApiQuery({ name: 'limit', description: 'Max results', required: false })
+      @Get()
+      findAll(
+        @Query({
+          schema: z.object({
+            limit: z.number().int().min(1).max(100).optional()
+          })
+        })
+        query: any
+      ) {
+        return query;
+      }
+    }
+
+    it('should merge @ApiQuery metadata with standard schema query parameter without duplicates', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new ItemsController(),
+          metatype: ItemsController
+        } as InstanceWrapper<ItemsController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes[0].root.parameters).toHaveLength(1);
+      expect(routes[0].root.parameters[0]).toEqual(
+        expect.objectContaining({
+          name: 'limit',
+          in: 'query',
+          required: false,
+          description: 'Max results',
+          schema: expect.objectContaining({
+            type: 'integer',
+            minimum: 1,
+            maximum: 100
+          })
+        })
+      );
+    });
+
+    it('should keep reflected standard schema as source of truth when @ApiQuery defines conflicting type/enum', () => {
+      @Controller('conflict')
+      class ConflictController {
+        @ApiQuery({
+          name: 'filter',
+          type: String,
+          enum: ['a', 'b'],
+          description: 'Explicit query decorator description'
+        })
+        @Get()
+        find(
+          @Query({
+            schema: z.object({
+              filter: z.number().int().min(1)
+            })
+          })
+          query: any
+        ) {
+          return query;
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new ConflictController(),
+          metatype: ConflictController
+        } as InstanceWrapper<ConflictController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes[0].root.parameters).toHaveLength(1);
+      expect(routes[0].root.parameters[0]).toEqual(
+        expect.objectContaining({
+          name: 'filter',
+          in: 'query',
+          description: 'Explicit query decorator description',
+          schema: expect.objectContaining({
+            type: 'integer',
+            minimum: 1
+          })
+        })
+      );
+      expect((routes[0].root.parameters[0] as any).schema.enum).toBeUndefined();
     });
   });
 });

@@ -1636,8 +1636,9 @@
           },
           {
             "name": "filter",
-            "required": true,
+            "required": false,
             "in": "query",
+            "description": "Explicit query decorator description",
             "schema": {
               "type": "integer",
               "minimum": 1,
@@ -1654,15 +1655,6 @@
               "type": "boolean",
               "description": "Boolean flag from Zod",
               "example": true
-            }
-          },
-          {
-            "name": "filter",
-            "required": false,
-            "in": "query",
-            "description": "Explicit query decorator description",
-            "schema": {
-              "type": "string"
             }
           },
           {

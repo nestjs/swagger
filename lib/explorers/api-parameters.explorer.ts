@@ -2,8 +2,8 @@ import { Type } from '@nestjs/common';
 import {
   assign,
   find,
+  flatMap,
   isNil,
-  map,
   omitBy,
   some,
   unionWith
@@ -19,6 +19,7 @@ import { ParametersMetadataMapper } from '../services/parameters-metadata-mapper
 import { SchemaObjectFactory } from '../services/schema-object-factory.js';
 import { SwaggerTypesMapper } from '../services/swagger-types-mapper.js';
 import { GlobalParametersStorage } from '../storages/global-parameters.storage.js';
+import { isBodyParameter } from '../utils/is-body-parameter.util.js';
 
 const parameterMetadataAccessor = new ParameterMetadataAccessor();
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
@@ -53,7 +54,17 @@ export const exploreApiParametersMetadata = (
       parametersMetadata || {}
     );
 
-  let properties = reflectedParametersAsProperties;
+  const expandedReflectedParameters = flatMap(
+    reflectedParametersAsProperties,
+    (param) => {
+      if (param.standardSchema && !isBodyParameter(param)) {
+        return schemaObjectFactory.createFromModel([param], schemas);
+      }
+      return param;
+    }
+  );
+
+  let properties = expandedReflectedParameters;
   if (!noExplicitAndGlobalMetadata) {
     const hasSameParameterIdentity = (
       left: { in?: string; name?: string | number | object },
@@ -65,19 +76,27 @@ export const exploreApiParametersMetadata = (
       return left.name === right.name && left.in === right.in;
     };
 
-    const mergeImplicitAndExplicit = (item: ParamWithTypeMetadata) =>
-      assign(
-        item,
-        find(explicitParameters, (explicitParam) =>
-          hasSameParameterIdentity(item, explicitParam)
-        )
+    const mergeImplicitAndExplicit = (item: ParamWithTypeMetadata) => {
+      const explicitParam = find(explicitParameters, (explicit) =>
+        hasSameParameterIdentity(item, explicit)
       );
+      if (!explicitParam) {
+        return item;
+      }
+      const reflectedSchema = (item as any).schema;
+      const { schema: _schema, ...restItem } = item as any;
+      const merged = assign(restItem, explicitParam);
+      if (reflectedSchema) {
+        merged.schema = reflectedSchema;
+      }
+      return merged;
+    };
 
     properties = removeBodyMetadataIfExplicitExists(
       properties,
       explicitParameters
     );
-    properties = map(properties, mergeImplicitAndExplicit);
+    properties = properties.map(mergeImplicitAndExplicit);
     properties = unionWith(
       properties,
       explicitParameters,
@@ -112,10 +131,7 @@ function removeBodyMetadataIfExplicitExists(
     isBodyDefinedExplicitly &&
     !hasReflectedBodyStandardSchema
   ) {
-    return omitBy(
-      properties,
-      (p) => p.in === 'body'
-    ) as ParamWithTypeMetadata[];
+    return properties.filter((p) => p.in !== 'body') as ParamWithTypeMetadata[];
   }
   return properties;
 }

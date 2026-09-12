@@ -405,11 +405,25 @@ function assertStandardSchemaDocument(
     title: 'Search term'
   });
 
+  const conflictOperation = getOperation(
+    document,
+    `${pathPrefix}/cats/standard-query-conflict`,
+    'get'
+  );
+  const conflictParameters = (conflictOperation.parameters ||
+    []) as ParameterObject[];
+  const parameterKeys = conflictParameters.map((p) => `${p.in}:${p.name}`);
+  expect(parameterKeys).toEqual(Array.from(new Set(parameterKeys)));
+
   const conflictingFilterParam = getParameter(
     document,
     `${pathPrefix}/cats/standard-query-conflict`,
     'get',
     'filter'
+  );
+  expect(conflictingFilterParam.required).toBe(false);
+  expect(conflictingFilterParam.description).toBe(
+    'Explicit query decorator description'
   );
   expect(conflictingFilterParam.schema).toEqual(
     expect.objectContaining({
