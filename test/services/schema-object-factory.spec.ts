@@ -1864,6 +1864,124 @@ describe('SchemaObjectFactory', () => {
     return hasVendor(schema, 'valibot');
   }
 
+  describe('expandStandardSchemaParam', () => {
+    it('should expand an unnamed query standard schema into one param per property', () => {
+      const result = schemaObjectFactory.expandStandardSchemaParam(
+        {
+          in: 'query',
+          type: Object,
+          required: true,
+          standardSchema: createStandardSchema({
+            type: 'object',
+            required: ['limit'],
+            properties: {
+              limit: { type: 'integer' },
+              search: { type: 'string' }
+            }
+          })
+        } as any,
+        {}
+      );
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          in: 'query',
+          name: 'limit',
+          required: true,
+          schema: { type: 'integer' }
+        }),
+        expect.objectContaining({
+          in: 'query',
+          name: 'search',
+          required: false,
+          schema: { type: 'string' }
+        })
+      ]);
+    });
+
+    it('should not expand a body param', () => {
+      expect(
+        schemaObjectFactory.expandStandardSchemaParam(
+          {
+            in: 'body',
+            type: Object,
+            required: true,
+            standardSchema: createStandardSchema({
+              type: 'object',
+              properties: { title: { type: 'string' } }
+            })
+          } as any,
+          {}
+        )
+      ).toBeUndefined();
+    });
+
+    it('should not expand a named query param', () => {
+      expect(
+        schemaObjectFactory.expandStandardSchemaParam(
+          {
+            in: 'query',
+            name: 'filter',
+            type: Object,
+            required: false,
+            standardSchema: createStandardSchema({
+              type: 'object',
+              properties: { nested: { type: 'string' } }
+            })
+          } as any,
+          {}
+        )
+      ).toBeUndefined();
+    });
+
+    it('should not expand a standard schema that does not convert to an object schema', () => {
+      expect(
+        schemaObjectFactory.expandStandardSchemaParam(
+          {
+            in: 'query',
+            type: Object,
+            required: false,
+            standardSchema: createStandardSchema({
+              oneOf: [{ type: 'string' }, { type: 'number' }]
+            })
+          } as any,
+          {}
+        )
+      ).toBeUndefined();
+    });
+
+    it('should not invoke the converter for params it cannot expand', () => {
+      const converter = vi.fn(() => undefined);
+      const factory = new SchemaObjectFactory(
+        modelPropertiesAccessor,
+        swaggerTypesMapper,
+        converter as any
+      );
+
+      factory.expandStandardSchemaParam(
+        {
+          in: 'body',
+          type: Object,
+          required: true,
+          standardSchema: createStandardSchema({ type: 'object' })
+        } as any,
+        {}
+      );
+      factory.expandStandardSchemaParam(
+        {
+          in: 'query',
+          name: 'filter',
+          type: Object,
+          required: false,
+          standardSchema: createStandardSchema({ type: 'object' })
+        } as any,
+        {}
+      );
+
+      expect(converter).not.toHaveBeenCalled();
+    });
+  });
+
   describe('transformToArraySchemaProperty', () => {
     it('should preserve items schema when metadata.items is already defined and type is string', () => {
       const metadata = {

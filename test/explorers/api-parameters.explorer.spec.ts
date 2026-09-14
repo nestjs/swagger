@@ -1,73 +1,74 @@
+import { Body, Query, Type } from '@nestjs/common';
 import 'reflect-metadata';
-import { Body, Query } from '@nestjs/common';
 import { z } from 'zod';
 import { createSchema } from 'zod-openapi';
 import { ApiQuery } from '../../lib/decorators/api-query.decorator';
 import { exploreApiParametersMetadata } from '../../lib/explorers/api-parameters.explorer';
+import { StandardSchemaConverter } from '../../lib/interfaces';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 
-const standardSchemaConverter = (schema: any, { schemaType }: any) => {
-  if (schema instanceof z.ZodType) {
-    const converted = createSchema(schema, {
-      io: schemaType,
-      openapiVersion: '3.0.0'
-    });
-    return { schema: converted.schema, components: converted.components };
+const testStandardSchemaConverter: StandardSchemaConverter = (
+  schema,
+  { schemaType }
+) => {
+  if (!(schema instanceof z.ZodType)) {
+    return undefined;
   }
-  return undefined;
+  const converted = createSchema(schema, {
+    io: schemaType,
+    openapiVersion: '3.0.0'
+  });
+  return {
+    schema: converted.schema as any,
+    components: converted.components as any
+  };
 };
 
-const createFactory = () =>
-  new SchemaObjectFactory(
-    new ModelPropertiesAccessor(),
-    new SwaggerTypesMapper(),
-    standardSchemaConverter
-  );
+describe('exploreApiParametersMetadata', () => {
+  let schemaObjectFactory: SchemaObjectFactory;
 
-const explore = (ctor: any, method: Function) =>
-  exploreApiParametersMetadata(
-    {},
-    createFactory(),
-    new ctor(),
-    ctor.prototype,
-    method
-  );
+  beforeEach(() => {
+    schemaObjectFactory = new SchemaObjectFactory(
+      new ModelPropertiesAccessor(),
+      new SwaggerTypesMapper(),
+      testStandardSchemaConverter
+    );
+  });
 
-describe('api-parameters.explorer', () => {
+  const explore = (instance: object, method: Function) =>
+    exploreApiParametersMetadata(
+      {},
+      schemaObjectFactory,
+      instance,
+      Object.getPrototypeOf(instance) as Type<unknown>,
+      method
+    );
+
   describe('standard schema query params combined with @ApiQuery', () => {
     it('should merge @ApiQuery metadata into the standard schema parameter instead of duplicating it', () => {
       class ItemsController {
-        list(query: unknown) {
+        @ApiQuery({
+          name: 'limit',
+          required: false,
+          type: Number,
+          description: 'Max results'
+        })
+        list(
+          @Query({
+            schema: z.strictObject({
+              limit: z.coerce.number().int().min(1).max(100).optional()
+            })
+          })
+          query: unknown
+        ) {
           return query;
         }
       }
 
-      const descriptor = Object.getOwnPropertyDescriptor(
-        ItemsController.prototype,
-        'list'
-      )!;
-
-      Query({
-        schema: z.strictObject({
-          limit: z.coerce.number().int().min(1).max(100).optional()
-        })
-      } as any)(ItemsController.prototype, 'list', 0);
-      Reflect.defineMetadata(
-        'design:paramtypes',
-        [Object],
-        ItemsController.prototype,
-        'list'
-      );
-      ApiQuery({
-        name: 'limit',
-        required: false,
-        type: Number,
-        description: 'Max results'
-      })(ItemsController.prototype, 'list', descriptor);
-
-      const result = explore(ItemsController, descriptor.value);
+      const instance = new ItemsController();
+      const result = explore(instance, instance.list);
       const limitParams = result!.parameters.filter(
         (param: any) => param.name === 'limit'
       );
@@ -86,36 +87,27 @@ describe('api-parameters.explorer', () => {
 
     it('should keep standard schema query params that have no matching @ApiQuery', () => {
       class SearchController {
-        search(query: unknown) {
+        @ApiQuery({
+          name: 'term',
+          required: true,
+          type: String,
+          description: 'Search term'
+        })
+        search(
+          @Query({
+            schema: z.strictObject({
+              term: z.string(),
+              page: z.coerce.number().int().optional()
+            })
+          })
+          query: unknown
+        ) {
           return query;
         }
       }
 
-      const descriptor = Object.getOwnPropertyDescriptor(
-        SearchController.prototype,
-        'search'
-      )!;
-
-      Query({
-        schema: z.strictObject({
-          term: z.string(),
-          page: z.coerce.number().int().optional()
-        })
-      } as any)(SearchController.prototype, 'search', 0);
-      Reflect.defineMetadata(
-        'design:paramtypes',
-        [Object],
-        SearchController.prototype,
-        'search'
-      );
-      ApiQuery({
-        name: 'term',
-        required: true,
-        type: String,
-        description: 'Search term'
-      })(SearchController.prototype, 'search', descriptor);
-
-      const result = explore(SearchController, descriptor.value);
+      const instance = new SearchController();
+      const result = explore(instance, instance.search);
       const names = result!.parameters.map((param: any) => param.name).sort();
 
       expect(names).toEqual(['page', 'term']);
@@ -130,113 +122,111 @@ describe('api-parameters.explorer', () => {
       );
     });
 
-    it('should preserve schema-derived required flags when @ApiQuery omits them', () => {
+    it("should let @ApiQuery's required default override the schema-derived required flag", () => {
+      // `@ApiQuery` defaults `required` to true, and the explicit metadata wins
+      // the merge, so an optional schema field decorated without an explicit
+      // `required` comes out required. Class DTOs behave the same way.
       class RequiredController {
-        list(query: unknown) {
+        @ApiQuery({ name: 'decorated', description: 'Decorated field' })
+        list(
+          @Query({
+            schema: z.strictObject({
+              decorated: z.string().optional(),
+              untouched: z.string().optional()
+            })
+          })
+          query: unknown
+        ) {
           return query;
         }
       }
 
-      const descriptor = Object.getOwnPropertyDescriptor(
-        RequiredController.prototype,
-        'list'
-      )!;
-
-      Query({
-        schema: z.strictObject({
-          mandatory: z.string(),
-          optional: z.string().optional()
-        })
-      } as any)(RequiredController.prototype, 'list', 0);
-      Reflect.defineMetadata(
-        'design:paramtypes',
-        [Object],
-        RequiredController.prototype,
-        'list'
-      );
-      ApiQuery({ name: 'mandatory', description: 'Required field' })(
-        RequiredController.prototype,
-        'list',
-        descriptor
-      );
-
-      const result = explore(RequiredController, descriptor.value);
+      const instance = new RequiredController();
+      const result = explore(instance, instance.list);
 
       expect(
-        result!.parameters.find((param: any) => param.name === 'mandatory')
+        result!.parameters.find((param: any) => param.name === 'decorated')
       ).toEqual(
         expect.objectContaining({
           required: true,
-          description: 'Required field'
+          description: 'Decorated field'
         })
       );
+      // Untouched by @ApiQuery, so the schema still decides.
       expect(
-        result!.parameters.find((param: any) => param.name === 'optional')
+        result!.parameters.find((param: any) => param.name === 'untouched')
       ).toEqual(expect.objectContaining({ required: false }));
+    });
+
+    it('should keep a schema-derived required flag when @ApiQuery sets it explicitly', () => {
+      class ExplicitController {
+        @ApiQuery({ name: 'optional', required: false })
+        list(
+          @Query({ schema: z.strictObject({ optional: z.string() }) })
+          query: unknown
+        ) {
+          return query;
+        }
+      }
+
+      const instance = new ExplicitController();
+      const result = explore(instance, instance.list);
+
+      expect(result!.parameters).toHaveLength(1);
+      expect(result!.parameters[0]).toEqual(
+        expect.objectContaining({ name: 'optional', required: false })
+      );
+    });
+  });
+
+  describe('multiple standard schema params on one handler', () => {
+    it('should expand two @Query({ schema }) params instead of collapsing them', () => {
+      // Before the params are expanded they are both unnamed, so
+      // `hasSameParameterIdentity` matched them on `undefined === undefined`
+      // and only one survived.
+      class MultiQueryController {
+        @ApiQuery({ name: 'page', required: false })
+        list(
+          @Query({ schema: z.strictObject({ page: z.coerce.number().int() }) })
+          pagination: unknown,
+          @Query({ schema: z.strictObject({ sort: z.string() }) })
+          sorting: unknown
+        ) {
+          return [pagination, sorting];
+        }
+      }
+
+      const instance = new MultiQueryController();
+      const result = explore(instance, instance.list);
+      const names = result!.parameters.map((param: any) => param.name).sort();
+
+      expect(names).toEqual(['page', 'sort']);
+      expect(
+        result!.parameters.find((param: any) => param.name === 'sort')
+      ).toEqual(
+        expect.objectContaining({ in: 'query', schema: { type: 'string' } })
+      );
     });
 
     it('should leave standard schema body params untouched', () => {
       class BodyController {
-        create(body: unknown) {
+        create(
+          @Body({
+            schema: z.strictObject({ title: z.string(), count: z.number() })
+          })
+          body: unknown
+        ) {
           return body;
         }
       }
 
-      const descriptor = Object.getOwnPropertyDescriptor(
-        BodyController.prototype,
-        'create'
-      )!;
-
-      Body({
-        schema: z.strictObject({ title: z.string(), count: z.number() })
-      } as any)(BodyController.prototype, 'create', 0);
-      Reflect.defineMetadata(
-        'design:paramtypes',
-        [Object],
-        BodyController.prototype,
-        'create'
-      );
-
-      const result = explore(BodyController, descriptor.value);
+      const instance = new BodyController();
+      const result = explore(instance, instance.create);
       const bodyParams = (result?.parameters ?? []).filter(
         (param: any) => param.in === 'body'
       );
 
       expect(bodyParams).toHaveLength(1);
-      expect(createFactory().expandStandardSchemaParam(
-        {
-          in: 'body',
-          type: Object,
-          required: true,
-          standardSchema: z.strictObject({ title: z.string() })
-        } as any,
-        {}
-      )).toBeUndefined();
-    });
-
-    it('should leave a named standard schema query param as a single parameter', () => {
-      expect(createFactory().expandStandardSchemaParam(
-        {
-          in: 'query',
-          name: 'filter',
-          type: Object,
-          required: false,
-          standardSchema: z.strictObject({ nested: z.string() })
-        } as any,
-        {}
-      )).toBeUndefined();
-    });
-
-    it('should not expand a standard schema that does not convert to an object schema', () => {
-      expect(createFactory().expandStandardSchemaParam(
-        {
-          in: 'query',
-          type: Object,
-          required: false,
-          standardSchema: z.union([z.string(), z.number()])
-        } as any,
-        {}
-      )).toBeUndefined();
     });
   });
 });

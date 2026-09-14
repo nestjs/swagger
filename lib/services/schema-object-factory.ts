@@ -1087,7 +1087,11 @@ export class SchemaObjectFactory {
     param: ParamWithTypeMetadata,
     schemas: Record<string, SchemaObject>
   ): ParamWithTypeMetadata[] | undefined {
-    if (!param.standardSchema) {
+    // Named and body params are never expanded into several parameters, so
+    // converting them here would only discard the result and leave
+    // `createFromModel` to convert them a second time. A user-supplied
+    // converter that is not idempotent would register duplicate components.
+    if (!param.standardSchema || param.name || isBodyParameter(param)) {
       return undefined;
     }
     const schema = this.getSchemaOverride(param, schemas);

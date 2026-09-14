@@ -53,6 +53,12 @@ export const exploreApiParametersMetadata = (
       parametersMetadata || {}
     );
 
+  // Standard Schema params are still a single unnamed object at this point,
+  // unlike class DTOs which `transformModelToProperties` has already fanned out
+  // into one property per field. They have to be expanded before
+  // `hasSameParameterIdentity` runs, or every one of them collides with the
+  // others on `undefined === undefined` and only the last survives the merge.
+  // `createFromModel` expands them too, for callers that reach it directly.
   let properties = reflectedParametersAsProperties.flatMap((param) => {
     const expanded = schemaObjectFactory.expandStandardSchemaParam(
       param,
