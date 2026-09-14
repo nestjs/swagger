@@ -1,11 +1,61 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import * as ts from 'typescript';
 import {
+  collectSourceImportSpecifiers,
   convertPath,
   replaceImportPath,
   safeDecodeURIComponent
 } from '../../lib/plugin/utils/plugin-utils';
+
+describe('collectSourceImportSpecifiers', () => {
+  function collect(sourceText: string) {
+    const fileName = '/repo/apps/api/src/items/item.dto.ts';
+    const host = ts.createCompilerHost({});
+    const originalGetSourceFile = host.getSourceFile.bind(host);
+    host.getSourceFile = (name, languageVersion, ...rest) =>
+      name === fileName
+        ? ts.createSourceFile(name, sourceText, languageVersion, true)
+        : originalGetSourceFile(name, languageVersion, ...rest);
+    host.fileExists = (name) => name === fileName;
+    host.readFile = (name) => (name === fileName ? sourceText : undefined);
+
+    const program = ts.createProgram([fileName], {}, host);
+    const sourceFile = program.getSourceFile(fileName)!;
+    return {
+      specifiers: collectSourceImportSpecifiers(
+        sourceFile,
+        program.getTypeChecker()
+      ),
+      sourceFile
+    };
+  }
+
+  it('should collect a named import from a package specifier', () => {
+    const { specifiers } = collect(
+      `import { ItemStatus } from '@repo/shared/messages';\nexport class ItemDto { status: ItemStatus; }`
+    );
+
+    expect([...specifiers.values()]).toEqual(['@repo/shared/messages']);
+  });
+
+  it('should ignore relative imports, which are rebased onto the output directory anyway', () => {
+    const { specifiers } = collect(
+      `import { ItemStatus } from './item-status';\nexport class ItemDto { status: ItemStatus; }`
+    );
+
+    expect(specifiers.size).toBe(0);
+  });
+
+  it('should ignore namespace imports, which resolve to the module rather than a type', () => {
+    const { specifiers } = collect(
+      `import * as shared from '@repo/shared/messages';\nexport class ItemDto { status: shared.ItemStatus; }`
+    );
+
+    expect(specifiers.size).toBe(0);
+  });
+});
 
 describe('plugin-utils', () => {
   describe('convertPath', () => {
@@ -57,6 +107,53 @@ describe('plugin-utils', () => {
   });
 
   describe('replaceImportPath', () => {
+    it('should keep the package specifier the source file imports the type through', () => {
+      // A workspace package: TypeScript resolved the type to the file that
+      // declares it, which sits outside the project and is reached without
+      // passing through node_modules.
+      const typeReference =
+        'import("/repo/packages/shared/dist/messages/item").ItemStatus';
+      const fileName = '/repo/apps/api/src/items/item.dto.ts';
+
+      const result = replaceImportPath(
+        typeReference,
+        fileName,
+        {},
+        '@repo/shared/messages'
+      );
+
+      expect(result.typeReference).toBe(
+        'require("@repo/shared/messages").ItemStatus'
+      );
+      expect(result.importPath).toBe('@repo/shared/messages');
+    });
+
+    it('should keep the package specifier without appending a file extension in esm output', () => {
+      const typeReference =
+        'import("/repo/packages/shared/dist/messages/item").ItemStatus';
+      const fileName = '/repo/apps/api/src/items/item.dto.ts';
+
+      const result = replaceImportPath(typeReference, fileName, {
+        esmCompatible: true
+      }, '@repo/shared/messages');
+
+      expect(result.importPath).toBe('@repo/shared/messages');
+      expect(result.typeReference).not.toContain('.js');
+    });
+
+    it('should still fold a node_modules path into its package name, ignoring the source specifier', () => {
+      // node_modules paths already carry the package name, and the subpath
+      // that normalizePackagePath keeps is more precise than the specifier
+      // the file happens to import from.
+      const typeReference =
+        'import("/repo/node_modules/@scope/pkg/dist/types").SomeType';
+      const fileName = '/repo/src/dto/test.dto.ts';
+
+      const result = replaceImportPath(typeReference, fileName, {}, '@scope/pkg');
+
+      expect(result.importPath).toBe('@scope/pkg/dist/types');
+    });
+
     it('should produce relative path when import path contains URL-encoded non-ASCII characters', () => {
       // Simulates what TypeScript produces when the project path contains non-ASCII chars.
       // TypeScript may URL-encode the path in the type reference string.

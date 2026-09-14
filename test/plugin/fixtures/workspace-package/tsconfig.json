@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "rootDir": "./app/src",
+    "outDir": "./app/dist",
+    "paths": {
+      "@fixture/shared/messages": ["./shared/build/messages/entry.js"]
+    },
+    "strictPropertyInitialization": false,
+    "skipLibCheck": true
+  },
+  "include": ["app/src/**/*"]
+}
