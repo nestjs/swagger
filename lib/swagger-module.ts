@@ -1,9 +1,8 @@
 import { INestApplication, NotFoundException } from '@nestjs/common';
 import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface.js';
-import { loadPackageSync } from '@nestjs/common/utils/load-package.util.js';
+import { loadPackage } from '@nestjs/common/utils/load-package.util.js';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as jsyaml from 'js-yaml';
-import { createRequire } from 'node:module';
 import {
   OpenAPIObject,
   SwaggerCustomOptions,
@@ -24,8 +23,6 @@ import { convertNullableToOas31 } from './utils/nullable-to-oas31.util.js';
 import { resolvePath } from './utils/resolve-path.util.js';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
 import { validatePath } from './utils/validate-path.util.js';
-
-const require = createRequire(import.meta.url);
 
 /**
  * @publicApi
@@ -119,18 +116,30 @@ export class SwaggerModule {
       : getSwaggerAssetsAbsoluteFSPath();
 
     if (httpAdapter && httpAdapter.getType() === 'fastify') {
-      const fastifyStaticModule = loadPackageSync(
-        '@fastify/static',
-        'SwaggerModule',
-        () => require('@fastify/static')
-      );
-      // The package may be published as either CommonJS or ESM.
-      const fastifyStatic = fastifyStaticModule.default ?? fastifyStaticModule;
+      // `@fastify/static` is reached through a dynamic import with a literal
+      // specifier so that bundlers can follow it. A `createRequire` call is
+      // opaque to every major bundler, which left the package out of bundled
+      // output and made `SwaggerModule` fail at runtime in artifact-only
+      // deployments that have no `node_modules` to fall back on (#4099).
+      //
+      // Fastify resolves async plugins during `ready()`, so awaiting the
+      // import inside one keeps `serveStatic` — and therefore the public
+      // `setup()` — synchronous.
+      httpAdapter.getInstance().register(async (instance) => {
+        const fastifyStaticModule = await loadPackage(
+          '@fastify/static',
+          'SwaggerModule',
+          () => import('@fastify/static')
+        );
+        // The package may be published as either CommonJS or ESM.
+        const fastifyStatic =
+          fastifyStaticModule.default ?? fastifyStaticModule;
 
-      httpAdapter.getInstance().register(fastifyStatic, {
-        root: swaggerAssetsPath,
-        prefix: finalPath,
-        decorateReply: false
+        instance.register(fastifyStatic, {
+          root: swaggerAssetsPath,
+          prefix: finalPath,
+          decorateReply: false
+        });
       });
     } else {
       (app as NestExpressApplication).useStaticAssets(swaggerAssetsPath, {
