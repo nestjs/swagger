@@ -62,7 +62,10 @@ import {
   booleanLiteralDtoText,
   booleanLiteralDtoTextTranspiled
 } from './fixtures/boolean-literal.dto';
-import { stringLiteralUnionDtoText } from './fixtures/string-literal-union.dto';
+import {
+  stringLiteralUnionDtoText,
+  singleLiteralDtoText
+} from './fixtures/string-literal-union.dto';
 import {
   recordDtoText,
   recordDtoTextTranspiled
@@ -875,6 +878,47 @@ describe('API model properties', () => {
       `inlineNumberUnion: { required: true, enum: [1, 2, 3] }`
     );
     expect(result.outputText).not.toContain(`type: () => Object`);
+  });
+
+  it('should produce enum metadata for single literal types', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2022,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'single-literal.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(singleLiteralDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({}, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `aliasSingle: { required: true, enum: ["red"] }`
+    );
+    expect(result.outputText).toContain(
+      `inlineSingle: { required: true, enum: ["red"] }`
+    );
+    expect(result.outputText).toContain(
+      `aliasSingleNumber: { required: true, enum: [42] }`
+    );
+    expect(result.outputText).toContain(
+      `inlineSingleNumber: { required: true, enum: [42] }`
+    );
+    expect(result.outputText).toContain(
+      `optionalSingle: { required: false, enum: ["red"] }`
+    );
+    expect(result.outputText).toContain(
+      `nullableSingle: { required: true, nullable: true, enum: ["red"] }`
+    );
+    expect(result.outputText).not.toContain(`type: () => String`);
   });
 
   it('should emit IsIn enum metadata for literal union properties that fall back to Object', () => {

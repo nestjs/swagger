@@ -19,3 +19,23 @@ export class StringLiteralUnionDto {
   inlineNumberUnion: 1 | 2 | 3;
 }
 `;
+
+export const singleLiteralDtoText = `
+type Single = "red";
+type SingleNumber = 42;
+
+export class SingleLiteralDto {
+  @ApiProperty()
+  aliasSingle: Single;
+  @ApiProperty()
+  inlineSingle: "red";
+  @ApiProperty()
+  aliasSingleNumber: SingleNumber;
+  @ApiProperty()
+  inlineSingleNumber: 42;
+  @ApiProperty()
+  optionalSingle?: Single;
+  @ApiProperty()
+  nullableSingle: Single | null;
+}
+`;

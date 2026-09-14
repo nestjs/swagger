@@ -515,21 +515,23 @@ function isPlainNumberLiteralType(type: ts.Type): type is ts.NumberLiteralType {
 
 /**
  * Returns the literal values from a union type like `'a' | 'b'` or `1 | 2`,
- * stripping null/undefined constituents.
+ * stripping null/undefined constituents. A single literal type such as `'a'`
+ * or `42` is treated as a one-member union and yields `['a']` / `[42]`.
  * All non-null/undefined constituents must be the same kind of literal
  * (all string or all number). TypeScript enum members are excluded.
  */
 export function getStringLiteralUnionValues(
   type: ts.Type
 ): { values: (string | number)[]; isNullable: boolean } | undefined {
-  if (!type.isUnion()) {
-    return undefined;
-  }
-  const isNullable = type.types.some((t) => hasFlag(t, ts.TypeFlags.Null));
+  const isNullable =
+    type.isUnion() && type.types.some((t) => hasFlag(t, ts.TypeFlags.Null));
 
-  const members = type.types.filter(
-    (t) => !hasFlag(t, ts.TypeFlags.Null) && !hasFlag(t, ts.TypeFlags.Undefined)
-  );
+  const members = type.isUnion()
+    ? type.types.filter(
+        (t) =>
+          !hasFlag(t, ts.TypeFlags.Null) && !hasFlag(t, ts.TypeFlags.Undefined)
+      )
+    : [type];
 
   if (members.length === 0) {
     return undefined;
