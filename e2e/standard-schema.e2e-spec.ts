@@ -405,11 +405,32 @@ function assertStandardSchemaDocument(
     title: 'Search term'
   });
 
+  // `getParameter` uses `.find()`, so a duplicate parameter would go unnoticed
+  // here and `e2e/api-spec.json` is written rather than compared. Assert
+  // uniqueness explicitly so the duplication cannot come back silently.
+  const conflictOperation = getOperation(
+    document,
+    `${pathPrefix}/cats/standard-query-conflict`,
+    'get'
+  );
+  const conflictParameters = (conflictOperation.parameters ??
+    []) as ParameterObject[];
+  const conflictParameterKeys = conflictParameters.map(
+    (parameter) => `${parameter.in}:${parameter.name}`
+  );
+  expect(conflictParameterKeys).toEqual([...new Set(conflictParameterKeys)]);
+
   const conflictingFilterParam = getParameter(
     document,
     `${pathPrefix}/cats/standard-query-conflict`,
     'get',
     'filter'
+  );
+  // The explicit @ApiQuery wins on `required` and `description`, the Zod schema
+  // still supplies the schema itself.
+  expect(conflictingFilterParam.required).toBe(false);
+  expect(conflictingFilterParam.description).toBe(
+    'Explicit query decorator description'
   );
   expect(conflictingFilterParam.schema).toEqual(
     expect.objectContaining({
