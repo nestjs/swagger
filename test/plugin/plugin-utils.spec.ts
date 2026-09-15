@@ -87,9 +87,7 @@ describe('plugin-utils', () => {
 
     it('should return the original string if already decoded', () => {
       expect(
-        safeDecodeURIComponent(
-          '/mnt/Data/testnéstcli/testcli/src/dto/test.dto'
-        )
+        safeDecodeURIComponent('/mnt/Data/testnéstcli/testcli/src/dto/test.dto')
       ).toBe('/mnt/Data/testnéstcli/testcli/src/dto/test.dto');
     });
 
@@ -133,9 +131,14 @@ describe('plugin-utils', () => {
         'import("/repo/packages/shared/dist/messages/item").ItemStatus';
       const fileName = '/repo/apps/api/src/items/item.dto.ts';
 
-      const result = replaceImportPath(typeReference, fileName, {
-        esmCompatible: true
-      }, '@repo/shared/messages');
+      const result = replaceImportPath(
+        typeReference,
+        fileName,
+        {
+          esmCompatible: true
+        },
+        '@repo/shared/messages'
+      );
 
       expect(result.importPath).toBe('@repo/shared/messages');
       expect(result.typeReference).not.toContain('.js');
@@ -149,7 +152,63 @@ describe('plugin-utils', () => {
         'import("/repo/node_modules/@scope/pkg/dist/types").SomeType';
       const fileName = '/repo/src/dto/test.dto.ts';
 
-      const result = replaceImportPath(typeReference, fileName, {}, '@scope/pkg');
+      const result = replaceImportPath(
+        typeReference,
+        fileName,
+        {},
+        '@scope/pkg'
+      );
+
+      expect(result.importPath).toBe('@scope/pkg/dist/types');
+    });
+
+    it('should give a node_modules subpath the extension of the file it resolves to', () => {
+      // Node's ESM resolver needs the extension. The subpath a package without
+      // an "exports" map exposes does not carry one.
+      const typeReference =
+        'import("/repo/node_modules/@scope/pkg/dist/types").SomeType';
+      const fileName = '/repo/src/dto/test.dto.ts';
+
+      const result = replaceImportPath(typeReference, fileName, {
+        esmCompatible: true
+      });
+
+      expect(result.importPath).toBe('@scope/pkg/dist/types.js');
+    });
+
+    it('should follow the extension the dependency ships', () => {
+      const typeReference =
+        'import("/repo/node_modules/@scope/pkg/dist/types").SomeType';
+      const fileName = '/repo/src/dto/test.dto.ts';
+
+      const asEsm = replaceImportPath(
+        typeReference,
+        fileName,
+        { esmCompatible: true },
+        undefined,
+        '/repo/node_modules/@scope/pkg/dist/types.d.mts'
+      );
+      const asCjs = replaceImportPath(
+        typeReference,
+        fileName,
+        { esmCompatible: true },
+        undefined,
+        '/repo/node_modules/@scope/pkg/dist/types.d.cts'
+      );
+
+      expect(asEsm.importPath).toBe('@scope/pkg/dist/types.mjs');
+      expect(asCjs.importPath).toBe('@scope/pkg/dist/types.cjs');
+    });
+
+    it('should leave a node_modules subpath alone outside esm output', () => {
+      const typeReference =
+        'import("/repo/node_modules/@scope/pkg/dist/types").SomeType';
+
+      const result = replaceImportPath(
+        typeReference,
+        '/repo/src/dto/test.dto.ts',
+        {}
+      );
 
       expect(result.importPath).toBe('@scope/pkg/dist/types');
     });
@@ -159,8 +218,7 @@ describe('plugin-utils', () => {
       // TypeScript may URL-encode the path in the type reference string.
       const typeReference =
         'import("/mnt/Data/testn%C3%A9stcli/testcli/src/entities/test.entity").TestEnum';
-      const fileName =
-        '/mnt/Data/testnéstcli/testcli/src/dto/test.dto.ts';
+      const fileName = '/mnt/Data/testnéstcli/testcli/src/dto/test.dto.ts';
       const options = {};
 
       const result = replaceImportPath(typeReference, fileName, options);
@@ -173,8 +231,7 @@ describe('plugin-utils', () => {
     it('should produce relative path when both import and file contain non-ASCII characters without encoding', () => {
       const typeReference =
         'import("/mnt/Data/testnéstcli/testcli/src/entities/test.entity").TestEnum';
-      const fileName =
-        '/mnt/Data/testnéstcli/testcli/src/dto/test.dto.ts';
+      const fileName = '/mnt/Data/testnéstcli/testcli/src/dto/test.dto.ts';
       const options = {};
 
       const result = replaceImportPath(typeReference, fileName, options);
@@ -186,8 +243,7 @@ describe('plugin-utils', () => {
     it('should produce relative path when file name contains URL-encoded non-ASCII characters', () => {
       const typeReference =
         'import("/mnt/Data/testnéstcli/testcli/src/entities/test.entity").TestEnum';
-      const fileName =
-        '/mnt/Data/testn%C3%A9stcli/testcli/src/dto/test.dto.ts';
+      const fileName = '/mnt/Data/testn%C3%A9stcli/testcli/src/dto/test.dto.ts';
       const options = {};
 
       const result = replaceImportPath(typeReference, fileName, options);
