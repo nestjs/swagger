@@ -1,4 +1,9 @@
-import { buildSwaggerHTML } from '../../lib/swagger-ui/swagger-ui';
+import { Script } from 'node:vm';
+import { OpenAPIObject } from '../../lib/interfaces';
+import {
+  buildSwaggerHTML,
+  buildSwaggerInitJS
+} from '../../lib/swagger-ui/swagger-ui';
 
 describe('buildSwaggerHTML', () => {
   it('inserts the custom site title verbatim', () => {
@@ -43,5 +48,32 @@ describe('buildSwaggerHTML', () => {
     });
 
     expect(html).toContain(`<link rel='icon' href='${favIcon}' />`);
+  });
+});
+
+describe('buildSwaggerInitJS', () => {
+  it('inserts OpenAPI descriptions with "$" replacement-pattern characters verbatim', () => {
+    const description = "Must match `^[a-z][a-z0-9_]{1,63}$` plus $& $' $1 $$";
+    const swaggerDoc: OpenAPIObject = {
+      openapi: '3.0.0',
+      info: { title: 'Test', version: '1.0.0' },
+      paths: {
+        '/pets': {
+          get: {
+            responses: {
+              '200': {
+                description
+              }
+            }
+          }
+        }
+      }
+    };
+
+    const script = buildSwaggerInitJS(swaggerDoc);
+
+    expect(script).toContain(JSON.stringify(description));
+    expect(() => new Script(script)).not.toThrow();
+    expect(script.match(/window\.onload/g)).toHaveLength(1);
   });
 });
