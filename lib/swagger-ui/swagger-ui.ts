@@ -20,7 +20,12 @@ export function buildSwaggerInitJS(
   };
 
   const jsInitOptions = buildJSInitOptions(swaggerInitOptions);
-  return jsTemplateString.replace('<% swaggerOptions %>', jsInitOptions);
+  // The serialized OpenAPI document is user-controlled (e.g. descriptions).
+  // Pass the replacement through a callback rather than as a string so that
+  // `$$`, `$&`, "$`", "$'" and `$1`–`$9` sequences are inserted verbatim
+  // instead of being interpreted as replacement patterns (which would silently
+  // corrupt swagger-ui-init.js).
+  return jsTemplateString.replace('<% swaggerOptions %>', () => jsInitOptions);
 }
 
 let swaggerAssetsAbsoluteFSPath: string | undefined;
