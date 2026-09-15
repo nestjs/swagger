@@ -40,7 +40,8 @@ export function typeReferenceToIdentifier(
       type,
       typeReferenceDescriptor.arrayDepth,
       sourceImportSpecifiers
-    )
+    ),
+    resolveDeclarationFileName(type)
   );
 
   let identifier: ts.Identifier;
@@ -139,6 +140,15 @@ function resolveSourceSpecifier(
   }
   const symbol = elementType.aliasSymbol ?? elementType.symbol;
   return symbol ? sourceImportSpecifiers.get(symbol) : undefined;
+}
+
+/**
+ * Returns the file a dependency declares `type` in. Its extension tells which
+ * file the package ships, which the type reference alone does not carry.
+ */
+function resolveDeclarationFileName(type: ts.Type): string | undefined {
+  const symbol = type?.aliasSymbol ?? type?.symbol;
+  return symbol?.declarations?.[0]?.getSourceFile().fileName;
 }
 
 /**

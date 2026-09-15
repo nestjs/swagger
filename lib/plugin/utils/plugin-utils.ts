@@ -254,11 +254,27 @@ export function getOutputExtension(fileName: string): string {
   }
 }
 
+/**
+ * Gives the runtime extension of the file a dependency declares a type in.
+ * A package without an "exports" map exposes the subpath as it sits on disk,
+ * and Node's ESM resolver needs the extension that subpath carries.
+ */
+function getDependencyExtension(declarationFileName?: string): string {
+  if (declarationFileName?.endsWith('.d.mts')) {
+    return '.mjs';
+  }
+  if (declarationFileName?.endsWith('.d.cts')) {
+    return '.cjs';
+  }
+  return '.js';
+}
+
 export function replaceImportPath(
   typeReference: string,
   fileName: string,
   options: PluginOptions,
-  sourceSpecifier?: string
+  sourceSpecifier?: string,
+  declarationFileName?: string
 ) {
   if (!typeReference.includes('import')) {
     return { typeReference, importPath: null };
@@ -334,7 +350,8 @@ export function replaceImportPath(
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
     const normalizedPath = normalizePackagePath(relativePath);
-    if (normalizedPath !== relativePath) {
+    const isPackageSubpath = normalizedPath !== relativePath;
+    if (isPackageSubpath) {
       relativePath = normalizedPath;
     } else if (sourceSpecifier) {
       // The path leads outside the project without passing through
@@ -347,10 +364,15 @@ export function replaceImportPath(
       // file already imports the type through does resolve, at compile time
       // and at run time alike.
       relativePath = sourceSpecifier;
-    } else if (options.esmCompatible) {
-      // Add appropriate extension for non-node_modules imports
-      const extension = getOutputExtension(fileName);
-      relativePath += extension;
+    }
+
+    if (options.esmCompatible && relativePath !== sourceSpecifier) {
+      // A package subpath names a file inside the dependency, so it carries
+      // that file's extension; a project-relative path carries the emitting
+      // file's. A source specifier already resolves and is left alone.
+      relativePath += isPackageSubpath
+        ? getDependencyExtension(declarationFileName)
+        : getOutputExtension(fileName);
     }
 
     typeReference = typeReference.replace(importPath, relativePath);
