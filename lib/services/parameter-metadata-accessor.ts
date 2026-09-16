@@ -17,12 +17,14 @@ interface ParamMetadata {
   index: number;
   data?: string | number | object;
   schema?: StandardSchemaObject;
+  pipes?: any[];
 }
 type ParamsMetadata = Record<string, ParamMetadata>;
 
 export interface ParamWithTypeMetadata {
   name?: string | number | object;
   type?: Type<unknown>;
+  format?: string;
   in?: ParameterLocation | 'body' | typeof PARAM_TOKEN_PLACEHOLDER;
   standardSchema?: StandardSchemaObject;
   isArray?: boolean;
@@ -60,13 +62,19 @@ export class ParameterMetadataAccessor {
 
     const parametersWithType: ParamsWithType = mapValues(
       reverseObjectKeys(routeArgsMetadata),
-      (param: ParamMetadata) =>
-        ({
-          type: types[param.index],
+      (param: ParamMetadata) => {
+        const pipeInferences = this.inferFromPipes(param.pipes);
+        const paramMetadata: ParamWithTypeMetadata = {
+          type: pipeInferences.type ?? types[param.index],
           name: param.data,
           standardSchema: param.schema,
           required: true
-        }) as unknown as ParamWithTypeMetadata
+        };
+        if (pipeInferences.format) {
+          paramMetadata.format = pipeInferences.format;
+        }
+        return paramMetadata;
+      }
     ) as unknown as ParamsWithType;
     const excludePredicate = (val: ParamWithTypeMetadata) =>
       val.in === PARAM_TOKEN_PLACEHOLDER || (val.name && val.in === 'body');
@@ -95,5 +103,28 @@ export class ParameterMetadataAccessor {
       default:
         return PARAM_TOKEN_PLACEHOLDER;
     }
+  }
+
+  private inferFromPipes(pipes?: any[]): { type?: Type<unknown>; format?: string } {
+    if (!Array.isArray(pipes)) {
+      return {};
+    }
+    for (const pipe of pipes) {
+      const ctor = typeof pipe === 'function' ? pipe : pipe?.constructor;
+      const name = ctor?.name;
+      if (name === 'ParseUUIDPipe') {
+        return { type: String as unknown as Type<unknown>, format: 'uuid' };
+      }
+      if (name === 'ParseIntPipe') {
+        return { type: Number as unknown as Type<unknown> };
+      }
+      if (name === 'ParseFloatPipe') {
+        return { type: Number as unknown as Type<unknown> };
+      }
+      if (name === 'ParseBoolPipe') {
+        return { type: Boolean as unknown as Type<unknown> };
+      }
+    }
+    return {};
   }
 }

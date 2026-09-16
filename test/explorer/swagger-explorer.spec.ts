@@ -4,6 +4,9 @@ import {
   Controller,
   Get,
   Param,
+  ParseBoolPipe,
+  ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Query,
   Version,
@@ -3242,6 +3245,62 @@ describe('SwaggerExplorer', () => {
 
       expect(routes[0].root.isWebhook).toBe(true);
       expect(routes[0].root.webhookName).toBe('stripeEvent');
+    });
+  });
+
+  describe('when parameters use NestJS built-in pipes', () => {
+    @Controller()
+    class PipesController {
+      @Get('tenants/:tenantId/items/:id')
+      get(
+        @Param('tenantId', ParseUUIDPipe) tenantId: string,
+        @Param('id', ParseIntPipe) id: number,
+        @Query('active', ParseBoolPipe) active: boolean
+      ) {
+        return true;
+      }
+    }
+
+    it('infers type and format from pipes without explicit @ApiParam/@ApiQuery', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new PipesController(),
+          metatype: PipesController
+        } as InstanceWrapper<PipesController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes[0].root.parameters).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'tenantId',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'string',
+              format: 'uuid'
+            }
+          }),
+          expect.objectContaining({
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'number'
+            }
+          }),
+          expect.objectContaining({
+            name: 'active',
+            in: 'query',
+            required: true,
+            schema: {
+              type: 'boolean'
+            }
+          })
+        ])
+      );
     });
   });
 });

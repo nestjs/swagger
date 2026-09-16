@@ -1,4 +1,12 @@
-import { Body, Param, Query, Type } from '@nestjs/common';
+import {
+  Body,
+  Param,
+  ParseBoolPipe,
+  ParseIntPipe,
+  ParseUUIDPipe,
+  Query,
+  Type
+} from '@nestjs/common';
 import 'reflect-metadata';
 import * as v from 'valibot';
 import { z } from 'zod';
@@ -42,4 +50,46 @@ describe('ParameterMetadataAccessor', () => {
       ])
     );
   });
+
+  it('should infer type and format from NestJS pipes', () => {
+    class PipesController {
+      method(
+        @Param('uuid', ParseUUIDPipe) uuid: string,
+        @Param('count', ParseIntPipe) count: number,
+        @Param('active', ParseBoolPipe) active: boolean
+      ) {
+        return { uuid, count, active };
+      }
+    }
+
+    const instance = new PipesController();
+    const metadata = accessor.explore(
+      instance,
+      PipesController.prototype as any as Type<unknown>,
+      instance.method
+    );
+
+    expect(metadata).toBeDefined();
+    expect(Object.values(metadata!)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          in: 'path',
+          name: 'uuid',
+          type: String,
+          format: 'uuid'
+        }),
+        expect.objectContaining({
+          in: 'path',
+          name: 'count',
+          type: Number
+        }),
+        expect.objectContaining({
+          in: 'path',
+          name: 'active',
+          type: Boolean
+        })
+      ])
+    );
+  });
 });
+
