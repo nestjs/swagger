@@ -46,7 +46,7 @@
     "start:debug": "nest start --watch --debug"
   },
   "dependencies": {
-    "@microsoft/tsdoc": "0.16.0",
+    "@microsoft/tsdoc": "0.17.0",
     "@nestjs/mapped-types": "12.0.0",
     "@standard-schema/spec": "1.1.0",
     "es-toolkit": "1.52.0",
