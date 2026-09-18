@@ -7,6 +7,8 @@ import { SwaggerUiOptions } from './swagger-ui-options.interface.js';
 export interface SwaggerCustomOptions {
   /**
    * If `true`, Swagger resources paths will be prefixed by the global prefix set through `setGlobalPrefix()`.
+   * When more than one global prefix is configured (`setGlobalPrefix(['api', 'v1'])`), the Swagger UI and
+   * JSON/YAML definitions are mounted once per prefix (e.g. under both `/api/docs` and `/v1/docs`).
    * Default: `false`.
    * @see https://docs.nestjs.com/faq/global-prefix
    */
