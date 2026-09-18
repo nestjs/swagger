@@ -2234,6 +2234,69 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when multiple global prefixes are configured', () => {
+    @Controller('foos')
+    class MultiPrefixController {
+      @Get()
+      find(): string {
+        return '';
+      }
+    }
+
+    const exploreWithPrefix = (globalPrefix: string | string[] | undefined) =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new MultiPrefixController(),
+          metatype: MultiPrefixController
+        } as InstanceWrapper<MultiPrefixController>,
+        new ApplicationConfig(),
+        { modulePath: undefined, globalPrefix }
+      );
+
+    it('creates one route per global prefix', () => {
+      const routes = exploreWithPrefix(['api', 'admin']);
+
+      expect(routes.length).toEqual(2);
+      expect(routes.map((route) => route.root.path).sort()).toEqual([
+        '/admin/foos',
+        '/api/foos'
+      ]);
+    });
+
+    it('disambiguates operationId across prefixes, keeping the first occurrence unchanged', () => {
+      const routes = exploreWithPrefix(['api', 'admin']);
+
+      const apiRoute = routes.find((route) => route.root.path === '/api/foos');
+      const adminRoute = routes.find(
+        (route) => route.root.path === '/admin/foos'
+      );
+
+      // The first prefix reproduces exactly what a single-prefix setup would
+      // have produced; only later occurrences are suffixed, since OpenAPI
+      // requires `operationId` to be unique across the whole document.
+      expect(apiRoute.root.operationId).toEqual('MultiPrefixController_find');
+      expect(adminRoute.root.operationId).toEqual(
+        'MultiPrefixController_find2'
+      );
+    });
+
+    it('treats a single-element array exactly like a plain string prefix', () => {
+      expect(exploreWithPrefix(['api'])).toEqual(exploreWithPrefix('api'));
+    });
+
+    it('treats an empty array exactly like no prefix at all', () => {
+      expect(exploreWithPrefix([])).toEqual(exploreWithPrefix(undefined));
+    });
+
+    it('collapses duplicate prefixes into a single route instead of doubling it up', () => {
+      const routes = exploreWithPrefix(['api', 'api']);
+
+      expect(routes.length).toEqual(1);
+      expect(routes[0].root.path).toEqual('/api/foos');
+      expect(routes[0].root.operationId).toEqual('MultiPrefixController_find');
+    });
+  });
+
   describe('when custom schema names are used', () => {
     @ApiSchema({
       name: 'Foo'

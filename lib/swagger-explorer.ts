@@ -114,7 +114,7 @@ export class SwaggerExplorer {
     applicationConfig: ApplicationConfig,
     options: {
       modulePath?: string;
-      globalPrefix?: string;
+      globalPrefix?: string | string[];
       operationIdFactory?: OperationIdFactory;
       linkNameFactory?: (
         controllerKey: string,
@@ -184,7 +184,7 @@ export class SwaggerExplorer {
     applicationConfig: ApplicationConfig,
     options: {
       modulePath?: string;
-      globalPrefix?: string;
+      globalPrefix?: string | string[];
       autoTagControllers?: boolean;
       onlyIncludeDecoratedEndpoints?: boolean;
     }
@@ -341,7 +341,7 @@ export class SwaggerExplorer {
     prototype: Type<unknown>,
     method: Function,
     metatype: Type<unknown>,
-    globalPrefix: string | undefined,
+    globalPrefix: string | string[] | undefined,
     modulePath: string | undefined,
     applicationConfig: ApplicationConfig
   ) {
@@ -375,41 +375,81 @@ export class SwaggerExplorer {
       versioningOptions
     );
 
-    const allRoutePaths = this.routePathFactory.create(
-      {
-        methodPath,
-        methodVersion,
-        modulePath,
-        globalPrefix,
-        controllerVersion,
-        ctrlPath: this.reflectControllerPath(metatype),
-        versioningOptions: applicationConfig.getVersioning()
-      },
-      requestMethod
-    );
+    // `RoutePathFactory#create()` only understands a single prefix per call.
+    // Building the route(s) for one prefix is therefore extracted into this
+    // closure so it can be invoked once per configured global prefix below,
+    // instead of forwarding a whole `string[]` into `create()` in one go.
+    const buildOperationsForPrefix = (prefix: string | undefined) => {
+      const allRoutePaths = this.routePathFactory.create(
+        {
+          methodPath,
+          methodVersion,
+          modulePath,
+          globalPrefix: prefix,
+          controllerVersion,
+          ctrlPath: this.reflectControllerPath(metatype),
+          versioningOptions: applicationConfig.getVersioning()
+        },
+        requestMethod
+      );
 
-    return flatten(
-      allRoutePaths.map((routePath, index) => {
-        const fullPath = this.validateRoutePath(routePath);
-        const apiExtension = Reflect.getMetadata(
-          DECORATORS.API_EXTENSION,
-          method
-        );
-        if (requestMethod === RequestMethod.ALL) {
-          // Workaround for the invalid "ALL" Method
-          const validMethods = [
-            'get',
-            'post',
-            'put',
-            'delete',
-            'patch',
-            'options',
-            'head',
-            'search'
-          ];
+      return flatten(
+        allRoutePaths.map((routePath, index) => {
+          const fullPath = this.validateRoutePath(routePath);
+          const apiExtension = Reflect.getMetadata(
+            DECORATORS.API_EXTENSION,
+            method
+          );
+          if (requestMethod === RequestMethod.ALL) {
+            // Workaround for the invalid "ALL" Method
+            const validMethods = [
+              'get',
+              'post',
+              'put',
+              'delete',
+              'patch',
+              'options',
+              'head',
+              'search'
+            ];
 
-          return validMethods.map((requestMethod) => ({
-            method: requestMethod,
+            return validMethods.map((requestMethod) => ({
+              method: requestMethod,
+              path: fullPath === '' ? '/' : fullPath,
+              ...(isWebhook
+                ? {
+                    isWebhook: true,
+                    webhookName:
+                      typeof webhookMetadata === 'string'
+                        ? webhookMetadata
+                        : method.name
+                  }
+                : {}),
+              operationId: `${this.getOperationId(
+                instance,
+                method.name
+              )}_${requestMethod.toLowerCase()}`,
+              ...apiExtension
+            }));
+          }
+
+          const pathVersion = versions.find(
+            (v) => fullPath.includes(`/${v}/`) || fullPath.endsWith(`/${v}`)
+          );
+          const isAlias =
+            allRoutePaths.length > 1 &&
+            allRoutePaths.length !== versions.length;
+          const methodKey = isAlias ? `${method.name}[${index}]` : method.name;
+
+          const nonPathVersion = this.getNonPathVersion(
+            methodVersion,
+            metatype,
+            versioningOptions
+          );
+          const operationVersion = pathVersion ?? nonPathVersion;
+
+          return {
+            method: RequestMethod[requestMethod].toLowerCase(),
             path: fullPath === '' ? '/' : fullPath,
             ...(isWebhook
               ? {
@@ -420,49 +460,89 @@ export class SwaggerExplorer {
                       : method.name
                 }
               : {}),
-            operationId: `${this.getOperationId(
+            operationId: this.getOperationId(
               instance,
-              method.name
-            )}_${requestMethod.toLowerCase()}`,
+              methodKey,
+              operationVersion
+            ),
             ...apiExtension
-          }));
-        }
+          };
+        })
+      );
+    };
 
-        const pathVersion = versions.find(
-          (v) => fullPath.includes(`/${v}/`) || fullPath.endsWith(`/${v}`)
-        );
-        const isAlias =
-          allRoutePaths.length > 1 && allRoutePaths.length !== versions.length;
-        const methodKey = isAlias ? `${method.name}[${index}]` : method.name;
+    const prefixes = this.normalizeGlobalPrefixes(globalPrefix);
+    const operations = flatten(prefixes.map(buildOperationsForPrefix));
 
-        const nonPathVersion = this.getNonPathVersion(
-          methodVersion,
-          metatype,
-          versioningOptions
-        );
-        const operationVersion = pathVersion ?? nonPathVersion;
+    return prefixes.length > 1
+      ? this.deduplicateMultiPrefixOperations(operations)
+      : operations;
+  }
 
-        return {
-          method: RequestMethod[requestMethod].toLowerCase(),
-          path: fullPath === '' ? '/' : fullPath,
-          ...(isWebhook
-            ? {
-                isWebhook: true,
-                webhookName:
-                  typeof webhookMetadata === 'string'
-                    ? webhookMetadata
-                    : method.name
-              }
-            : {}),
-          operationId: this.getOperationId(
-            instance,
-            methodKey,
-            operationVersion
-          ),
-          ...apiExtension
-        };
-      })
-    );
+  /**
+   * Normalizes a `globalPrefix` value into the list of prefixes that should
+   * each produce their own copy of a route.
+   *
+   * A non-empty `string[]` is used as-is. `undefined`, a plain `string`, or
+   * an empty array (no prefix configured) are all normalized to a single
+   * "no prefix" entry, so `buildOperationsForPrefix()` above runs exactly
+   * once and reproduces the pre-existing single-prefix behavior byte for
+   * byte in every case that isn't actually using multiple prefixes.
+   */
+  private normalizeGlobalPrefixes(
+    globalPrefix: string | string[] | undefined
+  ): Array<string | undefined> {
+    if (!Array.isArray(globalPrefix)) {
+      return [globalPrefix];
+    }
+    return globalPrefix.length > 0 ? globalPrefix : [undefined];
+  }
+
+  /**
+   * Generating one operation per global prefix can introduce two problems
+   * that never occur with a single prefix:
+   *
+   * - a route excluded from every prefix (`GlobalPrefixOptions#exclude`)
+   *   resolves to the exact same `path`, so it would be listed once per
+   *   prefix instead of once overall;
+   * - the default `operationIdFactory` derives an id from the controller and
+   *   method names only, so the same `operationId` would otherwise be
+   *   reused across prefixes — invalid per the OpenAPI Specification, which
+   *   requires `operationId` to be unique across the whole document.
+   *
+   * This drops exact `method` + `path` duplicates and appends a numeric
+   * suffix to `operationId` on repeat occurrences, leaving the first
+   * occurrence of each (the one a single-prefix setup would have produced)
+   * untouched.
+   */
+  private deduplicateMultiPrefixOperations(operations: any[]): any[] {
+    const seenPaths = new Set<string>();
+    const operationIdOccurrences = new Map<string, number>();
+    const deduplicated: any[] = [];
+
+    for (const operation of operations) {
+      const pathKey = `${operation.method}:${operation.path}`;
+      if (seenPaths.has(pathKey)) {
+        continue;
+      }
+      seenPaths.add(pathKey);
+
+      const operationId = operation.operationId;
+      if (!operationId) {
+        deduplicated.push(operation);
+        continue;
+      }
+      const occurrence = operationIdOccurrences.get(operationId) ?? 0;
+      operationIdOccurrences.set(operationId, occurrence + 1);
+
+      deduplicated.push(
+        occurrence > 0
+          ? { ...operation, operationId: `${operationId}${occurrence + 1}` }
+          : operation
+      );
+    }
+
+    return deduplicated;
   }
 
   private getOperationId(
