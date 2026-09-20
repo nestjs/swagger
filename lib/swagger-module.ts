@@ -120,8 +120,6 @@ export class SwaggerModule {
       convertNullableToOas31(finalDocument);
     }
 
-    // The `query` operation is only a valid Path Item field from OpenAPI 3.2
-    // onwards. For older documents, drop it so the output stays spec-compliant.
     if (!isOas32OrLater(openApiVersion) && finalDocument.paths) {
       finalDocument.paths = SwaggerModule.stripQueryOperations(
         finalDocument.paths
