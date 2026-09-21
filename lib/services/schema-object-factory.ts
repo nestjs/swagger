@@ -1054,10 +1054,7 @@ export class SchemaObjectFactory {
     }
 
     if (param.name) {
-      return {
-        ...baseParam,
-        schema
-      };
+      return this.withPromotedSchemaDescription(baseParam, schema);
     }
 
     if (
@@ -1071,16 +1068,31 @@ export class SchemaObjectFactory {
           : []
       );
       return Object.entries((schema as SchemaObject).properties || {}).map(
-        ([name, propertySchema]) => ({
-          ...baseParam,
-          name,
-          required: requiredProperties.has(name),
-          schema: propertySchema as SchemaObject | ReferenceObject
-        })
+        ([name, propertySchema]) =>
+          this.withPromotedSchemaDescription(
+            {
+              ...baseParam,
+              name,
+              required: requiredProperties.has(name)
+            },
+            propertySchema as SchemaObject | ReferenceObject
+          )
       );
     }
 
     return undefined;
+  }
+
+  private withPromotedSchemaDescription(
+    baseParam: Record<string, unknown>,
+    schema: SchemaObject | ReferenceObject
+  ): BaseParameterObject {
+    const description: string | undefined =
+      (baseParam.description as string | undefined) ??
+      (schema as SchemaObject).description;
+    return description === undefined
+      ? { ...baseParam, schema }
+      : { ...baseParam, description, schema };
   }
 
   expandStandardSchemaParam(

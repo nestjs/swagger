@@ -1570,6 +1570,70 @@ describe('SchemaObjectFactory', () => {
       ]);
     });
 
+    it('should promote a standard schema description onto a named parameter', () => {
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: String,
+          name: 'filter',
+          required: true,
+          standardSchema: createStandardSchema({
+            type: 'string',
+            description: 'Filter description from schema'
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      // Swagger UI reads `parameter.description`, not
+      // `parameter.schema.description` — a Standard Schema only ever
+      // produces the latter, so it must be promoted here.
+      expect(result).toEqual([
+        expect.objectContaining({
+          in: 'query',
+          name: 'filter',
+          description: 'Filter description from schema',
+          schema: {
+            type: 'string',
+            description: 'Filter description from schema'
+          }
+        })
+      ]);
+    });
+
+    it('should not override an explicit parameter description with the schema one', () => {
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: String,
+          name: 'filter',
+          required: true,
+          description: 'Explicit decorator description',
+          standardSchema: createStandardSchema({
+            type: 'string',
+            description: 'Filter description from schema'
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          in: 'query',
+          name: 'filter',
+          description: 'Explicit decorator description',
+          schema: {
+            type: 'string',
+            description: 'Filter description from schema'
+          }
+        })
+      ]);
+    });
+
     it('should override an inferred body type with a standard schema', () => {
       class BodyDto {
         value: number;
@@ -1648,6 +1712,52 @@ describe('SchemaObjectFactory', () => {
           }
         })
       ]);
+    });
+
+    it('should promote a standard schema property description onto its expanded parameter', () => {
+      const schemas: Record<string, SchemasObject> = {};
+      const queryParams: ParamWithTypeMetadata[] = [
+        {
+          in: 'query',
+          type: Object,
+          required: true,
+          standardSchema: createStandardSchema({
+            type: 'object',
+            required: ['limit'],
+            properties: {
+              limit: {
+                type: 'integer',
+                description: 'Limit description from schema'
+              },
+              search: {
+                type: 'string'
+              }
+            }
+          })
+        } as any
+      ];
+
+      const result = schemaObjectFactory.createFromModel(queryParams, schemas);
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          in: 'query',
+          name: 'limit',
+          description: 'Limit description from schema',
+          schema: {
+            type: 'integer',
+            description: 'Limit description from schema'
+          }
+        }),
+        expect.objectContaining({
+          in: 'query',
+          name: 'search',
+          schema: {
+            type: 'string'
+          }
+        })
+      ]);
+      expect(result[1]).not.toHaveProperty('description');
     });
 
     it('should preserve parent example when a non-body param property has a DTO type', () => {
@@ -1828,8 +1938,10 @@ describe('SchemaObjectFactory', () => {
       });
       return {
         schema: converted.schema as SchemaObject | ReferenceObject,
-        components:
-          converted.components as unknown as Record<string, SchemaObject>
+        components: converted.components as unknown as Record<
+          string,
+          SchemaObject
+        >
       };
     }
 
