@@ -81,6 +81,7 @@
     "release-it": "21.1.0",
     "rxjs": "7.8.2",
     "supertest": "7.3.0",
+    "swagger-ui-dist": "5.33.0",
     "typescript": "6.0.3",
     "vite": "^8.0.8",
     "valibot": "1.5.0",
