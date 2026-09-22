@@ -589,6 +589,110 @@ describe('Express Swagger', () => {
     });
   });
 
+  describe('setup with multiple global prefixes', () => {
+    let appMultiplePrefixes: NestExpressApplication;
+
+    // `AppController` exposes `@Get(['alias1', 'alias2'])`, which gives us two
+    // unambiguous, literal paths (no version/root-path guessing needed) to
+    // confirm each one is documented once per configured prefix.
+    const GLOBAL_PREFIXES = ['v1', 'v2'];
+
+    beforeEach(async () => {
+      appMultiplePrefixes = await NestFactory.create<NestExpressApplication>(
+        ApplicationModule,
+        new ExpressAdapter(),
+        { logger: false }
+      );
+      // `ApplicationConfig#getGlobalPrefixes()` (nestjs/nest#17713) isn't part
+      // of any published `@nestjs/core` release yet, and the currently
+      // installed version doesn't validate what's passed to
+      // `setGlobalPrefix()` either (it would silently store the raw array
+      // instead of rejecting it), so the getter consumed by
+      // `getGlobalPrefixes()` in ../lib/utils/get-global-prefix.ts is stubbed
+      // directly here to exercise this package's multi-prefix handling
+      // without depending on an unreleased core version.
+      (appMultiplePrefixes as any).config.getGlobalPrefixes = () =>
+        GLOBAL_PREFIXES;
+
+      const swaggerDocument = SwaggerModule.createDocument(
+        appMultiplePrefixes,
+        builder.build()
+      );
+      SwaggerModule.setup('api', appMultiplePrefixes, swaggerDocument, {
+        useGlobalPrefix: true
+      });
+
+      await appMultiplePrefixes.init();
+    });
+
+    afterEach(async () => {
+      await appMultiplePrefixes.close();
+    });
+
+    it('documents each route once per configured prefix', () => {
+      const document = SwaggerModule.createDocument(
+        appMultiplePrefixes,
+        builder.build()
+      );
+
+      expect(document.paths['/v1/alias1']).toBeDefined();
+      expect(document.paths['/v1/alias2']).toBeDefined();
+      expect(document.paths['/v2/alias1']).toBeDefined();
+      expect(document.paths['/v2/alias2']).toBeDefined();
+    });
+
+    it('never reuses the same operationId across prefixes', () => {
+      const document = SwaggerModule.createDocument(
+        appMultiplePrefixes,
+        builder.build()
+      );
+
+      const operationIds = Object.values(document.paths).flatMap((pathItem) =>
+        Object.values(pathItem as Record<string, any>)
+          .map((operation: any) => operation?.operationId)
+          .filter(Boolean)
+      );
+
+      expect(operationIds.length).toBeGreaterThan(0);
+      expect(new Set(operationIds).size).toEqual(operationIds.length);
+    });
+
+    it.each(GLOBAL_PREFIXES)(
+      'serves the Swagger UI under the "%s" prefix',
+      async (prefix) => {
+        const response = await request(appMultiplePrefixes.getHttpServer()).get(
+          `/${prefix}/api`
+        );
+
+        expect(response.status).toEqual(200);
+      }
+    );
+
+    it.each(GLOBAL_PREFIXES)(
+      'serves the JSON definition under the "%s" prefix',
+      async (prefix) => {
+        const response = await request(appMultiplePrefixes.getHttpServer()).get(
+          `/${prefix}/api-json`
+        );
+
+        expect(response.status).toEqual(200);
+        expect(Object.keys(response.body).length).toBeGreaterThan(0);
+      }
+    );
+
+    it.each(GLOBAL_PREFIXES)(
+      'serves the YAML definition under the "%s" prefix',
+      async (prefix) => {
+        const response = await request(appMultiplePrefixes.getHttpServer()).get(
+          `/${prefix}/api-yaml`
+        );
+
+        expect(response.status).toEqual(200);
+        expect(response.text.length).toBeGreaterThan(0);
+      }
+    );
+  });
+
   describe('API tags', () => {
     it('should auto generate tags for controllers', async () => {
       const document = SwaggerModule.createDocument(app, builder.build());

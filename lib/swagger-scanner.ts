@@ -20,7 +20,7 @@ import { SwaggerTypesMapper } from './services/swagger-types-mapper.js';
 import { SwaggerExplorer } from './swagger-explorer.js';
 import { SwaggerTransformer } from './swagger-transformer.js';
 import { applyExampleMaxDepth } from './utils/apply-example-max-depth.util.js';
-import { getGlobalPrefix } from './utils/get-global-prefix.js';
+import { getGlobalPrefixes } from './utils/get-global-prefix.js';
 import { stripDynamicDefaults } from './utils/strip-dynamic-defaults.util.js';
 import { stripLastSlash } from './utils/strip-last-slash.util.js';
 
@@ -68,9 +68,16 @@ export class SwaggerScanner {
       container.getModules(),
       includedModules
     );
-    const globalPrefix = !ignoreGlobalPrefix
-      ? stripLastSlash(getGlobalPrefix(app))
-      : '';
+    // `setGlobalPrefix()` accepts a single prefix or an array of prefixes
+    // (see `app.setGlobalPrefix(['api', 'v1'])`), so every route must be
+    // documented once per configured prefix. An empty array (no prefix set)
+    // falls back to `''` so downstream consumers keep treating "no prefix"
+    // exactly like before, instead of an array with no elements.
+    const globalPrefixes = !ignoreGlobalPrefix
+      ? getGlobalPrefixes(app).map((prefix) => stripLastSlash(prefix))
+      : [];
+    const globalPrefix: string | string[] =
+      globalPrefixes.length > 0 ? globalPrefixes : '';
 
     const denormalizedPaths = modules.map(
       ({ controllers, metatype, imports }) => {
@@ -139,7 +146,7 @@ export class SwaggerScanner {
     applicationConfig: ApplicationConfig,
     options: {
       modulePath: string | undefined;
-      globalPrefix: string | undefined;
+      globalPrefix: string | string[] | undefined;
       operationIdFactory?: OperationIdFactory;
       linkNameFactory?: (
         controllerKey: string,

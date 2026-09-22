@@ -40,7 +40,8 @@ export interface SwaggerDocumentOptions {
   extraModels?: Function[];
 
   /**
-   * If `true`, swagger will ignore the global prefix set through `setGlobalPrefix()` method
+   * If `true`, swagger will ignore the global prefix (or prefixes) set
+   * through the `setGlobalPrefix()` method
    */
   ignoreGlobalPrefix?: boolean;
 

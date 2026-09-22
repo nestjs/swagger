@@ -16,7 +16,7 @@ import {
   getSwaggerAssetsAbsoluteFSPath
 } from './swagger-ui/index.js';
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep.js';
-import { getGlobalPrefix } from './utils/get-global-prefix.js';
+import { getGlobalPrefixes } from './utils/get-global-prefix.js';
 import { isOas31OrLater } from './utils/is-oas31-or-later.util.js';
 import { normalizeRelPath } from './utils/normalize-rel-path.js';
 import { convertNullableToOas31 } from './utils/nullable-to-oas31.util.js';
@@ -390,56 +390,77 @@ export class SwaggerModule {
     documentOrFactory: OpenAPIObject | (() => OpenAPIObject),
     options?: SwaggerCustomOptions
   ) {
-    const globalPrefix = getGlobalPrefix(app);
-    const finalPath = validatePath(
-      options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
-        ? `${globalPrefix}${validatePath(path)}`
-        : path
-    );
-    const urlLastSubdirectory = finalPath.split('/').slice(-1).pop() || '';
-    const validatedGlobalPrefix =
-      options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
-        ? validatePath(globalPrefix)
-        : '';
-
-    const finalJSONDocumentPath = options?.jsonDocumentUrl
-      ? `${validatedGlobalPrefix}${validatePath(options.jsonDocumentUrl)}`
-      : `${finalPath}-json`;
-
-    const finalYAMLDocumentPath = options?.yamlDocumentUrl
-      ? `${validatedGlobalPrefix}${validatePath(options.yamlDocumentUrl)}`
-      : `${finalPath}-yaml`;
+    // `setGlobalPrefix()` accepts either a single prefix or an array of
+    // prefixes (e.g. `app.setGlobalPrefix(['api', 'v1'])`). When
+    // `useGlobalPrefix` is enabled, the UI and JSON/YAML definitions are
+    // mounted once per configured prefix below, exactly mirroring how the
+    // application's own routes become reachable under every prefix. With a
+    // single prefix (or none) `prefixesToMount` below has exactly one entry,
+    // so behavior is unchanged from before.
+    const globalPrefixes = options?.useGlobalPrefix
+      ? getGlobalPrefixes(app)
+          .map((prefix) => validatePath(prefix))
+          .filter((prefix) => validateGlobalPrefix(prefix))
+      : [];
+    const prefixesToMount =
+      globalPrefixes.length > 0 ? [...new Set(globalPrefixes)] : [''];
 
     const ui = options?.ui ?? options?.swaggerUiEnabled ?? true;
     const raw = options?.raw ?? true;
-
     const httpAdapter = app.getHttpAdapter();
 
-    SwaggerModule.serveDocuments(
-      finalPath,
-      urlLastSubdirectory,
-      httpAdapter,
-      documentOrFactory,
-      {
-        ui,
-        raw,
-        jsonDocumentUrl: finalJSONDocumentPath,
-        yamlDocumentUrl: finalYAMLDocumentPath,
-        swaggerOptions: options || {}
+    // The document (or factory) is potentially expensive to build (it scans
+    // the whole application), so it's resolved at most once even though it
+    // may be served from several mount points when multiple prefixes are
+    // configured.
+    let builtDocument: OpenAPIObject;
+    const getSharedDocument = () => {
+      if (!builtDocument) {
+        builtDocument =
+          typeof documentOrFactory === 'function'
+            ? documentOrFactory()
+            : documentOrFactory;
       }
-    );
+      return builtDocument;
+    };
 
-    if (ui) {
-      SwaggerModule.serveStatic(finalPath, app, options?.customSwaggerUiPath);
-      /**
-       * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
-       * @see https://github.com/nestjs/swagger/issues/1976
-       */
-      if (finalPath === `/${urlLastSubdirectory}`) {
-        return;
+    prefixesToMount.forEach((globalPrefix) => {
+      const finalPath = validatePath(`${globalPrefix}${validatePath(path)}`);
+      const urlLastSubdirectory = finalPath.split('/').slice(-1).pop() || '';
+
+      const finalJSONDocumentPath = options?.jsonDocumentUrl
+        ? `${globalPrefix}${validatePath(options.jsonDocumentUrl)}`
+        : `${finalPath}-json`;
+
+      const finalYAMLDocumentPath = options?.yamlDocumentUrl
+        ? `${globalPrefix}${validatePath(options.yamlDocumentUrl)}`
+        : `${finalPath}-yaml`;
+
+      SwaggerModule.serveDocuments(
+        finalPath,
+        urlLastSubdirectory,
+        httpAdapter,
+        getSharedDocument,
+        {
+          ui,
+          raw,
+          jsonDocumentUrl: finalJSONDocumentPath,
+          yamlDocumentUrl: finalYAMLDocumentPath,
+          swaggerOptions: options || {}
+        }
+      );
+
+      if (ui) {
+        SwaggerModule.serveStatic(finalPath, app, options?.customSwaggerUiPath);
+        /**
+         * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
+         * @see https://github.com/nestjs/swagger/issues/1976
+         */
+        if (finalPath !== `/${urlLastSubdirectory}`) {
+          const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
+          SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
+        }
       }
-      const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
-      SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
-    }
+    });
   }
 }
