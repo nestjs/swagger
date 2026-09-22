@@ -52,7 +52,7 @@
     "es-toolkit": "1.52.0",
     "js-yaml": "5.4.2",
     "path-to-regexp": "8.4.2",
-    "swagger-ui-dist": "5.32.15"
+    "swagger-ui-dist": "5.33.0"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "13.1.0",
