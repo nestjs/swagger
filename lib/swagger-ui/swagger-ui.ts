@@ -30,7 +30,15 @@ let swaggerAssetsAbsoluteFSPath: string | undefined;
  */
 export function getSwaggerAssetsAbsoluteFSPath() {
   if (!swaggerAssetsAbsoluteFSPath) {
-    swaggerAssetsAbsoluteFSPath = require('swagger-ui-dist/absolute-path.js')();
+    try {
+      swaggerAssetsAbsoluteFSPath = require('swagger-ui-dist/absolute-path.js')();
+    } catch {
+      throw new Error(
+        'The "swagger-ui-dist" package is required to serve the Swagger UI. ' +
+          'Please install it (e.g. `npm i swagger-ui-dist`). ' +
+          'It is not needed if you only generate the OpenAPI document with SwaggerModule.createDocument().'
+      );
+    }
   }
 
   return swaggerAssetsAbsoluteFSPath;
