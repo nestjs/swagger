@@ -1429,6 +1429,7 @@
             "name": "page",
             "required": true,
             "in": "query",
+            "description": "Page number from Valibot",
             "schema": {
               "type": "number",
               "description": "Page number from Valibot"
@@ -1508,6 +1509,7 @@
             "name": "mode",
             "required": true,
             "in": "query",
+            "description": "Mode enum from Valibot",
             "schema": {
               "enum": [
                 "simple",
@@ -1522,6 +1524,7 @@
             "name": "filter",
             "required": true,
             "in": "query",
+            "description": "Filter union from Valibot",
             "schema": {
               "anyOf": [
                 {
@@ -1549,6 +1552,7 @@
             "name": "details",
             "required": true,
             "in": "query",
+            "description": "Nested details from Valibot",
             "schema": {
               "type": "object",
               "properties": {
@@ -1638,19 +1642,20 @@
             "name": "filter",
             "required": false,
             "in": "query",
+            "description": "Explicit query decorator description",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 9007199254740991,
               "description": "Query override from Zod",
               "example": 3
-            },
-            "description": "Explicit query decorator description"
+            }
           },
           {
             "name": "active",
             "required": true,
             "in": "query",
+            "description": "Boolean flag from Zod",
             "schema": {
               "type": "boolean",
               "description": "Boolean flag from Zod",
@@ -2099,6 +2104,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Cat identifier from Zod",
             "schema": {
               "type": "string",
               "minLength": 3,
@@ -2171,6 +2177,7 @@
             "name": "state",
             "required": true,
             "in": "path",
+            "description": "Cat state enum from Zod",
             "schema": {
               "type": "string",
               "enum": [
