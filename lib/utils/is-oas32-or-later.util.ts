@@ -1,7 +1,5 @@
-export function isOas32OrLater(openApiVersion: string): boolean {
-  const [major, minor] = openApiVersion.split('.').map((part) => Number(part));
-  const safeMajor = Number.isNaN(major) ? 0 : major;
-  const safeMinor = Number.isNaN(minor) ? 0 : minor;
+import { isOasVersionAtLeast } from './is-oas-version-at-least.util.js';
 
-  return safeMajor > 3 || (safeMajor === 3 && safeMinor >= 2);
+export function isOas32OrLater(openApiVersion: string): boolean {
+  return isOasVersionAtLeast(openApiVersion, 3, 2);
 }

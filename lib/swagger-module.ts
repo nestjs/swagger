@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import * as jsyaml from 'js-yaml';
 import {
   OpenAPIObject,
+  PathItemObject,
   SwaggerCustomOptions,
   SwaggerDocumentOptions
 } from './interfaces/index.js';
@@ -41,29 +42,25 @@ export class SwaggerModule {
     return assignTwoLevelsDeep({}, configWebhooks || {}, scannedWebhooks || {});
   }
 
-  private static stripQueryOperations(
-    paths: OpenAPIObject['paths'] | undefined
-  ): OpenAPIObject['paths'] | undefined {
-    if (!paths) {
-      return paths;
+  /**
+   * The `query` Path Item field only exists since OpenAPI 3.2. Removes it from
+   * older documents, dropping any path item that ends up empty.
+   */
+  private static stripQueryOperations<T extends Record<string, PathItemObject>>(
+    pathItems: T
+  ): T {
+    const result: Record<string, PathItemObject> = {};
+    for (const [key, pathItem] of Object.entries(pathItems)) {
+      if (!pathItem?.query) {
+        result[key] = pathItem;
+        continue;
+      }
+      const { query: _query, ...rest } = pathItem;
+      if (Object.keys(rest).length > 0) {
+        result[key] = rest;
+      }
     }
-    let hasQueryOperation = false;
-    const sanitizedPaths = Object.entries(paths).reduce(
-      (acc, [path, pathItem]) => {
-        if (!pathItem || !('query' in pathItem)) {
-          acc[path] = pathItem;
-          return acc;
-        }
-        hasQueryOperation = true;
-        const { query, ...pathItemWithoutQuery } = pathItem;
-        if (Object.keys(pathItemWithoutQuery).length > 0) {
-          acc[path] = pathItemWithoutQuery;
-        }
-        return acc;
-      },
-      {} as OpenAPIObject['paths']
-    );
-    return hasQueryOperation ? sanitizedPaths : paths;
+    return result as T;
   }
 
   public static createDocument(
@@ -120,10 +117,15 @@ export class SwaggerModule {
       convertNullableToOas31(finalDocument);
     }
 
-    if (!isOas32OrLater(openApiVersion) && finalDocument.paths) {
+    if (!isOas32OrLater(openApiVersion)) {
       finalDocument.paths = SwaggerModule.stripQueryOperations(
         finalDocument.paths
       );
+      if (finalDocument.webhooks) {
+        finalDocument.webhooks = SwaggerModule.stripQueryOperations(
+          finalDocument.webhooks
+        );
+      }
     }
 
     return finalDocument;

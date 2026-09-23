@@ -7,11 +7,9 @@ import {
   RequestMethod
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '../lib';
+import { ApiWebhook, DocumentBuilder, SwaggerModule } from '../lib';
 
-const hasQueryMethod = 'QUERY' in RequestMethod;
-
-describe.runIf(hasQueryMethod)('SwaggerModule QUERY method handling', () => {
+describe('SwaggerModule QUERY method handling', () => {
   class FooFilterDto {
     name: string;
   }
@@ -29,7 +27,16 @@ describe.runIf(hasQueryMethod)('SwaggerModule QUERY method handling', () => {
     }
   }
 
-  @Module({ controllers: [QueryMethodController] })
+  @Controller()
+  class QueryWebhooksController {
+    @RequestMapping({ path: 'search-hook', method: RequestMethod.QUERY })
+    @ApiWebhook('searchEvent')
+    searchHook() {
+      return { ok: true };
+    }
+  }
+
+  @Module({ controllers: [QueryMethodController, QueryWebhooksController] })
   class AppModule {}
 
   const createDocument = async (openApiVersion: string) => {
@@ -66,9 +73,16 @@ describe.runIf(hasQueryMethod)('SwaggerModule QUERY method handling', () => {
     expect(document.paths['/foos'].query).toBeUndefined();
   });
 
+  it('omits query webhooks for OAS 3.1', async () => {
+    const document = await createDocument('3.1.0');
+
+    expect(document.webhooks?.searchEvent).toBeUndefined();
+  });
+
   it('emits the query operation for OAS >= 3.2', async () => {
     const document = await createDocument('3.2.0');
 
     expect(document.paths['/foos/filtered'].query).toBeDefined();
+    expect(document.webhooks?.searchEvent.query).toBeDefined();
   });
 });
