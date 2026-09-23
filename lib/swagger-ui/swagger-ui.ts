@@ -20,11 +20,7 @@ export function buildSwaggerInitJS(
   };
 
   const jsInitOptions = buildJSInitOptions(swaggerInitOptions);
-  // The serialized OpenAPI document is user-controlled (e.g. descriptions).
-  // Pass the replacement through a callback rather than as a string so that
-  // `$$`, `$&`, "$`", "$'" and `$1`–`$9` sequences are inserted verbatim
-  // instead of being interpreted as replacement patterns (which would silently
-  // corrupt swagger-ui-init.js).
+  // Callback replacer: see the note in `buildSwaggerHTML` below.
   return jsTemplateString.replace('<% swaggerOptions %>', () => jsInitOptions);
 }
 
