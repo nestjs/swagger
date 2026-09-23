@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import * as jsyaml from 'js-yaml';
 import {
   OpenAPIObject,
+  PathItemObject,
   SwaggerCustomOptions,
   SwaggerDocumentOptions
 } from './interfaces/index.js';
@@ -18,6 +19,7 @@ import {
 import { assignTwoLevelsDeep } from './utils/assign-two-levels-deep.js';
 import { getGlobalPrefix } from './utils/get-global-prefix.js';
 import { isOas31OrLater } from './utils/is-oas31-or-later.util.js';
+import { isOas32OrLater } from './utils/is-oas32-or-later.util.js';
 import { normalizeRelPath } from './utils/normalize-rel-path.js';
 import { convertNullableToOas31 } from './utils/nullable-to-oas31.util.js';
 import { resolvePath } from './utils/resolve-path.util.js';
@@ -38,6 +40,27 @@ export class SwaggerModule {
       return undefined;
     }
     return assignTwoLevelsDeep({}, configWebhooks || {}, scannedWebhooks || {});
+  }
+
+  /**
+   * The `query` Path Item field only exists since OpenAPI 3.2. Removes it from
+   * older documents, dropping any path item that ends up empty.
+   */
+  private static stripQueryOperations<T extends Record<string, PathItemObject>>(
+    pathItems: T
+  ): T {
+    const result: Record<string, PathItemObject> = {};
+    for (const [key, pathItem] of Object.entries(pathItems)) {
+      if (!pathItem?.query) {
+        result[key] = pathItem;
+        continue;
+      }
+      const { query: _query, ...rest } = pathItem;
+      if (Object.keys(rest).length > 0) {
+        result[key] = rest;
+      }
+    }
+    return result as T;
   }
 
   public static createDocument(
@@ -66,7 +89,8 @@ export class SwaggerModule {
       configWebhooks,
       scannedWebhooks
     );
-    const isOas31 = isOas31OrLater(config.openapi ?? '3.0.0');
+    const openApiVersion = config.openapi ?? '3.0.0';
+    const isOas31 = isOas31OrLater(openApiVersion);
     const baseDocument: OpenAPIObject = {
       openapi: '3.0.0',
       paths: {},
@@ -91,6 +115,17 @@ export class SwaggerModule {
     if (isOas31) {
       // 3.1 is JSON Schema 2020-12, which removed the "nullable" keyword.
       convertNullableToOas31(finalDocument);
+    }
+
+    if (!isOas32OrLater(openApiVersion)) {
+      finalDocument.paths = SwaggerModule.stripQueryOperations(
+        finalDocument.paths
+      );
+      if (finalDocument.webhooks) {
+        finalDocument.webhooks = SwaggerModule.stripQueryOperations(
+          finalDocument.webhooks
+        );
+      }
     }
 
     return finalDocument;

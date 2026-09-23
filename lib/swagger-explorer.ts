@@ -405,7 +405,8 @@ export class SwaggerExplorer {
             'patch',
             'options',
             'head',
-            'search'
+            'search',
+            'query'
           ];
 
           return validMethods.map((requestMethod) => ({

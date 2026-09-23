@@ -6,6 +6,8 @@ import {
   Param,
   Post,
   Query,
+  RequestMapping,
+  RequestMethod,
   Version,
   VERSION_NEUTRAL,
   VersioningType
@@ -2204,7 +2206,7 @@ describe('SwaggerExplorer', () => {
         }
       );
 
-      expect(routes.length).toEqual(8);
+      expect(routes.length).toEqual(9);
       expect(
         [
           'get',
@@ -2214,7 +2216,8 @@ describe('SwaggerExplorer', () => {
           'patch',
           'options',
           'head',
-          'search'
+          'search',
+          'query'
         ].every((method) =>
           routes.find((route) => route.root.method === method)
         )
@@ -2231,6 +2234,56 @@ describe('SwaggerExplorer', () => {
             ) === i
         ).length
       ).toEqual(1);
+    });
+  });
+
+  describe('when the HTTP QUERY method is used', () => {
+    class FooFilterDto {
+      @ApiProperty()
+      name: string;
+    }
+
+    class FilteredFoo {}
+
+    @Controller('foos')
+    class QueryMethodController {
+      @RequestMapping({ path: 'filtered', method: RequestMethod.QUERY })
+      @ApiOkResponse({ type: [FilteredFoo] })
+      getFiltered(@Body() filters: FooFilterDto): Promise<FilteredFoo[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    it('should expose the operation under the "query" method with a requestBody', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new QueryMethodController(),
+          metatype: QueryMethodController
+        } as InstanceWrapper<QueryMethodController>,
+        new ApplicationConfig(),
+        {
+          modulePath: 'modulePath',
+          globalPrefix: 'globalPrefix'
+        }
+      );
+
+      expect(routes.length).toEqual(1);
+      expect(routes[0].root.method).toEqual('query');
+      expect(routes[0].root.path).toEqual(
+        '/globalPrefix/modulePath/foos/filtered'
+      );
+      expect(routes[0].root.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/FooFilterDto'
+            }
+          }
+        }
+      });
+      expect(routes[0].responses['200']).toBeDefined();
     });
   });
 
