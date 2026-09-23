@@ -5,7 +5,12 @@ import * as v from 'valibot';
 import { z, type ZodType } from 'zod';
 import { createSchema } from 'zod-openapi';
 import { DECORATORS } from '../../lib/constants';
-import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
+import {
+  ApiExtension,
+  ApiExtraModels,
+  ApiProperty,
+  ApiSchema
+} from '../../lib/decorators';
 import { StandardSchemaConverter } from '../../lib/interfaces';
 import {
   BaseParameterObject,
@@ -1036,6 +1041,103 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it.each(['oneOf', 'anyOf', 'allOf'] as const)(
+      'should allow null alongside a referenced raw %s schema',
+      (combinator) => {
+        @ApiSchema({ [combinator]: [{ type: 'string' }] })
+        class RawValue {}
+
+        class Container {
+          @ApiProperty({
+            type: RawValue,
+            nullable: true,
+            description: 'Optional value',
+            readOnly: true
+          })
+          value: unknown;
+
+          @ApiProperty({ type: RawValue })
+          requiredValue: unknown;
+
+          @ApiProperty({ type: RawValue, nullable: false })
+          nonNullableValue: unknown;
+        }
+
+        const schemas: Record<string, SchemaObject> = {};
+        schemaObjectFactory.exploreModelSchema(Container, schemas);
+
+        expect(schemas.Container.properties.value).toEqual({
+          description: 'Optional value',
+          readOnly: true,
+          allOf: [
+            {
+              anyOf: [
+                { $ref: '#/components/schemas/RawValue' },
+                { enum: [null] }
+              ]
+            }
+          ]
+        });
+        expect(schemas.Container.properties.requiredValue).toEqual({
+          $ref: '#/components/schemas/RawValue'
+        });
+        expect(schemas.Container.properties.nonNullableValue).toEqual({
+          allOf: [{ $ref: '#/components/schemas/RawValue' }]
+        });
+        expect(schemas.RawValue).toEqual({
+          [combinator]: [{ type: 'string' }]
+        });
+      }
+    );
+
+    it('should share the built-in schema for Date properties and arrays', () => {
+      class BuiltInValues {}
+      ApiProperty({ type: Date })(BuiltInValues.prototype, 'value');
+      ApiProperty({ type: Date, isArray: true })(
+        BuiltInValues.prototype,
+        'values'
+      );
+      ApiProperty({ type: Date, isArray: true, format: 'custom' })(
+        BuiltInValues.prototype,
+        'customValues'
+      );
+
+      const schemas: Record<string, SchemaObject> = {};
+      schemaObjectFactory.exploreModelSchema(BuiltInValues, schemas);
+
+      expect(schemas.BuiltInValues.properties).toEqual({
+        value: { type: 'string', format: 'date-time' },
+        values: {
+          type: 'array',
+          items: { type: 'string', format: 'date-time' }
+        },
+        customValues: {
+          type: 'array',
+          items: { type: 'string', format: 'custom' }
+        }
+      });
+    });
+
+    it.each([
+      [Date, 'string', 'date-time'],
+      [BigInt, 'integer', 'int64']
+    ] as const)(
+      'should share the built-in schema for %p query parameters',
+      (type, expectedType, format) => {
+        const [parameter] = schemaObjectFactory.createFromModel(
+          [{ in: 'query', name: 'value', type: type as any, required: true }],
+          {}
+        );
+
+        expect(swaggerTypesMapper.mapParamTypes([parameter])[0]).toEqual({
+          in: 'query',
+          name: 'value',
+          required: true,
+          schema: { type: expectedType, format }
+        });
+      }
+    );
+
     it('should purge linked types from properties', () => {
       class Human {
         @ApiProperty()
@@ -1281,6 +1383,138 @@ describe('SchemaObjectFactory', () => {
         expect(schemas[UpdateUserDto.name].description).toEqual(
           'Represents a user update.'
         );
+      });
+
+      it('should register an empty metadata host as a raw combinator schema', () => {
+        @ApiSchema({
+          name: 'Pet',
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              cat: '#/components/schemas/Cat',
+              dog: '#/components/schemas/Dog'
+            }
+          }
+        })
+        class PetSchema {}
+
+        const schemas: Record<string, SchemaObject> = {};
+        schemaObjectFactory.exploreModelSchema(PetSchema, schemas);
+
+        expect(schemas.Pet).toEqual({
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ],
+          discriminator: {
+            propertyName: 'type',
+            mapping: {
+              cat: '#/components/schemas/Cat',
+              dog: '#/components/schemas/Dog'
+            }
+          }
+        });
+      });
+
+      it.each(['oneOf', 'anyOf'] as const)(
+        'should skip model properties for raw %s schemas',
+        (combinator) => {
+          class IgnoredModel {}
+          class ExtraModel {}
+
+          @ApiExtraModels(ExtraModel)
+          class RawAlternativeSchema {
+            @ApiProperty({ type: IgnoredModel })
+            ignoredModel: IgnoredModel;
+
+            @ApiProperty({ type: () => undefined })
+            invalidProperty: unknown;
+          }
+
+          ApiSchema({
+            [combinator]: [{ type: 'string' }, { type: 'number' }]
+          })(RawAlternativeSchema);
+
+          const schemas: Record<string, SchemaObject> = {};
+          schemaObjectFactory.exploreModelSchema(RawAlternativeSchema, schemas);
+
+          expect(schemas.RawAlternativeSchema).toEqual({
+            [combinator]: [{ type: 'string' }, { type: 'number' }]
+          });
+          expect(schemas.ExtraModel).toBeDefined();
+          expect(schemas.IgnoredModel).toBeUndefined();
+        }
+      );
+
+      it('should preserve model properties alongside allOf', () => {
+        @ApiSchema({
+          allOf: [{ $ref: '#/components/schemas/BaseModel' }],
+          description: 'Extended model'
+        })
+        class ExtendedModel {
+          @ApiProperty()
+          ownProperty: string;
+        }
+
+        const schemas: Record<string, SchemaObject> = {};
+        schemaObjectFactory.exploreModelSchema(ExtendedModel, schemas);
+
+        expect(schemas.ExtendedModel).toEqual({
+          type: 'object',
+          properties: {
+            ownProperty: { type: 'string' }
+          },
+          allOf: [{ $ref: '#/components/schemas/BaseModel' }],
+          description: 'Extended model',
+          required: ['ownProperty']
+        });
+      });
+
+      it.each(['oneOf', 'anyOf', 'allOf'] as const)(
+        'should reject property model name collisions in raw %s schemas',
+        (combinator) => {
+          @ApiSchema({ name: 'RawSchema' })
+          class ConflictingDto {}
+
+          class MemberDto {
+            @ApiProperty({ type: () => ConflictingDto })
+            nested: ConflictingDto;
+          }
+
+          @ApiExtraModels(MemberDto)
+          class RawSchema {}
+          ApiSchema({
+            [combinator]: [{ $ref: '#/components/schemas/MemberDto' }]
+          })(RawSchema);
+
+          expect(() =>
+            schemaObjectFactory.exploreModelSchema(RawSchema, {})
+          ).toThrow(
+            'Different models cannot share the component schema "RawSchema"'
+          );
+        }
+      );
+
+      it('should ignore explicitly undefined combinators', () => {
+        @ApiSchema({
+          oneOf: undefined,
+          description: 'Regular object schema'
+        })
+        class RegularModel {}
+
+        const schemas: Record<string, SchemaObject> = {};
+        schemaObjectFactory.exploreModelSchema(RegularModel, schemas);
+
+        expect(schemas.RegularModel).toEqual({
+          type: 'object',
+          properties: {},
+          description: 'Regular object schema'
+        });
+        expect(schemas.RegularModel).not.toHaveProperty('oneOf');
       });
     });
 

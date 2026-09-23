@@ -1,6 +1,7 @@
 import { Logger, Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
 import {
+  cloneDeep,
   flatten,
   isEqual,
   isFunction,
@@ -31,12 +32,13 @@ import {
 } from '../utils/enum.utils.js';
 import { getSchemaPath } from '../utils/index.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
-import { isBuiltInType } from '../utils/is-built-in-type.util.js';
-import { isDateCtor } from '../utils/is-date-ctor.util.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
+import { SchemaComponentRegistry } from './schema-component-registry.js';
 import { StandardSchemaOpenApiConverter } from './standard-schema-openapi.converter.js';
 import { SwaggerTypesMapper } from './swagger-types-mapper.js';
+
+const schemaCombinators = ['oneOf', 'anyOf', 'allOf'] as const;
 
 export class SchemaObjectFactory {
   private readonly standardSchemaOpenApiConverter =
@@ -121,18 +123,14 @@ export class SchemaObjectFactory {
     param: ParamWithTypeMetadata,
     schemas: Record<string, SchemaObject>
   ) {
-    if (isDateCtor(param.type as Function)) {
+    const builtInSchema = this.swaggerTypesMapper.mapTypeToOpenAPISchema(
+      param.type as Function
+    );
+    if (builtInSchema?.format) {
       return {
-        format: 'date-time',
+        format: builtInSchema.format,
         ...param,
-        type: 'string'
-      };
-    }
-    if (this.isBigInt(param.type as Function)) {
-      return {
-        format: 'int64',
-        ...param,
-        type: 'integer'
+        type: builtInSchema.type
       };
     }
     if (isFunction(param.type)) {
@@ -303,10 +301,7 @@ export class SchemaObjectFactory {
     if (!prototype) {
       return;
     }
-    const extraModels = exploreGlobalApiExtraModelsMetadata(type);
-    extraModels.forEach((item) =>
-      this.exploreModelSchema(item, schemas, pendingSchemasRefs)
-    );
+    this.exploreExtraModels(type, schemas, pendingSchemasRefs);
 
     this.modelPropertiesAccessor.applyMetadataFactory(prototype);
     const modelProperties =
@@ -382,39 +377,71 @@ export class SchemaObjectFactory {
     if (this.isLazyTypeFunc(type as Function)) {
       type = (type as Function)();
     }
-    const propertiesWithType = this.extractPropertiesFromType(
-      type as Type<unknown>,
-      schemas,
-      pendingSchemasRefs
-    );
-    if (!propertiesWithType) {
+
+    const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
+    if (!(type as Type<unknown>).prototype) {
       return '';
+    }
+    this.registerSchemaModel(type, schemas, pendingSchemasRefs);
+    const pendingRefs = pendingSchemasRefs.includes(schemaName)
+      ? pendingSchemasRefs
+      : [...pendingSchemasRefs, schemaName];
+    const isRawSchema = this.isRawSchema(schemaProperties);
+    const hasAlternativeCombinator =
+      this.hasAlternativeCombinator(schemaProperties);
+    let propertiesWithType: ParameterObject[];
+
+    if (hasAlternativeCombinator) {
+      this.exploreExtraModels(type as Type<unknown>, schemas, pendingRefs);
+      propertiesWithType = [];
+    } else {
+      const extractedProperties = this.extractPropertiesFromType(
+        type as Type<unknown>,
+        schemas,
+        pendingRefs
+      );
+      if (!extractedProperties) {
+        return '';
+      }
+      propertiesWithType = extractedProperties;
     }
     const extensionProperties =
       Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
 
-    const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
+    const shouldIncludeObjectSchema =
+      !isRawSchema ||
+      (!hasAlternativeCombinator && propertiesWithType.length > 0);
+    const objectSchema = shouldIncludeObjectSchema
+      ? {
+          type: 'object',
+          properties: mapValues(
+            keyBy(propertiesWithType, 'name'),
+            (property) => {
+              const keysToOmit = [
+                'name',
+                'isArray',
+                'enumName',
+                'enumSchema',
+                'selfRequired'
+              ];
 
-    const typeDefinition: SchemaObject = {
-      type: 'object',
-      properties: mapValues(keyBy(propertiesWithType, 'name'), (property) => {
-        const keysToOmit = [
-          'name',
-          'isArray',
-          'enumName',
-          'enumSchema',
-          'selfRequired'
-        ];
+              if ('required' in property && Array.isArray(property.required)) {
+                return omit(property, keysToOmit);
+              }
 
-        if ('required' in property && Array.isArray(property.required)) {
-          return omit(property, keysToOmit);
+              return omit(property, [...keysToOmit, 'required']);
+            }
+          ) as Record<string, SchemaObject | ReferenceObject>
         }
-
-        return omit(property, [...keysToOmit, 'required']);
-      }) as Record<string, SchemaObject | ReferenceObject>,
+      : {};
+    const schemaDefinition: SchemaObject = {
+      ...objectSchema,
       ...extensionProperties,
       ...schemaProperties
     };
+    const typeDefinition = isRawSchema
+      ? cloneDeep(schemaDefinition)
+      : schemaDefinition;
 
     const typeDefinitionRequiredFields = propertiesWithType
       .filter((property) =>
@@ -424,7 +451,7 @@ export class SchemaObjectFactory {
       )
       .map((property) => property.name);
 
-    if (typeDefinitionRequiredFields.length > 0) {
+    if (shouldIncludeObjectSchema && typeDefinitionRequiredFields.length > 0) {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
 
@@ -441,11 +468,67 @@ export class SchemaObjectFactory {
     return schemaName;
   }
 
+  private registerSchemaModel(
+    type: Function,
+    schemas: Record<string, SchemaObject>,
+    pendingSchemaRefs: string[]
+  ): void {
+    const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
+    SchemaComponentRegistry.registerModel(
+      schemaName,
+      type,
+      schemas,
+      pendingSchemaRefs,
+      this.isRawSchema(schemaProperties)
+    );
+  }
+
+  private registerEnumSchema(
+    enumName: string,
+    schemas: Record<string, SchemaObject>,
+    pendingSchemaRefs: string[] = []
+  ): void {
+    SchemaComponentRegistry.registerEnum(enumName, schemas, pendingSchemaRefs);
+  }
+
   getSchemaMetadata(type: Function | Type<unknown>) {
     const schemas: ApiSchemaOptions[] =
       Reflect.getOwnMetadata(DECORATORS.API_SCHEMA, type) ?? [];
-    const { name, ...schemaProperties } = schemas[schemas.length - 1] ?? {};
+    const { name, ...properties } = schemas[schemas.length - 1] ?? {};
+    const schemaProperties = omitBy(properties, isUndefined);
     return { schemaName: name ?? type.name, schemaProperties };
+  }
+
+  isRawSchema(schemaProperties: Omit<ApiSchemaOptions, 'name'>) {
+    return schemaCombinators.some((combinator) =>
+      Array.isArray(schemaProperties[combinator])
+    );
+  }
+
+  private hasAlternativeCombinator(
+    schemaProperties: Omit<ApiSchemaOptions, 'name'>
+  ) {
+    return ['oneOf', 'anyOf'].some((combinator) =>
+      Array.isArray(schemaProperties[combinator])
+    );
+  }
+
+  private exploreExtraModels(
+    type: Type<unknown>,
+    schemas: Record<string, SchemaObject>,
+    pendingSchemasRefs: string[]
+  ): void {
+    const extraModels = exploreGlobalApiExtraModelsMetadata(type);
+    extraModels.forEach((item) => {
+      if (this.isLazyTypeFunc(item)) {
+        item = item();
+      }
+      this.registerSchemaModel(item, schemas, pendingSchemasRefs);
+      const { schemaName } = this.getSchemaMetadata(item);
+      if (!pendingSchemasRefs.includes(schemaName)) {
+        this.exploreModelSchema(item, schemas, pendingSchemasRefs);
+      }
+    });
   }
 
   mergePropertyWithMetadata(
@@ -492,6 +575,7 @@ export class SchemaObjectFactory {
     schemas: Record<string, SchemaObject>
   ) {
     const enumName = param.enumName;
+    this.registerEnumSchema(enumName, schemas);
     const $ref = getSchemaPath(enumName);
 
     if (!(enumName in schemas)) {
@@ -543,7 +627,8 @@ export class SchemaObjectFactory {
   createEnumSchemaType(
     key: string,
     metadata: SchemaObjectMetadata,
-    schemas: Record<string, SchemaObject>
+    schemas: Record<string, SchemaObject>,
+    pendingSchemaRefs: string[] = []
   ): SchemaObjectMetadata {
     if (!('enumName' in metadata) || !metadata.enumName) {
       return {
@@ -553,6 +638,7 @@ export class SchemaObjectFactory {
     }
 
     const enumName = metadata.enumName;
+    this.registerEnumSchema(enumName, schemas, pendingSchemaRefs);
     const $ref = getSchemaPath(enumName);
 
     const enumType: string =
@@ -625,8 +711,14 @@ export class SchemaObjectFactory {
         `A circular dependency has been detected ${errorIn}(property key: "${key}"). To resolve this, use a lazy resolver for the property type ("type: () => ClassType") on each side of the relationship, or break the cycle by introducing a reference via @ApiExtraModels.`
       );
     }
-    let { schemaName: schemaObjectName } = this.getSchemaMetadata(
+    const { schemaName, schemaProperties } = this.getSchemaMetadata(
       trueMetadataType as Function | Type<unknown>
+    );
+    let schemaObjectName = schemaName;
+    this.registerSchemaModel(
+      trueMetadataType as Function,
+      schemas,
+      pendingSchemaRefs
     );
 
     if (
@@ -648,6 +740,23 @@ export class SchemaObjectFactory {
     const extraMetadataKeys = Object.keys(validMetadataObject);
 
     if (extraMetadataKeys.length > 0) {
+      if (
+        validMetadataObject.nullable !== undefined &&
+        this.isRawSchema(schemaProperties)
+      ) {
+        return {
+          name: metadata.name || key,
+          required: metadata.required,
+          ...omit(validMetadataObject, 'nullable'),
+          // An enum-only null branch works in both OpenAPI 3.0 and 3.1.
+          // anyOf also preserves null if the referenced schema already allows it.
+          allOf: [
+            validMetadataObject.nullable
+              ? { anyOf: [{ $ref }, { enum: [null] }] }
+              : { $ref }
+          ]
+        } as SchemaObjectMetadata;
+      }
       return {
         name: metadata.name || key,
         required: metadata.required,
@@ -701,7 +810,8 @@ export class SchemaObjectFactory {
   createFromObjectLiteral(
     key: string,
     literalObj: Record<string, any>,
-    schemas: Record<string, SchemaObject>
+    schemas: Record<string, SchemaObject>,
+    pendingSchemaRefs: string[] = []
   ) {
     const objLiteralKeys = Object.keys(literalObj);
     const properties = {};
@@ -730,7 +840,7 @@ export class SchemaObjectFactory {
         key,
         Object,
         schemas,
-        [],
+        pendingSchemaRefs,
         propertyCompilerMetadata
       );
 
@@ -841,7 +951,8 @@ export class SchemaObjectFactory {
       const schemaFromObjectLiteral = this.createFromObjectLiteral(
         key,
         typeRef as Record<string, any>,
-        schemas
+        schemas,
+        pendingSchemaRefs
       );
       if (metadata.isArray) {
         return {
@@ -860,7 +971,12 @@ export class SchemaObjectFactory {
 
     if (isString(typeRef)) {
       if (isEnumMetadata(metadata)) {
-        return this.createEnumSchemaType(key, metadata, schemas);
+        return this.createEnumSchemaType(
+          key,
+          metadata,
+          schemas,
+          pendingSchemaRefs
+        );
       }
       if (metadata.isArray) {
         return this.transformToArraySchemaProperty(metadata, key, typeRef);
@@ -871,29 +987,10 @@ export class SchemaObjectFactory {
         name: metadata.name || key
       };
     }
-    if (isDateCtor(typeRef as Function)) {
-      if (metadata.isArray) {
-        return this.transformToArraySchemaProperty(metadata, key, {
-          format: metadata.format || 'date-time',
-          type: 'string'
-        });
-      }
-      return {
-        format: 'date-time',
-        ...metadata,
-        type: 'string',
-        name: metadata.name || key
-      } as SchemaObjectMetadata;
-    }
-    if (this.isBigInt(typeRef as Function)) {
-      return {
-        format: 'int64',
-        ...metadata,
-        type: 'integer',
-        name: metadata.name || key
-      } as SchemaObjectMetadata;
-    }
-    if (!isBuiltInType(typeRef as Function)) {
+    const builtInSchema = this.swaggerTypesMapper.mapTypeToOpenAPISchema(
+      typeRef as Function
+    );
+    if (!builtInSchema && typeRef !== Array) {
       return this.createNotBuiltInTypeReference(
         key,
         metadata,
@@ -902,13 +999,15 @@ export class SchemaObjectFactory {
         pendingSchemaRefs
       );
     }
-    const typeName = this.getTypeName(typeRef as Type<unknown>);
-    const itemType = this.swaggerTypesMapper.mapTypeToOpenAPIType(typeName);
+    const itemType = builtInSchema?.type ?? 'array';
 
-    if (metadata.isArray) {
-      return this.transformToArraySchemaProperty(metadata, key, {
-        type: itemType
-      });
+    // Preserve the existing BigInt property behavior when sharing type mappings.
+    if (metadata.isArray && typeRef !== BigInt) {
+      return this.transformToArraySchemaProperty(
+        metadata,
+        key,
+        builtInSchema ?? { type: itemType }
+      );
     } else if (itemType === 'array') {
       const defaultOnArray = 'string';
 
@@ -942,6 +1041,7 @@ export class SchemaObjectFactory {
       });
     }
     return {
+      ...builtInSchema,
       ...metadata,
       name: metadata.name || key,
       type: itemType
@@ -965,10 +1065,6 @@ export class SchemaObjectFactory {
     return isFunction(type) && type.name == 'type';
   }
 
-  private getTypeName(type: Type<unknown> | string): string {
-    return type && isFunction(type) ? type.name : (type as string);
-  }
-
   private isObjectLiteral(obj: Record<string, any> | undefined) {
     if (typeof obj !== 'object' || !obj) {
       return false;
@@ -987,10 +1083,6 @@ export class SchemaObjectFactory {
       }
     }
     return Object.getPrototypeOf(obj) === objPrototype;
-  }
-
-  private isBigInt(type: Function | Type<unknown> | string): boolean {
-    return type === BigInt;
   }
 
   /**

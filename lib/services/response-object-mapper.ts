@@ -3,6 +3,10 @@ import {
   ApiResponseMetadata,
   ApiResponseSchemaHost
 } from '../decorators/index.js';
+import {
+  ReferenceObject,
+  SchemaObject
+} from '../interfaces/open-api-spec.interface.js';
 import { getSchemaPath } from '../utils/index.js';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper.js';
 
@@ -12,7 +16,8 @@ export class ResponseObjectMapper {
   toArrayRefObject(
     response: Record<string, any>,
     name: string,
-    produces: string[]
+    produces: string[],
+    isRawSchema = false
   ) {
     const exampleKeys = ['example', 'examples'];
     const arraySchema = {
@@ -20,7 +25,7 @@ export class ResponseObjectMapper {
       items: { $ref: getSchemaPath(name) }
     };
     const schema = response.nullable
-      ? { oneOf: [arraySchema, { type: 'null' }] }
+      ? this.wrapNullableSchema(arraySchema, isRawSchema)
       : arraySchema;
     return {
       ...omit(response, [...exampleKeys, 'nullable']),
@@ -31,10 +36,15 @@ export class ResponseObjectMapper {
     };
   }
 
-  toRefObject(response: Record<string, any>, name: string, produces: string[]) {
+  toRefObject(
+    response: Record<string, any>,
+    name: string,
+    produces: string[],
+    isRawSchema = false
+  ) {
     const exampleKeys = ['example', 'examples'];
     const schema = response.nullable
-      ? { oneOf: [{ $ref: getSchemaPath(name) }, { type: 'null' }] }
+      ? this.wrapNullableSchema({ $ref: getSchemaPath(name) }, isRawSchema)
       : { $ref: getSchemaPath(name) };
     return {
       ...omit(response, [...exampleKeys, 'nullable']),
@@ -43,6 +53,17 @@ export class ResponseObjectMapper {
         ...pick(response, exampleKeys)
       })
     };
+  }
+
+  private wrapNullableSchema(
+    schema: SchemaObject | ReferenceObject,
+    isRawSchema: boolean
+  ): SchemaObject {
+    // Raw compositions can already allow null. anyOf avoids excluding it when
+    // both branches match, and an enum-only null works in OpenAPI 3.0 and 3.1.
+    return isRawSchema
+      ? { anyOf: [schema, { enum: [null] }] }
+      : { oneOf: [schema, { type: 'null' }] };
   }
 
   wrapSchemaWithContent(

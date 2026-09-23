@@ -5,7 +5,11 @@ import type {
   StandardSchemaConverter,
   StandardSchemaObject
 } from '../interfaces/swagger-document-options.interface.js';
-import { ReferenceObject, SchemaObject } from '../interfaces/open-api-spec.interface.js';
+import {
+  ReferenceObject,
+  SchemaObject
+} from '../interfaces/open-api-spec.interface.js';
+import { SchemaComponentRegistry } from './schema-component-registry.js';
 
 /**
  * JSON Schema keywords whose value is a map of names to schemas. The map itself
@@ -41,6 +45,10 @@ export class StandardSchemaOpenApiConverter {
       return undefined;
     }
 
+    SchemaComponentRegistry.registerStandardSchemas(
+      convertedSchema.components,
+      schemas
+    );
     Object.assign(schemas, convertedSchema.components);
     return convertedSchema.schema;
   }

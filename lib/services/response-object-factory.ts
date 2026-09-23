@@ -189,14 +189,23 @@ export class ResponseObjectFactory {
         response.links = Object.assign(links, response.links);
       }
     }
+    const isRawSchema = this.schemaObjectFactory.isRawSchema(
+      schemas[name] ?? {}
+    );
     if (isArray) {
       return this.responseObjectMapper.toArrayRefObject(
         response,
         name,
-        produces
+        produces,
+        isRawSchema
       );
     }
-    return this.responseObjectMapper.toRefObject(response, name, produces);
+    return this.responseObjectMapper.toRefObject(
+      response,
+      name,
+      produces,
+      isRawSchema
+    );
   }
 
   private getSchemaOverride(
