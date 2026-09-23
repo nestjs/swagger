@@ -20,7 +20,8 @@ export function buildSwaggerInitJS(
   };
 
   const jsInitOptions = buildJSInitOptions(swaggerInitOptions);
-  return jsTemplateString.replace('<% swaggerOptions %>', jsInitOptions);
+  // Callback replacer: see the note in `buildSwaggerHTML` below.
+  return jsTemplateString.replace('<% swaggerOptions %>', () => jsInitOptions);
 }
 
 let swaggerAssetsAbsoluteFSPath: string | undefined;
