@@ -1,6 +1,7 @@
 import { Logger, Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
 import {
+  cloneDeep,
   flatten,
   isEqual,
   isFunction,
@@ -37,6 +38,8 @@ import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
 import { StandardSchemaOpenApiConverter } from './standard-schema-openapi.converter.js';
 import { SwaggerTypesMapper } from './swagger-types-mapper.js';
+
+const schemaCombinators = ['oneOf', 'anyOf', 'allOf'] as const;
 
 export class SchemaObjectFactory {
   private readonly standardSchemaOpenApiConverter =
@@ -303,10 +306,7 @@ export class SchemaObjectFactory {
     if (!prototype) {
       return;
     }
-    const extraModels = exploreGlobalApiExtraModelsMetadata(type);
-    extraModels.forEach((item) =>
-      this.exploreModelSchema(item, schemas, pendingSchemasRefs)
-    );
+    this.exploreExtraModels(type, schemas, pendingSchemasRefs);
 
     this.modelPropertiesAccessor.applyMetadataFactory(prototype);
     const modelProperties =
@@ -382,39 +382,71 @@ export class SchemaObjectFactory {
     if (this.isLazyTypeFunc(type as Function)) {
       type = (type as Function)();
     }
-    const propertiesWithType = this.extractPropertiesFromType(
-      type as Type<unknown>,
-      schemas,
-      pendingSchemasRefs
-    );
-    if (!propertiesWithType) {
-      return '';
+
+    const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
+    const isRawSchema = this.isRawSchema(schemaProperties);
+    const hasAlternativeCombinator =
+      this.hasAlternativeCombinator(schemaProperties);
+    let propertiesWithType: ParameterObject[];
+
+    if (hasAlternativeCombinator) {
+      if (!(type as Type<unknown>).prototype) {
+        return '';
+      }
+      this.exploreExtraModels(
+        type as Type<unknown>,
+        schemas,
+        pendingSchemasRefs
+      );
+      propertiesWithType = [];
+    } else {
+      const extractedProperties = this.extractPropertiesFromType(
+        type as Type<unknown>,
+        schemas,
+        pendingSchemasRefs
+      );
+      if (!extractedProperties) {
+        return '';
+      }
+      propertiesWithType = extractedProperties;
     }
     const extensionProperties =
       Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
 
-    const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
+    const shouldIncludeObjectSchema =
+      !isRawSchema ||
+      (!hasAlternativeCombinator && propertiesWithType.length > 0);
+    const objectSchema = shouldIncludeObjectSchema
+      ? {
+          type: 'object',
+          properties: mapValues(
+            keyBy(propertiesWithType, 'name'),
+            (property) => {
+              const keysToOmit = [
+                'name',
+                'isArray',
+                'enumName',
+                'enumSchema',
+                'selfRequired'
+              ];
 
-    const typeDefinition: SchemaObject = {
-      type: 'object',
-      properties: mapValues(keyBy(propertiesWithType, 'name'), (property) => {
-        const keysToOmit = [
-          'name',
-          'isArray',
-          'enumName',
-          'enumSchema',
-          'selfRequired'
-        ];
+              if ('required' in property && Array.isArray(property.required)) {
+                return omit(property, keysToOmit);
+              }
 
-        if ('required' in property && Array.isArray(property.required)) {
-          return omit(property, keysToOmit);
+              return omit(property, [...keysToOmit, 'required']);
+            }
+          ) as Record<string, SchemaObject | ReferenceObject>
         }
-
-        return omit(property, [...keysToOmit, 'required']);
-      }) as Record<string, SchemaObject | ReferenceObject>,
+      : {};
+    const schemaDefinition: SchemaObject = {
+      ...objectSchema,
       ...extensionProperties,
       ...schemaProperties
     };
+    const typeDefinition = isRawSchema
+      ? cloneDeep(schemaDefinition)
+      : schemaDefinition;
 
     const typeDefinitionRequiredFields = propertiesWithType
       .filter((property) =>
@@ -424,7 +456,7 @@ export class SchemaObjectFactory {
       )
       .map((property) => property.name);
 
-    if (typeDefinitionRequiredFields.length > 0) {
+    if (shouldIncludeObjectSchema && typeDefinitionRequiredFields.length > 0) {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
 
@@ -444,8 +476,34 @@ export class SchemaObjectFactory {
   getSchemaMetadata(type: Function | Type<unknown>) {
     const schemas: ApiSchemaOptions[] =
       Reflect.getOwnMetadata(DECORATORS.API_SCHEMA, type) ?? [];
-    const { name, ...schemaProperties } = schemas[schemas.length - 1] ?? {};
+    const { name, ...properties } = schemas[schemas.length - 1] ?? {};
+    const schemaProperties = omitBy(properties, isUndefined);
     return { schemaName: name ?? type.name, schemaProperties };
+  }
+
+  private isRawSchema(schemaProperties: Omit<ApiSchemaOptions, 'name'>) {
+    return schemaCombinators.some((combinator) =>
+      Array.isArray(schemaProperties[combinator])
+    );
+  }
+
+  private hasAlternativeCombinator(
+    schemaProperties: Omit<ApiSchemaOptions, 'name'>
+  ) {
+    return ['oneOf', 'anyOf'].some((combinator) =>
+      Array.isArray(schemaProperties[combinator])
+    );
+  }
+
+  private exploreExtraModels(
+    type: Type<unknown>,
+    schemas: Record<string, SchemaObject>,
+    pendingSchemasRefs: string[]
+  ): void {
+    const extraModels = exploreGlobalApiExtraModelsMetadata(type);
+    extraModels.forEach((item) =>
+      this.exploreModelSchema(item, schemas, pendingSchemasRefs)
+    );
   }
 
   mergePropertyWithMetadata(

@@ -256,6 +256,9 @@ export function PartialType() {
 export function PickType() {
   return class {};
 }
+export function createUnionApiSchema() {
+  return class {};
+}
 export function getSchemaPath() {
   return () => '';
 }
