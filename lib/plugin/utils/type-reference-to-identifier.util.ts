@@ -40,7 +40,11 @@ export function typeReferenceToIdentifier(
       type,
       typeReferenceDescriptor.arrayDepth,
       sourceImportSpecifiers
-    )
+    ),
+    elementSymbol(
+      type,
+      typeReferenceDescriptor.arrayDepth
+    )?.declarations?.[0]?.getSourceFile().fileName
   );
 
   let identifier: ts.Identifier;
@@ -129,6 +133,19 @@ function resolveSourceSpecifier(
   if (!sourceImportSpecifiers?.size || !type) {
     return undefined;
   }
+  const symbol = elementSymbol(type, arrayDepth);
+  return symbol ? sourceImportSpecifiers.get(symbol) : undefined;
+}
+
+/**
+ * An array property carries the `Array<T>` type, whose declaration every
+ * array in the program shares through lib.es5.d.ts. The element is the type
+ * the import speaks about.
+ */
+function elementSymbol(
+  type: ts.Type,
+  arrayDepth: number | undefined
+): ts.Symbol | undefined {
   let elementType = type;
   for (let depth = arrayDepth ?? 0; depth > 0; depth--) {
     const arrayTuple = extractTypeArgumentIfArray(elementType);
@@ -137,8 +154,7 @@ function resolveSourceSpecifier(
     }
     elementType = arrayTuple.type;
   }
-  const symbol = elementType.aliasSymbol ?? elementType.symbol;
-  return symbol ? sourceImportSpecifiers.get(symbol) : undefined;
+  return elementType?.aliasSymbol ?? elementType?.symbol;
 }
 
 /**
