@@ -1,7 +1,6 @@
 import { head } from 'es-toolkit/compat';
-import { statSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isAbsolute, posix } from 'path';
 import * as ts from 'typescript';
 import { PluginOptions } from '../merge-options.js';
@@ -257,40 +256,69 @@ export function getOutputExtension(fileName: string): string {
 }
 
 /**
-/**
- * Gives a package subpath the extension it needs, and nothing more.
+ * Returns the extension a package subpath needs to be importable under ESM,
+ * or an empty string when it is importable as written.
  *
- * A subpath the ESM resolver already lands on a file through is one the
- * package exposes as written, whether an "exports" map publishes it or the
- * file simply sits there. Appending to those produces a specifier that
- * resolves to nothing. The extension comes from the declaration file, since
- * the subpath names a file inside the dependency rather than one this build
- * emits.
+ * For a package without an "exports" map, Node resolves a subpath to the
+ * literal file inside the package, so an extensionless one fails with
+ * ERR_MODULE_NOT_FOUND. The extension is appended only when that literal path
+ * is not a file and the path with the extension is. The extension comes from
+ * the declaration file, since the subpath names a file inside the dependency
+ * rather than one this build emits.
+ *
+ * A package root is resolved through "main", and a package with an "exports"
+ * map decides itself which subpaths are reachable, so both are left as is.
+ *
+ * The check reads the package from disk rather than going through
+ * `import.meta.resolve`, whose `parent` argument Node ignores unless run with
+ * `--experimental-import-meta-resolve`: resolution would then start from this
+ * plugin's location instead of the application's.
  */
-function missingExtension(
+function getPackageSubpathExtension(
+  nodeModulesDir: string,
   specifier: string,
-  fileName: string,
-  declarationFileName?: string
+  declarationFileName: string | undefined
 ): string {
-  if (!declarationFileName || resolveToFile(specifier, fileName)) {
+  if (!declarationFileName) {
+    return '';
+  }
+  const segments = specifier.split('/');
+  const nameLength = specifier.startsWith('@') ? 2 : 1;
+  const subpath = segments.slice(nameLength).join('/');
+  if (!subpath) {
+    return '';
+  }
+  const packageDir = posix.join(
+    nodeModulesDir,
+    ...segments.slice(0, nameLength)
+  );
+  const manifest = readPackageManifest(packageDir);
+  if (!manifest || manifest.exports != null) {
+    return '';
+  }
+  const target = posix.join(packageDir, subpath);
+  if (isFile(target)) {
     return '';
   }
   const extension = getOutputExtension(declarationFileName);
-  return resolveToFile(specifier + extension, fileName) ? extension : '';
+  return isFile(target + extension) ? extension : '';
 }
 
-function resolveToFile(specifier: string, fileName: string): boolean {
+function readPackageManifest(
+  packageDir: string
+): { exports?: unknown } | undefined {
   try {
-    const resolved = import.meta.resolve(
-      specifier,
-      pathToFileURL(fileName).href
+    return JSON.parse(
+      readFileSync(posix.join(packageDir, 'package.json'), 'utf8')
     );
-    // Resolution hands back a URL without looking: an extensionless subpath
-    // of a package without an "exports" map answers with a path that is not
-    // there, and a directory is not something ESM can import either.
-    return (
-      resolved.startsWith('file:') && statSync(fileURLToPath(resolved)).isFile()
-    );
+  } catch {
+    return undefined;
+  }
+}
+
+function isFile(path: string): boolean {
+  try {
+    return statSync(path).isFile();
   } catch {
     return false;
   }
@@ -377,9 +405,25 @@ export function replaceImportPath(
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
     const normalizedPath = normalizePackagePath(relativePath);
-    const isPackageSubpath = normalizedPath !== relativePath;
-    if (isPackageSubpath) {
-      relativePath = normalizedPath;
+    if (normalizedPath !== relativePath) {
+      let extension = '';
+      if (options.esmCompatible) {
+        // The node_modules directory `normalizePackagePath` cut the path at,
+        // resolved back to an absolute path.
+        const nodeModulesDir = posix.join(
+          from,
+          relativePath.slice(
+            0,
+            relativePath.indexOf('node_modules') + 'node_modules'.length
+          )
+        );
+        extension = getPackageSubpathExtension(
+          nodeModulesDir,
+          normalizedPath,
+          declarationFileName
+        );
+      }
+      relativePath = normalizedPath + extension;
     } else if (sourceSpecifier) {
       // The path leads outside the project without passing through
       // node_modules, so `normalizePackagePath` cannot turn it back into a
@@ -391,12 +435,10 @@ export function replaceImportPath(
       // file already imports the type through does resolve, at compile time
       // and at run time alike.
       relativePath = sourceSpecifier;
-    }
-
-    if (options.esmCompatible && relativePath !== sourceSpecifier) {
-      relativePath += isPackageSubpath
-        ? missingExtension(relativePath, fileName, declarationFileName)
-        : getOutputExtension(fileName);
+    } else if (options.esmCompatible) {
+      // Add appropriate extension for non-node_modules imports
+      const extension = getOutputExtension(fileName);
+      relativePath += extension;
     }
 
     typeReference = typeReference.replace(importPath, relativePath);

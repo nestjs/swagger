@@ -41,10 +41,11 @@ export function typeReferenceToIdentifier(
       typeReferenceDescriptor.arrayDepth,
       sourceImportSpecifiers
     ),
-    elementSymbol(
+    resolveDeclarationFileName(
       type,
-      typeReferenceDescriptor.arrayDepth
-    )?.declarations?.[0]?.getSourceFile().fileName
+      typeReferenceDescriptor.arrayDepth,
+      typeReferenceDescriptor.typeName
+    )
   );
 
   let identifier: ts.Identifier;
@@ -135,6 +136,32 @@ function resolveSourceSpecifier(
   }
   const symbol = elementSymbol(type, arrayDepth);
   return symbol ? sourceImportSpecifiers.get(symbol) : undefined;
+}
+
+/**
+ * Returns the file declaring the type `typeName` imports. A merged declaration
+ * or a module augmentation spreads a symbol over several files, so the one
+ * whose path matches the `import("...")` in `typeName` is preferred.
+ */
+function resolveDeclarationFileName(
+  type: ts.Type,
+  arrayDepth: number | undefined,
+  typeName: string
+): string | undefined {
+  const declarations = elementSymbol(type, arrayDepth)?.declarations;
+  if (!declarations?.length) {
+    return undefined;
+  }
+  const importPath = /import\("([^"]+)"/.exec(typeName)?.[1];
+  const fileNames = declarations.map((decl) => decl.getSourceFile().fileName);
+  const matching =
+    importPath &&
+    fileNames.find(
+      (fileName) =>
+        convertPath(fileName).replace(/(\.d)?\.[mc]?tsx?$/, '') ===
+        convertPath(importPath).replace(/\.[mc]?jsx?$/, '')
+    );
+  return matching || fileNames[0];
 }
 
 /**
