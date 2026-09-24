@@ -1,6 +1,10 @@
 # dependencies
 node_modules
 
+# The ESM resolver only reads packages from a folder with this name, so the
+# plugin fixtures ship one.
+!/test/plugin/fixtures/esm-packages/node_modules/
+
 # IDE
 /.idea
 /.awcache

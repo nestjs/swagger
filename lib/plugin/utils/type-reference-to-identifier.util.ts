@@ -40,6 +40,11 @@ export function typeReferenceToIdentifier(
       type,
       typeReferenceDescriptor.arrayDepth,
       sourceImportSpecifiers
+    ),
+    resolveDeclarationFileName(
+      type,
+      typeReferenceDescriptor.arrayDepth,
+      typeReferenceDescriptor.typeName
     )
   );
 
@@ -129,6 +134,45 @@ function resolveSourceSpecifier(
   if (!sourceImportSpecifiers?.size || !type) {
     return undefined;
   }
+  const symbol = elementSymbol(type, arrayDepth);
+  return symbol ? sourceImportSpecifiers.get(symbol) : undefined;
+}
+
+/**
+ * Returns the file declaring the type `typeName` imports. A merged declaration
+ * or a module augmentation spreads a symbol over several files, so the one
+ * whose path matches the `import("...")` in `typeName` is preferred.
+ */
+function resolveDeclarationFileName(
+  type: ts.Type,
+  arrayDepth: number | undefined,
+  typeName: string
+): string | undefined {
+  const declarations = elementSymbol(type, arrayDepth)?.declarations;
+  if (!declarations?.length) {
+    return undefined;
+  }
+  const importPath = /import\("([^"]+)"/.exec(typeName)?.[1];
+  const fileNames = declarations.map((decl) => decl.getSourceFile().fileName);
+  const matching =
+    importPath &&
+    fileNames.find(
+      (fileName) =>
+        convertPath(fileName).replace(/(\.d)?\.[mc]?tsx?$/, '') ===
+        convertPath(importPath).replace(/\.[mc]?jsx?$/, '')
+    );
+  return matching || fileNames[0];
+}
+
+/**
+ * An array property carries the `Array<T>` type, whose declaration every
+ * array in the program shares through lib.es5.d.ts. The element is the type
+ * the import speaks about.
+ */
+function elementSymbol(
+  type: ts.Type,
+  arrayDepth: number | undefined
+): ts.Symbol | undefined {
   let elementType = type;
   for (let depth = arrayDepth ?? 0; depth > 0; depth--) {
     const arrayTuple = extractTypeArgumentIfArray(elementType);
@@ -137,8 +181,7 @@ function resolveSourceSpecifier(
     }
     elementType = arrayTuple.type;
   }
-  const symbol = elementType.aliasSymbol ?? elementType.symbol;
-  return symbol ? sourceImportSpecifiers.get(symbol) : undefined;
+  return elementType?.aliasSymbol ?? elementType?.symbol;
 }
 
 /**
