@@ -48,6 +48,7 @@ import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { GlobalParametersStorage } from '../../lib/storages/global-parameters.storage';
 import { GlobalResponsesStorage } from '../../lib/storages/global-responses.storage';
+import { DECORATORS } from '../../lib/constants';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
 
 describe('SwaggerExplorer', () => {
@@ -3269,6 +3270,98 @@ describe('SwaggerExplorer', () => {
         }
       });
       expect(created.content['application/json']).toBeUndefined();
+    });
+  });
+
+  describe('when @ApiConsumes/@ApiProduces are applied at both the controller and the method level', () => {
+    class Foo {
+      @ApiProperty()
+      name: string;
+    }
+
+    @ApiConsumes('application/json', 'application/xml')
+    @ApiProduces('application/json', 'application/xml')
+    @Controller('foos')
+    class FooController {
+      @Post('csv')
+      @ApiConsumes('text/csv')
+      @ApiProduces('text/csv')
+      @ApiBody({ type: Foo })
+      @ApiCreatedResponse({ type: Foo, description: 'Created' })
+      createCsv(): Promise<Foo> {
+        return Promise.resolve(new Foo());
+      }
+
+      @Post()
+      @ApiBody({ type: Foo })
+      @ApiCreatedResponse({ type: Foo, description: 'Created' })
+      create(): Promise<Foo> {
+        return Promise.resolve(new Foo());
+      }
+    }
+
+    const fooSchema = { schema: { $ref: '#/components/schemas/Foo' } };
+
+    it('adds the method-level media types to the controller-level ones', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes).toHaveLength(2);
+      const [csvRoute, plainRoute] = routes;
+
+      expect(csvRoute.root!.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/json': fooSchema,
+          'application/xml': fooSchema,
+          'text/csv': fooSchema
+        }
+      });
+      expect((csvRoute.responses['201'] as ResponseObject).content).toEqual({
+        'application/json': fooSchema,
+        'application/xml': fooSchema,
+        'text/csv': fooSchema
+      });
+
+      // A sibling method without overrides must still see the untouched
+      // controller-level media types.
+      expect(plainRoute.root!.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/json': fooSchema,
+          'application/xml': fooSchema
+        }
+      });
+      expect((plainRoute.responses['201'] as ResponseObject).content).toEqual({
+        'application/json': fooSchema,
+        'application/xml': fooSchema
+      });
+    });
+
+    it('does not mutate the controller-level metadata', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(
+        Reflect.getMetadata(DECORATORS.API_CONSUMES, FooController)
+      ).toEqual(['application/json', 'application/xml']);
+      expect(
+        Reflect.getMetadata(DECORATORS.API_PRODUCES, FooController)
+      ).toEqual(['application/json', 'application/xml']);
     });
   });
 
