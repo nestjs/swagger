@@ -22,6 +22,25 @@ aliases:
       command: npm run test:e2e
 
 jobs:
+  forbidden_paths:
+    working_directory: ~/nest
+    docker:
+      - image: cimg/node:24.21.0
+    steps:
+      - checkout
+      - run:
+          name: Reject editor auto-run config and disguised payloads
+          command: |
+            # Editor configs can run code when a contributor opens the folder
+            # (e.g. VS Code tasks with runOn: folderOpen), so none may be committed.
+            offending=$(git ls-files | grep -E '(^|/)\.(vscode|devcontainer|idea|fleet|zed)/|\.llf$' || true)
+            autorun=$(git grep -lE '"runOn"[[:space:]]*:[[:space:]]*"folderOpen"' || true)
+            if [ -n "$offending$autorun" ]; then
+              echo "Forbidden files found:"
+              printf '%s\n' $offending $autorun | sort -u
+              exit 1
+            fi
+
   build:
     working_directory: ~/nest
     docker:
@@ -67,7 +86,10 @@ workflows:
   version: 2
   build-and-test:
     jobs:
-      - build
+      - forbidden_paths
+      - build:
+          requires:
+            - forbidden_paths
       - unit_tests:
           requires:
             - build
