@@ -1,7 +1,8 @@
-import { Body, Query, Type } from '@nestjs/common';
+import { Body, Param, Query, Type } from '@nestjs/common';
 import 'reflect-metadata';
 import { z } from 'zod';
 import { createSchema } from 'zod-openapi';
+import { ApiParam } from '../../lib/decorators/api-param.decorator';
 import { ApiQuery } from '../../lib/decorators/api-query.decorator';
 import { exploreApiParametersMetadata } from '../../lib/explorers/api-parameters.explorer';
 import { StandardSchemaConverter } from '../../lib/interfaces';
@@ -227,6 +228,116 @@ describe('exploreApiParametersMetadata', () => {
       );
 
       expect(bodyParams).toHaveLength(1);
+    });
+  });
+  describe('schema options set alongside a parameter schema', () => {
+    it('should keep the @ApiParam example for a standard schema path param', () => {
+      class ItemsController {
+        @ApiParam({ name: 'id', example: 'abc-123', description: 'Item id' })
+        findOne(@Param('id', { schema: z.string() }) id: string) {
+          return id;
+        }
+      }
+
+      const instance = new ItemsController();
+      const result = explore(instance, instance.findOne);
+
+      expect(result!.parameters).toEqual([
+        {
+          name: 'id',
+          in: 'path',
+          required: true,
+          description: 'Item id',
+          schema: { type: 'string', example: 'abc-123' }
+        }
+      ]);
+    });
+
+    it('should keep the @ApiQuery example for an expanded standard schema query param', () => {
+      class ItemsController {
+        @ApiQuery({ name: 'limit', example: 10 })
+        list(
+          @Query({ schema: z.strictObject({ limit: z.coerce.number() }) })
+          query: unknown
+        ) {
+          return query;
+        }
+      }
+
+      const instance = new ItemsController();
+      const result = explore(instance, instance.list);
+
+      expect(result!.parameters).toEqual([
+        expect.objectContaining({
+          name: 'limit',
+          in: 'query',
+          schema: { type: 'number', example: 10 }
+        })
+      ]);
+    });
+
+    it('should keep the example when @ApiParam defines an explicit schema', () => {
+      class ItemsController {
+        @ApiParam({
+          name: 'id',
+          example: 'abc-123',
+          default: 'abc',
+          schema: { type: 'string' }
+        })
+        findOne(@Param('id') id: string) {
+          return id;
+        }
+      }
+
+      const instance = new ItemsController();
+      const result = explore(instance, instance.findOne);
+
+      expect(result!.parameters[0].schema).toEqual({
+        type: 'string',
+        example: 'abc-123',
+        default: 'abc'
+      });
+    });
+
+    it('should let options already present in the schema take precedence', () => {
+      class ItemsController {
+        @ApiParam({ name: 'id', example: 'from-decorator' })
+        findOne(
+          @Param('id', { schema: z.string().meta({ example: 'from-schema' }) })
+          id: string
+        ) {
+          return id;
+        }
+      }
+
+      const instance = new ItemsController();
+      const result = explore(instance, instance.findOne);
+
+      expect(result!.parameters[0].schema).toEqual({
+        type: 'string',
+        example: 'from-schema'
+      });
+    });
+
+    it('should wrap a $ref schema in allOf when adding schema options', () => {
+      class ItemsController {
+        @ApiParam({
+          name: 'id',
+          example: 'abc-123',
+          schema: { $ref: '#/components/schemas/ItemId' }
+        })
+        findOne(@Param('id') id: string) {
+          return id;
+        }
+      }
+
+      const instance = new ItemsController();
+      const result = explore(instance, instance.findOne);
+
+      expect(result!.parameters[0].schema).toEqual({
+        example: 'abc-123',
+        allOf: [{ $ref: '#/components/schemas/ItemId' }]
+      });
     });
   });
 });
