@@ -3274,6 +3274,90 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when a method overrides controller-level @ApiConsumes/@ApiProduces', () => {
+    class Foo {
+      @ApiProperty()
+      name: string;
+    }
+
+    @ApiConsumes('application/xml')
+    @ApiProduces('application/xml')
+    @Controller('foos')
+    class FooController {
+      @Post('upload')
+      @ApiConsumes('multipart/form-data')
+      @ApiProduces('text/csv')
+      @ApiBody({ type: Foo })
+      @ApiCreatedResponse({ type: Foo })
+      upload(): Promise<Foo> {
+        return Promise.resolve(new Foo());
+      }
+
+      @Post()
+      @ApiBody({ type: Foo })
+      @ApiCreatedResponse({ type: Foo })
+      create(): Promise<Foo> {
+        return Promise.resolve(new Foo());
+      }
+    }
+
+    it('uses controller-level consumes for methods explored after an override', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes).toHaveLength(2);
+      expect(routes[0].root!.requestBody).toEqual({
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: { $ref: '#/components/schemas/Foo' }
+          }
+        }
+      });
+      expect(routes[1].root!.requestBody).toEqual({
+        required: true,
+        content: {
+          'application/xml': {
+            schema: { $ref: '#/components/schemas/Foo' }
+          }
+        }
+      });
+    });
+
+    it('uses controller-level produces for methods explored after an override', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+      expect(routes).toHaveLength(2);
+      const uploaded = routes[0].responses['201'] as ResponseObject;
+      expect(uploaded.content).toEqual({
+        'text/csv': {
+          schema: { $ref: '#/components/schemas/Foo' }
+        }
+      });
+      const created = routes[1].responses['201'] as ResponseObject;
+      expect(created.content).toEqual({
+        'application/xml': {
+          schema: { $ref: '#/components/schemas/Foo' }
+        }
+      });
+    });
+  });
+
   describe('when using ApiWebhook', () => {
     @Controller()
     class StripeWebhooksController {
