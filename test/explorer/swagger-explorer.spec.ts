@@ -3301,7 +3301,7 @@ describe('SwaggerExplorer', () => {
       }
     }
 
-    it('uses controller-level consumes for methods explored after an override', () => {
+    const exploreFooController = () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
@@ -3311,8 +3311,12 @@ describe('SwaggerExplorer', () => {
         new ApplicationConfig(),
         {}
       );
-
       expect(routes).toHaveLength(2);
+      return routes;
+    };
+
+    it('uses controller-level consumes for methods explored after an override', () => {
+      const routes = exploreFooController();
       expect(routes[0].root!.requestBody).toEqual({
         required: true,
         content: {
@@ -3332,17 +3336,7 @@ describe('SwaggerExplorer', () => {
     });
 
     it('uses controller-level produces for methods explored after an override', () => {
-      const explorer = new SwaggerExplorer(schemaObjectFactory);
-      const routes = explorer.exploreController(
-        {
-          instance: new FooController(),
-          metatype: FooController
-        } as InstanceWrapper<FooController>,
-        new ApplicationConfig(),
-        {}
-      );
-
-      expect(routes).toHaveLength(2);
+      const routes = exploreFooController();
       const uploaded = routes[0].responses['201'] as ResponseObject;
       expect(uploaded.content).toEqual({
         'text/csv': {
