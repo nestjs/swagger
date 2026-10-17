@@ -82,6 +82,12 @@ export class PaginationQuery {
   })
   filter: Record<string, any>;
 
+  @ApiProperty({
+    required: false,
+    externalDocs: { url: 'https://example.com/docs/pagination' }
+  })
+  cursor?: string;
+
   static _OPENAPI_METADATA_FACTORY() {
     return {
       sortBy: { type: () => [String] },

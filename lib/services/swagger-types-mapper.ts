@@ -178,7 +178,13 @@ export class SwaggerTypesMapper {
       'oneOf',
       'anyOf',
       'type',
-      'items'
+      'items',
+      'readOnly',
+      'writeOnly',
+      'xml',
+      'not',
+      'discriminator',
+      'externalDocs'
     ];
   }
 
