@@ -538,6 +538,17 @@
             }
           },
           {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "externalDocs": {
+                "url": "https://example.com/docs/pagination"
+              }
+            }
+          },
+          {
             "name": "strArray",
             "required": true,
             "in": "query",
@@ -1319,6 +1330,17 @@
               },
               "additionalProperties": true,
               "type": "object"
+            }
+          },
+          {
+            "required": false,
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "externalDocs": {
+                "url": "https://example.com/docs/pagination"
+              }
             }
           },
           {
