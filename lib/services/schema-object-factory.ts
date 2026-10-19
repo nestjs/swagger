@@ -156,7 +156,10 @@ export class SchemaObjectFactory {
           if (key === 'type' || key === 'items') {
             continue;
           }
-          if (key in customType && !(key in (customType.schema || {}))) {
+          if (
+            key in customType &&
+            (key === 'allOf' || !(key in (customType.schema || {})))
+          ) {
             schemaOptionsFromParam[key] = (customType as any)[key];
             delete (customType as any)[key];
           }
