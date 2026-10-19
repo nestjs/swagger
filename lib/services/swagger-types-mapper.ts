@@ -13,6 +13,7 @@ import {
   SchemaObject
 } from '../interfaces/open-api-spec.interface.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
+import { wrapRefInAllOf } from '../utils/wrap-ref-in-all-of.util.js';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
 
 type KeysToRemove =
@@ -231,14 +232,7 @@ export class SwaggerTypesMapper {
       return schema;
     }
     if ('$ref' in schema) {
-      // OpenAPI ignores sibling keys next to $ref, so wrap it using allOf.
-      const { $ref, ...restSchema } = schema as ReferenceObject &
-        Record<string, any>;
-      return {
-        ...restSchema,
-        ...annotations,
-        allOf: [...(restSchema.allOf || []), ...paramAllOf, { $ref }]
-      };
+      return wrapRefInAllOf({ ...schema, ...annotations }, paramAllOf);
     }
     if (paramAllOf.length === 0) {
       return { ...schema, ...annotations };

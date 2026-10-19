@@ -3,6 +3,7 @@ import 'reflect-metadata';
 import { z } from 'zod';
 import { createSchema } from 'zod-openapi';
 import { ApiParam } from '../../lib/decorators/api-param.decorator';
+import { ApiProperty } from '../../lib/decorators/api-property.decorator';
 import { ApiQuery } from '../../lib/decorators/api-query.decorator';
 import { exploreApiParametersMetadata } from '../../lib/explorers/api-parameters.explorer';
 import { StandardSchemaConverter } from '../../lib/interfaces';
@@ -337,6 +338,88 @@ describe('exploreApiParametersMetadata', () => {
       expect(result!.parameters[0].schema).toEqual({
         example: 'abc-123',
         allOf: [{ $ref: '#/components/schemas/ItemId' }]
+      });
+    });
+  });
+
+  describe('model $ref with sibling keys', () => {
+    class FilterDto {
+      @ApiProperty()
+      code: string;
+    }
+
+    it('should wrap the $ref when the schema adds keywords next to it', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'filter',
+          type: FilterDto,
+          schema: { allOf: [{ minProperties: 1 }] }
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.schema).toEqual({
+        allOf: [
+          { minProperties: 1 },
+          { $ref: '#/components/schemas/FilterDto' }
+        ]
+      });
+    });
+
+    it('should wrap the items $ref of an array param', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'filters',
+          type: [FilterDto],
+          schema: { allOf: [{ required: ['code'] }] }
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.schema).toEqual({
+        type: 'array',
+        items: {
+          allOf: [
+            { required: ['code'] },
+            { $ref: '#/components/schemas/FilterDto' }
+          ]
+        }
+      });
+    });
+
+    it('should keep a bare $ref unwrapped', () => {
+      class ItemsController {
+        @ApiQuery({ name: 'filter', type: FilterDto })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.schema).toEqual({
+        $ref: '#/components/schemas/FilterDto'
+      });
+    });
+
+    it('should add type object when wrapping a nullable model param', () => {
+      class ItemsController {
+        @ApiQuery({ name: 'filter', type: FilterDto, nullable: true })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.schema).toEqual({
+        nullable: true,
+        type: 'object',
+        allOf: [{ $ref: '#/components/schemas/FilterDto' }]
       });
     });
   });
