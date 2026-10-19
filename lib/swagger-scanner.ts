@@ -78,11 +78,8 @@ export class SwaggerScanner {
 
         if (deepScanRoutes) {
           // Only load submodules routes if explicitly enabled
-          const isGlobal = (module: Type<any>) =>
-            !container.isGlobalModule(module);
-
           Array.from(imports.values())
-            .filter(isGlobal as any)
+            .filter(({ isGlobal }) => !isGlobal)
             .forEach(({ metatype, controllers }) => {
               const modulePath = this.getModulePathMetadata(
                 container,
