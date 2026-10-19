@@ -119,6 +119,42 @@ describe('Express Swagger', () => {
     });
   });
 
+  describe('served swagger ui from a custom path under a nested route', () => {
+    const SWAGGER_RELATIVE_URL = '/api/docs';
+
+    beforeEach(async () => {
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+      SwaggerModule.setup(SWAGGER_RELATIVE_URL, app, swaggerDocument, {
+        customSwaggerUiPath: path.resolve(`./e2e/public`)
+      });
+
+      await app.init();
+    });
+
+    afterEach(async () => {
+      await app.close();
+    });
+
+    it('should serve custom assets from the route prefix', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}/theme.css`
+      );
+
+      expect(response.status).toEqual(200);
+    });
+
+    it('should serve custom assets from the slash-ending route prefix', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}/docs/theme.css`
+      );
+
+      expect(response.status).toEqual(200);
+    });
+  });
+
   describe('disabled Swagger UI but served JSON/YAML definitions', () => {
     const SWAGGER_RELATIVE_URL = '/apidoc';
 
