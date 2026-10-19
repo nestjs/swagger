@@ -814,12 +814,13 @@ export function canReferenceNode(node: ts.Node, options: PluginOptions) {
   ) {
     return true;
   }
-  if (
-    ts.isNumericLiteral(node) ||
-    ts.isPrefixUnaryExpression(node) ||
-    ts.isStringLiteral(node)
-  ) {
+  if (ts.isNumericLiteral(node) || ts.isStringLiteral(node)) {
     return true;
+  }
+  if (ts.isPrefixUnaryExpression(node)) {
+    // Only signed numeric literals (e.g. `-1`) are self-contained.
+    // Expressions like `-MIN` or `!FLAG` reference identifiers.
+    return ts.isNumericLiteral(node.operand);
   }
   return false;
 }

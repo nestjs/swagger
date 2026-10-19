@@ -1002,18 +1002,15 @@ export class ModelClassVisitor extends AbstractFileVisitor {
               return result;
             }
 
-            const clonedArgumentValue = this.clonePrimitiveLiteral(
-              factory,
-              argumentValue
+            const clonedArgumentValue =
+              this.clonePrimitiveLiteral(factory, argumentValue) ??
+              argumentValue;
+            result.push(
+              factory.createPropertyAssignment(
+                decoratorProperty.property,
+                clonedArgumentValue
+              )
             );
-            if (clonedArgumentValue) {
-              result.push(
-                factory.createPropertyAssignment(
-                  decoratorProperty.property,
-                  clonedArgumentValue
-                )
-              );
-            }
             return result;
           }
         );
@@ -1250,31 +1247,41 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     return relativePath;
   }
 
-  private clonePrimitiveLiteral(factory: ts.NodeFactory, node: ts.Node) {
-    const primitiveTypeName = this.getInitializerPrimitiveTypeName(node);
-    if (!primitiveTypeName) {
+  /**
+   * Re-creates a primitive literal node (boolean, number, string, or a signed
+   * numeric literal such as `-1`) so it can be safely emitted outside its
+   * original source location. Returns `undefined` for any other node,
+   * in which case callers should fall back to the original node.
+   */
+  private clonePrimitiveLiteral(
+    factory: ts.NodeFactory,
+    node: ts.Node
+  ): ts.Expression | undefined {
+    if (ts.isIdentifier(node)) {
+      if (node.text === 'true') {
+        return factory.createTrue();
+      }
+      if (node.text === 'false') {
+        return factory.createFalse();
+      }
       return undefined;
     }
-    const text = (node as any).text ?? node.getText();
-    return createPrimitiveLiteral(
-      factory,
-      primitiveTypeName === 'boolean' ? text === 'true' : text,
-      primitiveTypeName
-    );
-  }
-
-  private getInitializerPrimitiveTypeName(node: ts.Node) {
-    if (
-      ts.isIdentifier(node) &&
-      (node.text === 'true' || node.text === 'false')
-    ) {
-      return 'boolean';
-    }
-    if (ts.isNumericLiteral(node) || ts.isPrefixUnaryExpression(node)) {
-      return 'number';
+    if (ts.isNumericLiteral(node)) {
+      return factory.createNumericLiteral(node.text);
     }
     if (ts.isStringLiteral(node)) {
-      return 'string';
+      return factory.createStringLiteral(node.text);
+    }
+    if (
+      ts.isPrefixUnaryExpression(node) &&
+      (node.operator === ts.SyntaxKind.MinusToken ||
+        node.operator === ts.SyntaxKind.PlusToken) &&
+      ts.isNumericLiteral(node.operand)
+    ) {
+      return factory.createPrefixUnaryExpression(
+        node.operator,
+        factory.createNumericLiteral(node.operand.text)
+      );
     }
     return undefined;
   }
