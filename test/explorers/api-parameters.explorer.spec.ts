@@ -340,4 +340,83 @@ describe('exploreApiParametersMetadata', () => {
       });
     });
   });
+
+  describe('parameter-level allOf', () => {
+    it('should move allOf into the schema of a primitive query param', () => {
+      class ItemsController {
+        @ApiQuery({ name: 'q', type: String, allOf: [{ minLength: 3 }] })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter.schema).toEqual({
+        type: 'string',
+        allOf: [{ minLength: 3 }]
+      });
+    });
+
+    it('should keep allOf on the array schema of a primitive array query param', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'tags',
+          type: String,
+          isArray: true,
+          allOf: [{ minItems: 1 }]
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter.schema).toEqual({
+        type: 'array',
+        items: { type: 'string' },
+        allOf: [{ minItems: 1 }]
+      });
+    });
+
+    it('should append allOf to the allOf of an explicit schema', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'q',
+          schema: { type: 'string', allOf: [{ maxLength: 10 }] },
+          allOf: [{ minLength: 3 }]
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter.schema).toEqual({
+        type: 'string',
+        allOf: [{ maxLength: 10 }, { minLength: 3 }]
+      });
+    });
+
+    it('should wrap an explicit $ref schema when only allOf is added', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'filter',
+          schema: { $ref: '#/components/schemas/Filter' },
+          allOf: [{ minProperties: 1 }]
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter.schema).toEqual({
+        allOf: [{ minProperties: 1 }, { $ref: '#/components/schemas/Filter' }]
+      });
+    });
+  });
 });

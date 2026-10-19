@@ -143,13 +143,10 @@ export class SchemaObjectFactory {
 
         // Move schema-level options (e.g., example, allOf) from the top level into
         // the schema object so they are not lost when mapParamTypes strips top-level
-        // keys. SwaggerTypesMapper#omitParamKeys() does not remove 'allOf', so an
-        // unhandled top-level allOf would otherwise leak into the resulting
-        // ParameterObject as an invalid field.
-        const schemaOptionsKeys = [
-          ...this.swaggerTypesMapper.getSchemaOptionsKeys(),
-          'allOf'
-        ];
+        // keys. A parameter-level allOf is always moved so it can be merged with
+        // the schema's own allOf below.
+        const schemaOptionsKeys =
+          this.swaggerTypesMapper.getSchemaOptionsKeys();
         const schemaOptionsFromParam: Record<string, any> = {};
         for (const key of schemaOptionsKeys) {
           // Skip 'type' and 'items' as they are handled by getCustomType
@@ -192,17 +189,12 @@ export class SchemaObjectFactory {
               allOf: mergedAllOf
             };
           } else {
-            const mergedSchema: Record<string, any> = {
+            // Array params: getCustomType nests the model under `items`, so the
+            // options (including allOf) describe the array itself.
+            (customType as any).schema = {
               ...existingSchema,
               ...schemaOptionsFromParam
             };
-            // Merge allOf from both sides instead of letting one overwrite the other.
-            const existingAllOf = (existingSchema as any).allOf;
-            const paramAllOf = schemaOptionsFromParam.allOf;
-            if (Array.isArray(existingAllOf) && Array.isArray(paramAllOf)) {
-              mergedSchema.allOf = [...existingAllOf, ...paramAllOf];
-            }
-            (customType as any).schema = mergedSchema;
           }
         }
         return customType;
@@ -235,10 +227,8 @@ export class SchemaObjectFactory {
                   : true
           };
 
-          const keysToMoveToSchema = [
-            ...this.swaggerTypesMapper.getSchemaOptionsKeys(),
-            'allOf'
-          ];
+          const keysToMoveToSchema =
+            this.swaggerTypesMapper.getSchemaOptionsKeys();
           return keysToMoveToSchema.reduce((acc, key) => {
             if (key in property) {
               acc.schema = { ...acc.schema, [key]: property[key] };

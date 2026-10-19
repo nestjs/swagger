@@ -177,6 +177,7 @@ export class SwaggerTypesMapper {
       'example',
       'oneOf',
       'anyOf',
+      'allOf',
       'type',
       'items'
     ];
@@ -200,6 +201,8 @@ export class SwaggerTypesMapper {
    * `@ApiQuery()`) into its schema, since `omitParamKeys` strips them from
    * the top level. Keys already present in the schema take precedence, and
    * structural keys are never copied so they cannot conflict with the schema.
+   * The exception is `allOf`: constraints from both sides all apply, so the
+   * parameter's entries are appended to the schema's.
    */
   private mergeSchemaAnnotations(
     schema: SchemaObject | ReferenceObject,
@@ -212,13 +215,19 @@ export class SwaggerTypesMapper {
       'patternProperties',
       'additionalProperties',
       'oneOf',
-      'anyOf'
+      'anyOf',
+      'allOf'
     ];
     const annotations = omitBy(
       omit(this.getSchemaOptions(param), structuralKeys),
       (_, key) => key in schema
     );
-    if (Object.keys(annotations).length === 0) {
+    const paramAllOf: Array<SchemaObject | ReferenceObject> = Array.isArray(
+      param.allOf
+    )
+      ? param.allOf
+      : [];
+    if (Object.keys(annotations).length === 0 && paramAllOf.length === 0) {
       return schema;
     }
     if ('$ref' in schema) {
@@ -228,10 +237,17 @@ export class SwaggerTypesMapper {
       return {
         ...restSchema,
         ...annotations,
-        allOf: [...(restSchema.allOf || []), { $ref }]
+        allOf: [...(restSchema.allOf || []), ...paramAllOf, { $ref }]
       };
     }
-    return { ...schema, ...annotations };
+    if (paramAllOf.length === 0) {
+      return { ...schema, ...annotations };
+    }
+    return {
+      ...schema,
+      ...annotations,
+      allOf: [...((schema as SchemaObject).allOf || []), ...paramAllOf]
+    };
   }
 
   private isEnumArrayType(param: Record<string, any>): boolean {
