@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import * as ts from 'typescript';
 import { before } from '../../lib/plugin/compiler-plugin';
 import { pluginDebugLogger } from '../../lib/plugin/plugin-debug-logger';
+import { ModelClassVisitor } from '../../lib/plugin/visitors/model-class.visitor';
 import {
   isEsmOutputFile,
   resolvePluginOptionsForFile
@@ -72,6 +73,60 @@ import {
 } from './fixtures/record-type.dto';
 
 describe('API model properties', () => {
+  it.each(['true', 'false'])(
+    'should preserve a synthetic boolean identifier default of %s',
+    (value) => {
+      const property = ts.factory.createPropertyDeclaration(
+        undefined,
+        'enabled',
+        undefined,
+        ts.factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword),
+        ts.factory.createIdentifier(value)
+      );
+      const assignment =
+        new ModelClassVisitor().createDefaultPropertyAssignment(
+          ts.factory,
+          property,
+          ts.factory.createNodeArray(),
+          {}
+        );
+      const source = ts.createSourceFile('', '', ts.ScriptTarget.Latest);
+
+      expect(
+        ts
+          .createPrinter()
+          .printNode(ts.EmitHint.Unspecified, assignment, source)
+      ).toBe(`default: ${value}`);
+    }
+  );
+
+  it.each(['true', 'false', '42', '"false"'])(
+    'should preserve a parsed literal default of %s',
+    (value) => {
+      const source = ts.createSourceFile(
+        'literal.dto.ts',
+        `class LiteralDto { value = ${value}; }`,
+        ts.ScriptTarget.Latest,
+        true
+      );
+      const declaration = source.statements[0] as ts.ClassDeclaration;
+      const property = declaration.members[0] as ts.PropertyDeclaration;
+      const assignment =
+        new ModelClassVisitor().createDefaultPropertyAssignment(
+          ts.factory,
+          property,
+          ts.factory.createNodeArray(),
+          {}
+        );
+
+      expect(
+        ts
+          .createPrinter()
+          .printNode(ts.EmitHint.Unspecified, assignment, source)
+      ).toBe(`default: ${value}`);
+    }
+  );
+
   it('should add the metadata factory when no decorators exist, and generated propertyKey is title', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.ES2022,
