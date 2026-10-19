@@ -474,7 +474,11 @@ export class SwaggerModule {
         return;
       }
       const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;
-      SwaggerModule.serveStatic(serveStaticSlashEndingPath, app);
+      SwaggerModule.serveStatic(
+        serveStaticSlashEndingPath,
+        app,
+        options?.customSwaggerUiPath
+      );
     }
   }
 }
