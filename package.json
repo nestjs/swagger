@@ -56,8 +56,8 @@
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "13.1.0",
-    "@commitlint/cli": "21.2.3",
-    "@commitlint/config-angular": "21.2.3",
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-angular": "21.2.4",
     "@fastify/compress": "^9.0.0",
     "@fastify/static": "10.1.5",
     "@nestjs/common": "^12.0.0",
