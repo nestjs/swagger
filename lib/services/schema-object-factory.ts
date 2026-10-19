@@ -182,9 +182,12 @@ export class SchemaObjectFactory {
           if (key === 'type' || key === 'items') {
             continue;
           }
+          // A key the schema leaves undefined does not take precedence, since
+          // it would otherwise silently drop the parameter's own value.
           if (
             key in customType &&
-            (key === 'allOf' || !(key in (customType.schema || {})))
+            (key === 'allOf' ||
+              (customType.schema as Record<string, any>)[key] === undefined)
           ) {
             schemaOptionsFromParam[key] = (customType as any)[key];
             delete (customType as any)[key];
@@ -239,15 +242,25 @@ export class SchemaObjectFactory {
                   : true
           };
 
-          const keysToMoveToSchema =
-            this.swaggerTypesMapper.getSchemaOptionsKeys();
-          return keysToMoveToSchema.reduce((acc, key) => {
+          // `enum` describes the value itself unless the property is an array,
+          // whose enum already lives in `items`.
+          const keysToMoveToSchema: string[] = [
+            ...this.swaggerTypesMapper.getSchemaOptionsKeys(),
+            ...('items' in property ? [] : ['enum'])
+          ];
+          const result = keysToMoveToSchema.reduce((acc, key) => {
             if (key in property) {
               acc.schema = { ...acc.schema, [key]: property[key] };
               delete acc[key];
             }
             return acc;
           }, parameterObject);
+          // An inline object type lists its required fields as an array,
+          // which belongs to the schema rather than the parameter.
+          if (Array.isArray(property.required)) {
+            result.schema = { ...result.schema, required: property.required };
+          }
+          return result;
         }
       ) as ParameterObject[];
     }

@@ -221,7 +221,7 @@ export class SwaggerTypesMapper {
     ];
     const annotations = omitBy(
       omit(this.getSchemaOptions(param), structuralKeys),
-      (_, key) => key in schema
+      (_, key) => (schema as Record<string, any>)[key] !== undefined
     );
     const paramAllOf: Array<SchemaObject | ReferenceObject> = Array.isArray(
       param.allOf

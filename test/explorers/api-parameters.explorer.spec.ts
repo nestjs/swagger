@@ -424,6 +424,86 @@ describe('exploreApiParametersMetadata', () => {
     });
   });
 
+  describe('@ApiQuery with a DTO type and no name', () => {
+    enum Color {
+      Red = 'red',
+      Blue = 'blue'
+    }
+
+    it('should keep a scalar enum in the schema', () => {
+      class ColorQueryDto {
+        @ApiProperty({ enum: Color })
+        color: Color;
+
+        @ApiProperty({ enum: Color, isArray: true })
+        colors: Color[];
+      }
+      class ItemsController {
+        @ApiQuery({ type: ColorQueryDto })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const parameters = explore(instance, instance.list)!.parameters;
+
+      expect(parameters.find((p) => p.name === 'color').schema).toEqual({
+        type: 'string',
+        enum: ['red', 'blue']
+      });
+      expect(parameters.find((p) => p.name === 'colors').schema).toEqual({
+        type: 'array',
+        items: { type: 'string', enum: ['red', 'blue'] }
+      });
+    });
+
+    it('should move the required fields of an inline object type into its schema', () => {
+      class RawQueryDto {
+        raw: unknown;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            raw: {
+              required: true,
+              type: () => ({ foo: { required: true, type: () => String } })
+            }
+          };
+        }
+      }
+      class ItemsController {
+        @ApiQuery({ type: RawQueryDto })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.required).toBe(true);
+      expect(parameter.schema).toEqual({
+        type: 'object',
+        properties: { foo: { type: 'string' } },
+        required: ['foo']
+      });
+    });
+  });
+
+  describe('schema keys left undefined', () => {
+    it('should let the parameter value through when the schema key is undefined', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'q',
+          example: 'abc',
+          schema: { type: 'string', example: undefined }
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.schema).toEqual({ type: 'string', example: 'abc' });
+    });
+  });
+
   describe('parameter-level allOf', () => {
     it('should move allOf into the schema of a primitive query param', () => {
       class ItemsController {

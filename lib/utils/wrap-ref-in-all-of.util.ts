@@ -1,3 +1,4 @@
+import { isUndefined, omitBy } from 'es-toolkit/compat';
 import {
   ReferenceObject,
   SchemaObject
@@ -13,7 +14,8 @@ export function wrapRefInAllOf(
   schema: ReferenceObject & Record<string, any>,
   extraAllOf: Array<SchemaObject | ReferenceObject> = []
 ): SchemaObject | ReferenceObject {
-  const { $ref, allOf, ...rest } = schema;
+  const { $ref, allOf, ...siblings } = schema;
+  const rest = omitBy(siblings, isUndefined);
   const allOfEntries = [...(Array.isArray(allOf) ? allOf : []), ...extraAllOf];
   if (Object.keys(rest).length === 0 && allOfEntries.length === 0) {
     return { $ref };
