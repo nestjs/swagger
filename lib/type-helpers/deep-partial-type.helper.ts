@@ -19,8 +19,17 @@ import {
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
-/** Cache to avoid infinite recursion on circular types */
+/**
+ * Caches to avoid infinite recursion on circular types. The generated class
+ * carries validation decorators that depend on `skipNullProperties`, so each
+ * setting gets its own cache. Both variants produce the same OpenAPI schema,
+ * so they can safely share a schema name.
+ */
 const deepPartialCache = new Map<Type<unknown>, Type<unknown>>();
+const deepPartialValidateIfDefinedCache = new Map<
+  Type<unknown>,
+  Type<unknown>
+>();
 
 /**
  * Returns true when `typeRef` is a class whose prototype carries swagger
@@ -82,14 +91,17 @@ export function DeepPartialType<T>(
     skipNullProperties?: boolean;
   } = {}
 ): Type<DeepPartial<T>> {
-  if (deepPartialCache.has(classRef)) {
-    return deepPartialCache.get(classRef) as Type<DeepPartial<T>>;
+  const validateIfDefined = options.skipNullProperties === false;
+  const cache = validateIfDefined
+    ? deepPartialValidateIfDefinedCache
+    : deepPartialCache;
+  if (cache.has(classRef)) {
+    return cache.get(classRef) as Type<DeepPartial<T>>;
   }
 
-  const applyPartialDecoratorFn =
-    options.skipNullProperties === false
-      ? applyValidateIfDefinedDecorator
-      : applyIsOptionalDecorator;
+  const applyPartialDecoratorFn = validateIfDefined
+    ? applyValidateIfDefinedDecorator
+    : applyIsOptionalDecorator;
 
   const fields = modelPropertiesAccessor.getModelProperties(classRef.prototype);
 
@@ -101,7 +113,7 @@ export function DeepPartialType<T>(
   setMappedTypeClassName(DeepPartialTypeClass, 'DeepPartial', classRef);
 
   // Register in cache early to handle circular references
-  deepPartialCache.set(classRef, DeepPartialTypeClass as Type<unknown>);
+  cache.set(classRef, DeepPartialTypeClass as Type<unknown>);
 
   const keysWithValidationConstraints = inheritValidationMetadata(
     classRef,
