@@ -34,6 +34,9 @@ export class SwaggerTypesMapper {
     '$ref',
     'standardSchema',
     'selfRequired',
+    // Only meaningful for properties sent in responses; a request parameter
+    // cannot be read-only, so it is dropped rather than moved into the schema.
+    'readOnly',
     ...this.getSchemaOptionsKeys()
   ];
 
@@ -180,7 +183,12 @@ export class SwaggerTypesMapper {
       'anyOf',
       'allOf',
       'type',
-      'items'
+      'items',
+      'writeOnly',
+      'xml',
+      'not',
+      'discriminator',
+      'externalDocs'
     ];
   }
 
@@ -217,7 +225,9 @@ export class SwaggerTypesMapper {
       'additionalProperties',
       'oneOf',
       'anyOf',
-      'allOf'
+      'allOf',
+      'not',
+      'discriminator'
     ];
     const annotations = omitBy(
       omit(this.getSchemaOptions(param), structuralKeys),

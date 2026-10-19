@@ -37,6 +37,7 @@ import {
   ApiPropertyOptional,
   ApiQuery,
   ApiResponse,
+  ApiResponseProperty,
   ApiSchema,
   ApiWebhook
 } from '../../lib/decorators';
@@ -49,6 +50,7 @@ import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { GlobalParametersStorage } from '../../lib/storages/global-parameters.storage';
 import { GlobalResponsesStorage } from '../../lib/storages/global-responses.storage';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
+import { PartialType } from '../../lib/type-helpers';
 
 describe('SwaggerExplorer', () => {
   const schemaObjectFactory = new SchemaObjectFactory(
@@ -2718,6 +2720,53 @@ describe('SwaggerExplorer', () => {
           schema: {
             type: 'number'
           }
+        }
+      ]);
+    });
+  });
+
+  describe('when a query DTO is built from a response DTO', () => {
+    class UserDto {
+      @ApiResponseProperty({ format: 'uuid' })
+      id: string;
+
+      @ApiProperty({ writeOnly: true })
+      password: string;
+    }
+
+    class FindUsersQuery extends PartialType(UserDto) {}
+
+    @Controller('users')
+    class UsersController {
+      @Get()
+      find(@Query() query: FindUsersQuery): Promise<UserDto[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    it('should drop readOnly and keep writeOnly inside the parameter schemas', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new UsersController(),
+          metatype: UsersController
+        } as InstanceWrapper<UsersController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          name: 'id',
+          in: 'query',
+          required: false,
+          schema: { type: 'string', format: 'uuid' }
+        },
+        {
+          name: 'password',
+          in: 'query',
+          required: false,
+          schema: { type: 'string', writeOnly: true }
         }
       ]);
     });
