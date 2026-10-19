@@ -1,3 +1,4 @@
+import { IsString, validate } from 'class-validator';
 import { DECORATORS } from '../../lib/constants';
 import { ApiProperty } from '../../lib/decorators';
 import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
@@ -411,6 +412,65 @@ describe('DeepPartialType', () => {
       const A = DeepPartialType(UserDto);
       const B = DeepPartialType(UserDto);
       expect(A).toBe(B);
+    });
+
+    it('should cache each `skipNullProperties` setting separately', () => {
+      expect(DeepPartialType(UserDto, { skipNullProperties: false })).not.toBe(
+        DeepPartialType(UserDto)
+      );
+      expect(DeepPartialType(UserDto, { skipNullProperties: false })).toBe(
+        DeepPartialType(UserDto, { skipNullProperties: false })
+      );
+      expect(DeepPartialType(UserDto, { skipNullProperties: true })).toBe(
+        DeepPartialType(UserDto)
+      );
+    });
+
+    it('should not share nested classes between `skipNullProperties` settings', () => {
+      const nestedType = (classRef: any) =>
+        getMetadata(classRef, 'profile').type;
+
+      expect(
+        nestedType(DeepPartialType(UserDto, { skipNullProperties: false }))
+      ).not.toBe(nestedType(DeepPartialType(UserDto)));
+    });
+  });
+
+  describe('validation metadata', () => {
+    class ValidatedDto {
+      @ApiProperty()
+      @IsString()
+      name: string;
+    }
+
+    class NullCheckedFirstDto {
+      @ApiProperty()
+      @IsString()
+      name: string;
+    }
+
+    it('should validate null values when `skipNullProperties` is false, even after a default call', async () => {
+      DeepPartialType(ValidatedDto);
+      const NullChecked = DeepPartialType(ValidatedDto, {
+        skipNullProperties: false
+      });
+
+      const dto = Object.assign(new (NullChecked as any)(), { name: null });
+      const errors = await validate(dto);
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].constraints).toEqual({
+        isString: 'name must be a string'
+      });
+    });
+
+    it('should skip null values by default, even after a `skipNullProperties: false` call', async () => {
+      DeepPartialType(NullCheckedFirstDto, { skipNullProperties: false });
+      const Default = DeepPartialType(NullCheckedFirstDto);
+
+      const dto = Object.assign(new (Default as any)(), { name: null });
+
+      expect(await validate(dto)).toHaveLength(0);
     });
   });
 });
