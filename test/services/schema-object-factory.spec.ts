@@ -1879,6 +1879,64 @@ describe('SchemaObjectFactory', () => {
       expect(paramResult.schema.$ref).toBeUndefined();
     });
 
+    it('should merge parameter and schema allOf constraints for a named scalar parameter', () => {
+      class FilterDto {
+        @ApiProperty({ type: String })
+        code: string;
+      }
+
+      const metadata: ParamWithTypeMetadata &
+        Pick<SchemaObject, 'allOf'> & { schema: SchemaObject } = {
+        in: 'query',
+        name: 'filter',
+        type: FilterDto,
+        allOf: [{ required: ['code'] }],
+        schema: { allOf: [{ minProperties: 1 }] }
+      };
+
+      const parameters = schemaObjectFactory.createFromModel([metadata], {});
+      const [parameter] = swaggerTypesMapper.mapParamTypes(parameters);
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter).toHaveProperty('schema', {
+        allOf: [
+          { minProperties: 1 },
+          { required: ['code'] },
+          { $ref: '#/components/schemas/FilterDto' }
+        ]
+      });
+    });
+
+    it('should keep array parameter allOf constraints separate from item constraints', () => {
+      class FilterDto {
+        @ApiProperty({ type: String })
+        code: string;
+      }
+
+      const metadata: ParamWithTypeMetadata &
+        Pick<SchemaObject, 'allOf'> & { schema: SchemaObject } = {
+        in: 'query',
+        name: 'filters',
+        type: FilterDto,
+        isArray: true,
+        allOf: [{ minItems: 1 }],
+        schema: { allOf: [{ required: ['code'] }] }
+      };
+
+      const parameters = schemaObjectFactory.createFromModel([metadata], {});
+      const [parameter] = swaggerTypesMapper.mapParamTypes(parameters);
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter).toHaveProperty('schema', {
+        type: 'array',
+        allOf: [{ minItems: 1 }],
+        items: {
+          allOf: [{ required: ['code'] }],
+          $ref: '#/components/schemas/FilterDto'
+        }
+      });
+    });
+
     it('should create enum schema for query params using SWC const-enum object metadata', () => {
       const CampaignStatus = {
         ACTIVE: 'active',
