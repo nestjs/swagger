@@ -33,6 +33,7 @@ import { getSchemaPath } from '../utils/index.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
 import { isBuiltInType } from '../utils/is-built-in-type.util.js';
 import { isDateCtor } from '../utils/is-date-ctor.util.js';
+import { wrapRefInAllOf } from '../utils/wrap-ref-in-all-of.util.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
 import { StandardSchemaOpenApiConverter } from './standard-schema-openapi.converter.js';
@@ -81,7 +82,15 @@ export class SchemaObjectFactory {
       if (!isBodyParameter(param)) {
         return this.createQueryOrParamSchema(param, schemas);
       }
-      return this.getCustomType(param, schemas);
+      const customType = this.getCustomType(param, schemas);
+      const schema = customType.schema as Record<string, any>;
+      return {
+        ...customType,
+        schema:
+          '$ref' in schema
+            ? this.wrapModelRef(schema)
+            : { ...schema, items: this.wrapModelRef(schema.items) }
+      };
     });
 
     return flatten(parameterObjects);
@@ -117,6 +126,26 @@ export class SchemaObjectFactory {
     };
   }
 
+  /**
+   * Wraps a model `$ref` that carries sibling keys (see `wrapRefInAllOf`).
+   * Models are objects, and OpenAPI 3.0 only applies `nullable` when `type`
+   * is set alongside it, so a nullable wrapper also gets `type: 'object'`.
+   */
+  private wrapModelRef(
+    schema: Record<string, any>,
+    extraAllOf: Array<SchemaObject | ReferenceObject> = []
+  ): SchemaObject | ReferenceObject {
+    const wrapped = wrapRefInAllOf(
+      schema as ReferenceObject & Record<string, any>,
+      extraAllOf
+    ) as SchemaObject;
+    if (!wrapped.nullable || wrapped.type !== undefined) {
+      return wrapped;
+    }
+    const { allOf, ...rest } = wrapped;
+    return { ...rest, type: 'object', allOf };
+  }
+
   private createQueryOrParamSchema(
     param: ParamWithTypeMetadata,
     schemas: Record<string, SchemaObject>
@@ -143,67 +172,45 @@ export class SchemaObjectFactory {
 
         // Move schema-level options (e.g., example, allOf) from the top level into
         // the schema object so they are not lost when mapParamTypes strips top-level
-        // keys. SwaggerTypesMapper#omitParamKeys() does not remove 'allOf', so an
-        // unhandled top-level allOf would otherwise leak into the resulting
-        // ParameterObject as an invalid field.
-        const schemaOptionsKeys = [
-          ...this.swaggerTypesMapper.getSchemaOptionsKeys(),
-          'allOf'
-        ];
+        // keys. A parameter-level allOf is always moved so it can be merged with
+        // the schema's own allOf below.
+        const schemaOptionsKeys =
+          this.swaggerTypesMapper.getSchemaOptionsKeys();
         const schemaOptionsFromParam: Record<string, any> = {};
         for (const key of schemaOptionsKeys) {
           // Skip 'type' and 'items' as they are handled by getCustomType
           if (key === 'type' || key === 'items') {
             continue;
           }
+          // A key the schema leaves undefined does not take precedence, since
+          // it would otherwise silently drop the parameter's own value.
           if (
             key in customType &&
-            (key === 'allOf' || !(key in (customType.schema || {})))
+            (key === 'allOf' ||
+              (customType.schema as Record<string, any>)[key] === undefined)
           ) {
             schemaOptionsFromParam[key] = (customType as any)[key];
             delete (customType as any)[key];
           }
         }
-        if (Object.keys(schemaOptionsFromParam).length > 0) {
-          const existingSchema = (customType.schema || {}) as Record<
-            string,
-            any
-          >;
-          // When we have extra metadata alongside a $ref, wrap the $ref using
-          // allOf so the metadata sits beside it (OpenAPI does not allow sibling
-          // keys next to $ref). Merge with any pre-existing allOf entries from
-          // either the schema itself or the parameter rather than overwriting.
-          if ('$ref' in existingSchema) {
-            const {
-              $ref,
-              allOf: existingAllOf,
-              ...restSchema
-            } = existingSchema;
-            const { allOf: paramAllOf, ...restParamOptions } =
-              schemaOptionsFromParam;
-            const mergedAllOf = [
-              ...(Array.isArray(existingAllOf) ? existingAllOf : []),
-              ...(Array.isArray(paramAllOf) ? paramAllOf : []),
-              { $ref: $ref as string }
-            ];
-            (customType as any).schema = {
-              ...restSchema,
-              ...restParamOptions,
-              allOf: mergedAllOf
-            };
-          } else {
-            const mergedSchema: Record<string, any> = {
-              ...existingSchema,
-              ...schemaOptionsFromParam
-            };
-            // Merge allOf from both sides instead of letting one overwrite the other.
-            const existingAllOf = (existingSchema as any).allOf;
-            const paramAllOf = schemaOptionsFromParam.allOf;
-            if (Array.isArray(existingAllOf) && Array.isArray(paramAllOf)) {
-              mergedSchema.allOf = [...existingAllOf, ...paramAllOf];
-            }
-            (customType as any).schema = mergedSchema;
-          }
+        const existingSchema = customType.schema as Record<string, any>;
+        if ('$ref' in existingSchema) {
+          // Merge the parameter's allOf with the schema's own entries rather
+          // than letting one overwrite the other.
+          const { allOf: paramAllOf, ...restParamOptions } =
+            schemaOptionsFromParam;
+          (customType as any).schema = this.wrapModelRef(
+            { ...existingSchema, ...restParamOptions },
+            Array.isArray(paramAllOf) ? paramAllOf : []
+          );
+        } else {
+          // Array params: getCustomType nests the model under `items`, so the
+          // options (including allOf) describe the array itself.
+          (customType as any).schema = {
+            ...existingSchema,
+            ...schemaOptionsFromParam,
+            items: this.wrapModelRef(existingSchema.items)
+          };
         }
         return customType;
       }
@@ -235,17 +242,25 @@ export class SchemaObjectFactory {
                   : true
           };
 
-          const keysToMoveToSchema = [
+          // `enum` describes the value itself unless the property is an array,
+          // whose enum already lives in `items`.
+          const keysToMoveToSchema: string[] = [
             ...this.swaggerTypesMapper.getSchemaOptionsKeys(),
-            'allOf'
+            ...('items' in property ? [] : ['enum'])
           ];
-          return keysToMoveToSchema.reduce((acc, key) => {
+          const result = keysToMoveToSchema.reduce((acc, key) => {
             if (key in property) {
               acc.schema = { ...acc.schema, [key]: property[key] };
               delete acc[key];
             }
             return acc;
           }, parameterObject);
+          // An inline object type lists its required fields as an array,
+          // which belongs to the schema rather than the parameter.
+          if (Array.isArray(property.required)) {
+            result.schema = { ...result.schema, required: property.required };
+          }
+          return result;
         }
       ) as ParameterObject[];
     }
@@ -656,7 +671,12 @@ export class SchemaObjectFactory {
         required: metadata.required,
         ...validMetadataObject,
         ...(validMetadataObject['nullable'] ? { type: 'object' } : {}),
-        allOf: [{ $ref }]
+        allOf: [
+          ...(Array.isArray(validMetadataObject.allOf)
+            ? validMetadataObject.allOf
+            : []),
+          { $ref }
+        ]
       } as SchemaObjectMetadata;
     }
     return {

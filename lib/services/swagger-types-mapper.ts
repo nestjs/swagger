@@ -13,6 +13,7 @@ import {
   SchemaObject
 } from '../interfaces/open-api-spec.interface.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
+import { wrapRefInAllOf } from '../utils/wrap-ref-in-all-of.util.js';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
 
 type KeysToRemove =
@@ -177,6 +178,7 @@ export class SwaggerTypesMapper {
       'example',
       'oneOf',
       'anyOf',
+      'allOf',
       'type',
       'items'
     ];
@@ -200,6 +202,8 @@ export class SwaggerTypesMapper {
    * `@ApiQuery()`) into its schema, since `omitParamKeys` strips them from
    * the top level. Keys already present in the schema take precedence, and
    * structural keys are never copied so they cannot conflict with the schema.
+   * The exception is `allOf`: constraints from both sides all apply, so the
+   * parameter's entries are appended to the schema's.
    */
   private mergeSchemaAnnotations(
     schema: SchemaObject | ReferenceObject,
@@ -212,26 +216,32 @@ export class SwaggerTypesMapper {
       'patternProperties',
       'additionalProperties',
       'oneOf',
-      'anyOf'
+      'anyOf',
+      'allOf'
     ];
     const annotations = omitBy(
       omit(this.getSchemaOptions(param), structuralKeys),
-      (_, key) => key in schema
+      (_, key) => (schema as Record<string, any>)[key] !== undefined
     );
-    if (Object.keys(annotations).length === 0) {
+    const paramAllOf: Array<SchemaObject | ReferenceObject> = Array.isArray(
+      param.allOf
+    )
+      ? param.allOf
+      : [];
+    if (Object.keys(annotations).length === 0 && paramAllOf.length === 0) {
       return schema;
     }
     if ('$ref' in schema) {
-      // OpenAPI ignores sibling keys next to $ref, so wrap it using allOf.
-      const { $ref, ...restSchema } = schema as ReferenceObject &
-        Record<string, any>;
-      return {
-        ...restSchema,
-        ...annotations,
-        allOf: [...(restSchema.allOf || []), { $ref }]
-      };
+      return wrapRefInAllOf({ ...schema, ...annotations }, paramAllOf);
     }
-    return { ...schema, ...annotations };
+    if (paramAllOf.length === 0) {
+      return { ...schema, ...annotations };
+    }
+    return {
+      ...schema,
+      ...annotations,
+      allOf: [...((schema as SchemaObject).allOf || []), ...paramAllOf]
+    };
   }
 
   private isEnumArrayType(param: Record<string, any>): boolean {

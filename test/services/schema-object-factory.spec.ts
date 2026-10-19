@@ -1153,6 +1153,27 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should keep a user-defined allOf on a model-typed property', () => {
+      class AllOfNestedDto {
+        @ApiProperty()
+        a: string;
+      }
+      class AllOfHolderDto {
+        @ApiProperty({ type: AllOfNestedDto, allOf: [{ required: ['a'] }] })
+        nested: AllOfNestedDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(AllOfHolderDto, schemas);
+
+      expect(schemas[AllOfHolderDto.name].properties!.nested).toEqual({
+        allOf: [
+          { required: ['a'] },
+          { $ref: '#/components/schemas/AllOfNestedDto' }
+        ]
+      });
+    });
+
     describe('@ApiSchema', () => {
       it('should use the class name when no options object was passed', () => {
         @ApiSchema()
@@ -1931,8 +1952,10 @@ describe('SchemaObjectFactory', () => {
         type: 'array',
         allOf: [{ minItems: 1 }],
         items: {
-          allOf: [{ required: ['code'] }],
-          $ref: '#/components/schemas/FilterDto'
+          allOf: [
+            { required: ['code'] },
+            { $ref: '#/components/schemas/FilterDto' }
+          ]
         }
       });
     });
