@@ -17,7 +17,12 @@ import { ModelPropertiesAccessor } from '../../lib/services/model-properties-acc
 import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
-import { OmitType, PartialType, PickType } from '../../lib/type-helpers';
+import {
+  DeepPartialType,
+  OmitType,
+  PartialType,
+  PickType
+} from '../../lib/type-helpers';
 import { CreateUserDto } from './fixtures/create-user.dto';
 
 describe('SchemaObjectFactory', () => {
@@ -827,6 +832,65 @@ describe('SchemaObjectFactory', () => {
         properties: {
           id: { type: 'string' },
           name: { type: 'string' }
+        }
+      });
+    });
+
+    it('should keep nested DeepPartialType schemas distinct', () => {
+      class OwnerDto {
+        @ApiProperty()
+        name: string;
+
+        @ApiProperty()
+        email: string;
+      }
+
+      class AddressDto {
+        @ApiProperty()
+        street: string;
+
+        @ApiProperty()
+        city: string;
+      }
+
+      class CreateCatDto {
+        @ApiProperty()
+        name: string;
+
+        @ApiProperty({ type: () => OwnerDto })
+        owner: OwnerDto;
+
+        @ApiProperty({ type: () => AddressDto })
+        address: AddressDto;
+      }
+
+      class UpdateCatDto extends DeepPartialType(CreateCatDto) {}
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(UpdateCatDto, schemas);
+
+      expect(Object.keys(schemas).sort()).toEqual([
+        'DeepPartialAddressDto',
+        'DeepPartialOwnerDto',
+        'UpdateCatDto'
+      ]);
+      expect(schemas.UpdateCatDto.properties).toEqual({
+        name: { type: 'string' },
+        owner: { $ref: '#/components/schemas/DeepPartialOwnerDto' },
+        address: { $ref: '#/components/schemas/DeepPartialAddressDto' }
+      });
+      expect(schemas.DeepPartialOwnerDto).toEqual({
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          email: { type: 'string' }
+        }
+      });
+      expect(schemas.DeepPartialAddressDto).toEqual({
+        type: 'object',
+        properties: {
+          street: { type: 'string' },
+          city: { type: 'string' }
         }
       });
     });
