@@ -1256,7 +1256,11 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return undefined;
     }
     const text = (node as any).text ?? node.getText();
-    return createPrimitiveLiteral(factory, text, primitiveTypeName);
+    return createPrimitiveLiteral(
+      factory,
+      primitiveTypeName === 'boolean' ? text === 'true' : text,
+      primitiveTypeName
+    );
   }
 
   private getInitializerPrimitiveTypeName(node: ts.Node) {
