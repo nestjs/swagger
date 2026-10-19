@@ -46,7 +46,7 @@ describe('SwaggerTypesMapper', () => {
       expect(result[0].schema.type).toBe('array');
     });
 
-    it('should move schema-only keywords like `readOnly` into the schema for type-based parameters', () => {
+    it('should move schema-only keywords into the schema and drop `readOnly` for type-based parameters', () => {
       const params = [
         {
           name: 'id',
@@ -70,7 +70,6 @@ describe('SwaggerTypesMapper', () => {
         required: true,
         schema: {
           type: 'string',
-          readOnly: true,
           writeOnly: false,
           xml: { name: 'id' },
           not: { enum: [''] },
@@ -80,7 +79,7 @@ describe('SwaggerTypesMapper', () => {
       });
     });
 
-    it('should move schema-only keywords like `readOnly` into an explicit parameter schema', () => {
+    it('should move schema-only keywords into an explicit parameter schema and drop `readOnly`', () => {
       const params = [
         {
           name: 'id',
@@ -101,9 +100,30 @@ describe('SwaggerTypesMapper', () => {
         schema: {
           type: 'string',
           format: 'uuid',
-          readOnly: true,
           externalDocs: { url: 'https://example.com/ids' }
         }
+      });
+    });
+
+    it('should not merge structural keywords like `not` into an explicit parameter schema', () => {
+      const params = [
+        {
+          name: 'pet',
+          in: 'query',
+          required: true,
+          schema: { $ref: '#/components/schemas/Pet' },
+          not: { type: 'null' },
+          discriminator: { propertyName: 'kind' }
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'pet',
+        in: 'query',
+        required: true,
+        schema: { $ref: '#/components/schemas/Pet' }
       });
     });
   });

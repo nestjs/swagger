@@ -2744,7 +2744,7 @@ describe('SwaggerExplorer', () => {
       }
     }
 
-    it('should keep readOnly and writeOnly inside the parameter schemas', () => {
+    it('should drop readOnly and keep writeOnly inside the parameter schemas', () => {
       const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
@@ -2760,7 +2760,7 @@ describe('SwaggerExplorer', () => {
           name: 'id',
           in: 'query',
           required: false,
-          schema: { type: 'string', format: 'uuid', readOnly: true }
+          schema: { type: 'string', format: 'uuid' }
         },
         {
           name: 'password',
