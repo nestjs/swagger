@@ -3,6 +3,7 @@ import 'reflect-metadata';
 import { z } from 'zod';
 import { createSchema } from 'zod-openapi';
 import { ApiParam } from '../../lib/decorators/api-param.decorator';
+import { ApiProperty } from '../../lib/decorators/api-property.decorator';
 import { ApiQuery } from '../../lib/decorators/api-query.decorator';
 import { exploreApiParametersMetadata } from '../../lib/explorers/api-parameters.explorer';
 import { StandardSchemaConverter } from '../../lib/interfaces';
@@ -337,6 +338,247 @@ describe('exploreApiParametersMetadata', () => {
       expect(result!.parameters[0].schema).toEqual({
         example: 'abc-123',
         allOf: [{ $ref: '#/components/schemas/ItemId' }]
+      });
+    });
+  });
+
+  describe('model $ref with sibling keys', () => {
+    class FilterDto {
+      @ApiProperty()
+      code: string;
+    }
+
+    it('should wrap the $ref when the schema adds keywords next to it', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'filter',
+          type: FilterDto,
+          schema: { allOf: [{ minProperties: 1 }] }
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.schema).toEqual({
+        allOf: [
+          { minProperties: 1 },
+          { $ref: '#/components/schemas/FilterDto' }
+        ]
+      });
+    });
+
+    it('should wrap the items $ref of an array param', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'filters',
+          type: [FilterDto],
+          schema: { allOf: [{ required: ['code'] }] }
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.schema).toEqual({
+        type: 'array',
+        items: {
+          allOf: [
+            { required: ['code'] },
+            { $ref: '#/components/schemas/FilterDto' }
+          ]
+        }
+      });
+    });
+
+    it('should keep a bare $ref unwrapped', () => {
+      class ItemsController {
+        @ApiQuery({ name: 'filter', type: FilterDto })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.schema).toEqual({
+        $ref: '#/components/schemas/FilterDto'
+      });
+    });
+
+    it('should add type object when wrapping a nullable model param', () => {
+      class ItemsController {
+        @ApiQuery({ name: 'filter', type: FilterDto, nullable: true })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.schema).toEqual({
+        nullable: true,
+        type: 'object',
+        allOf: [{ $ref: '#/components/schemas/FilterDto' }]
+      });
+    });
+  });
+
+  describe('@ApiQuery with a DTO type and no name', () => {
+    enum Color {
+      Red = 'red',
+      Blue = 'blue'
+    }
+
+    it('should keep a scalar enum in the schema', () => {
+      class ColorQueryDto {
+        @ApiProperty({ enum: Color })
+        color: Color;
+
+        @ApiProperty({ enum: Color, isArray: true })
+        colors: Color[];
+      }
+      class ItemsController {
+        @ApiQuery({ type: ColorQueryDto })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const parameters = explore(instance, instance.list)!.parameters;
+
+      expect(parameters.find((p) => p.name === 'color').schema).toEqual({
+        type: 'string',
+        enum: ['red', 'blue']
+      });
+      expect(parameters.find((p) => p.name === 'colors').schema).toEqual({
+        type: 'array',
+        items: { type: 'string', enum: ['red', 'blue'] }
+      });
+    });
+
+    it('should move the required fields of an inline object type into its schema', () => {
+      class RawQueryDto {
+        raw: unknown;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            raw: {
+              required: true,
+              type: () => ({ foo: { required: true, type: () => String } })
+            }
+          };
+        }
+      }
+      class ItemsController {
+        @ApiQuery({ type: RawQueryDto })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.required).toBe(true);
+      expect(parameter.schema).toEqual({
+        type: 'object',
+        properties: { foo: { type: 'string' } },
+        required: ['foo']
+      });
+    });
+  });
+
+  describe('schema keys left undefined', () => {
+    it('should let the parameter value through when the schema key is undefined', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'q',
+          example: 'abc',
+          schema: { type: 'string', example: undefined }
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter.schema).toEqual({ type: 'string', example: 'abc' });
+    });
+  });
+
+  describe('parameter-level allOf', () => {
+    it('should move allOf into the schema of a primitive query param', () => {
+      class ItemsController {
+        @ApiQuery({ name: 'q', type: String, allOf: [{ minLength: 3 }] })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter.schema).toEqual({
+        type: 'string',
+        allOf: [{ minLength: 3 }]
+      });
+    });
+
+    it('should keep allOf on the array schema of a primitive array query param', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'tags',
+          type: String,
+          isArray: true,
+          allOf: [{ minItems: 1 }]
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter.schema).toEqual({
+        type: 'array',
+        items: { type: 'string' },
+        allOf: [{ minItems: 1 }]
+      });
+    });
+
+    it('should append allOf to the allOf of an explicit schema', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'q',
+          schema: { type: 'string', allOf: [{ maxLength: 10 }] },
+          allOf: [{ minLength: 3 }]
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter.schema).toEqual({
+        type: 'string',
+        allOf: [{ maxLength: 10 }, { minLength: 3 }]
+      });
+    });
+
+    it('should wrap an explicit $ref schema when only allOf is added', () => {
+      class ItemsController {
+        @ApiQuery({
+          name: 'filter',
+          schema: { $ref: '#/components/schemas/Filter' },
+          allOf: [{ minProperties: 1 }]
+        })
+        list() {}
+      }
+
+      const instance = new ItemsController();
+      const [parameter] = explore(instance, instance.list)!.parameters;
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter.schema).toEqual({
+        allOf: [{ minProperties: 1 }, { $ref: '#/components/schemas/Filter' }]
       });
     });
   });

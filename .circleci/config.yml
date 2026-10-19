@@ -1,31 +1,28 @@
-version: 2
+version: 2.1
 
-aliases:
-  - &restore-cache
-    restore_cache:
-      key: dependency-cache-{{ checksum "package.json" }}
-  - &install-deps
-    run:
-      name: Install dependencies
-      command: npm install --ignore-scripts --legacy-peer-deps
-  - &build-packages
-    run:
-      name: Build
-      command: npm run build
-  - &run-unit-tests
-    run:
-      name: Test
-      command: npm run test
-  - &run-e2e-tests
-    run:
-      name: E2E test
-      command: npm run test:e2e
-
-jobs:
-  forbidden_paths:
+executors:
+  node:
     working_directory: ~/nest
     docker:
       - image: cimg/node:24.21.0
+
+commands:
+  install-deps:
+    steps:
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run:
+          name: Install dependencies
+          command: npm install --ignore-scripts --legacy-peer-deps
+  build-packages:
+    steps:
+      - run:
+          name: Build
+          command: npm run build
+
+jobs:
+  forbidden_paths:
+    executor: node
     steps:
       - checkout
       - run:
@@ -42,48 +39,37 @@ jobs:
             fi
 
   build:
-    working_directory: ~/nest
-    docker:
-      - image: cimg/node:24.21.0
+    executor: node
     steps:
       - checkout
-      - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
-      - run:
-          name: Install dependencies
-          command: npm install --ignore-scripts --legacy-peer-deps
+      - install-deps
       - save_cache:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - ./node_modules
-      - run:
-          name: Build
-          command: npm run build
+      - build-packages
 
   unit_tests:
-    working_directory: ~/nest
-    docker:
-      - image: cimg/node:24.21.0
+    executor: node
     steps:
       - checkout
-      - *restore-cache
-      - *install-deps
-      - *build-packages
-      - *run-unit-tests
+      - install-deps
+      - build-packages
+      - run:
+          name: Test
+          command: npm run test
 
   e2e_tests:
-    working_directory: ~/nest
-    docker:
-      - image: cimg/node:24.21.0
+    executor: node
     steps:
       - checkout
-      - *restore-cache
-      - *install-deps
-      - *build-packages
-      - *run-e2e-tests
+      - install-deps
+      - build-packages
+      - run:
+          name: E2E test
+          command: npm run test:e2e
 
 workflows:
-  version: 2
   build-and-test:
     jobs:
       - forbidden_paths

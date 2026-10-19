@@ -17,7 +17,12 @@ import { ModelPropertiesAccessor } from '../../lib/services/model-properties-acc
 import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
-import { OmitType, PartialType, PickType } from '../../lib/type-helpers';
+import {
+  DeepPartialType,
+  OmitType,
+  PartialType,
+  PickType
+} from '../../lib/type-helpers';
 import { CreateUserDto } from './fixtures/create-user.dto';
 
 describe('SchemaObjectFactory', () => {
@@ -831,6 +836,65 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should keep nested DeepPartialType schemas distinct', () => {
+      class OwnerDto {
+        @ApiProperty()
+        name: string;
+
+        @ApiProperty()
+        email: string;
+      }
+
+      class AddressDto {
+        @ApiProperty()
+        street: string;
+
+        @ApiProperty()
+        city: string;
+      }
+
+      class CreateCatDto {
+        @ApiProperty()
+        name: string;
+
+        @ApiProperty({ type: () => OwnerDto })
+        owner: OwnerDto;
+
+        @ApiProperty({ type: () => AddressDto })
+        address: AddressDto;
+      }
+
+      class UpdateCatDto extends DeepPartialType(CreateCatDto) {}
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(UpdateCatDto, schemas);
+
+      expect(Object.keys(schemas).sort()).toEqual([
+        'DeepPartialAddressDto',
+        'DeepPartialOwnerDto',
+        'UpdateCatDto'
+      ]);
+      expect(schemas.UpdateCatDto.properties).toEqual({
+        name: { type: 'string' },
+        owner: { $ref: '#/components/schemas/DeepPartialOwnerDto' },
+        address: { $ref: '#/components/schemas/DeepPartialAddressDto' }
+      });
+      expect(schemas.DeepPartialOwnerDto).toEqual({
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          email: { type: 'string' }
+        }
+      });
+      expect(schemas.DeepPartialAddressDto).toEqual({
+        type: 'object',
+        properties: {
+          street: { type: 'string' },
+          city: { type: 'string' }
+        }
+      });
+    });
+
     it('should create openapi schema', () => {
       const schemas: Record<string, SchemasObject> = {};
       const schemaKey = schemaObjectFactory.exploreModelSchema(
@@ -1150,6 +1214,27 @@ describe('SchemaObjectFactory', () => {
       expect(schemas[UpdateUserDto.name]).toEqual({
         type: 'object',
         properties: { name: { type: 'string', minLength: 1 } }
+      });
+    });
+
+    it('should keep a user-defined allOf on a model-typed property', () => {
+      class AllOfNestedDto {
+        @ApiProperty()
+        a: string;
+      }
+      class AllOfHolderDto {
+        @ApiProperty({ type: AllOfNestedDto, allOf: [{ required: ['a'] }] })
+        nested: AllOfNestedDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(AllOfHolderDto, schemas);
+
+      expect(schemas[AllOfHolderDto.name].properties!.nested).toEqual({
+        allOf: [
+          { required: ['a'] },
+          { $ref: '#/components/schemas/AllOfNestedDto' }
+        ]
       });
     });
 
@@ -1877,6 +1962,66 @@ describe('SchemaObjectFactory', () => {
         ])
       );
       expect(paramResult.schema.$ref).toBeUndefined();
+    });
+
+    it('should merge parameter and schema allOf constraints for a named scalar parameter', () => {
+      class FilterDto {
+        @ApiProperty({ type: String })
+        code: string;
+      }
+
+      const metadata: ParamWithTypeMetadata &
+        Pick<SchemaObject, 'allOf'> & { schema: SchemaObject } = {
+        in: 'query',
+        name: 'filter',
+        type: FilterDto,
+        allOf: [{ required: ['code'] }],
+        schema: { allOf: [{ minProperties: 1 }] }
+      };
+
+      const parameters = schemaObjectFactory.createFromModel([metadata], {});
+      const [parameter] = swaggerTypesMapper.mapParamTypes(parameters);
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter).toHaveProperty('schema', {
+        allOf: [
+          { minProperties: 1 },
+          { required: ['code'] },
+          { $ref: '#/components/schemas/FilterDto' }
+        ]
+      });
+    });
+
+    it('should keep array parameter allOf constraints separate from item constraints', () => {
+      class FilterDto {
+        @ApiProperty({ type: String })
+        code: string;
+      }
+
+      const metadata: ParamWithTypeMetadata &
+        Pick<SchemaObject, 'allOf'> & { schema: SchemaObject } = {
+        in: 'query',
+        name: 'filters',
+        type: FilterDto,
+        isArray: true,
+        allOf: [{ minItems: 1 }],
+        schema: { allOf: [{ required: ['code'] }] }
+      };
+
+      const parameters = schemaObjectFactory.createFromModel([metadata], {});
+      const [parameter] = swaggerTypesMapper.mapParamTypes(parameters);
+
+      expect(parameter).not.toHaveProperty('allOf');
+      expect(parameter).toHaveProperty('schema', {
+        type: 'array',
+        allOf: [{ minItems: 1 }],
+        items: {
+          allOf: [
+            { required: ['code'] },
+            { $ref: '#/components/schemas/FilterDto' }
+          ]
+        }
+      });
     });
 
     it('should create enum schema for query params using SWC const-enum object metadata', () => {

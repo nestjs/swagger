@@ -12,7 +12,10 @@ import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
-import { clonePluginMetadataFactory } from './mapped-types.utils.js';
+import {
+  clonePluginMetadataFactory,
+  setMappedTypeClassName
+} from './mapped-types.utils.js';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
@@ -95,6 +98,7 @@ export function DeepPartialType<T>(
       inheritPropertyInitializers(this, classRef);
     }
   }
+  setMappedTypeClassName(DeepPartialTypeClass, 'DeepPartial', classRef);
 
   // Register in cache early to handle circular references
   deepPartialCache.set(classRef, DeepPartialTypeClass as Type<unknown>);

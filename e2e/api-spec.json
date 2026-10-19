@@ -1364,7 +1364,10 @@
                   "type": "string"
                 }
               },
-              "type": "object"
+              "type": "object",
+              "required": [
+                "foo"
+              ]
             }
           },
           {
