@@ -12,6 +12,7 @@ import {
 } from '../interfaces/open-api-spec.interface.js';
 import { StandardSchemaConverter } from '../interfaces/swagger-document-options.interface.js';
 import { isBuiltInType } from '../utils/is-built-in-type.util.js';
+import { isDateCtor } from '../utils/is-date-ctor.util.js';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import { ResponseObjectMapper } from './response-object-mapper.js';
@@ -74,16 +75,17 @@ export class ResponseObjectFactory {
       );
     }
 
-    if (isBuiltInType(type as Function)) {
-      const typeName =
-        type && isFunction(type) ? (type as Function).name : (type as string);
-      const swaggerType =
-        this.swaggerTypesMapper.mapTypeToOpenAPIType(typeName);
+    if (
+      isBuiltInType(type as Function) ||
+      isDateCtor(type as Function) ||
+      type === BigInt
+    ) {
+      const itemSchema = this.getBuiltInTypeSchema(type as Function | string);
 
       const exampleKeys = ['example', 'examples'];
       const baseSchema: SchemaObject = isArray
-        ? { type: 'array', items: { type: swaggerType } }
-        : { type: swaggerType };
+        ? { type: 'array', items: itemSchema }
+        : itemSchema;
       // Mirror the nullable handling in ResponseObjectMapper so the
       // "nullable" flag does not leak into the response object root. 3.1
       // documents get it rewritten into a union by convertNullableToOas31.
@@ -197,6 +199,17 @@ export class ResponseObjectFactory {
       );
     }
     return this.responseObjectMapper.toRefObject(response, name, produces);
+  }
+
+  private getBuiltInTypeSchema(type: Function | string): SchemaObject {
+    if (isDateCtor(type)) {
+      return { type: 'string', format: 'date-time' };
+    }
+    if (type === BigInt) {
+      return { type: 'integer', format: 'int64' };
+    }
+    const typeName = isFunction(type) ? type.name : type;
+    return { type: this.swaggerTypesMapper.mapTypeToOpenAPIType(typeName) };
   }
 
   private getSchemaOverride(

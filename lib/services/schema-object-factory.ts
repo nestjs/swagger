@@ -79,7 +79,7 @@ export class SchemaObjectFactory {
       if (this.isArrayCtor(param.type)) {
         return this.mapArrayCtorParam(param);
       }
-      if (!isBodyParameter(param)) {
+      if (!this.isModelBody(param)) {
         return this.createQueryOrParamSchema(param, schemas);
       }
       const customType = this.getCustomType(param, schemas);
@@ -1014,6 +1014,14 @@ export class SchemaObjectFactory {
 
   private isBigInt(type: Function | Type<unknown> | string): boolean {
     return type === BigInt;
+  }
+
+  private isModelBody(param: ParamWithTypeMetadata): boolean {
+    return (
+      isBodyParameter(param) &&
+      !isDateCtor(param.type as Function) &&
+      !this.isBigInt(param.type as Function)
+    );
   }
 
   /**

@@ -113,6 +113,36 @@ describe('ResponseObjectFactory', () => {
       });
     });
 
+    it('should map a Date response to a date-time string schema', () => {
+      const schemas: Record<string, SchemaObject> = {};
+      const result = factory.create(
+        { type: Date, description: 'OK' } as any,
+        produces,
+        schemas,
+        factories
+      ) as any;
+
+      expect(result.content['application/json']).toEqual({
+        schema: { type: 'string', format: 'date-time' }
+      });
+      expect(schemas).toEqual({});
+    });
+
+    it('should map a BigInt response to an int64 integer schema', () => {
+      const schemas: Record<string, SchemaObject> = {};
+      const result = factory.create(
+        { type: BigInt, description: 'OK' } as any,
+        produces,
+        schemas,
+        factories
+      ) as any;
+
+      expect(result.content['application/json']).toEqual({
+        schema: { type: 'integer', format: 'int64' }
+      });
+      expect(schemas).toEqual({});
+    });
+
     it('should preserve example alongside nullable for built-in scalar', () => {
       const result = factory.create(
         {

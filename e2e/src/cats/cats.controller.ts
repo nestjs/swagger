@@ -589,4 +589,16 @@ export class CatsController {
   arrayOfScalarWithExample(): string[] {
     return ['Mau', 'Persian'];
   }
+
+  @Get('date-response')
+  @ApiResponse({ status: 200, type: Date })
+  dateResponse(): Date {
+    return new Date();
+  }
+
+  @Post('date-body')
+  @ApiBody({ type: Date })
+  dateBody(@Body() date: Date): Date {
+    return date;
+  }
 }
