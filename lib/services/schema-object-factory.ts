@@ -39,6 +39,7 @@ import { StandardSchemaOpenApiConverter } from './standard-schema-openapi.conver
 import { SwaggerTypesMapper } from './swagger-types-mapper.js';
 
 const schemaCombinators = ['oneOf', 'anyOf', 'allOf'] as const;
+const alternativeSchemaCombinators = ['oneOf', 'anyOf'] as const;
 
 export class SchemaObjectFactory {
   private readonly standardSchemaOpenApiConverter =
@@ -454,13 +455,14 @@ export class SchemaObjectFactory {
   getSchemaMetadata(type: Function | Type<unknown>) {
     const schemas: ApiSchemaOptions[] =
       Reflect.getOwnMetadata(DECORATORS.API_SCHEMA, type) ?? [];
-    const { name, ...schemaProperties } = schemas[schemas.length - 1] ?? {};
+    const { name, ...properties } = schemas[schemas.length - 1] ?? {};
+    const schemaProperties = omitBy(properties, isUndefined);
     return { schemaName: name ?? type.name, schemaProperties };
   }
 
   private isRawSchema(schemaProperties: Omit<ApiSchemaOptions, 'name'>) {
-    return schemaCombinators.some(
-      (combinator) => combinator in schemaProperties
+    return alternativeSchemaCombinators.some((combinator) =>
+      Array.isArray(schemaProperties[combinator])
     );
   }
 

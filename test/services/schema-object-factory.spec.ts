@@ -1135,6 +1135,59 @@ describe('SchemaObjectFactory', () => {
           }
         });
       });
+
+      it('should preserve model properties alongside allOf', () => {
+        @ApiSchema({
+          allOf: [{ $ref: '#/components/schemas/BaseModel' }],
+          description: 'Extended model'
+        })
+        class ExtendedModel {
+          @ApiProperty()
+          ownProperty: string;
+        }
+
+        const schemas: Record<string, SchemasObject> = {};
+
+        schemaObjectFactory.exploreModelSchema(ExtendedModel, schemas);
+
+        expect(schemas.ExtendedModel).toEqual({
+          type: 'object',
+          properties: {
+            ownProperty: { type: 'string' }
+          },
+          allOf: [{ $ref: '#/components/schemas/BaseModel' }],
+          description: 'Extended model',
+          required: ['ownProperty']
+        });
+      });
+
+      it.each(['oneOf', 'anyOf', 'allOf'] as const)(
+        'should ignore an explicitly undefined %s combinator',
+        (combinator) => {
+          @ApiSchema({
+            [combinator]: undefined,
+            description: 'Regular object schema'
+          })
+          class RegularModel {
+            @ApiProperty()
+            value: string;
+          }
+
+          const schemas: Record<string, SchemasObject> = {};
+
+          schemaObjectFactory.exploreModelSchema(RegularModel, schemas);
+
+          expect(schemas.RegularModel).toEqual({
+            type: 'object',
+            properties: {
+              value: { type: 'string' }
+            },
+            description: 'Regular object schema',
+            required: ['value']
+          });
+          expect(schemas.RegularModel).not.toHaveProperty(combinator);
+        }
+      );
     });
 
     it('should include extension properties', () => {
