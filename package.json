@@ -86,7 +86,7 @@
     "vite": "^8.0.8",
     "valibot": "1.5.0",
     "vitest": "5.0.5",
-    "zod": "4.6.5",
+    "zod": "4.6.7",
     "zod-openapi": "6.0.2"
   },
   "peerDependencies": {
