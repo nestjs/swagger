@@ -375,5 +375,57 @@ describe('convertNullableToOas31', () => {
         11
       );
     });
+
+    it('converts the default response and skips extensions next to it', () => {
+      const document = {
+        openapi: '3.1.0',
+        info: { title: 'test', version: '1.0.0' },
+        paths: {
+          '/cats': {
+            get: {
+              responses: {
+                default: {
+                  description: '',
+                  headers: {
+                    'x-request-id': {
+                      schema: { type: 'string', nullable: true }
+                    }
+                  },
+                  content: {
+                    'application/json': {
+                      schema: {
+                        type: 'object',
+                        nullable: true,
+                        allOf: [{ $ref: '#/components/schemas/Error' }]
+                      }
+                    }
+                  }
+                },
+                'x-meta': { nullable: true }
+              }
+            }
+          }
+        }
+      } as unknown as OpenAPIObject;
+
+      convertNullableToOas31(document);
+
+      expect(document.paths['/cats'].get!.responses.default).toEqual({
+        description: '',
+        headers: {
+          'x-request-id': { schema: { type: ['string', 'null'] } }
+        },
+        content: {
+          'application/json': {
+            schema: {
+              anyOf: [{ $ref: '#/components/schemas/Error' }, { type: 'null' }]
+            }
+          }
+        }
+      });
+      expect(document.paths['/cats'].get!.responses['x-meta']).toEqual({
+        nullable: true
+      });
+    });
   });
 });

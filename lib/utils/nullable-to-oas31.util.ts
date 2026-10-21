@@ -19,14 +19,15 @@ const DATA_KEYS = new Set(['example', 'examples', 'default', 'const', 'enum']);
 /**
  * Maps whose keys are user-chosen names. Their keys must never be matched
  * against the rules above — a property or header may legitimately be called
- * `example` or `x-total`.
+ * `example` or `x-total`, and `default` is the default response.
  */
 const NAME_KEYED_MAPS = new Set([
   'properties',
   'patternProperties',
   '$defs',
   'schemas',
-  'headers'
+  'headers',
+  'responses'
 ]);
 
 /**
@@ -53,7 +54,14 @@ function walk(node: unknown): void {
       continue;
     }
     if (NAME_KEYED_MAPS.has(key) && isObject(value)) {
-      Object.values(value).forEach(walk);
+      for (const [name, entry] of Object.entries(value)) {
+        // A Responses Object can still carry `x-` extensions next to its
+        // status codes.
+        if (key === 'responses' && name.startsWith('x-')) {
+          continue;
+        }
+        walk(entry);
+      }
     } else {
       walk(value);
     }
