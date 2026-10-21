@@ -1,10 +1,15 @@
-import { INestApplication, NotFoundException } from '@nestjs/common';
+import {
+  INestApplication,
+  NotFoundException,
+  RequestMethod
+} from '@nestjs/common';
 import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface.js';
 import { loadPackage } from '@nestjs/common/utils/load-package.util.js';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as jsyaml from 'js-yaml';
 import {
   OpenAPIObject,
+  OperationObject,
   PathItemObject,
   SwaggerCustomOptions,
   SwaggerDocumentOptions
@@ -26,6 +31,30 @@ import { resolvePath } from './utils/resolve-path.util.js';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
 import { validatePath } from './utils/validate-path.util.js';
 
+const FIXED_PATH_ITEM_METHODS = [
+  'get',
+  'put',
+  'post',
+  'delete',
+  'options',
+  'head',
+  'patch',
+  'trace'
+];
+
+/**
+ * HTTP methods Nest can route that lack a fixed Path Item field (`query` only
+ * has one since OpenAPI 3.2).
+ */
+const NON_STANDARD_HTTP_METHODS = new Set(
+  Object.values(RequestMethod)
+    .filter((method): method is string => typeof method === 'string')
+    .map((method) => method.toLowerCase())
+    .filter(
+      (method) => method !== 'all' && !FIXED_PATH_ITEM_METHODS.includes(method)
+    )
+);
+
 /**
  * @publicApi
  */
@@ -43,21 +72,40 @@ export class SwaggerModule {
   }
 
   /**
-   * The `query` Path Item field only exists since OpenAPI 3.2. Removes it from
-   * older documents, dropping any path item that ends up empty.
+   * Path Items only have fixed fields for the standard HTTP methods (plus
+   * `query` since OpenAPI 3.2). Operations for any other method Nest can route
+   * (e.g. `SEARCH` or the WebDAV methods) are moved under `additionalOperations`
+   * for OpenAPI >= 3.2 and dropped from older documents, along with any path
+   * item that ends up empty.
    */
-  private static stripQueryOperations<T extends Record<string, PathItemObject>>(
-    pathItems: T
-  ): T {
+  private static normalizeNonStandardOperations<
+    T extends Record<string, PathItemObject>
+  >(pathItems: T, isOas32: boolean): T {
+    const isNonStandard = (field: string) =>
+      NON_STANDARD_HTTP_METHODS.has(field) && !(isOas32 && field === 'query');
+
     const result: Record<string, PathItemObject> = {};
     for (const [key, pathItem] of Object.entries(pathItems)) {
-      if (!pathItem?.query) {
+      if (!pathItem || !Object.keys(pathItem).some(isNonStandard)) {
         result[key] = pathItem;
         continue;
       }
-      const { query: _query, ...rest } = pathItem;
+      const rest: Record<string, unknown> = {};
+      const additionalOperations: Record<string, OperationObject> = {
+        ...pathItem.additionalOperations
+      };
+      for (const [field, value] of Object.entries(pathItem)) {
+        if (!isNonStandard(field)) {
+          rest[field] = value;
+        } else if (isOas32) {
+          additionalOperations[field.toUpperCase()] = value;
+        }
+      }
+      if (isOas32) {
+        rest.additionalOperations = additionalOperations;
+      }
       if (Object.keys(rest).length > 0) {
-        result[key] = rest;
+        result[key] = rest as PathItemObject;
       }
     }
     return result as T;
@@ -117,15 +165,16 @@ export class SwaggerModule {
       convertNullableToOas31(finalDocument);
     }
 
-    if (!isOas32OrLater(openApiVersion)) {
-      finalDocument.paths = SwaggerModule.stripQueryOperations(
-        finalDocument.paths
+    const isOas32 = isOas32OrLater(openApiVersion);
+    finalDocument.paths = SwaggerModule.normalizeNonStandardOperations(
+      finalDocument.paths,
+      isOas32
+    );
+    if (finalDocument.webhooks) {
+      finalDocument.webhooks = SwaggerModule.normalizeNonStandardOperations(
+        finalDocument.webhooks,
+        isOas32
       );
-      if (finalDocument.webhooks) {
-        finalDocument.webhooks = SwaggerModule.stripQueryOperations(
-          finalDocument.webhooks
-        );
-      }
     }
 
     return finalDocument;
