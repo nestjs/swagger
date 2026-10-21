@@ -80,6 +80,7 @@ export interface PathItemObject {
   patch?: OperationObject;
   trace?: OperationObject;
   query?: OperationObject;
+  additionalOperations?: Record<string, OperationObject>;
   servers?: ServerObject[];
   parameters?: (ParameterObject | ReferenceObject)[];
 }
