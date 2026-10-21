@@ -69,7 +69,7 @@
     "@valibot/to-json-schema": "1.8.0",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
-    "express": "5.2.1",
+    "express": "5.3.0",
     "fastify": "5.12.7",
     "husky": "9.1.7",
     "lerna-changelog": "2.2.0",
