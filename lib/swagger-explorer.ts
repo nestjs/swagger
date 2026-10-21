@@ -405,7 +405,6 @@ export class SwaggerExplorer {
             'patch',
             'options',
             'head',
-            'search',
             'query'
           ];
 

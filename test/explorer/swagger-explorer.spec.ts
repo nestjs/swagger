@@ -2210,7 +2210,7 @@ describe('SwaggerExplorer', () => {
         }
       );
 
-      expect(routes.length).toEqual(9);
+      expect(routes.length).toEqual(8);
       expect(
         [
           'get',
@@ -2220,7 +2220,6 @@ describe('SwaggerExplorer', () => {
           'patch',
           'options',
           'head',
-          'search',
           'query'
         ].every((method) =>
           routes.find((route) => route.root.method === method)
