@@ -38,6 +38,9 @@ import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
 import { StandardSchemaOpenApiConverter } from './standard-schema-openapi.converter.js';
 import { SwaggerTypesMapper } from './swagger-types-mapper.js';
 
+const schemaCombinators = ['oneOf', 'anyOf', 'allOf'] as const;
+const alternativeSchemaCombinators = ['oneOf', 'anyOf'] as const;
+
 export class SchemaObjectFactory {
   private readonly standardSchemaOpenApiConverter =
     new StandardSchemaOpenApiConverter(this.standardSchemaConverter);
@@ -336,7 +339,6 @@ export class SchemaObjectFactory {
         throw err;
       }
 
-      const schemaCombinators = ['oneOf', 'anyOf', 'allOf'];
       const declaredSchemaCombinator = schemaCombinators.find(
         (combinator) => combinator in property
       );
@@ -394,27 +396,36 @@ export class SchemaObjectFactory {
       Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
 
     const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
+    const isRawSchema = this.isRawSchema(schemaProperties);
 
-    const typeDefinition: SchemaObject = {
-      type: 'object',
-      properties: mapValues(keyBy(propertiesWithType, 'name'), (property) => {
-        const keysToOmit = [
-          'name',
-          'isArray',
-          'enumName',
-          'enumSchema',
-          'selfRequired'
-        ];
-
-        if ('required' in property && Array.isArray(property.required)) {
-          return omit(property, keysToOmit);
+    const typeDefinition: SchemaObject = isRawSchema
+      ? {
+          ...extensionProperties,
+          ...schemaProperties
         }
+      : {
+          type: 'object',
+          properties: mapValues(
+            keyBy(propertiesWithType, 'name'),
+            (property) => {
+              const keysToOmit = [
+                'name',
+                'isArray',
+                'enumName',
+                'enumSchema',
+                'selfRequired'
+              ];
 
-        return omit(property, [...keysToOmit, 'required']);
-      }) as Record<string, SchemaObject | ReferenceObject>,
-      ...extensionProperties,
-      ...schemaProperties
-    };
+              if ('required' in property && Array.isArray(property.required)) {
+                return omit(property, keysToOmit);
+              }
+
+              return omit(property, [...keysToOmit, 'required']);
+            }
+          ) as Record<string, SchemaObject | ReferenceObject>,
+          ...extensionProperties,
+          ...schemaProperties
+        };
 
     const typeDefinitionRequiredFields = propertiesWithType
       .filter((property) =>
@@ -424,7 +435,7 @@ export class SchemaObjectFactory {
       )
       .map((property) => property.name);
 
-    if (typeDefinitionRequiredFields.length > 0) {
+    if (!isRawSchema && typeDefinitionRequiredFields.length > 0) {
       typeDefinition['required'] = typeDefinitionRequiredFields;
     }
 
@@ -444,8 +455,15 @@ export class SchemaObjectFactory {
   getSchemaMetadata(type: Function | Type<unknown>) {
     const schemas: ApiSchemaOptions[] =
       Reflect.getOwnMetadata(DECORATORS.API_SCHEMA, type) ?? [];
-    const { name, ...schemaProperties } = schemas[schemas.length - 1] ?? {};
+    const { name, ...properties } = schemas[schemas.length - 1] ?? {};
+    const schemaProperties = omitBy(properties, isUndefined);
     return { schemaName: name ?? type.name, schemaProperties };
+  }
+
+  private isRawSchema(schemaProperties: Omit<ApiSchemaOptions, 'name'>) {
+    return alternativeSchemaCombinators.some((combinator) =>
+      Array.isArray(schemaProperties[combinator])
+    );
   }
 
   mergePropertyWithMetadata(

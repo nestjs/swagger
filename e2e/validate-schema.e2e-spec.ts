@@ -1,10 +1,12 @@
-import { INestApplication } from '@nestjs/common';
+import { Controller, Get, INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
 import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
 import type { BaseIssue, BaseSchema } from 'valibot';
 import {
+  ApiResponse,
+  ApiSchema,
   DocumentBuilder,
   getSchemaPath,
   OpenAPIObject,
@@ -27,6 +29,25 @@ import { toJsonSchema } from '@valibot/to-json-schema';
 import type { ZodType } from 'zod';
 import SwaggerParser = require('@apidevtools/swagger-parser');
 
+@ApiSchema({
+  name: 'RawUnionResponse',
+  oneOf: [{ type: 'string' }, { type: 'number' }],
+  description: 'Raw union schema component'
+})
+class RawUnionResponse {}
+
+@Controller('raw-component-schemas')
+class RawComponentSchemaController {
+  @Get('union')
+  @ApiResponse({
+    status: 200,
+    type: RawUnionResponse
+  })
+  getRawUnionResponse() {
+    return null;
+  }
+}
+
 function asResponseObject(
   response: ResponseObject | { $ref: string } | undefined
 ) {
@@ -46,7 +67,7 @@ describe('Validate OpenAPI schema', () => {
       {
         module: class {},
         imports: [ApplicationModule],
-        controllers: [ExpressController]
+        controllers: [ExpressController, RawComponentSchemaController]
       },
       {
         logger: false
@@ -370,6 +391,23 @@ describe('Validate OpenAPI schema', () => {
   it('should add extension to root', () => {
     const document = SwaggerModule.createDocument(app, options, documentOptions);
     expect(document['x-test']).toEqual({ test: 'test' });
+  });
+
+  it('should register raw component schema with combinators', () => {
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
+
+    const response = asResponseObject(
+      document.paths['/api/raw-component-schemas/union']['get']['responses'][
+        '200'
+      ]
+    );
+    expect(response.content!['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/RawUnionResponse'
+    });
+    expect(document.components?.schemas?.RawUnionResponse).toEqual({
+      oneOf: [{ type: 'string' }, { type: 'number' }],
+      description: 'Raw union schema component'
+    });
   });
 
   it('should add extension to info', () => {
