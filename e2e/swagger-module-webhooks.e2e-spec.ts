@@ -1,6 +1,11 @@
 import { Controller, Module, Post } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { ApiWebhook, DocumentBuilder, SwaggerModule } from '../lib/index.js';
+import {
+  ApiOkResponse,
+  ApiWebhook,
+  DocumentBuilder,
+  SwaggerModule
+} from '../lib/index.js';
 
 describe('SwaggerModule webhooks handling', () => {
   @Controller()
@@ -45,6 +50,39 @@ describe('SwaggerModule webhooks handling', () => {
 
     expect(document.webhooks?.stripeEvent).toBeDefined();
     expect(document.paths['/stripe']).toBeUndefined();
+
+    await app.close();
+  });
+
+  it('converts nullable schemas of a webhook named "default" for OAS >= 3.1', async () => {
+    @Controller()
+    class DefaultWebhookController {
+      @Post('events')
+      @ApiWebhook('default')
+      @ApiOkResponse({ type: String, nullable: true })
+      events() {}
+    }
+
+    @Module({ controllers: [DefaultWebhookController] })
+    class DefaultWebhookModule {}
+
+    const app = await NestFactory.create(DefaultWebhookModule, {
+      logger: false
+    });
+    await app.init();
+
+    const config = new DocumentBuilder()
+      .setTitle('t')
+      .setVersion('1')
+      .setOpenAPIVersion('3.1.0')
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+
+    expect(
+      (document.webhooks!.default.post!.responses['200'] as any).content[
+        'application/json'
+      ].schema
+    ).toEqual({ type: ['string', 'null'] });
 
     await app.close();
   });
