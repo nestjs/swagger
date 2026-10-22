@@ -329,6 +329,32 @@ describe('ResponseObjectFactory', () => {
         }
       });
     });
+
+    it('should move nullable from a standard schema response into the schema', () => {
+      const result = factory.create(
+        {
+          description: 'OK',
+          nullable: true,
+          isArray: true,
+          standardSchema: z.object({ name: z.string() })
+        } as any,
+        produces,
+        {},
+        factories
+      ) as any;
+
+      expect(result).not.toHaveProperty('nullable');
+      expect(result.content['application/json'].schema).toEqual({
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { name: { type: 'string' } },
+          required: ['name'],
+          additionalProperties: false
+        },
+        nullable: true
+      });
+    });
   });
 
 });
