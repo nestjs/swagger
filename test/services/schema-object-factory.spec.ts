@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Logger, Type } from '@nestjs/common';
 import type { BaseIssue, BaseSchema } from 'valibot';
 import { toJsonSchema } from '@valibot/to-json-schema';
 import * as v from 'valibot';
@@ -20,6 +20,7 @@ import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import {
   DeepPartialType,
+  IntersectionType,
   OmitType,
   PartialType,
   PickType
@@ -2817,6 +2818,90 @@ describe('SchemaObjectFactory', () => {
       expect(serialize(schemas.SharedEnumDto).properties).toEqual({
         inferred: { type: 'string', enum: ['first'] },
         explicit: { type: 'integer', enum: ['first'] }
+      });
+    });
+
+    describe('in a mapped type', () => {
+      class BaseDto {
+        @ApiProperty({ enum: () => [...registry], enumName: 'MappedEnum' })
+        named: string;
+
+        // declared as `string`, but the values are numbers
+        @ApiProperty({ enum: () => [...numericRegistry] })
+        numeric: string;
+
+        @ApiProperty({ enum: () => [...numericRegistry] })
+        untyped: any;
+      }
+
+      const mappedTypes: Array<[string, () => Type<any>]> = [
+        ['PartialType', () => PartialType(BaseDto)],
+        ['PickType', () => PickType(BaseDto, ['named', 'numeric', 'untyped'])],
+        ['OmitType', () => OmitType(BaseDto, [])],
+        ['IntersectionType', () => IntersectionType(BaseDto, class {})],
+        ['DeepPartialType', () => DeepPartialType(BaseDto)]
+      ];
+
+      it.each(mappedTypes)(
+        'should keep resolving the enums lazily with %s',
+        (_name, createMappedType) => {
+          const MappedDto = createMappedType();
+          registry.push('second');
+          numericRegistry.push(2);
+
+          const schemas: Record<string, SchemasObject> = {};
+          schemaObjectFactory.exploreModelSchema(MappedDto, schemas);
+          const serialized = serialize(schemas);
+
+          expect(serialized.MappedEnum).toEqual({
+            type: 'string',
+            enum: ['first', 'second']
+          });
+          const properties = serialized[MappedDto.name].properties;
+          expect(properties.named).toEqual({
+            allOf: [{ $ref: '#/components/schemas/MappedEnum' }]
+          });
+          expect(properties.numeric).toEqual({
+            type: 'number',
+            enum: [1, 2]
+          });
+          expect(properties.untyped).toEqual({
+            type: 'number',
+            enum: [1, 2]
+          });
+        }
+      );
+
+      it('should keep resolving the enums lazily in a mapped query DTO', () => {
+        const params = new ParametersMetadataMapper(
+          modelPropertiesAccessor
+        ).transformModelToProperties([
+          { in: 'query', type: PartialType(BaseDto) } as any
+        ]) as ParamWithTypeMetadata[];
+        registry.push('second');
+        numericRegistry.push(2);
+
+        const schemas: Record<string, SchemasObject> = {};
+        const byName = Object.fromEntries(
+          serialize(schemaObjectFactory.createFromModel(params, schemas)).map(
+            (param: any) => [param.name, param]
+          )
+        );
+
+        expect(byName.named.schema).toEqual({
+          $ref: '#/components/schemas/MappedEnum'
+        });
+        expect(byName.numeric).toMatchObject({
+          type: 'number',
+          enum: [1, 2]
+        });
+        expect(byName.untyped).toMatchObject({
+          type: 'number',
+          enum: [1, 2]
+        });
+        expect(serialize(schemas)).toEqual({
+          MappedEnum: { type: 'string', enum: ['first', 'second'] }
+        });
       });
     });
 
