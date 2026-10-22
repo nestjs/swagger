@@ -2885,6 +2885,45 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when Date and BigInt bodies are used', () => {
+    class FooController {
+      @Post('/date')
+      @ApiBody({ type: Date })
+      date(@Body() body: Date) {}
+
+      @Post('/dates')
+      @ApiBody({ type: Date, isArray: true })
+      dates(@Body() body: Date[]) {}
+
+      @Post('/bigint')
+      @ApiBody({ type: BigInt })
+      bigint(@Body() body: bigint) {}
+    }
+
+    it('should map Date and BigInt bodies to scalar schemas', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      const bodySchema = (index: number) =>
+        (routes[index].root.requestBody as any).content['application/json']
+          .schema;
+      expect(bodySchema(0)).toEqual({ type: 'string', format: 'date-time' });
+      expect(bodySchema(1)).toEqual({
+        type: 'array',
+        items: { type: 'string', format: 'date-time' }
+      });
+      expect(bodySchema(2)).toEqual({ type: 'integer', format: 'int64' });
+      expect(explorer.getSchemas()).toEqual({});
+    });
+  });
+
   describe('when global responses defined', () => {
     @Controller('')
     @ApiResponse({

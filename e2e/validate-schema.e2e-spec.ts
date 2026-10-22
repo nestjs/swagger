@@ -267,6 +267,25 @@ describe('Validate OpenAPI schema', () => {
     expect((arrayExample as any).example).toBeUndefined();
   });
 
+  it('should map Date responses and bodies to date-time strings', () => {
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
+
+    const dateResponse = asResponseObject(
+      document.paths['/api/cats/date-response']['get']['responses']['200']
+    );
+    expect(dateResponse.content!['application/json'].schema).toEqual({
+      type: 'string',
+      format: 'date-time'
+    });
+    const dateBody = document.paths['/api/cats/date-body']['post']
+      .requestBody as any;
+    expect(dateBody.content['application/json'].schema).toEqual({
+      type: 'string',
+      format: 'date-time'
+    });
+    expect(document.components!.schemas).not.toHaveProperty('Date');
+  });
+
   it('should fix colons in url', async () => {
     const document = SwaggerModule.createDocument(app, options, documentOptions);
     expect(
