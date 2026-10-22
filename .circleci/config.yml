@@ -4,7 +4,7 @@ executors:
   node:
     working_directory: ~/nest
     docker:
-      - image: cimg/node:24.21.0
+      - image: cimg/node:24.22.1
 
 commands:
   install-deps:
