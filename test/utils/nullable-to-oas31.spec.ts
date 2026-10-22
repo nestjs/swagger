@@ -427,5 +427,68 @@ describe('convertNullableToOas31', () => {
         nullable: true
       });
     });
+
+    it('converts entries named like data keywords in other name-keyed maps', () => {
+      const schema = () => ({ type: 'string', nullable: true });
+      const pathItem = () => ({
+        post: {
+          responses: {
+            '200': {
+              description: '',
+              content: { 'application/json': { schema: schema() } }
+            }
+          }
+        }
+      });
+      const requestBody = () => ({
+        content: { 'application/json': { schema: schema() } }
+      });
+      const document = {
+        openapi: '3.1.0',
+        info: { title: 'test', version: '1.0.0' },
+        paths: {
+          '/cats': {
+            post: {
+              requestBody: {
+                content: {
+                  'multipart/form-data': {
+                    schema: { type: 'object' },
+                    encoding: {
+                      default: { headers: { 'x-rate': { schema: schema() } } },
+                      example: { headers: { 'x-rate': { schema: schema() } } }
+                    }
+                  }
+                }
+              },
+              responses: {},
+              callbacks: {
+                default: { '{$request.body#/url}': pathItem() },
+                enum: { '{$request.body#/url}': pathItem() }
+              }
+            }
+          }
+        },
+        webhooks: { default: pathItem(), const: pathItem() },
+        components: {
+          parameters: {
+            default: { name: 'default', in: 'query', schema: schema() },
+            examples: { name: 'examples', in: 'query', schema: schema() }
+          },
+          requestBodies: { default: requestBody(), example: requestBody() },
+          callbacks: {
+            default: { '{$request.body#/url}': pathItem() },
+            const: { '{$request.body#/url}': pathItem() }
+          },
+          pathItems: { default: pathItem(), enum: pathItem() }
+        }
+      } as unknown as OpenAPIObject;
+
+      convertNullableToOas31(document);
+
+      expect(JSON.stringify(document)).not.toContain('nullable');
+      expect(
+        JSON.stringify(document).match(/\["string","null"\]/g)
+      ).toHaveLength(14);
+    });
   });
 });

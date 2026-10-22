@@ -27,7 +27,13 @@ const NAME_KEYED_MAPS = new Set([
   '$defs',
   'schemas',
   'headers',
-  'responses'
+  'responses',
+  'requestBodies',
+  'parameters',
+  'callbacks',
+  'pathItems',
+  'webhooks',
+  'encoding'
 ]);
 
 /**
