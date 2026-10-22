@@ -335,12 +335,12 @@ export function replaceImportPath(
     return { typeReference, importPath: null };
   }
 
-  if (options.esmCompatible) {
-    typeReference = typeReference.replace(
-      ', { with: { "resolution-mode": "import" } }',
-      ''
-    );
-  }
+  // TypeScript adds this attribute to a type declared in an ESM file, no
+  // matter which format the visited file is emitted in.
+  typeReference = typeReference.replace(
+    ', { with: { "resolution-mode": "import" } }',
+    ''
+  );
 
   let importPath = /\(\"([^)]).+(\")/.exec(typeReference)[0];
   if (!importPath) {

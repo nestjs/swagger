@@ -4,6 +4,7 @@ import { before } from '../../lib/plugin/compiler-plugin';
 
 // Fixture layout (tsconfig: rootDir="./app/src", outDir="./app/dist"):
 //   app/src/item.dto.ts               imports ItemStatus from '@fixture/shared/messages'
+//   app/src/cjs/item.dto.ts           the same, from a commonjs package
 //   shared/build/messages/entry.d.ts   re-exports './item.js'
 //   shared/build/messages/item.d.ts    declares ItemStatus
 //
@@ -17,7 +18,10 @@ import { before } from '../../lib/plugin/compiler-plugin';
 const projectDir = join(__dirname, 'fixtures', 'workspace-package');
 const packageSpecifier = '@fixture/shared/messages';
 
-function transpileFixture(compilerOptionsOverrides: ts.CompilerOptions = {}) {
+function transpileFixture(
+  compilerOptionsOverrides: ts.CompilerOptions = {},
+  dtoFileName = 'item.dto.ts'
+) {
   const parsedCmd = ts.getParsedCommandLineOfConfigFile(
     join(projectDir, 'tsconfig.json'),
     compilerOptionsOverrides,
@@ -27,7 +31,7 @@ function transpileFixture(compilerOptionsOverrides: ts.CompilerOptions = {}) {
   const program = ts.createProgram({ options, rootNames });
 
   const sourceFile = program.getSourceFile(
-    join(projectDir, 'app', 'src', 'item.dto.ts')
+    join(projectDir, 'app', 'src', dtoFileName)
   )!;
 
   let output = '';
@@ -59,5 +63,13 @@ describe('CLI plugin with a type imported from a workspace package', () => {
 
     expect(output).not.toContain('shared/build/messages/item');
     expect(output).not.toMatch(/\.\.\/\.\.\//);
+  });
+
+  it('should emit a valid require from a commonjs file', () => {
+    // The package is esm, so TypeScript adds a resolution-mode attribute to
+    // the type reference, whatever format the visited file is.
+    const output = transpileFixture({}, join('cjs', 'item.dto.ts'));
+
+    expect(output).toContain(`enum: require("${packageSpecifier}").ItemStatus`);
   });
 });
