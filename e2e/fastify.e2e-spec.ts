@@ -553,6 +553,22 @@ describe('Fastify Swagger', () => {
       expect(response.status).toEqual(200);
       expect(response.text).toContain('href="./swagger-ui.css"');
     });
+
+    it('should serve HTML with baseUrl "./" when accessed through index.html', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}/index.html`
+      );
+      expect(response.status).toEqual(200);
+      expect(response.text).toContain('href="./swagger-ui.css"');
+    });
+
+    it('should serve HTML with baseUrl "./" when accessed with trailing slash and query string', async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${SWAGGER_RELATIVE_URL}/?urls.primaryName=v2`
+      );
+      expect(response.status).toEqual(200);
+      expect(response.text).toContain('href="./swagger-ui.css"');
+    });
   });
 
   describe('custom swagger options', () => {
