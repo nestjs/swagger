@@ -286,6 +286,22 @@ describe('Validate OpenAPI schema', () => {
     expect(document.components!.schemas).not.toHaveProperty('Date');
   });
 
+  it('should move nullable from a schema response into the schema', () => {
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
+
+    const response = asResponseObject(
+      document.paths['/api/cats/nullable-schema-response']['get']['responses'][
+        '200'
+      ]
+    );
+    expect(response).not.toHaveProperty('nullable');
+    expect(response.content!['application/json'].schema).toEqual({
+      type: 'object',
+      properties: { name: { type: 'string' } },
+      nullable: true
+    });
+  });
+
   it('should fix colons in url', async () => {
     const document = SwaggerModule.createDocument(app, options, documentOptions);
     expect(

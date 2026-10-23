@@ -74,6 +74,45 @@ describe('ResponseObjectMapper', () => {
     });
   });
 
+  describe('wrapSchemaWithContent', () => {
+    it('should move nullable from the response into the schema', () => {
+      const result = mapper.wrapSchemaWithContent(
+        {
+          description: 'OK',
+          nullable: true,
+          schema: { type: 'object', properties: { name: { type: 'string' } } }
+        } as any,
+        produces
+      );
+      expect(result).not.toHaveProperty('nullable');
+      expect(result.content['application/json'].schema).toEqual({
+        type: 'object',
+        properties: { name: { type: 'string' } },
+        nullable: true
+      });
+    });
+
+    it('should wrap a nullable reference schema in allOf', () => {
+      const result = mapper.wrapSchemaWithContent(
+        { description: 'OK', nullable: true, schema: { $ref } } as any,
+        produces
+      );
+      expect(result.content['application/json'].schema).toEqual({
+        nullable: true,
+        type: 'object',
+        allOf: [{ $ref }]
+      });
+    });
+
+    it('should drop nullable from a response without a schema', () => {
+      const result = mapper.wrapSchemaWithContent(
+        { description: 'No content', nullable: true } as any,
+        produces
+      );
+      expect(result).toEqual({ description: 'No content' });
+    });
+  });
+
   // The mapper always emits the 3.0 spelling; documents that declare 3.1 are
   // normalized once, on the finished document, by convertNullableToOas31.
   describe('once normalized for an OpenAPI 3.1 document', () => {
