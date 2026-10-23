@@ -51,7 +51,7 @@
     "@standard-schema/spec": "1.1.0",
     "es-toolkit": "1.52.0",
     "js-yaml": "5.5.0",
-    "path-to-regexp": "8.4.2",
+    "path-to-regexp": "9.0.0",
     "swagger-ui-dist": "5.34.0"
   },
   "devDependencies": {
