@@ -278,16 +278,20 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       factory
     );
     let apiOperationExistingProps:
-      | ts.NodeArray<ts.PropertyAssignment>
-      | undefined = undefined;
+      ts.NodeArray<ts.ObjectLiteralElementLike> | undefined = undefined;
 
     if (apiOperationDecorator && !options.readonly) {
       const apiOperationExpr = head(
         getDecoratorArguments(apiOperationDecorator)
       );
       if (apiOperationExpr) {
-        apiOperationExistingProps =
-          apiOperationExpr.properties as ts.NodeArray<ts.PropertyAssignment>;
+        apiOperationExistingProps = ts.isObjectLiteralExpression(
+          apiOperationExpr
+        )
+          ? apiOperationExpr.properties
+          : factory.createNodeArray([
+              factory.createSpreadAssignment(apiOperationExpr)
+            ]);
       }
     }
 
@@ -348,6 +352,13 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       );
       properties.push(deprecatedPropertyAssignment);
     }
+    // Generated keys go before a spread so the user's values win.
+    if (apiOperationExistingProps?.some(ts.isSpreadAssignment)) {
+      const start = properties.indexOf(apiOperationExistingProps[0]);
+      properties.push(
+        ...properties.splice(start, apiOperationExistingProps.length)
+      );
+    }
 
     const objectLiteralExpr = factory.createObjectLiteralExpression(
       compact(properties)
@@ -376,7 +387,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         expr,
         expr.expression,
         undefined,
-        apiOperationDecoratorArguments
+        [...apiOperationDecoratorArguments, ...expr.arguments.slice(1)]
       );
       return [factory.updateDecorator(apiOperationDecorator, updatedCallExpr)];
     } else {
