@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Logger, Type } from '@nestjs/common';
 import type { BaseIssue, BaseSchema } from 'valibot';
 import { toJsonSchema } from '@valibot/to-json-schema';
 import * as v from 'valibot';
@@ -14,11 +14,13 @@ import {
   SchemasObject
 } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
+import { ParametersMetadataMapper } from '../../lib/services/parameters-metadata-mapper';
 import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import {
   DeepPartialType,
+  IntersectionType,
   OmitType,
   PartialType,
   PickType
@@ -2681,6 +2683,279 @@ describe('SchemaObjectFactory', () => {
       expect(schemas['PluginRecordDto'].properties['attributes']).toEqual({
         type: 'object',
         additionalProperties: { type: 'string' }
+      });
+    });
+  });
+
+  describe('lazy enum', () => {
+    // Fresh array on each call: an eager call would only see the values registered before the decorator ran
+    let registry: string[];
+    let numericRegistry: number[];
+
+    const serialize = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+    beforeEach(() => {
+      registry = ['first'];
+      numericRegistry = [1];
+    });
+
+    function defineDto() {
+      class LazyEnumDto {
+        @ApiProperty({ enum: () => [...registry], enumName: 'LazyEnum' })
+        named: string;
+
+        @ApiProperty({ enum: () => [...registry] })
+        unnamed: string;
+
+        @ApiProperty({
+          enum: () => [...registry],
+          enumName: 'LazyArrayEnum',
+          isArray: true
+        })
+        many: string[];
+
+        @ApiProperty({
+          enum: () => [...registry],
+          enumName: 'TypedLazyEnum',
+          type: 'string'
+        })
+        typed: string;
+
+        @ApiProperty({
+          enum: () => [...numericRegistry],
+          enumName: 'NumericLazyEnum'
+        })
+        numeric: number;
+
+        @ApiProperty({
+          enum: () => [...registry],
+          enumName: 'LazyTypeArrayEnum',
+          type: () => [String]
+        })
+        lazyTypeArray: string[];
+      }
+      return LazyEnumDto;
+    }
+
+    it('should call the enum function when the schema is generated, not when the decorator runs', () => {
+      const LazyEnumDto = defineDto();
+      registry.push('second');
+      numericRegistry.push(2);
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(LazyEnumDto, schemas);
+      const serialized = serialize(schemas);
+
+      for (const name of [
+        'LazyEnum',
+        'LazyArrayEnum',
+        'TypedLazyEnum',
+        'LazyTypeArrayEnum'
+      ]) {
+        expect(serialized[name]).toEqual({
+          type: 'string',
+          enum: ['first', 'second']
+        });
+      }
+      expect(serialized.NumericLazyEnum).toEqual({
+        type: 'number',
+        enum: [1, 2]
+      });
+    });
+
+    it('should keep the shape of the generated properties', () => {
+      const LazyEnumDto = defineDto();
+      registry.push('second');
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(LazyEnumDto, schemas);
+
+      expect(serialize(schemas.LazyEnumDto).properties).toEqual({
+        named: { allOf: [{ $ref: '#/components/schemas/LazyEnum' }] },
+        unnamed: { type: 'string', enum: ['first', 'second'] },
+        many: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/LazyArrayEnum' }
+        },
+        typed: { allOf: [{ $ref: '#/components/schemas/TypedLazyEnum' }] },
+        numeric: {
+          allOf: [{ $ref: '#/components/schemas/NumericLazyEnum' }]
+        },
+        lazyTypeArray: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/LazyTypeArrayEnum' }
+        }
+      });
+    });
+
+    it('should not infer the type from the values when it is explicit', () => {
+      class ExplicitTypeDto {
+        @ApiProperty({ enum: () => [1, 2], type: 'string' })
+        value: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ExplicitTypeDto, schemas);
+
+      expect(serialize(schemas.ExplicitTypeDto).properties).toEqual({
+        value: { type: 'string', enum: [1, 2] }
+      });
+    });
+
+    it('should infer the type separately for each property sharing an enum function', () => {
+      const sharedEnum = () => [...registry];
+      class SharedEnumDto {
+        @ApiProperty({ enum: sharedEnum })
+        inferred: string;
+
+        @ApiProperty({ enum: sharedEnum, type: 'integer' })
+        explicit: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(SharedEnumDto, schemas);
+
+      expect(serialize(schemas.SharedEnumDto).properties).toEqual({
+        inferred: { type: 'string', enum: ['first'] },
+        explicit: { type: 'integer', enum: ['first'] }
+      });
+    });
+
+    describe('in a mapped type', () => {
+      class BaseDto {
+        @ApiProperty({ enum: () => [...registry], enumName: 'MappedEnum' })
+        named: string;
+
+        // declared as `string`, but the values are numbers
+        @ApiProperty({ enum: () => [...numericRegistry] })
+        numeric: string;
+
+        @ApiProperty({ enum: () => [...numericRegistry] })
+        untyped: any;
+      }
+
+      const mappedTypes: Array<[string, () => Type<any>]> = [
+        ['PartialType', () => PartialType(BaseDto)],
+        ['PickType', () => PickType(BaseDto, ['named', 'numeric', 'untyped'])],
+        ['OmitType', () => OmitType(BaseDto, [])],
+        ['IntersectionType', () => IntersectionType(BaseDto, class {})],
+        ['DeepPartialType', () => DeepPartialType(BaseDto)]
+      ];
+
+      it.each(mappedTypes)(
+        'should keep resolving the enums lazily with %s',
+        (_name, createMappedType) => {
+          const MappedDto = createMappedType();
+          registry.push('second');
+          numericRegistry.push(2);
+
+          const schemas: Record<string, SchemasObject> = {};
+          schemaObjectFactory.exploreModelSchema(MappedDto, schemas);
+          const serialized = serialize(schemas);
+
+          expect(serialized.MappedEnum).toEqual({
+            type: 'string',
+            enum: ['first', 'second']
+          });
+          const properties = serialized[MappedDto.name].properties;
+          expect(properties.named).toEqual({
+            allOf: [{ $ref: '#/components/schemas/MappedEnum' }]
+          });
+          expect(properties.numeric).toEqual({
+            type: 'number',
+            enum: [1, 2]
+          });
+          expect(properties.untyped).toEqual({
+            type: 'number',
+            enum: [1, 2]
+          });
+        }
+      );
+
+      it('should keep resolving the enums lazily in a mapped query DTO', () => {
+        const params = new ParametersMetadataMapper(
+          modelPropertiesAccessor
+        ).transformModelToProperties([
+          { in: 'query', type: PartialType(BaseDto) } as any
+        ]) as ParamWithTypeMetadata[];
+        registry.push('second');
+        numericRegistry.push(2);
+
+        const schemas: Record<string, SchemasObject> = {};
+        const byName = Object.fromEntries(
+          serialize(schemaObjectFactory.createFromModel(params, schemas)).map(
+            (param: any) => [param.name, param]
+          )
+        );
+
+        expect(byName.named.schema).toEqual({
+          $ref: '#/components/schemas/MappedEnum'
+        });
+        expect(byName.numeric).toMatchObject({
+          type: 'number',
+          enum: [1, 2]
+        });
+        expect(byName.untyped).toMatchObject({
+          type: 'number',
+          enum: [1, 2]
+        });
+        expect(serialize(schemas)).toEqual({
+          MappedEnum: { type: 'string', enum: ['first', 'second'] }
+        });
+      });
+    });
+
+    describe('in a query DTO', () => {
+      function createParams() {
+        class LazyEnumQueryDto {
+          @ApiProperty({ enum: () => [...registry], enumName: 'QueryEnum' })
+          named: string;
+
+          @ApiProperty({ enum: () => [...registry] })
+          unnamed: string;
+
+          @ApiProperty({
+            enum: () => [...registry],
+            enumName: 'QueryArrayEnum',
+            isArray: true
+          })
+          many: string[];
+        }
+        const params = new ParametersMetadataMapper(
+          modelPropertiesAccessor
+        ).transformModelToProperties([
+          { in: 'query', type: LazyEnumQueryDto } as any
+        ]);
+        return params as ParamWithTypeMetadata[];
+      }
+
+      it('should resolve the enums when the parameters are generated', () => {
+        const params = createParams();
+        registry.push('second');
+
+        const schemas: Record<string, SchemasObject> = {};
+        const result = serialize(
+          schemaObjectFactory.createFromModel(params, schemas)
+        );
+        const byName = Object.fromEntries(
+          result.map((param: any) => [param.name, param])
+        );
+
+        expect(byName.named.schema).toEqual({
+          $ref: '#/components/schemas/QueryEnum'
+        });
+        expect(byName.unnamed).toMatchObject({
+          type: 'string',
+          enum: ['first', 'second']
+        });
+        expect(byName.many.schema).toEqual({
+          type: 'array',
+          items: { $ref: '#/components/schemas/QueryArrayEnum' }
+        });
+        expect(serialize(schemas)).toEqual({
+          QueryEnum: { type: 'string', enum: ['first', 'second'] },
+          QueryArrayEnum: { type: 'string', enum: ['first', 'second'] }
+        });
       });
     });
   });

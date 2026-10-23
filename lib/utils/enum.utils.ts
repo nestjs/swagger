@@ -37,6 +37,45 @@ export function getEnumValues(
     .map((key) => enumType[key]);
 }
 
+/**
+ * Every wrapper created by `createLazyEnum`.
+ */
+const lazyEnums = new WeakSet<object>();
+
+/**
+ * Lazy enums whose `type` was not given by the user, so it has to be inferred from the
+ * resolved values once the function is called. Keyed on the wrapper created by
+ * `createLazyEnum`, which is unique per decorated property.
+ */
+const lazyEnumsWithInferredType = new WeakSet<object>();
+
+/**
+ * Wraps an enum function so that it is only called when the document is generated.
+ * `inferType` records that the type must then be inferred from the resolved values.
+ *
+ * A function that is already a wrapper is returned as is, to keep what was recorded
+ * for it: the mapped types (`PartialType`, `PickType`...) apply `ApiProperty` again
+ * with the stored metadata, where `type` is set by then.
+ */
+export function createLazyEnum(
+  enumFn: () => any[] | Record<string, any>,
+  inferType: boolean
+): () => any[] | Record<string, any> {
+  if (lazyEnums.has(enumFn)) {
+    return enumFn;
+  }
+  const lazyEnum = () => enumFn();
+  lazyEnums.add(lazyEnum);
+  if (inferType) {
+    lazyEnumsWithInferredType.add(lazyEnum);
+  }
+  return lazyEnum;
+}
+
+export function isLazyEnumTypeInferred(lazyEnum: object): boolean {
+  return lazyEnumsWithInferredType.has(lazyEnum);
+}
+
 export function getEnumType(
   values: (string | number | boolean)[]
 ): 'string' | 'number' | 'boolean' {

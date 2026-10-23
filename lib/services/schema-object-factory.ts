@@ -23,11 +23,13 @@ import {
 } from '../interfaces/open-api-spec.interface.js';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface.js';
 import { StandardSchemaConverter } from '../interfaces/swagger-document-options.interface.js';
+import { SwaggerEnumType } from '../types/swagger-enum.type.js';
 import {
   getEnumType,
   getEnumValues,
   isEnumArray,
-  isEnumMetadata
+  isEnumMetadata,
+  isLazyEnumTypeInferred
 } from '../utils/enum.utils.js';
 import { getSchemaPath } from '../utils/index.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
@@ -70,6 +72,7 @@ export class SchemaObjectFactory {
           undefined
         ) as [Type<any>, boolean];
       }
+      param = this.resolveLazyEnum(param);
       if (!isBodyParameter(param) && param.enumName) {
         return this.createEnumParam(param, schemas);
       }
@@ -493,6 +496,8 @@ export class SchemaObjectFactory {
       );
     }
 
+    metadata = this.resolveLazyEnum(metadata);
+
     if (Array.isArray(metadata.type)) {
       return this.createFromNestedArray(
         key,
@@ -503,6 +508,35 @@ export class SchemaObjectFactory {
     }
 
     return this.createSchemaMetadata(key, metadata, schemas, pendingSchemaRefs);
+  }
+
+  /**
+   * Resolves an `enum` given as a function (see `ApiProperty`) into the same
+   * metadata the decorator would have produced for static values.
+   */
+  private resolveLazyEnum<
+    T extends { enum?: unknown; isArray?: boolean; type?: unknown }
+  >(metadata: T): T {
+    if (typeof metadata.enum !== 'function') {
+      return metadata;
+    }
+    const lazyEnum = metadata.enum as () => SwaggerEnumType;
+    const enumValues = getEnumValues(lazyEnum);
+
+    if (metadata.isArray) {
+      return {
+        ...omit(metadata, 'enum'),
+        type: 'array',
+        items: { type: getEnumType(enumValues), enum: enumValues }
+      } as unknown as T;
+    }
+    return {
+      ...metadata,
+      enum: enumValues,
+      type: isLazyEnumTypeInferred(lazyEnum)
+        ? getEnumType(enumValues)
+        : metadata.type
+    };
   }
 
   createEnumParam(

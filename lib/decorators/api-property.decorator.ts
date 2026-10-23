@@ -5,7 +5,11 @@ import {
   EnumAllowedTypes,
   SchemaObjectMetadata
 } from '../interfaces/schema-object-metadata.interface.js';
-import { getEnumType, getEnumValues } from '../utils/enum.utils.js';
+import {
+  createLazyEnum,
+  getEnumType,
+  getEnumValues
+} from '../utils/enum.utils.js';
 import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers.js';
 
 export type ApiPropertyCommonOptions = SchemaObjectMetadata & {
@@ -67,7 +71,14 @@ export function createApiPropertyDecorator(
     isArray
   } as ApiPropertyOptions;
 
-  if (isEnumArray(options)) {
+  if (typeof options.enum === 'function') {
+    // Called when the document is generated, not now: the values may depend on
+    // modules that are not loaded yet when the decorator is evaluated.
+    options.enum = createLazyEnum(
+      options.enum as () => any[] | Record<string, any>,
+      !options.type
+    );
+  } else if (isEnumArray(options)) {
     options.type = 'array';
 
     const enumValues = getEnumValues(options.enum);
