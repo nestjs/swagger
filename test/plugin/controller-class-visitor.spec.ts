@@ -38,6 +38,10 @@ import {
   appControllerApiOperationDedupeTextTranspiled
 } from './fixtures/app.controller-api-operation-dedupe';
 import {
+  appControllerApiOperationArgsText,
+  appControllerApiOperationArgsTextTranspiled
+} from './fixtures/app.controller-api-operation-args';
+import {
   appControllerPromisePrefixText,
   appControllerPromisePrefixTextTranspiled
 } from './fixtures/app.controller-promise-prefix';
@@ -335,6 +339,29 @@ export class AppController {
     });
     expect(result.outputText).toEqual(
       appControllerApiOperationDedupeTextTranspiled
+    );
+  });
+
+  it('should keep variable, spread and extra @ApiOperation arguments', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerApiOperationArgsText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(
+      appControllerApiOperationArgsTextTranspiled
     );
   });
 
