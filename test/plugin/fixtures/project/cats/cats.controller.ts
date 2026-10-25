@@ -15,11 +15,19 @@ export class CatsController {
     return this.catsService.create(createCatDto);
   }
 
+  /**
+   * Finds a cat
+   * @throws {404} Cat not found
+   * @throws {403} Forbidden
+   */
   @Get(':id')
   findOne(@Param('id') id: string): Cat {
     return this.catsService.findOne(+id);
   }
 
+  /**
+   * @throws {400} Invalid page
+   */
   @Get()
   findAll(@Query() paginationQuery: PaginationQuery) {}
 
