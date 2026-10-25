@@ -420,7 +420,8 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       return [];
     }
 
-    return tags.map((tag) => {
+    const responses: ts.ObjectLiteralExpression[] = [];
+    const decorators = tags.map((tag) => {
       const properties = [];
       properties.push(
         factory.createPropertyAssignment(
@@ -437,8 +438,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       const objectLiteralExpr = factory.createObjectLiteralExpression(
         compact(properties)
       );
-      const methodKey = node.name.getText();
-      metadata[methodKey] = objectLiteralExpr;
+      responses.push(objectLiteralExpr);
 
       const apiResponseDecoratorArguments: ts.NodeArray<ts.Expression> =
         factory.createNodeArray([objectLiteralExpr]);
@@ -450,6 +450,24 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
         )
       );
     });
+
+    const responsesPropertyAssignment = factory.createPropertyAssignment(
+      'responses',
+      factory.createArrayLiteralExpression(responses)
+    );
+    const methodKey = node.name.getText();
+    if (metadata[methodKey]) {
+      const existingProperties = metadata[methodKey].properties;
+      metadata[methodKey] = factory.createObjectLiteralExpression([
+        ...existingProperties,
+        responsesPropertyAssignment
+      ]);
+    } else {
+      metadata[methodKey] = factory.createObjectLiteralExpression([
+        responsesPropertyAssignment
+      ]);
+    }
+    return decorators;
   }
 
   /**

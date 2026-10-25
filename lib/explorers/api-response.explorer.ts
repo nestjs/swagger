@@ -144,18 +144,33 @@ function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
       (key) => typeof instance[key] === 'function'
     );
     methodKeys.forEach((key) => {
-      const { summary, deprecated, tags, ...meta } = metadata[key];
+      const {
+        summary,
+        deprecated,
+        tags,
+        description,
+        responses = [],
+        ...meta
+      } = metadata[key];
 
-      if (Object.keys(meta).length === 0) {
+      if (Object.keys(meta).length === 0 && responses.length === 0) {
         return;
       }
       if (meta.status === undefined) {
         meta.status = getStatusCode(instance[key]);
       }
-      ApiResponse(meta, { overrideExisting: false })(
-        classPrototype,
-        key,
-        Object.getOwnPropertyDescriptor(classPrototype, key)
+      const descriptor = Object.getOwnPropertyDescriptor(classPrototype, key);
+      // overrideExisting: false would skip every response after the first one.
+      if (
+        Reflect.getMetadata(
+          DECORATORS.API_RESPONSE,
+          descriptor?.value ?? classPrototype
+        )
+      ) {
+        return;
+      }
+      [meta, ...responses].forEach((response) =>
+        ApiResponse(response)(classPrototype, key, descriptor)
       );
     });
   } while (

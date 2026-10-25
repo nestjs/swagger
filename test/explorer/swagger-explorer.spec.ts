@@ -2,6 +2,7 @@ import {
   All,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -520,6 +521,76 @@ describe('SwaggerExplorer', () => {
         }
       });
     };
+  });
+
+  describe('when metadata has error responses', () => {
+    class Foo {}
+
+    @Controller('foos')
+    class FooController {
+      @Get(':id')
+      find(): Promise<Foo> {
+        return Promise.resolve(new Foo());
+      }
+
+      @Delete(':id')
+      remove(): void {}
+
+      static [METADATA_FACTORY_NAME]() {
+        return {
+          find: {
+            summary: 'Find foo',
+            description: 'Finds a foo by id',
+            responses: [
+              { status: 404, description: 'Foo not found' },
+              { status: 403, description: 'Forbidden' }
+            ],
+            type: Foo
+          },
+          remove: {
+            responses: [{ status: 404, description: 'Foo not found' }]
+          }
+        };
+      }
+    }
+
+    const exploreFooController = () =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    it('should keep the summary and success response next to @throws responses', () => {
+      const routes = exploreFooController();
+
+      expect(routes[0].root.summary).toEqual('Find foo');
+      expect(routes[0].root.description).toEqual('Finds a foo by id');
+      expect(routes[0].responses).toEqual({
+        '200': {
+          description: '',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/Foo' }
+            }
+          }
+        },
+        '403': { description: 'Forbidden' },
+        '404': { description: 'Foo not found' }
+      });
+    });
+
+    it('should add the success response when there are only @throws responses', () => {
+      const routes = exploreFooController();
+
+      expect(routes[1].responses).toEqual({
+        '200': { description: '' },
+        '404': { description: 'Foo not found' }
+      });
+    });
   });
 
   describe('when explicit decorators and metadata are used', () => {
