@@ -217,3 +217,103 @@ describe('Swagger deep scan global modules', () => {
     ]);
   });
 });
+
+@Controller('configured-global')
+class ConfiguredGlobalController {
+  @Get()
+  get() {
+    return 'configured global';
+  }
+}
+
+const configuredGlobalOptions: Record<string, unknown> = { url: 'initial' };
+
+@Module({})
+class ConfiguredGlobalModule {
+  static forRoot(): DynamicModule {
+    return {
+      module: ConfiguredGlobalModule,
+      global: true,
+      controllers: [ConfiguredGlobalController],
+      providers: [{ provide: 'OPTIONS', useValue: configuredGlobalOptions }]
+    };
+  }
+}
+
+@Module({
+  imports: [ConfiguredGlobalModule.forRoot()],
+  controllers: [SelectedController]
+})
+class ConfiguredSelectedModule {}
+
+@Module({ imports: [ConfiguredSelectedModule] })
+class ConfiguredRootModule {}
+
+@Controller('forward-promise-global')
+class ForwardPromiseGlobalController {
+  @Get()
+  get() {
+    return 'forward promise global';
+  }
+}
+
+@Module({})
+class ForwardPromiseGlobalModule {}
+
+const forwardPromiseGlobal = Promise.resolve<DynamicModule>({
+  module: ForwardPromiseGlobalModule,
+  global: true,
+  controllers: [ForwardPromiseGlobalController]
+});
+
+@Module({
+  imports: [forwardRef(() => forwardPromiseGlobal as any)],
+  controllers: [SelectedController]
+})
+class ForwardPromiseSelectedModule {}
+
+@Module({ imports: [ForwardPromiseSelectedModule] })
+class ForwardPromiseRootModule {}
+
+describe('Swagger deep scan global modules (imports that cannot be matched)', () => {
+  it('keeps a deep-hash global whose metadata changed after bootstrap', async () => {
+    const app = await NestFactory.create(ConfiguredRootModule, {
+      logger: false,
+      moduleIdGeneratorAlgorithm: 'deep-hash'
+    });
+    try {
+      configuredGlobalOptions.url = 'changed at runtime';
+      const document = SwaggerModule.createDocument(
+        app,
+        new DocumentBuilder().build(),
+        { include: [ConfiguredSelectedModule], deepScanRoutes: true }
+      );
+      expect(Object.keys(document.paths).sort()).toEqual([
+        '/configured-global',
+        '/selected'
+      ]);
+    } finally {
+      configuredGlobalOptions.url = 'initial';
+      await app.close();
+    }
+  });
+
+  it('keeps a global imported through a forward reference to a promise', async () => {
+    const app = await NestFactory.create(ForwardPromiseRootModule, {
+      logger: false
+    });
+    try {
+      const document = SwaggerModule.createDocument(
+        app,
+        new DocumentBuilder().build(),
+        { include: [ForwardPromiseSelectedModule], deepScanRoutes: true }
+      );
+      expect(Object.keys(document.paths).sort()).toEqual([
+        '/forward-promise-global',
+        '/selected'
+      ]);
+    } finally {
+      await app.close();
+    }
+  });
+});

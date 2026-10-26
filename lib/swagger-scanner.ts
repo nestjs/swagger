@@ -154,9 +154,11 @@ export class SwaggerScanner {
 
     for (const importedModule of [...staticImports, ...dynamicImports]) {
       const token = this.getModuleToken(importedModule, tokenFactory);
-      if (token === undefined) {
+      if (token === undefined || !container.getModules().has(token)) {
         // createDocument is synchronous. Preserve the previous scan behavior
-        // when an async import cannot be mapped to an exact registration.
+        // when an async import cannot be mapped to an exact registration, or
+        // when its token no longer matches one (deep-hash metadata changed
+        // after bootstrap).
         return undefined;
       }
       tokens.add(token);
@@ -170,18 +172,21 @@ export class SwaggerScanner {
       Type<unknown> | DynamicModule | ForwardReference | Promise<DynamicModule>,
     tokenFactory: ReturnType<NestContainer['getModuleTokenFactory']>
   ): string | undefined {
-    if (moduleReference instanceof Promise) {
-      return undefined;
-    }
-
-    let reference: Type<unknown> | DynamicModule | ForwardReference =
-      moduleReference;
+    let reference:
+      | Type<unknown>
+      | DynamicModule
+      | ForwardReference
+      | Promise<DynamicModule> = moduleReference;
 
     if (
       'forwardRef' in reference &&
       typeof reference.forwardRef === 'function'
     ) {
+      // Unwrapped first: a forward reference may resolve to a promise
       reference = reference.forwardRef();
+    }
+    if (!reference || reference instanceof Promise) {
+      return undefined;
     }
 
     if ('module' in reference) {
