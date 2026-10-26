@@ -2843,6 +2843,46 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when a query DTO property sets exampleMaxDepth', () => {
+    class SearchQuery {
+      @ApiPropertyOptional({
+        type: [String],
+        exampleMaxDepth: 1,
+        example: ['a']
+      })
+      tags?: string[];
+    }
+
+    @Controller('search')
+    class SearchController {
+      @Get()
+      find(@Query() query: SearchQuery): Promise<string[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    it('should not emit exampleMaxDepth on the parameter', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new SearchController(),
+          metatype: SearchController
+        } as InstanceWrapper<SearchController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes[0].root.parameters).toEqual([
+        {
+          name: 'tags',
+          in: 'query',
+          required: false,
+          schema: { type: 'array', items: { type: 'string' }, example: ['a'] }
+        }
+      ]);
+    });
+  });
+
   describe('when arrays are used', () => {
     enum LettersEnum {
       A = 'A',
