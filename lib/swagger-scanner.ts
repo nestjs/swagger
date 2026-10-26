@@ -1,5 +1,11 @@
-import { INestApplication, InjectionToken, Type } from '@nestjs/common';
-import { MODULE_PATH } from '@nestjs/common/constants.js';
+import {
+  DynamicModule,
+  ForwardReference,
+  INestApplication,
+  InjectionToken,
+  Type
+} from '@nestjs/common';
+import { MODULE_METADATA, MODULE_PATH } from '@nestjs/common/constants.js';
 import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { Module } from '@nestjs/core/injector/module.js';
@@ -72,47 +78,48 @@ export class SwaggerScanner {
       ? stripLastSlash(getGlobalPrefix(app))
       : '';
 
-    const denormalizedPaths = modules.map(
-      ({ controllers, metatype, imports }) => {
-        let result: ModuleRoute[] = [];
+    const denormalizedPaths = modules.map((module) => {
+      const { controllers, metatype, imports } = module;
+      let result: ModuleRoute[] = [];
 
-        if (deepScanRoutes) {
-          // Only load submodules routes if explicitly enabled
-          const isGlobal = (module: Type<any>) =>
-            !container.isGlobalModule(module);
+      if (deepScanRoutes) {
+        // Only load submodules routes if explicitly enabled
+        const explicitGlobalTokens =
+          this.getExplicitlyImportedGlobalModuleTokens(container, module);
 
-          Array.from(imports.values())
-            .filter(isGlobal as any)
-            .forEach(({ metatype, controllers }) => {
-              const modulePath = this.getModulePathMetadata(
-                container,
-                metatype
-              );
-              result = result.concat(
-                this.scanModuleControllers(controllers, internalConfigRef, {
-                  modulePath,
-                  globalPrefix,
-                  operationIdFactory,
-                  linkNameFactory,
-                  autoTagControllers,
-                  onlyIncludeDecoratedEndpoints
-                })
-              );
-            });
-        }
-        const modulePath = this.getModulePathMetadata(container, metatype);
-        return result.concat(
-          this.scanModuleControllers(controllers, internalConfigRef, {
-            modulePath,
-            globalPrefix,
-            operationIdFactory,
-            linkNameFactory,
-            autoTagControllers,
-            onlyIncludeDecoratedEndpoints
-          })
-        );
+        Array.from(imports.values())
+          .filter(
+            (importedModule) =>
+              !importedModule.isGlobal ||
+              explicitGlobalTokens === undefined ||
+              explicitGlobalTokens.has(importedModule.token)
+          )
+          .forEach(({ metatype, controllers }) => {
+            const modulePath = this.getModulePathMetadata(container, metatype);
+            result = result.concat(
+              this.scanModuleControllers(controllers, internalConfigRef, {
+                modulePath,
+                globalPrefix,
+                operationIdFactory,
+                linkNameFactory,
+                autoTagControllers,
+                onlyIncludeDecoratedEndpoints
+              })
+            );
+          });
       }
-    );
+      const modulePath = this.getModulePathMetadata(container, metatype);
+      return result.concat(
+        this.scanModuleControllers(controllers, internalConfigRef, {
+          modulePath,
+          globalPrefix,
+          operationIdFactory,
+          linkNameFactory,
+          autoTagControllers,
+          onlyIncludeDecoratedEndpoints
+        })
+      );
+    });
 
     const schemas = this.explorer.getSchemas();
     this.addExtraModels(schemas, extraModels);
@@ -132,6 +139,64 @@ export class SwaggerScanner {
         schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }
     };
+  }
+
+  private getExplicitlyImportedGlobalModuleTokens(
+    container: NestContainer,
+    module: Module
+  ): Set<string> | undefined {
+    const tokenFactory = container.getModuleTokenFactory();
+    const staticImports =
+      Reflect.getMetadata(MODULE_METADATA.IMPORTS, module.metatype) || [];
+    const dynamicImports =
+      container.getDynamicMetadataByToken(module.token, 'imports') || [];
+    const tokens = new Set<string>();
+
+    for (const importedModule of [...staticImports, ...dynamicImports]) {
+      const token = this.getModuleToken(importedModule, tokenFactory);
+      if (token === undefined) {
+        // createDocument is synchronous. Preserve the previous scan behavior
+        // when an async import cannot be mapped to an exact registration.
+        return undefined;
+      }
+      tokens.add(token);
+    }
+
+    return tokens;
+  }
+
+  private getModuleToken(
+    moduleReference:
+      Type<unknown> | DynamicModule | ForwardReference | Promise<DynamicModule>,
+    tokenFactory: ReturnType<NestContainer['getModuleTokenFactory']>
+  ): string | undefined {
+    if (moduleReference instanceof Promise) {
+      return undefined;
+    }
+
+    let reference: Type<unknown> | DynamicModule | ForwardReference =
+      moduleReference;
+
+    if (
+      'forwardRef' in reference &&
+      typeof reference.forwardRef === 'function'
+    ) {
+      reference = reference.forwardRef();
+    }
+
+    if ('module' in reference) {
+      const { module: metatype, ...dynamicMetadata } = reference;
+      return tokenFactory.createForDynamic(
+        metatype,
+        dynamicMetadata,
+        reference
+      );
+    }
+
+    return tokenFactory.createForStatic(
+      reference as Type<unknown>,
+      reference as Type<unknown>
+    );
   }
 
   public scanModuleControllers(
