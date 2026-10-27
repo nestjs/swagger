@@ -1,6 +1,9 @@
 import { METHOD_METADATA } from '@nestjs/common/constants.js';
 import { isConstructor } from '@nestjs/common/utils/shared.utils.js';
-import { isArray, isUndefined, negate, pickBy } from 'es-toolkit/compat';
+import isArray from 'es-toolkit/compat/isArray';
+import isUndefined from 'es-toolkit/compat/isUndefined';
+import negate from 'es-toolkit/compat/negate';
+import pickBy from 'es-toolkit/compat/pickBy';
 import { DECORATORS } from '../constants.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 

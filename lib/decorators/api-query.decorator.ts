@@ -1,5 +1,6 @@
 import { Type } from '@nestjs/common';
-import { clone, omit } from 'es-toolkit/compat';
+import clone from 'es-toolkit/compat/clone';
+import omit from 'es-toolkit/compat/omit';
 import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface.js';
 import {
   ParameterObject,

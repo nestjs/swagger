@@ -4,7 +4,9 @@ import {
   ROUTE_ARGS_METADATA
 } from '@nestjs/common/constants.js';
 import { RouteParamtypes } from '@nestjs/common/enums/route-paramtypes.enum.js';
-import { isEmpty, mapValues, omitBy } from 'es-toolkit/compat';
+import isEmpty from 'es-toolkit/compat/isEmpty';
+import mapValues from 'es-toolkit/compat/mapValues';
+import omitBy from 'es-toolkit/compat/omitBy';
 import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface.js';
 import {
   ParameterLocation,

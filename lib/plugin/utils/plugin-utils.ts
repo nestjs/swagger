@@ -1,4 +1,4 @@
-import { head } from 'es-toolkit/compat';
+import head from 'es-toolkit/compat/head';
 import { readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { isAbsolute, posix } from 'path';

@@ -1,5 +1,5 @@
 import type { StandardJSONSchemaV1 } from '@standard-schema/spec';
-import { omit } from 'es-toolkit/compat';
+import omit from 'es-toolkit/compat/omit';
 import type {
   StandardSchemaConversionResult,
   StandardSchemaConverter,

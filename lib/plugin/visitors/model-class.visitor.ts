@@ -1,4 +1,6 @@
-import { compact, flatten, head } from 'es-toolkit/compat';
+import compact from 'es-toolkit/compat/compact';
+import flatten from 'es-toolkit/compat/flatten';
+import head from 'es-toolkit/compat/head';
 import { posix } from 'path';
 import * as ts from 'typescript';
 import { factory, PropertyAssignment } from 'typescript';

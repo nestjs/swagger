@@ -1,4 +1,8 @@
-import { clone, isNil, isUndefined, negate, pickBy } from 'es-toolkit/compat';
+import clone from 'es-toolkit/compat/clone';
+import isNil from 'es-toolkit/compat/isNil';
+import isUndefined from 'es-toolkit/compat/isUndefined';
+import negate from 'es-toolkit/compat/negate';
+import pickBy from 'es-toolkit/compat/pickBy';
 import { DECORATORS } from '../constants.js';
 import {
   ParameterLocation,

@@ -1,16 +1,14 @@
 import { Logger, Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
-import {
-  flatten,
-  isEqual,
-  isFunction,
-  isString,
-  keyBy,
-  mapValues,
-  omit,
-  omitBy,
-  pick
-} from 'es-toolkit/compat';
+import flatten from 'es-toolkit/compat/flatten';
+import isEqual from 'es-toolkit/compat/isEqual';
+import isFunction from 'es-toolkit/compat/isFunction';
+import isString from 'es-toolkit/compat/isString';
+import keyBy from 'es-toolkit/compat/keyBy';
+import mapValues from 'es-toolkit/compat/mapValues';
+import omit from 'es-toolkit/compat/omit';
+import omitBy from 'es-toolkit/compat/omitBy';
+import pick from 'es-toolkit/compat/pick';
 import { DECORATORS } from '../constants.js';
 import { getTypeIsArrayTuple } from '../decorators/helpers.js';
 import { ApiSchemaOptions } from '../decorators/index.js';

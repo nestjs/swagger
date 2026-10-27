@@ -9,7 +9,8 @@ import { MODULE_METADATA, MODULE_PATH } from '@nestjs/common/constants.js';
 import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { Module } from '@nestjs/core/injector/module.js';
-import { flatten, isEmpty } from 'es-toolkit/compat';
+import flatten from 'es-toolkit/compat/flatten';
+import isEmpty from 'es-toolkit/compat/isEmpty';
 import {
   OpenAPIObject,
   OperationIdFactory,

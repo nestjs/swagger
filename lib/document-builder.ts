@@ -1,12 +1,10 @@
 import { Logger } from '@nestjs/common';
-import {
-  clone,
-  isString,
-  isUndefined,
-  negate,
-  omit,
-  pickBy
-} from 'es-toolkit/compat';
+import clone from 'es-toolkit/compat/clone';
+import isString from 'es-toolkit/compat/isString';
+import isUndefined from 'es-toolkit/compat/isUndefined';
+import negate from 'es-toolkit/compat/negate';
+import omit from 'es-toolkit/compat/omit';
+import pickBy from 'es-toolkit/compat/pickBy';
 import { ApiResponseOptions } from './decorators/api-response.decorator.js';
 import { buildDocumentBase } from './fixtures/document.base.js';
 import { OpenAPIObject } from './interfaces/index.js';
