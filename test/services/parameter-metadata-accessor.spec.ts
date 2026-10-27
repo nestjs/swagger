@@ -1,4 +1,4 @@
-import { Body, Param, Query, Type } from '@nestjs/common';
+import { Body, Param, ParseUUIDPipe, Query, Type } from '@nestjs/common';
 import 'reflect-metadata';
 import * as v from 'valibot';
 import { z } from 'zod';
@@ -41,5 +41,52 @@ describe('ParameterMetadataAccessor', () => {
         })
       ])
     );
+  });
+
+  it('should infer format "uuid" when ParseUUIDPipe is passed as class, instance, or option', () => {
+    class TestController {
+      method(
+        @Param('tenantId', ParseUUIDPipe) tenantId: string,
+        @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+        @Query('filterId', { pipes: [ParseUUIDPipe] }) filterId: unknown
+      ) {
+        return { tenantId, id, filterId };
+      }
+    }
+
+    const instance = new TestController();
+    const metadata = accessor.explore(
+      instance,
+      TestController.prototype as any as Type<unknown>,
+      instance.method
+    );
+
+    expect(metadata).toBeDefined();
+    expect(Object.values(metadata!)).toEqual([
+      {
+        in: 'path',
+        name: 'tenantId',
+        type: String,
+        required: true,
+        format: 'uuid',
+        standardSchema: undefined
+      },
+      {
+        in: 'path',
+        name: 'id',
+        type: String,
+        required: true,
+        format: 'uuid',
+        standardSchema: undefined
+      },
+      {
+        in: 'query',
+        name: 'filterId',
+        type: String,
+        required: true,
+        format: 'uuid',
+        standardSchema: undefined
+      }
+    ]);
   });
 });

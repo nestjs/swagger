@@ -1,4 +1,4 @@
-import { Body, Param, Query, Type } from '@nestjs/common';
+import { Body, Param, ParseUUIDPipe, Query, Type } from '@nestjs/common';
 import 'reflect-metadata';
 import { z } from 'zod';
 import { createSchema } from 'zod-openapi';
@@ -580,6 +580,76 @@ describe('exploreApiParametersMetadata', () => {
       expect(parameter.schema).toEqual({
         allOf: [{ minProperties: 1 }, { $ref: '#/components/schemas/Filter' }]
       });
+    });
+  });
+
+  describe('ParseUUIDPipe inference', () => {
+    it('should infer format "uuid" for @Param and @Query using ParseUUIDPipe', () => {
+      class FoldersController {
+        delete(
+          @Param('tenantId', ParseUUIDPipe) tenantId: string,
+          @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+          @Query('cursorId', ParseUUIDPipe) cursorId: string
+        ) {
+          return { tenantId, id, cursorId };
+        }
+      }
+
+      const instance = new FoldersController();
+      const result = explore(instance, instance.delete);
+
+      expect(result!.parameters).toEqual([
+        {
+          name: 'tenantId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' }
+        },
+        {
+          name: 'id',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' }
+        },
+        {
+          name: 'cursorId',
+          in: 'query',
+          required: true,
+          schema: { type: 'string', format: 'uuid' }
+        }
+      ]);
+    });
+
+    it('should preserve inferred format "uuid" when combined with @ApiParam metadata and allow explicit format override', () => {
+      class FoldersController {
+        @ApiParam({ name: 'tenantId', description: 'Tenant identifier' })
+        @ApiParam({ name: 'id', format: 'custom-uuid' })
+        delete(
+          @Param('tenantId', ParseUUIDPipe) tenantId: string,
+          @Param('id', ParseUUIDPipe) id: string
+        ) {
+          return { tenantId, id };
+        }
+      }
+
+      const instance = new FoldersController();
+      const result = explore(instance, instance.delete);
+
+      expect(result!.parameters).toEqual([
+        {
+          name: 'tenantId',
+          in: 'path',
+          required: true,
+          description: 'Tenant identifier',
+          schema: { type: 'string', format: 'uuid' }
+        },
+        {
+          name: 'id',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'custom-uuid' }
+        }
+      ]);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { Type } from '@nestjs/common';
+import { ParseUUIDPipe, PipeTransform, Type } from '@nestjs/common';
 import {
   PARAMTYPES_METADATA,
   ROUTE_ARGS_METADATA
@@ -16,6 +16,7 @@ import { reverseObjectKeys } from '../utils/reverse-object-keys.util.js';
 interface ParamMetadata {
   index: number;
   data?: string | number | object;
+  pipes?: Array<Type<PipeTransform> | PipeTransform>;
   schema?: StandardSchemaObject;
 }
 type ParamsMetadata = Record<string, ParamMetadata>;
@@ -32,6 +33,7 @@ export interface ParamWithTypeMetadata {
   enumName?: string;
   enumSchema?: EnumSchemaAttributes;
   selfRequired?: boolean;
+  format?: string;
 }
 export type ParamsWithType = Record<string, ParamWithTypeMetadata>;
 
@@ -60,13 +62,21 @@ export class ParameterMetadataAccessor {
 
     const parametersWithType: ParamsWithType = mapValues(
       reverseObjectKeys(routeArgsMetadata),
-      (param: ParamMetadata) =>
-        ({
-          type: types[param.index],
+      (param: ParamMetadata) => {
+        const isUuid =
+          Boolean(param.data) && this.hasParseUuidPipe(param.pipes);
+        const reflectedType = types[param.index];
+        return {
+          type:
+            isUuid && (!reflectedType || reflectedType === Object)
+              ? String
+              : reflectedType,
           name: param.data,
           standardSchema: param.schema,
-          required: true
-        }) as unknown as ParamWithTypeMetadata
+          required: true,
+          ...(isUuid && { format: 'uuid' })
+        } as unknown as ParamWithTypeMetadata;
+      }
     ) as unknown as ParamsWithType;
     const excludePredicate = (val: ParamWithTypeMetadata) =>
       val.in === PARAM_TOKEN_PLACEHOLDER || (val.name && val.in === 'body');
@@ -79,6 +89,17 @@ export class ParameterMetadataAccessor {
       excludePredicate as Function
     );
     return !isEmpty(parameters) ? (parameters as ParamsWithType) : undefined;
+  }
+
+  private hasParseUuidPipe(
+    pipes?: Array<Type<PipeTransform> | PipeTransform>
+  ): boolean {
+    return (
+      Array.isArray(pipes) &&
+      pipes.some(
+        (pipe) => pipe === ParseUUIDPipe || pipe instanceof ParseUUIDPipe
+      )
+    );
   }
 
   private mapParamType(key: string): string {
