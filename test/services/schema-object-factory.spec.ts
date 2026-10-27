@@ -1621,6 +1621,59 @@ describe('SchemaObjectFactory', () => {
         type: 'string'
       });
     });
+
+    it('should use the parameter type when there is no schema', () => {
+      const params: ParamWithTypeMetadata & BaseParameterObject = {
+        type: 'number',
+        required: true,
+        enumName: 'MyEnum',
+        enum: [1, 2]
+      } as any;
+      const schemas = {};
+      schemaObjectFactory.createEnumParam(params, schemas);
+
+      expect(schemas['MyEnum']).toEqual({
+        enum: [1, 2],
+        type: 'number'
+      });
+    });
+
+    it('should default to string when the parameter type is a constructor', () => {
+      const params: ParamWithTypeMetadata & BaseParameterObject = {
+        type: Number,
+        required: true,
+        isArray: false,
+        enumName: 'MyEnum',
+        enum: [1, 2]
+      };
+      const schemas = {};
+      schemaObjectFactory.createEnumParam(params, schemas);
+
+      expect(schemas['MyEnum']).toEqual({
+        enum: [1, 2],
+        type: 'string'
+      });
+    });
+
+    it('should use the items type for an array when there is no schema', () => {
+      const params: ParamWithTypeMetadata & BaseParameterObject = {
+        type: 'array',
+        required: true,
+        isArray: true,
+        enumName: 'MyEnum',
+        items: {
+          type: 'number',
+          enum: [1, 2]
+        }
+      } as any;
+      const schemas = {};
+      schemaObjectFactory.createEnumParam(params, schemas);
+
+      expect(schemas['MyEnum']).toEqual({
+        enum: [1, 2],
+        type: 'number'
+      });
+    });
   });
 
   describe('createFromModel', () => {
