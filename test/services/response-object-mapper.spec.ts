@@ -104,6 +104,39 @@ describe('ResponseObjectMapper', () => {
       });
     });
 
+    it('should keep the siblings of a nullable reference schema out of allOf', () => {
+      const result = mapper.wrapSchemaWithContent(
+        {
+          description: 'OK',
+          nullable: true,
+          schema: { $ref, description: 'A cat' }
+        } as any,
+        produces
+      );
+      expect(result.content['application/json'].schema).toEqual({
+        description: 'A cat',
+        nullable: true,
+        type: 'object',
+        allOf: [{ $ref }]
+      });
+    });
+
+    it('should not type a nullable reference to a non-object schema as an object', () => {
+      const result = mapper.wrapSchemaWithContent(
+        {
+          description: 'OK',
+          nullable: true,
+          schema: { $ref: '#/components/schemas/Status' }
+        } as any,
+        produces,
+        { Status: { type: 'string', enum: ['a', 'b'] } }
+      );
+      expect(result.content['application/json'].schema).toEqual({
+        nullable: true,
+        allOf: [{ $ref: '#/components/schemas/Status' }]
+      });
+    });
+
     it('should drop nullable from a response without a schema', () => {
       const result = mapper.wrapSchemaWithContent(
         { description: 'No content', nullable: true } as any,
@@ -148,6 +181,25 @@ describe('ResponseObjectMapper', () => {
       expect(normalize(response)).toEqual({
         type: ['array', 'null'],
         items: { $ref }
+      });
+    });
+
+    it('should turn a nullable reference schema response into an anyOf union', () => {
+      const $enumRef = '#/components/schemas/Status';
+      const objectRef = mapper.wrapSchemaWithContent(
+        { description: 'OK', nullable: true, schema: { $ref } } as any,
+        produces
+      );
+      const enumRef = mapper.wrapSchemaWithContent(
+        { description: 'OK', nullable: true, schema: { $ref: $enumRef } } as any,
+        produces,
+        { Status: { type: 'string', enum: ['a', 'b'] } }
+      );
+      expect(normalize(objectRef)).toEqual({
+        anyOf: [{ $ref }, { type: 'null' }]
+      });
+      expect(normalize(enumRef)).toEqual({
+        anyOf: [{ $ref: $enumRef }, { type: 'null' }]
       });
     });
   });

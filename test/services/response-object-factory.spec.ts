@@ -355,6 +355,26 @@ describe('ResponseObjectFactory', () => {
         nullable: true
       });
     });
+
+    it('should not type a nullable reference to a standard schema enum as an object', () => {
+      const schemas: Record<string, SchemaObject> = {};
+      const result = factory.create(
+        {
+          description: 'OK',
+          nullable: true,
+          standardSchema: z.enum(['a', 'b']).meta({ id: 'Status' })
+        } as any,
+        produces,
+        schemas,
+        factories
+      ) as any;
+
+      expect(schemas.Status).toEqual({ type: 'string', enum: ['a', 'b'] });
+      expect(result.content['application/json'].schema).toEqual({
+        nullable: true,
+        allOf: [{ $ref: '#/components/schemas/Status' }]
+      });
+    });
   });
 
 });

@@ -8,6 +8,7 @@ import {
   SchemaObject
 } from '../interfaces/open-api-spec.interface.js';
 import { getSchemaPath } from '../utils/index.js';
+import { wrapRefInAllOf } from '../utils/wrap-ref-in-all-of.util.js';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper.js';
 
 export class ResponseObjectMapper {
@@ -50,7 +51,8 @@ export class ResponseObjectMapper {
 
   wrapSchemaWithContent(
     response: ApiResponseSchemaHost & ApiResponseMetadata,
-    produces: string[]
+    produces: string[],
+    schemas?: Record<string, SchemaObject>
   ) {
     if (
       !response.schema &&
@@ -63,7 +65,7 @@ export class ResponseObjectMapper {
     const content = this.mimetypeContentWrapper.wrap(produces, {
       schema:
         response.nullable && response.schema
-          ? this.toNullableSchema(response.schema)
+          ? this.toNullableSchema(response.schema, schemas)
           : response.schema,
       ...pick(response, exampleKeys)
     });
@@ -75,12 +77,42 @@ export class ResponseObjectMapper {
     };
   }
 
-  private toNullableSchema(schema: SchemaObject | ReferenceObject) {
+  private toNullableSchema(
+    schema: SchemaObject | ReferenceObject,
+    schemas?: Record<string, SchemaObject>
+  ): SchemaObject | ReferenceObject {
+    if (!('$ref' in schema)) {
+      return { ...schema, nullable: true };
+    }
     // A `$ref` cannot carry sibling keywords, hence the `allOf` wrapper --
     // the same shape the schema object factory emits for nullable properties.
     // 3.1 documents get this rewritten into a union by convertNullableToOas31.
-    return '$ref' in schema
-      ? { nullable: true, type: 'object', allOf: [schema] }
-      : { ...schema, nullable: true };
+    const wrapped = wrapRefInAllOf({
+      ...schema,
+      nullable: true
+    }) as SchemaObject;
+    // OpenAPI 3.0 only applies `nullable` next to `type`. Models are objects,
+    // but a `$ref` given here may point to any schema (e.g. a string enum), so
+    // `type: 'object'` is only added when the target is not known to be
+    // something else.
+    if (
+      wrapped.type !== undefined ||
+      !this.mayBeObjectRef(schema.$ref, schemas)
+    ) {
+      return wrapped;
+    }
+    const { allOf, ...rest } = wrapped;
+    return { ...rest, type: 'object', allOf };
+  }
+
+  private mayBeObjectRef(
+    $ref: string,
+    schemas?: Record<string, SchemaObject>
+  ): boolean {
+    const prefix = getSchemaPath('');
+    const target = $ref.startsWith(prefix)
+      ? schemas?.[$ref.slice(prefix.length)]
+      : undefined;
+    return !target || target.type === 'object';
   }
 }
