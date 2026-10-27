@@ -64,14 +64,16 @@ export class ResponseObjectFactory {
             ? { type: 'array', items: schemaOverride }
             : schemaOverride
         } as ApiResponseSchemaHost & ApiResponseMetadata,
-        produces
+        produces,
+        schemas
       );
     }
 
     if (!type) {
       return this.responseObjectMapper.wrapSchemaWithContent(
         response as ApiResponseSchemaHost,
-        produces
+        produces,
+        schemas
       );
     }
 

@@ -329,6 +329,52 @@ describe('ResponseObjectFactory', () => {
         }
       });
     });
+
+    it('should move nullable from a standard schema response into the schema', () => {
+      const result = factory.create(
+        {
+          description: 'OK',
+          nullable: true,
+          isArray: true,
+          standardSchema: z.object({ name: z.string() })
+        } as any,
+        produces,
+        {},
+        factories
+      ) as any;
+
+      expect(result).not.toHaveProperty('nullable');
+      expect(result.content['application/json'].schema).toEqual({
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { name: { type: 'string' } },
+          required: ['name'],
+          additionalProperties: false
+        },
+        nullable: true
+      });
+    });
+
+    it('should not type a nullable reference to a standard schema enum as an object', () => {
+      const schemas: Record<string, SchemaObject> = {};
+      const result = factory.create(
+        {
+          description: 'OK',
+          nullable: true,
+          standardSchema: z.enum(['a', 'b']).meta({ id: 'Status' })
+        } as any,
+        produces,
+        schemas,
+        factories
+      ) as any;
+
+      expect(schemas.Status).toEqual({ type: 'string', enum: ['a', 'b'] });
+      expect(result.content['application/json'].schema).toEqual({
+        nullable: true,
+        allOf: [{ $ref: '#/components/schemas/Status' }]
+      });
+    });
   });
 
 });
