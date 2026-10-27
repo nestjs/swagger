@@ -34,6 +34,7 @@ export class SwaggerTypesMapper {
     '$ref',
     'standardSchema',
     'selfRequired',
+    'exampleMaxDepth',
     // Only meaningful for properties sent in responses; a request parameter
     // cannot be read-only, so it is dropped rather than moved into the schema.
     'readOnly',

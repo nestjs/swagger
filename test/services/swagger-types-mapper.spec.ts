@@ -126,5 +126,49 @@ describe('SwaggerTypesMapper', () => {
         schema: { $ref: '#/components/schemas/Pet' }
       });
     });
+
+    it('should drop `exampleMaxDepth` from type-based parameters', () => {
+      const params = [
+        {
+          name: 'tags',
+          in: 'query',
+          required: false,
+          type: String,
+          isArray: true,
+          example: ['a'],
+          exampleMaxDepth: 1
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'tags',
+        in: 'query',
+        required: false,
+        schema: { type: 'array', items: { type: 'string' }, example: ['a'] }
+      });
+    });
+
+    it('should drop `exampleMaxDepth` from parameters with an explicit schema', () => {
+      const params = [
+        {
+          name: 'filter',
+          in: 'query',
+          required: true,
+          schema: { type: 'object', example: { a: { b: 1 } } },
+          exampleMaxDepth: 1
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'filter',
+        in: 'query',
+        required: true,
+        schema: { type: 'object', example: { a: { b: 1 } } }
+      });
+    });
   });
 });

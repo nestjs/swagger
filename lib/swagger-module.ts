@@ -380,9 +380,10 @@ export class SwaggerModule {
     function serveSwaggerHtml(req: any, res: any) {
       res.type('text/html');
 
-      const url = httpAdapter.getRequestUrl(req);
-      const hasTrailingSlash = url.endsWith('/');
-      const swaggerUiHtml = hasTrailingSlash
+      const [pathname] = httpAdapter.getRequestUrl(req).split('?');
+      const isFolderUrl =
+        pathname.endsWith('/') || pathname.endsWith('/index.html');
+      const swaggerUiHtml = isFolderUrl
         ? getTrailingSlashSwaggerHtml()
         : getSwaggerHtml();
       res.send(swaggerUiHtml);

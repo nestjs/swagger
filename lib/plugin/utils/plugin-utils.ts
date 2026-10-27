@@ -238,11 +238,13 @@ export function isPromiseOrObservable(type: string) {
 
 export function hasPropertyKey(
   key: string,
-  properties: ts.NodeArray<ts.PropertyAssignment>
+  properties: ts.NodeArray<ts.ObjectLiteralElementLike>
 ): boolean {
   return properties
     .filter((item) => !isDynamicallyAdded(item))
-    .some((item) => item.name.getText() === key);
+    .some(
+      (item) => !ts.isSpreadAssignment(item) && item.name.getText() === key
+    );
 }
 
 export function getOutputExtension(fileName: string): string {

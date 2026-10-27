@@ -207,8 +207,17 @@ export default async () => {
           {
             CatsController: {
               create: { type: t['./cats/classes/cat.class'].Cat },
-              findOne: { type: t['./cats/classes/cat.class'].Cat },
-              findAll: {},
+              findOne: {
+                summary: 'Finds a cat',
+                responses: [
+                  { status: 404, description: 'Cat not found' },
+                  { status: 403, description: 'Forbidden' }
+                ],
+                type: t['./cats/classes/cat.class'].Cat
+              },
+              findAll: {
+                responses: [{ status: 400, description: 'Invalid page' }]
+              },
               createBulk: { type: t['./cats/classes/cat.class'].Cat },
               createAsFormData: { type: t['./cats/classes/cat.class'].Cat },
               getWithEnumParam: {},
