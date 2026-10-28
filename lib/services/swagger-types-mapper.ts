@@ -1,11 +1,9 @@
-import {
-  isFunction,
-  isString,
-  isUndefined,
-  omit,
-  omitBy,
-  pick
-} from 'es-toolkit/compat';
+import isFunction from 'es-toolkit/compat/isFunction';
+import isString from 'es-toolkit/compat/isString';
+import isUndefined from 'es-toolkit/compat/isUndefined';
+import omit from 'es-toolkit/compat/omit';
+import omitBy from 'es-toolkit/compat/omitBy';
+import pick from 'es-toolkit/compat/pick';
 import { ApiPropertyOptions } from '../decorators/index.js';
 import {
   BaseParameterObject,

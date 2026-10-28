@@ -1,4 +1,7 @@
-import { groupBy, keyBy, mapValues, omit } from 'es-toolkit/compat';
+import groupBy from 'es-toolkit/compat/groupBy';
+import keyBy from 'es-toolkit/compat/keyBy';
+import mapValues from 'es-toolkit/compat/mapValues';
+import omit from 'es-toolkit/compat/omit';
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface.js';
 import { OpenAPIObject } from './interfaces/index.js';
 import { sortObjectLexicographically } from './utils/sort-object-lexicographically.js';

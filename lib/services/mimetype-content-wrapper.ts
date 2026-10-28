@@ -1,4 +1,4 @@
-import { cloneDeep } from 'es-toolkit/compat';
+import cloneDeep from 'es-toolkit/compat/cloneDeep';
 import { ContentObject } from '../interfaces/open-api-spec.interface.js';
 import { removeUndefinedKeys } from '../utils/remove-undefined-keys.js';
 

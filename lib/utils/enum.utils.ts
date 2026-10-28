@@ -1,4 +1,4 @@
-import { isString } from 'es-toolkit/compat';
+import isString from 'es-toolkit/compat/isString';
 import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface.js';
 import { SwaggerEnumType } from '../types/swagger-enum.type.js';

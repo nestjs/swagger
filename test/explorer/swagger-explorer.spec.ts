@@ -16,7 +16,7 @@ import {
 import { VersionValue } from '@nestjs/common/internal';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { upperFirst } from 'es-toolkit/compat';
+import upperFirst from 'es-toolkit/compat/upperFirst';
 import {
   ApiBadRequestResponse,
   ApiBody,

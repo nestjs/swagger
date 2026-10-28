@@ -1,13 +1,11 @@
 import { Type } from '@nestjs/common';
-import {
-  assign,
-  find,
-  isNil,
-  map,
-  omitBy,
-  some,
-  unionWith
-} from 'es-toolkit/compat';
+import assign from 'es-toolkit/compat/assign';
+import find from 'es-toolkit/compat/find';
+import isNil from 'es-toolkit/compat/isNil';
+import map from 'es-toolkit/compat/map';
+import omitBy from 'es-toolkit/compat/omitBy';
+import some from 'es-toolkit/compat/some';
+import unionWith from 'es-toolkit/compat/unionWith';
 import { DECORATORS } from '../constants.js';
 import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';

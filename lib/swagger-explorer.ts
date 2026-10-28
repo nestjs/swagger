@@ -19,18 +19,16 @@ import { ApplicationConfig, MetadataScanner } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { LegacyRouteConverter } from '@nestjs/core/router/legacy-route-converter.js';
 import { RoutePathFactory } from '@nestjs/core/router/route-path-factory.js';
-import {
-  cloneDeep,
-  flatten,
-  get,
-  head,
-  isArray,
-  isEmpty,
-  mapValues,
-  omit,
-  omitBy,
-  pick
-} from 'es-toolkit/compat';
+import cloneDeep from 'es-toolkit/compat/cloneDeep';
+import flatten from 'es-toolkit/compat/flatten';
+import get from 'es-toolkit/compat/get';
+import head from 'es-toolkit/compat/head';
+import isArray from 'es-toolkit/compat/isArray';
+import isEmpty from 'es-toolkit/compat/isEmpty';
+import mapValues from 'es-toolkit/compat/mapValues';
+import omit from 'es-toolkit/compat/omit';
+import omitBy from 'es-toolkit/compat/omitBy';
+import pick from 'es-toolkit/compat/pick';
 import { parse, Wildcard } from 'path-to-regexp';
 import { DECORATORS } from './constants.js';
 import { exploreApiCallbacksMetadata } from './explorers/api-callbacks.explorer.js';

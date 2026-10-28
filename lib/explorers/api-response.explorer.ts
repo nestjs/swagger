@@ -4,7 +4,8 @@ import {
   METHOD_METADATA
 } from '@nestjs/common/constants.js';
 import { isEmpty } from '@nestjs/common/utils/shared.utils.js';
-import { mapValues, omit } from 'es-toolkit/compat';
+import mapValues from 'es-toolkit/compat/mapValues';
+import omit from 'es-toolkit/compat/omit';
 import { DECORATORS } from '../constants.js';
 import { ApiResponse, ApiResponseMetadata } from '../decorators/index.js';
 import { SchemaObject } from '../interfaces/open-api-spec.interface.js';

@@ -4,7 +4,7 @@ import {
   inheritTransformationMetadata,
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
-import { pick } from 'es-toolkit/compat';
+import pick from 'es-toolkit/compat/pick';
 import { DECORATORS } from '../constants.js';
 import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';

@@ -1,4 +1,5 @@
-import { isUndefined, omitBy } from 'es-toolkit/compat';
+import isUndefined from 'es-toolkit/compat/isUndefined';
+import omitBy from 'es-toolkit/compat/omitBy';
 import {
   ReferenceObject,
   SchemaObject

@@ -1,4 +1,4 @@
-import { isString } from 'es-toolkit/compat';
+import isString from 'es-toolkit/compat/isString';
 import { DECORATORS } from '../constants.js';
 import { SecurityRequirementObject } from '../interfaces/open-api-spec.interface.js';
 import { extendMetadata } from '../utils/extend-metadata.util.js';

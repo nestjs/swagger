@@ -1,4 +1,7 @@
-import { isEmpty, isFunction, omit, pick } from 'es-toolkit/compat';
+import isEmpty from 'es-toolkit/compat/isEmpty';
+import isFunction from 'es-toolkit/compat/isFunction';
+import omit from 'es-toolkit/compat/omit';
+import pick from 'es-toolkit/compat/pick';
 import { DECORATORS } from '../constants.js';
 import {
   ApiPropertyOptions,

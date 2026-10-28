@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { identity } from 'es-toolkit/compat';
+import identity from 'es-toolkit/compat/identity';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 
 function capitalizeFirstLetter(value: string): string {
