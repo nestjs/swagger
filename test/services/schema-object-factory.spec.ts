@@ -5,7 +5,12 @@ import * as v from 'valibot';
 import { z, type ZodType } from 'zod';
 import { createSchema } from 'zod-openapi';
 import { DECORATORS } from '../../lib/constants';
-import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
+import {
+  ApiExtension,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiSchema
+} from '../../lib/decorators';
 import { StandardSchemaConverter } from '../../lib/interfaces';
 import {
   BaseParameterObject,
@@ -2622,6 +2627,132 @@ describe('SchemaObjectFactory', () => {
       expect(infoProp.$ref ?? infoProp?.allOf?.[0]?.$ref).not.toContain(
         'InfoPostDTO'
       );
+    });
+  });
+
+  describe('inherited property required override', () => {
+    const requiredOf = (type: Type<unknown>) => {
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(type, schemas);
+      return schemas[type.name].required ?? [];
+    };
+
+    it('should make a property required when a subclass re-declares an optional one with a bare @ApiProperty()', () => {
+      class ParentWithOptionalName {
+        @ApiPropertyOptional({ description: 'Display name', example: 'Ada' })
+        name?: string;
+      }
+      class ChildWithRequiredName extends ParentWithOptionalName {
+        @ApiProperty()
+        override name!: string;
+      }
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(ChildWithRequiredName, schemas);
+      schemaObjectFactory.exploreModelSchema(ParentWithOptionalName, schemas);
+
+      expect(schemas['ChildWithRequiredName'].required).toEqual(['name']);
+      // The other inherited options are kept; only `required` falls back to the default.
+      expect(schemas['ChildWithRequiredName'].properties.name).toEqual({
+        type: 'string',
+        description: 'Display name',
+        example: 'Ada'
+      });
+      expect(schemas['ParentWithOptionalName'].required).toBeUndefined();
+    });
+
+    it('should keep the property optional when the subclass says so', () => {
+      class ParentWithRequiredName {
+        @ApiProperty()
+        name: string;
+      }
+      class ChildWithOptionalDecorator extends ParentWithRequiredName {
+        @ApiPropertyOptional()
+        override name: string;
+      }
+      class ChildWithExplicitRequiredFalse extends ParentWithRequiredName {
+        @ApiProperty({ required: false })
+        override name: string;
+      }
+
+      expect(requiredOf(ChildWithOptionalDecorator)).toEqual([]);
+      expect(requiredOf(ChildWithExplicitRequiredFalse)).toEqual([]);
+    });
+
+    it('should keep inheriting required: false when the subclass does not re-declare the property', () => {
+      class ParentWithOptionalName {
+        @ApiPropertyOptional()
+        name?: string;
+      }
+      class ChildWithOwnProperty extends ParentWithOptionalName {
+        @ApiProperty()
+        id: number;
+      }
+
+      expect(requiredOf(ChildWithOwnProperty)).toEqual(['id']);
+    });
+
+    it('should apply through more than one level of inheritance', () => {
+      class GrandparentWithOptionalName {
+        @ApiPropertyOptional()
+        name?: string;
+      }
+      class ParentWithoutRedeclaration extends GrandparentWithOptionalName {}
+      class ChildWithRequiredName extends ParentWithoutRedeclaration {
+        @ApiProperty()
+        override name!: string;
+      }
+      class GrandchildWithOptionalName extends ChildWithRequiredName {
+        @ApiPropertyOptional()
+        override name!: string;
+      }
+
+      expect(requiredOf(ParentWithoutRedeclaration)).toEqual([]);
+      expect(requiredOf(ChildWithRequiredName)).toEqual(['name']);
+      expect(requiredOf(GrandchildWithOptionalName)).toEqual([]);
+    });
+
+    it('should not change how decorators stacked on the same class are merged', () => {
+      class StackedDecorators {
+        @ApiProperty({ description: 'Display name' })
+        @ApiPropertyOptional()
+        name?: string;
+      }
+
+      expect(requiredOf(StackedDecorators)).toEqual([]);
+    });
+
+    it('should also apply when the CLI plugin metadata describes the subclass', () => {
+      class PluginParent {
+        @ApiPropertyOptional()
+        name?: string;
+      }
+      class PluginChild extends PluginParent {
+        @ApiProperty({ description: 'Display name' })
+        override name!: string;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return { name: { required: true, type: () => String } };
+        }
+      }
+
+      expect(requiredOf(PluginChild)).toEqual(['name']);
+    });
+
+    it("should keep the parent's explicit decorator over CLI plugin metadata when the subclass has no decorator", () => {
+      class PluginParentWithOptionalName {
+        @ApiPropertyOptional()
+        name?: string;
+      }
+      class PluginChildWithoutDecorator extends PluginParentWithOptionalName {
+        override name!: string;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return { name: { required: true, type: () => String } };
+        }
+      }
+
+      expect(requiredOf(PluginChildWithoutDecorator)).toEqual([]);
     });
   });
 

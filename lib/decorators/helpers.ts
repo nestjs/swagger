@@ -3,6 +3,7 @@ import { isConstructor } from '@nestjs/common/utils/shared.utils.js';
 import isArray from 'es-toolkit/compat/isArray';
 import isUndefined from 'es-toolkit/compat/isUndefined';
 import negate from 'es-toolkit/compat/negate';
+import omit from 'es-toolkit/compat/omit';
 import pickBy from 'es-toolkit/compat/pickBy';
 import { DECORATORS } from '../constants.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
@@ -85,9 +86,16 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
         }
       }
 
+      // `required` has a default, so a decorator re-declaring an inherited
+      // property without it means that default, not the parent's value: a bare
+      // `@ApiProperty()` overriding a parent's `@ApiPropertyOptional()` makes
+      // the property required again. Other inherited options (description,
+      // example, ...) are still merged in.
       const metadataToSave = overrideExisting
         ? {
-            ...existingMetadata,
+            ...(ownExistingMetadata
+              ? existingMetadata
+              : omit(existingMetadata, 'required')),
             ...newMetadata
           }
         : {
