@@ -494,7 +494,9 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       // Union types (where nullable/undefined might be part of the union)
       if (ts.isUnionTypeNode(node)) {
         const { nullableType, isNullable } = this.isNullableUnion(node);
-        const remainingTypes = node.types.filter((t) => t !== nullableType);
+        const remainingTypes = node.types.filter(
+          (t) => t !== nullableType && t.kind !== ts.SyntaxKind.UndefinedKeyword
+        );
 
         // If exactly one non-nullish type remains, we can reason about it.
         if (remainingTypes.length === 1) {

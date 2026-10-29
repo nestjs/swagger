@@ -268,6 +268,69 @@ describe('API model properties', () => {
     expect(result.outputText).toEqual(nullableDtoTextTranspiled);
   });
 
+  it('should keep the type of unions with both null and undefined', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'null-and-undefined.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      enum Status {
+        ENABLED,
+        DISABLED
+      }
+
+      class Item {}
+
+      export class NullAndUndefinedDto {
+        text: string | null | undefined;
+        item: Item | null | undefined;
+        status: Status | null | undefined;
+        optionalText?: string | null | undefined;
+        texts: string[] | null | undefined;
+        statuses: Status[] | null | undefined;
+        color: 'red' | 'green' | null | undefined;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({}, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `text: { required: true, type: () => String, nullable: true }`
+    );
+    expect(result.outputText).toContain(
+      `item: { required: true, type: () => Item, nullable: true }`
+    );
+    expect(result.outputText).toContain(
+      `status: { required: true, nullable: true, enum: Status }`
+    );
+    expect(result.outputText).toContain(
+      `optionalText: { required: false, type: () => String, nullable: true }`
+    );
+    expect(result.outputText).toContain(
+      `texts: { required: true, type: () => [String], nullable: true }`
+    );
+    expect(result.outputText).toContain(
+      `statuses: { required: true, nullable: true, enum: Status, isArray: true }`
+    );
+    expect(result.outputText).toContain(
+      `color: { required: true, nullable: true, enum: ["red", "green"] }`
+    );
+    expect(result.outputText).not.toContain(`type: () => Object`);
+  });
+
   it('should emit additionalProperties for Record/index-signature types', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.ES2020,
