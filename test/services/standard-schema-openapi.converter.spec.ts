@@ -62,6 +62,50 @@ describe('StandardSchemaOpenApiConverter', () => {
     });
   });
 
+  it('should convert a standard schema that is a function', () => {
+    // As an ArkType `type(...)` is: a function carrying `~standard`.
+    const schema = Object.assign((value: unknown) => value, {
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: () => ({
+            type: 'object',
+            properties: { name: { type: 'string' } },
+            required: ['name']
+          })
+        }
+      }
+    });
+
+    expect(converter.convert(schema)).toEqual({
+      schema: {
+        type: 'object',
+        properties: { name: { type: 'string' } },
+        required: ['name']
+      },
+      components: {}
+    });
+  });
+
+  it('should skip a function-shaped standard schema that cannot produce OpenAPI 3.0', () => {
+    const schema = Object.assign((value: unknown) => value, {
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: ({ target }: { target: string }) => {
+            throw new Error(`Unsupported target: ${target}`);
+          }
+        }
+      }
+    });
+
+    expect(converter.convert(schema)).toBeUndefined();
+  });
+
   it('should convert zod standard schemas', () => {
     const converted = converter.convert(
       z.object({
