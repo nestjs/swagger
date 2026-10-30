@@ -229,7 +229,7 @@ export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
       const type = typeChecker.getTypeAtLocation(node);
       if (hasProperties) {
         blocks.forEach((block) => {
-          const docValue = renderDocNode(block.content).split('\n')[0];
+          const docValue = renderDocNode(block.content).trim().split('\n')[0];
           const value = parseCommentDocValue(docValue, type);
 
           if (value !== null) {

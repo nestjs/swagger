@@ -207,6 +207,50 @@ describe('API model properties', () => {
     expect(result.outputText).toEqual(createCatDtoTextAlt2Transpiled);
   });
 
+  it('should read @example values written on the line after the tag', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'next-line-example.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      export class NextLineExampleDto {
+        /**
+         * @example
+         * 42
+         */
+        count: number;
+
+        /**
+         * @example
+         * 'version 123'
+         */
+        version: string;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `count: { required: true, type: () => Number, example: 42 }`
+    );
+    expect(result.outputText).toContain(
+      `version: { required: true, type: () => String, example: "version 123" }`
+    );
+  });
+
   it('should manage imports statements when code "downleveled"', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
