@@ -74,7 +74,18 @@ export class StandardSchemaOpenApiConverter {
       return undefined;
     }
 
-    const convertedSchema = convert({ target: 'openapi-3.0' });
+    let convertedSchema: unknown;
+    try {
+      convertedSchema = convert({ target: 'openapi-3.0' });
+    } catch (error) {
+      // Function-shaped schemas used to be skipped, so one whose vendor can't
+      // produce OpenAPI 3.0 is documented as it was rather than failing the
+      // whole document.
+      if (typeof schema === 'function') {
+        return undefined;
+      }
+      throw error;
+    }
     if (!convertedSchema || typeof convertedSchema !== 'object') {
       return undefined;
     }
@@ -85,7 +96,13 @@ export class StandardSchemaOpenApiConverter {
   }
 
   private isStandardSchema(schema: unknown): schema is StandardSchemaObject {
-    return !!(schema && typeof schema === 'object' && '~standard' in schema);
+    // Some vendors' schemas are functions carrying `~standard`, such as an
+    // ArkType `type(...)`, which `@nestjs/common` validates as well.
+    return !!(
+      schema &&
+      (typeof schema === 'object' || typeof schema === 'function') &&
+      '~standard' in schema
+    );
   }
 
   private hasStandardJsonSchema(
