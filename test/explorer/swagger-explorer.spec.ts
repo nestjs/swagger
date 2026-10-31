@@ -2883,6 +2883,63 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when a query DTO has named enum properties', () => {
+    enum Level {
+      Low = 1,
+      High = 2
+    }
+
+    enum Priority {
+      Minor = 1,
+      Major = 2
+    }
+
+    enum Color {
+      Red = 'red',
+      Blue = 'blue'
+    }
+
+    class ListQuery {
+      @ApiPropertyOptional({ enum: Level, enumName: 'Level' })
+      level?: Level;
+
+      @ApiPropertyOptional({
+        enum: Priority,
+        enumName: 'Priority',
+        isArray: true
+      })
+      priorities?: Priority[];
+
+      @ApiPropertyOptional({ enum: Color, enumName: 'Color' })
+      color?: Color;
+    }
+
+    @Controller('tasks')
+    class TasksController {
+      @Get()
+      list(@Query() query: ListQuery): Promise<string[]> {
+        return Promise.resolve([]);
+      }
+    }
+
+    it('should infer the enum schema type from the property', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      explorer.exploreController(
+        {
+          instance: new TasksController(),
+          metatype: TasksController
+        } as InstanceWrapper<TasksController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      const schemas = explorer.getSchemas();
+      expect(schemas.Level).toEqual({ type: 'number', enum: [1, 2] });
+      expect(schemas.Priority).toEqual({ type: 'number', enum: [1, 2] });
+      expect(schemas.Color).toEqual({ type: 'string', enum: ['red', 'blue'] });
+    });
+  });
+
   describe('when arrays are used', () => {
     enum LettersEnum {
       A = 'A',
