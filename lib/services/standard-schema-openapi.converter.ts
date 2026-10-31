@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import type { StandardJSONSchemaV1 } from '@standard-schema/spec';
 import omit from 'es-toolkit/compat/omit';
 import type {
@@ -5,7 +6,10 @@ import type {
   StandardSchemaConverter,
   StandardSchemaObject
 } from '../interfaces/swagger-document-options.interface.js';
-import { ReferenceObject, SchemaObject } from '../interfaces/open-api-spec.interface.js';
+import {
+  ReferenceObject,
+  SchemaObject
+} from '../interfaces/open-api-spec.interface.js';
 
 /**
  * JSON Schema keywords whose value is a map of names to schemas. The map itself
@@ -25,6 +29,8 @@ export interface ConvertedStandardSchema {
 }
 
 export class StandardSchemaOpenApiConverter {
+  private readonly logger = new Logger(StandardSchemaOpenApiConverter.name);
+
   constructor(private readonly schemaConverter?: StandardSchemaConverter) {}
 
   /**
@@ -69,7 +75,8 @@ export class StandardSchemaOpenApiConverter {
       return undefined;
     }
 
-    const convert = schema['~standard'].jsonSchema?.[schemaType];
+    const standard = schema['~standard'];
+    const convert = standard.jsonSchema?.[schemaType];
     if (!convert) {
       return undefined;
     }
@@ -82,6 +89,10 @@ export class StandardSchemaOpenApiConverter {
       // produce OpenAPI 3.0 is documented as it was rather than failing the
       // whole document.
       if (typeof schema === 'function') {
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Skipping a "${standard.vendor}" standard schema that could not be converted to OpenAPI 3.0 (${reason}). Pass a "standardSchemaConverter" to SwaggerModule.createDocument() to document it.`
+        );
         return undefined;
       }
       throw error;
@@ -119,8 +130,7 @@ export class StandardSchemaOpenApiConverter {
       // `rewriteValue` is used here (rather than `rewriteDefinitionRefs`) so a
       // schema that is itself a `$ref` gets its reference rewritten too.
       schema: this.rewriteValue(convertedSchema.schema) as
-        | SchemaObject
-        | ReferenceObject,
+        SchemaObject | ReferenceObject,
       components: this.rewriteComponents(convertedSchema.components || {})
     };
   }

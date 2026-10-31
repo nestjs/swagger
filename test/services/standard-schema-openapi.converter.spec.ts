@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import type { BaseIssue, BaseSchema } from 'valibot';
 import * as v from 'valibot';
 import { z, type ZodType } from 'zod';
@@ -89,7 +90,30 @@ describe('StandardSchemaOpenApiConverter', () => {
     });
   });
 
-  it('should skip a function-shaped standard schema that cannot produce OpenAPI 3.0', () => {
+  it('should pass a function-shaped standard schema to the custom converter', () => {
+    const schema = Object.assign((value: unknown) => value, {
+      '~standard': {
+        version: 1,
+        vendor: 'arktype',
+        validate: (value: unknown) => ({ value })
+      }
+    });
+    const schemaConverter = vi.fn(() => ({
+      schema: { type: 'string' } as SchemaObject
+    }));
+
+    expect(
+      new StandardSchemaOpenApiConverter(schemaConverter).convert(schema)
+    ).toEqual({ schema: { type: 'string' }, components: {} });
+    expect(schemaConverter).toHaveBeenCalledWith(schema, {
+      schemaType: 'input'
+    });
+  });
+
+  it('should skip and warn about a function-shaped standard schema that cannot produce OpenAPI 3.0', () => {
+    const warnSpy = vi
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => {});
     const schema = Object.assign((value: unknown) => value, {
       '~standard': {
         version: 1,
@@ -103,7 +127,33 @@ describe('StandardSchemaOpenApiConverter', () => {
       }
     });
 
-    expect(converter.convert(schema)).toBeUndefined();
+    try {
+      expect(converter.convert(schema)).toBeUndefined();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Unsupported target: openapi-3.0')
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('should rethrow when an object-shaped standard schema cannot produce OpenAPI 3.0', () => {
+    const schema = {
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: ({ target }: { target: string }) => {
+            throw new Error(`Unsupported target: ${target}`);
+          }
+        }
+      }
+    };
+
+    expect(() => converter.convert(schema)).toThrow(
+      'Unsupported target: openapi-3.0'
+    );
   });
 
   it('should convert zod standard schemas', () => {
@@ -254,7 +304,9 @@ describe('StandardSchemaOpenApiConverter', () => {
     expect((converted?.schema as any).properties.contact.example).toBe(
       'owner@example.com'
     );
-    expect((converted?.schema as any).properties.contact.examples).toBeUndefined();
+    expect(
+      (converted?.schema as any).properties.contact.examples
+    ).toBeUndefined();
   });
 
   it('should convert valibot standard schemas', () => {
@@ -324,7 +376,10 @@ describe('StandardSchemaOpenApiConverter', () => {
               v.description('Nested label from Valibot'),
               v.examples(['primary'])
             ),
-            flags: v.pipe(v.array(v.boolean()), v.title('Flag list from Valibot'))
+            flags: v.pipe(
+              v.array(v.boolean()),
+              v.title('Flag list from Valibot')
+            )
           }),
           v.title('Details title from Valibot'),
           v.description('Nested details from Valibot')
@@ -676,8 +731,10 @@ const testStandardSchemaConverter: StandardSchemaConverter = (
     });
     return {
       schema: converted.schema as SchemaObject | ReferenceObject,
-      components:
-        converted.components as unknown as Record<string, SchemaObject>
+      components: converted.components as unknown as Record<
+        string,
+        SchemaObject
+      >
     };
   }
 
@@ -698,7 +755,7 @@ type ValibotSchema = BaseSchema<unknown, unknown, BaseIssue<unknown>>;
 function hasVendor(schema: unknown, vendor: string) {
   return (
     !!schema &&
-    typeof schema === 'object' &&
+    (typeof schema === 'object' || typeof schema === 'function') &&
     (schema as { '~standard'?: { vendor?: string } })['~standard']?.vendor ===
       vendor
   );
