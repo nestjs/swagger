@@ -251,6 +251,50 @@ describe('API model properties', () => {
     );
   });
 
+  it('should keep apostrophes in double-quoted @example values', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'apostrophe-example.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      export class ApostropheExampleDto {
+        /** @example "O'Brien" */
+        surname: string;
+
+        /** @example ["O'Brien", "Don't"] */
+        surnames: string[];
+
+        /** @example { "surname": "O'Brien" } */
+        person: Record<string, string>;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `surname: { required: true, type: () => String, example: "O'Brien" }`
+    );
+    expect(result.outputText).toContain(
+      `surnames: { required: true, type: () => [String], example: ["O'Brien", "Don't"] }`
+    );
+    expect(result.outputText).toContain(
+      `person: { required: true, type: "object", additionalProperties: { type: "string" }, example: { "surname": "O'Brien" } }`
+    );
+  });
+
   it('should manage imports statements when code "downleveled"', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
