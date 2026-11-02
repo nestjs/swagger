@@ -131,7 +131,14 @@ export class SwaggerTypesMapper {
     param: (ParamWithTypeMetadata & SchemaObject) | BaseParameterObject,
     keysToRemove: KeysToRemove[]
   ) {
-    const itemsModifierKeys = ['format', 'maximum', 'minimum', 'pattern'];
+    const itemsModifierKeys = [
+      'format',
+      'maximum',
+      'maxLength',
+      'minimum',
+      'minLength',
+      'pattern'
+    ];
     const items =
       (param as SchemaObject).items ||
       omitBy(
