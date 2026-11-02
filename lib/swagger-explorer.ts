@@ -196,33 +196,24 @@ export class SwaggerExplorer {
     if (excludeController) {
       return [];
     }
+    const methodNames = this.metadataScanner
+      .getAllMethodNames(prototype)
+      .filter((name) =>
+        this.isEndpointIncluded(instance, prototype, prototype[name], options)
+      );
+    // Exploring class-level metadata registers the schemas it refers to, so
+    // skip controllers that do not contribute any endpoint to the document
+    if (isEmpty(methodNames)) {
+      return [];
+    }
     const globalMetadata = this.exploreGlobalMetadata(metatype, {
       autoTagControllers: options.autoTagControllers
     });
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);
 
-    const denormalizedPaths = this.metadataScanner.scanFromPrototype<
-      any,
-      DenormalizedDoc[]
-    >(instance, prototype, (name) => {
+    const denormalizedPaths = methodNames.map((name): DenormalizedDoc[] => {
       const targetCallback = prototype[name];
-      const includeEndpoint = exploreApiIncludeEndpointMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-      if (options.onlyIncludeDecoratedEndpoints && !includeEndpoint) {
-        return;
-      }
-      const excludeEndpoint = exploreApiExcludeEndpointMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-      if (excludeEndpoint && excludeEndpoint.disable) {
-        return;
-      }
       const ctrlExtraModels = exploreApiExtraModelsMetadata(
         instance,
         prototype,
@@ -302,6 +293,33 @@ export class SwaggerExplorer {
     });
 
     return flatten(denormalizedPaths).filter((path) => path.root?.path);
+  }
+
+  private isEndpointIncluded(
+    instance: object,
+    prototype: Type<unknown>,
+    method: Function,
+    options: {
+      onlyIncludeDecoratedEndpoints?: boolean;
+    }
+  ): boolean {
+    if (isUndefined(Reflect.getMetadata(PATH_METADATA, method))) {
+      return false;
+    }
+    const includeEndpoint = exploreApiIncludeEndpointMetadata(
+      instance,
+      prototype,
+      method
+    );
+    if (options.onlyIncludeDecoratedEndpoints && !includeEndpoint?.disable) {
+      return false;
+    }
+    const excludeEndpoint = exploreApiExcludeEndpointMetadata(
+      instance,
+      prototype,
+      method
+    );
+    return !(excludeEndpoint && excludeEndpoint.disable);
   }
 
   private exploreGlobalMetadata(

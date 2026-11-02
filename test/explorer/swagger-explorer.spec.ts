@@ -1822,6 +1822,70 @@ describe('SwaggerExplorer', () => {
 
       expect(routes).toHaveLength(0);
     });
+
+    it('should exclude a derived controller when the base is not excluded', () => {
+      @ApiExcludeController(false)
+      @Controller('')
+      class BaseController {
+        @Get('base')
+        findBase(): Promise<Foo[]> {
+          return Promise.resolve([]);
+        }
+      }
+
+      @ApiExcludeController()
+      @Controller('')
+      class DerivedController extends BaseController {
+        @Get('derived')
+        findDerived(): Promise<Foo[]> {
+          return Promise.resolve([]);
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new DerivedController(),
+          metatype: DerivedController
+        } as InstanceWrapper<DerivedController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes).toHaveLength(0);
+    });
+
+    it('should include a derived controller that opts out of an inherited exclusion', () => {
+      @ApiExcludeController()
+      @Controller('')
+      class BaseController {
+        @Get('base')
+        findBase(): Promise<Foo[]> {
+          return Promise.resolve([]);
+        }
+      }
+
+      @ApiExcludeController(false)
+      @Controller('')
+      class DerivedController extends BaseController {
+        @Get('derived')
+        findDerived(): Promise<Foo[]> {
+          return Promise.resolve([]);
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new DerivedController(),
+          metatype: DerivedController
+        } as InstanceWrapper<DerivedController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes).toHaveLength(2);
+    });
   });
 
   describe('when defaultVersion is defined', () => {
@@ -3339,15 +3403,16 @@ describe('SwaggerExplorer', () => {
       );
     });
 
-    it('still includes routes decorated with @ApiIncludeEndpoint(false) when onlyIncludeDecoratedEndpoints is true (current behavior: disable arg is a no-op for include)', () => {
-      // The explorer only checks the *presence* of the include metadata; the
-      // `disable` argument on @ApiIncludeEndpoint is currently not honored.
-      // If that ever changes, this test should be updated accordingly.
+    it('drops routes decorated with @ApiIncludeEndpoint(false) when onlyIncludeDecoratedEndpoints is true', () => {
       @Controller('bar')
       class BarController {
         @Get('disabled-include')
         @ApiIncludeEndpoint(false)
         disabledInclude() {}
+
+        @Get('enabled-include')
+        @ApiIncludeEndpoint(true)
+        enabledInclude() {}
 
         @Get('not-included')
         notIncluded() {}
@@ -3369,7 +3434,7 @@ describe('SwaggerExplorer', () => {
 
       expect(routes).toHaveLength(1);
       expect(routes[0].root!.path).toEqual(
-        '/globalPrefix/modulePath/bar/disabled-include'
+        '/globalPrefix/modulePath/bar/enabled-include'
       );
     });
 
@@ -3404,6 +3469,105 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root!.path).toEqual(
         '/globalPrefix/modulePath/baz/only-include'
       );
+    });
+  });
+
+  describe('when none of the controller endpoints is included', () => {
+    class ErrorDto {
+      @ApiProperty()
+      reason: string;
+    }
+
+    class ExtraModel {
+      @ApiProperty()
+      p1: string;
+    }
+
+    class Foo {
+      @ApiProperty()
+      name: string;
+    }
+
+    it('does not register class-level schemas when no route is decorated with @ApiIncludeEndpoint', () => {
+      @ApiResponse({ status: 403, type: ErrorDto })
+      @ApiExtraModels(ExtraModel)
+      @Controller('foo')
+      class FooController {
+        @Get()
+        @ApiOkResponse({ type: Foo })
+        find() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path', onlyIncludeDecoratedEndpoints: true }
+      );
+
+      expect(routes).toHaveLength(0);
+      expect(explorer.getSchemas()).toEqual({});
+    });
+
+    it('does not register class-level schemas when every route is decorated with @ApiExcludeEndpoint', () => {
+      @ApiResponse({ status: 403, type: ErrorDto })
+      @ApiExtraModels(ExtraModel)
+      @Controller('foo')
+      class FooController {
+        @Get()
+        @ApiExcludeEndpoint()
+        @ApiOkResponse({ type: Foo })
+        find() {}
+
+        helper() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes).toHaveLength(0);
+      expect(explorer.getSchemas()).toEqual({});
+    });
+
+    it('registers class-level schemas as soon as one route is included', () => {
+      @ApiResponse({ status: 403, type: ErrorDto })
+      @ApiExtraModels(ExtraModel)
+      @Controller('foo')
+      class FooController {
+        @Get()
+        @ApiExcludeEndpoint()
+        @ApiOkResponse({ type: Foo })
+        find() {}
+
+        @Get('included')
+        included() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(Object.keys(explorer.getSchemas()).sort()).toEqual([
+        'ErrorDto',
+        'ExtraModel'
+      ]);
     });
   });
 
