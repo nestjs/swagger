@@ -6,7 +6,11 @@ import isUndefined from 'es-toolkit/compat/isUndefined';
 import negate from 'es-toolkit/compat/negate';
 import omit from 'es-toolkit/compat/omit';
 import pickBy from 'es-toolkit/compat/pickBy';
-import { ApiResponseOptions } from './decorators/api-response.decorator.js';
+import {
+  ApiResponseMetadata,
+  ApiResponseOptions
+} from './decorators/api-response.decorator.js';
+import { getTypeIsArrayTuple } from './decorators/helpers.js';
 import { buildDocumentBase } from './fixtures/document.base.js';
 import {
   GLOBAL_PARAMETERS,
@@ -178,10 +182,19 @@ export class DocumentBuilder {
     const groupedByStatus = respones.reduce(
       (acc, response) => {
         const { status = 'default' } = response;
-        acc[status] = omit(response, 'status');
+        const [type, isArray] = getTypeIsArrayTuple(
+          (response as ApiResponseMetadata).type,
+          (response as ApiResponseMetadata).isArray
+        );
+        acc[status] = {
+          ...omit(response, 'status'),
+          type,
+          isArray,
+          description: response.description ?? ''
+        };
         return acc;
       },
-      {} as Record<string, Omit<ApiResponseOptions, 'status'>>
+      {} as Record<string, Omit<ApiResponseMetadata, 'status'>>
     );
 
     this.document[GLOBAL_RESPONSES] = {

@@ -1,4 +1,5 @@
 import { DocumentBuilder } from '../lib/document-builder';
+import { GLOBAL_RESPONSES } from '../lib/interfaces/global-metadata.interface';
 
 describe('DocumentBuilder', () => {
   describe('addTag', () => {
@@ -231,6 +232,35 @@ describe('DocumentBuilder', () => {
 
       expect(builder.build().info.title).toEqual('Cats');
       expect(builder.build().servers).toEqual([]);
+    });
+  });
+
+  describe('addGlobalResponse', () => {
+    it('normalises the type and description of global responses', () => {
+      class ErrorDto {}
+
+      const config = new DocumentBuilder()
+        .addGlobalResponse(
+          { status: 500, type: [ErrorDto] },
+          { status: 401 },
+          { status: 400, description: 'Bad request', type: ErrorDto }
+        )
+        .build();
+
+      expect(config[GLOBAL_RESPONSES]).toEqual({
+        500: { description: '', type: ErrorDto, isArray: true },
+        401: { description: '' },
+        400: { description: 'Bad request', type: ErrorDto, isArray: false }
+      });
+    });
+
+    it('does not change the responses it is given', () => {
+      class ErrorDto {}
+      const response = { status: 500, type: [ErrorDto] };
+
+      new DocumentBuilder().addGlobalResponse(response);
+
+      expect(response).toEqual({ status: 500, type: [ErrorDto] });
     });
   });
 });
