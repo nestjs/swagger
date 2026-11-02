@@ -127,6 +127,34 @@ describe('SwaggerTypesMapper', () => {
       });
     });
 
+    it('should move string length constraints of array parameters to the items', () => {
+      const params = [
+        {
+          name: 'tags',
+          in: 'query',
+          required: false,
+          type: String,
+          isArray: true,
+          minLength: 2,
+          maxLength: 5,
+          maxItems: 3
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'tags',
+        in: 'query',
+        required: false,
+        schema: {
+          type: 'array',
+          maxItems: 3,
+          items: { type: 'string', minLength: 2, maxLength: 5 }
+        }
+      });
+    });
+
     it('should drop `exampleMaxDepth` from type-based parameters', () => {
       const params = [
         {
