@@ -219,4 +219,25 @@ describe('ApiHeader', () => {
       ]);
     });
   });
+
+  describe('when the example is a falsy value', () => {
+    it.each([[0], [false], ['']])('should keep the example %j', (example) => {
+      class TestAppController {
+        @ApiHeader({ name: 'X-Value', example })
+        @Get()
+        public get(): void {}
+      }
+
+      const controller = new TestAppController();
+      expect(
+        Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)
+      ).toEqual([
+        {
+          name: 'X-Value',
+          in: 'header',
+          schema: { type: 'string', example }
+        }
+      ]);
+    });
+  });
 });
