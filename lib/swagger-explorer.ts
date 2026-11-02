@@ -615,6 +615,12 @@ export class SwaggerExplorer {
     }
     return mapValues(methodValue, (value, key) => {
       if (key in globalValue) {
+        if (key === 'parameters') {
+          return this.mergeParameters(
+            (globalValue as Record<string, any>)[key],
+            value as any[]
+          );
+        }
         return this.deepMergeMetadata(
           (globalValue as Record<string, any>)[key],
           (methodValue as Record<string, any>)[key],
@@ -624,6 +630,29 @@ export class SwaggerExplorer {
       }
       return value;
     });
+  }
+
+  /**
+   * A parameter is identified by its location and name (header names are
+   * case-insensitive), and may only appear once in an operation. When both the
+   * controller and the method declare it, the method's values take precedence.
+   */
+  private mergeParameters(
+    controllerParameters: Array<Record<string, any>>,
+    methodParameters: Array<Record<string, any>>
+  ) {
+    const identify = ({ in: location, name }: Record<string, any>) =>
+      `${location}:${location === 'header' ? String(name).toLowerCase() : name}`;
+    const inherited = new Map(
+      controllerParameters.map((param) => [identify(param), param])
+    );
+    const merged = methodParameters.map((param) => {
+      const id = identify(param);
+      const controllerParameter = inherited.get(id);
+      inherited.delete(id);
+      return { ...controllerParameter, ...param };
+    });
+    return [...inherited.values(), ...merged];
   }
 
   private mergeValues(
