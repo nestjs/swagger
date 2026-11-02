@@ -67,6 +67,7 @@ import { MimetypeContentWrapper } from './services/mimetype-content-wrapper.js';
 import { ResponseObjectFactory } from './services/response-object-factory.js';
 import { SchemaObjectFactory } from './services/schema-object-factory.js';
 import { isBodyParameter } from './utils/is-body-parameter.util.js';
+import { isSameParameter } from './utils/is-same-parameter.util.js';
 import { mergeAndUniq } from './utils/merge-and-uniq.util.js';
 
 export class SwaggerExplorer {
@@ -615,6 +616,12 @@ export class SwaggerExplorer {
     }
     return mapValues(methodValue, (value, key) => {
       if (key in globalValue) {
+        if (key === 'parameters') {
+          return this.mergeParameters(
+            (globalValue as Record<string, any>)[key],
+            value as any[]
+          );
+        }
         return this.deepMergeMetadata(
           (globalValue as Record<string, any>)[key],
           (methodValue as Record<string, any>)[key],
@@ -624,6 +631,50 @@ export class SwaggerExplorer {
       }
       return value;
     });
+  }
+
+  /**
+   * A parameter may only appear once in an operation. When both the controller
+   * and the method declare it, the method's values take precedence.
+   */
+  private mergeParameters(
+    controllerParameters: Array<Record<string, any>>,
+    methodParameters: Array<Record<string, any>>
+  ) {
+    const inherited = [...controllerParameters];
+    const merged = methodParameters.map((param) => {
+      const index = inherited.findIndex((controllerParameter) =>
+        isSameParameter(controllerParameter, param)
+      );
+      if (index < 0) {
+        return param;
+      }
+      const [controllerParameter] = inherited.splice(index, 1);
+      return this.mergeParameter(controllerParameter, param);
+    });
+    return [...inherited, ...merged];
+  }
+
+  /**
+   * The schema is merged too, so that an `enum` or `example` documented on the
+   * controller isn't lost to the plain schema of a `@Headers()` parameter.
+   */
+  private mergeParameter(
+    controllerParameter: Record<string, any>,
+    methodParameter: Record<string, any>
+  ) {
+    const parameter = { ...controllerParameter, ...methodParameter };
+    // `schema` and `content` are mutually exclusive, so keep the method's one
+    if (methodParameter.content) {
+      delete parameter.schema;
+    } else if (methodParameter.schema) {
+      delete parameter.content;
+      parameter.schema = {
+        ...controllerParameter.schema,
+        ...methodParameter.schema
+      };
+    }
+    return parameter;
   }
 
   private mergeValues(

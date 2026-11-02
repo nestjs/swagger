@@ -4,11 +4,13 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Post,
   Query,
   RequestMapping,
   RequestMethod,
+  Type,
   Version,
   VERSION_NEUTRAL,
   VersioningType
@@ -3900,6 +3902,131 @@ describe('SwaggerExplorer', () => {
 
       expect(routes[0].root.isWebhook).toBe(true);
       expect(routes[0].root.webhookName).toBe('stripeEvent');
+    });
+  });
+
+  describe('when a method declares a header that its controller also declares', () => {
+    const explore = (controller: Type<unknown>) =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new (controller as any)(),
+          metatype: controller
+        } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    it('should merge an @ApiHeader() into one parameter, with the method values first', () => {
+      @ApiHeader({ name: 'X-Tenant', description: 'class', required: true })
+      @Controller('foos')
+      class FooController {
+        @ApiHeader({ name: 'X-Tenant', description: 'method' })
+        @Get()
+        find() {}
+      }
+
+      expect(explore(FooController)[0].root.parameters).toEqual([
+        {
+          name: 'X-Tenant',
+          in: 'header',
+          description: 'method',
+          required: true,
+          schema: { type: 'string' }
+        }
+      ]);
+    });
+
+    it('should match a @Headers() parameter regardless of the header name case', () => {
+      @ApiHeader({ name: 'X-Tenant', description: 'tenant' })
+      @Controller('foos')
+      class FooController {
+        @Get()
+        find(@Headers('x-tenant') tenant: string) {
+          return tenant;
+        }
+      }
+
+      expect(explore(FooController)[0].root.parameters).toEqual([
+        {
+          name: 'x-tenant',
+          in: 'header',
+          description: 'tenant',
+          required: true,
+          schema: { type: 'string' }
+        }
+      ]);
+    });
+
+    it('should keep controller headers that the method does not declare', () => {
+      @ApiHeader({ name: 'X-Tenant' })
+      @Controller('foos')
+      class FooController {
+        @ApiHeader({ name: 'X-Trace' })
+        @Get()
+        find() {}
+      }
+
+      expect(
+        explore(FooController)[0].root.parameters.map((p: any) => p.name)
+      ).toEqual(['X-Tenant', 'X-Trace']);
+    });
+
+    it('should keep the schema values that only the controller sets', () => {
+      @ApiHeader({ name: 'X-Region', enum: ['eu', 'us'], example: 'eu' })
+      @Controller('foos')
+      class FooController {
+        @Get()
+        find(@Headers('x-region') region: string) {
+          return region;
+        }
+      }
+
+      expect(explore(FooController)[0].root.parameters).toEqual([
+        {
+          name: 'x-region',
+          in: 'header',
+          required: true,
+          schema: { type: 'string', enum: ['eu', 'us'], example: 'eu' }
+        }
+      ]);
+    });
+
+    it('should not keep both a schema and a content on one parameter', () => {
+      @ApiHeader({
+        name: 'X-Filter',
+        content: { 'application/json': { schema: { type: 'object' } } }
+      })
+      @Controller('foos')
+      class FooController {
+        @ApiHeader({ name: 'X-Filter', schema: { type: 'string' } })
+        @Get()
+        find() {}
+      }
+
+      const [parameter] = explore(FooController)[0].root.parameters;
+
+      expect(parameter.schema).toEqual({ type: 'string' });
+      expect(parameter).not.toHaveProperty('content');
+    });
+
+    it('should merge an @ApiHeader() and a @Headers() parameter of the same method regardless of the header name case', () => {
+      @Controller('foos')
+      class FooController {
+        @ApiHeader({ name: 'X-Tenant', description: 'tenant' })
+        @Get()
+        find(@Headers('x-tenant') tenant: string) {
+          return tenant;
+        }
+      }
+
+      const parameters = explore(FooController)[0].root.parameters;
+
+      expect(parameters).toHaveLength(1);
+      expect(parameters[0]).toMatchObject({
+        name: 'X-Tenant',
+        in: 'header',
+        description: 'tenant'
+      });
     });
   });
 });
