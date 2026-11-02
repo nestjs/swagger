@@ -119,10 +119,12 @@ export function DeepPartialType<T>(
     classRef,
     DeepPartialTypeClass
   );
+  // Only properties that carry a validation decorator are made optional. Adding
+  // one to any other property would put it on the "ValidationPipe" whitelist.
   if (keysWithValidationConstraints) {
-    keysWithValidationConstraints
-      .filter((key) => !fields.includes(key))
-      .forEach((key) => applyPartialDecoratorFn(DeepPartialTypeClass, key));
+    new Set(keysWithValidationConstraints).forEach((key) =>
+      applyPartialDecoratorFn(DeepPartialTypeClass, key)
+    );
   }
 
   inheritTransformationMetadata(classRef, DeepPartialTypeClass);
@@ -190,7 +192,6 @@ export function DeepPartialType<T>(
         ) || {};
 
       applyDeepPartialProperty(metadata, key);
-      applyPartialDecoratorFn(DeepPartialTypeClass, key);
     });
 
     if (DeepPartialTypeClass[METADATA_FACTORY_NAME]) {
@@ -200,7 +201,6 @@ export function DeepPartialType<T>(
         if (!fields.includes(key)) {
           applyDeepPartialProperty(pluginMetadata[key], key);
         }
-        applyPartialDecoratorFn(DeepPartialTypeClass, key);
       });
     }
   }
