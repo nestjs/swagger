@@ -7,6 +7,7 @@ import { createSchema } from 'zod-openapi';
 import { DECORATORS } from '../../lib/constants';
 import {
   ApiExtension,
+  ApiHideProperty,
   ApiProperty,
   ApiPropertyOptional,
   ApiSchema
@@ -1243,6 +1244,63 @@ describe('SchemaObjectFactory', () => {
           { $ref: '#/components/schemas/AllOfNestedDto' }
         ]
       });
+    });
+
+    it('should not publish properties hidden from a model through a default', () => {
+      class SettingsDto {
+        @ApiProperty()
+        email: boolean;
+
+        @ApiHideProperty()
+        bypassRateLimit: boolean;
+      }
+      class TreeDto {
+        @ApiProperty({ type: () => TreeDto })
+        parent: TreeDto;
+
+        @ApiHideProperty()
+        secret: string;
+      }
+      const settings = Object.assign(new SettingsDto(), {
+        email: true,
+        bypassRateLimit: true
+      });
+      const tree = Object.assign(new TreeDto(), { secret: 'x' });
+      tree.parent = tree;
+
+      class AccountDto {
+        @ApiProperty({
+          type: () => SettingsDto,
+          default: { email: true, bypassRateLimit: true }
+        })
+        settings: SettingsDto;
+
+        @ApiProperty({ type: [SettingsDto], default: [settings] })
+        history: SettingsDto[];
+
+        @ApiProperty({ type: Object, default: settings })
+        raw: object;
+
+        @ApiProperty({ type: Object, default: { bypassRateLimit: true } })
+        plain: object;
+
+        @ApiProperty({ type: () => TreeDto, default: tree })
+        tree: TreeDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+      const properties = schemas[AccountDto.name].properties as Record<
+        string,
+        SchemaObject
+      >;
+
+      expect(properties.settings.default).toEqual({ email: true });
+      expect(properties.history.default).toEqual([{ email: true }]);
+      expect(properties.raw.default).toEqual({ email: true });
+      expect(properties.plain.default).toEqual({ bypassRateLimit: true });
+      expect(properties.tree.default).toEqual({ parent: undefined });
+      expect(settings.bypassRateLimit).toBe(true);
     });
 
     describe('@ApiSchema', () => {
