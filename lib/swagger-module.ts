@@ -8,6 +8,7 @@ import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface
 import { loadPackage } from '@nestjs/common/utils/load-package.util.js';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as jsyaml from 'js-yaml';
+import { posix } from 'path';
 import {
   GLOBAL_PARAMETERS,
   GLOBAL_RESPONSES,
@@ -43,6 +44,28 @@ import { validatePath } from './utils/validate-path.util.js';
  * rather than a literal.
  */
 const isRoutePattern = (segment: string) => /[:*]/.test(segment);
+
+/**
+ * Whether a path below a static assets prefix points at a file of the
+ * "swagger-ui-dist" package that is not part of the UI: its demo page (set up
+ * for the petstore example) or its license. The path is decoded and normalized
+ * the way the static file servers do, and compared case-insensitively since the
+ * file system may be.
+ */
+function isStockSwaggerUiFile(pathname: string): boolean {
+  let decodedPathname: string;
+  try {
+    decodedPathname = decodeURIComponent(pathname);
+  } catch {
+    return false;
+  }
+  const normalizedPathname = posix
+    .normalize(`/${decodedPathname}`)
+    .toLowerCase();
+  return (
+    normalizedPathname === '/index.html' || normalizedPathname === '/license'
+  );
+}
 
 const FIXED_PATH_ITEM_METHODS = [
   'get',
@@ -261,12 +284,18 @@ export class SwaggerModule {
         instance.register(fastifyStatic, {
           root: swaggerAssetsPath,
           prefix: finalPath,
-          decorateReply: false
+          decorateReply: false,
+          index: false,
+          allowedPath: (pathname: string) => !isStockSwaggerUiFile(pathname)
         });
       });
     } else {
+      app.use(finalPath, (req: any, res: any, next: Function) =>
+        isStockSwaggerUiFile(req.path) ? next(new NotFoundException()) : next()
+      );
       (app as NestExpressApplication).useStaticAssets(swaggerAssetsPath, {
-        prefix: finalPath
+        prefix: finalPath,
+        index: false
       });
     }
   }
