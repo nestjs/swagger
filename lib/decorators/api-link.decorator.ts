@@ -61,8 +61,10 @@ export function ApiLink({
   ) => {
     const { prototype } = from;
     if (prototype) {
-      const links = Reflect.getMetadata(DECORATORS.API_LINK, prototype) ?? [];
-
+      // Copied, as the array can be the one inherited from a parent class
+      const links = [
+        ...(Reflect.getMetadata(DECORATORS.API_LINK, prototype) ?? [])
+      ];
       links.push({
         method: descriptor.value,
         prototype: controllerPrototype,

@@ -56,6 +56,7 @@ import {
 } from './explorers/api-use-tags.explorer.js';
 import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolvers.interface.js';
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface.js';
+import { GlobalMetadata } from './interfaces/global-metadata.interface.js';
 import { OperationIdFactory } from './interfaces/index.js';
 import {
   OpenAPIObject,
@@ -100,7 +101,7 @@ export class SwaggerExplorer {
     private readonly options: {
       httpAdapterType?: string;
       standardSchemaConverter?: StandardSchemaConverter;
-    } = {}
+    } & GlobalMetadata = {}
   ) {
     this.responseObjectFactory = new ResponseObjectFactory(
       this.options.standardSchemaConverter
@@ -142,7 +143,8 @@ export class SwaggerExplorer {
         exploreApiParametersMetadata.bind(
           null,
           this.schemas,
-          this.schemaObjectFactory
+          this.schemaObjectFactory,
+          this.options.globalParameters ?? []
         )
       ],
       security: [exploreApiSecurityMetadata],
@@ -194,33 +196,24 @@ export class SwaggerExplorer {
     if (excludeController) {
       return [];
     }
+    const methodNames = this.metadataScanner
+      .getAllMethodNames(prototype)
+      .filter((name) =>
+        this.isEndpointIncluded(instance, prototype, prototype[name], options)
+      );
+    // Exploring class-level metadata registers the schemas it refers to, so
+    // skip controllers that do not contribute any endpoint to the document
+    if (isEmpty(methodNames)) {
+      return [];
+    }
     const globalMetadata = this.exploreGlobalMetadata(metatype, {
       autoTagControllers: options.autoTagControllers
     });
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);
 
-    const denormalizedPaths = this.metadataScanner.scanFromPrototype<
-      any,
-      DenormalizedDoc[]
-    >(instance, prototype, (name) => {
+    const denormalizedPaths = methodNames.map((name): DenormalizedDoc[] => {
       const targetCallback = prototype[name];
-      const includeEndpoint = exploreApiIncludeEndpointMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-      if (options.onlyIncludeDecoratedEndpoints && !includeEndpoint) {
-        return;
-      }
-      const excludeEndpoint = exploreApiExcludeEndpointMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-      if (excludeEndpoint && excludeEndpoint.disable) {
-        return;
-      }
       const ctrlExtraModels = exploreApiExtraModelsMetadata(
         instance,
         prototype,
@@ -265,14 +258,17 @@ export class SwaggerExplorer {
             ...methodMetadata,
             root: endpointMetadata as any
           });
+          // Controller-level values (e.g., "security", "tags") are the very
+          // objects stored by class decorators, so each operation needs a copy.
+          const controllerMetadata = cloneDeep(globalMetadata);
           const mergedMethodMetadata = this.mergeMetadata(
-            globalMetadata,
+            controllerMetadata,
             omitBy(endpointMetadata, isEmpty)
           );
           return this.migrateOperationSchema(
             {
               responses: {},
-              ...omit(globalMetadata, 'chunks'),
+              ...omit(controllerMetadata, 'chunks'),
               ...mergedMethodMetadata
             },
             prototype,
@@ -302,6 +298,33 @@ export class SwaggerExplorer {
     return flatten(denormalizedPaths).filter((path) => path.root?.path);
   }
 
+  private isEndpointIncluded(
+    instance: object,
+    prototype: Type<unknown>,
+    method: Function,
+    options: {
+      onlyIncludeDecoratedEndpoints?: boolean;
+    }
+  ): boolean {
+    if (isUndefined(Reflect.getMetadata(PATH_METADATA, method))) {
+      return false;
+    }
+    const includeEndpoint = exploreApiIncludeEndpointMetadata(
+      instance,
+      prototype,
+      method
+    );
+    if (options.onlyIncludeDecoratedEndpoints && !includeEndpoint?.disable) {
+      return false;
+    }
+    const excludeEndpoint = exploreApiExcludeEndpointMetadata(
+      instance,
+      prototype,
+      method
+    );
+    return !(excludeEndpoint && excludeEndpoint.disable);
+  }
+
   private exploreGlobalMetadata(
     metatype: Type<unknown>,
     options: {
@@ -314,7 +337,8 @@ export class SwaggerExplorer {
       exploreGlobalApiResponseMetadata.bind(
         null,
         this.schemas,
-        this.responseObjectFactory
+        this.responseObjectFactory,
+        this.options.globalResponses ?? {}
       ),
       exploreGlobalApiHeaderMetadata
     ];

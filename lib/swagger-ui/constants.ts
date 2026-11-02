@@ -88,14 +88,8 @@ export const htmlTemplateString = `
 export const jsTemplateString = `
 window.onload = function() {
   // Build a system
-  let url = window.location.search.match(/url=([^&]+)/);
-  if (url && url.length > 1) {
-    url = decodeURIComponent(url[1]);
-  } else {
-    url = window.location.origin;
-  }
   <% swaggerOptions %>
-  url = options.swaggerUrl || url
+  let url = options.swaggerUrl || window.location.origin
   let urls = options.swaggerUrls
   let customOptions = options.customOptions
   let spec1 = options.swaggerDoc

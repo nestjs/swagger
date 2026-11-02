@@ -7,6 +7,7 @@ import { createSchema } from 'zod-openapi';
 import { DECORATORS } from '../../lib/constants';
 import {
   ApiExtension,
+  ApiHideProperty,
   ApiProperty,
   ApiPropertyOptional,
   ApiSchema
@@ -792,6 +793,44 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should not spell properties hidden from the document in inline mapped type names', () => {
+      class AccountDto {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty()
+        email: string;
+
+        @ApiHideProperty()
+        passwordHash: string;
+
+        totpSecret: string;
+      }
+
+      class SessionDto {
+        @ApiProperty({
+          type: OmitType(AccountDto, ['passwordHash', 'totpSecret'])
+        })
+        account: Omit<AccountDto, 'passwordHash' | 'totpSecret'>;
+
+        @ApiProperty({ type: PickType(AccountDto, ['email', 'passwordHash']) })
+        contact: Pick<AccountDto, 'email' | 'passwordHash'>;
+
+        @ApiProperty({ type: OmitType(AccountDto, ['email', 'totpSecret']) })
+        owner: Omit<AccountDto, 'email' | 'totpSecret'>;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(SessionDto, schemas);
+
+      expect(schemas.SessionDto.properties).toEqual({
+        account: { $ref: '#/components/schemas/OmitAccountDto' },
+        contact: { $ref: '#/components/schemas/PickAccountDtoEmail' },
+        owner: { $ref: '#/components/schemas/OmitAccountDtoEmail' }
+      });
+      expect(JSON.stringify(schemas)).not.toMatch(/passwordHash|totpSecret/i);
+    });
+
     it('should keep inline PartialType schemas distinct', () => {
       class ActivityContentDto {
         @ApiProperty()
@@ -1243,6 +1282,63 @@ describe('SchemaObjectFactory', () => {
           { $ref: '#/components/schemas/AllOfNestedDto' }
         ]
       });
+    });
+
+    it('should not publish properties hidden from a model through a default', () => {
+      class SettingsDto {
+        @ApiProperty()
+        email: boolean;
+
+        @ApiHideProperty()
+        bypassRateLimit: boolean;
+      }
+      class TreeDto {
+        @ApiProperty({ type: () => TreeDto })
+        parent: TreeDto;
+
+        @ApiHideProperty()
+        secret: string;
+      }
+      const settings = Object.assign(new SettingsDto(), {
+        email: true,
+        bypassRateLimit: true
+      });
+      const tree = Object.assign(new TreeDto(), { secret: 'x' });
+      tree.parent = tree;
+
+      class AccountDto {
+        @ApiProperty({
+          type: () => SettingsDto,
+          default: { email: true, bypassRateLimit: true }
+        })
+        settings: SettingsDto;
+
+        @ApiProperty({ type: [SettingsDto], default: [settings] })
+        history: SettingsDto[];
+
+        @ApiProperty({ type: Object, default: settings })
+        raw: object;
+
+        @ApiProperty({ type: Object, default: { bypassRateLimit: true } })
+        plain: object;
+
+        @ApiProperty({ type: () => TreeDto, default: tree })
+        tree: TreeDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+      const properties = schemas[AccountDto.name].properties as Record<
+        string,
+        SchemaObject
+      >;
+
+      expect(properties.settings.default).toEqual({ email: true });
+      expect(properties.history.default).toEqual([{ email: true }]);
+      expect(properties.raw.default).toEqual({ email: true });
+      expect(properties.plain.default).toEqual({ bypassRateLimit: true });
+      expect(properties.tree.default).toEqual({ parent: undefined });
+      expect(settings.bypassRateLimit).toBe(true);
     });
 
     describe('@ApiSchema', () => {
@@ -2753,6 +2849,87 @@ describe('SchemaObjectFactory', () => {
       }
 
       expect(requiredOf(PluginChildWithoutDecorator)).toEqual([]);
+    });
+  });
+
+  describe('property re-declared with CLI plugin metadata', () => {
+    const createDtos = () => {
+      class BillingDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            plan: { required: true, type: () => String },
+            fraudScore: { required: true, type: () => Number }
+          };
+        }
+      }
+      class PublicBillingDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return { plan: { required: true, type: () => String } };
+        }
+      }
+      class AccountDto {
+        @ApiProperty({ description: 'Billing state', required: false })
+        status: string;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            billing: { required: true, type: () => BillingDto },
+            status: { required: true, type: () => BillingDto }
+          };
+        }
+      }
+      class PublicAccountDto extends AccountDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            billing: { required: true, type: () => PublicBillingDto },
+            status: { required: true, type: () => PublicBillingDto }
+          };
+        }
+      }
+      return { AccountDto, PublicAccountDto };
+    };
+    const refOf = (property: Record<string, any>) =>
+      property.$ref ?? property.allOf?.[0]?.$ref;
+
+    it.each([
+      ['alone', false],
+      ['after its parent', true]
+    ])(
+      'should document the type of the re-declaration when explored %s',
+      (_, exploreParentFirst) => {
+        const { AccountDto, PublicAccountDto } = createDtos();
+        const schemas: Record<string, any> = {};
+        if (exploreParentFirst) {
+          schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+        }
+        schemaObjectFactory.exploreModelSchema(PublicAccountDto, schemas);
+
+        const { properties, required } = schemas['PublicAccountDto'];
+        expect(refOf(properties.billing)).toEqual(
+          '#/components/schemas/PublicBillingDto'
+        );
+        expect(refOf(properties.status)).toEqual(
+          '#/components/schemas/PublicBillingDto'
+        );
+        expect(properties.status.description).toEqual('Billing state');
+        expect(required).toEqual(['billing']);
+      }
+    );
+
+    it('should document the type of the re-declaration in mapped types', () => {
+      const { AccountDto, PublicAccountDto } = createDtos();
+      class PublicBillingOnlyDto extends PickType(PublicAccountDto, [
+        'billing'
+      ] as never[]) {}
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+      schemaObjectFactory.exploreModelSchema(PublicAccountDto, schemas);
+      schemaObjectFactory.exploreModelSchema(PublicBillingOnlyDto, schemas);
+
+      expect(refOf(schemas['PublicBillingOnlyDto'].properties.billing)).toEqual(
+        '#/components/schemas/PublicBillingDto'
+      );
     });
   });
 

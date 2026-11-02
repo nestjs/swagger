@@ -8,18 +8,19 @@ import mapValues from 'es-toolkit/compat/mapValues';
 import omit from 'es-toolkit/compat/omit';
 import { DECORATORS } from '../constants.js';
 import { ApiResponse, ApiResponseMetadata } from '../decorators/index.js';
+import { GlobalResponses } from '../interfaces/global-metadata.interface.js';
 import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 import {
   FactoriesNeededByResponseFactory,
   ResponseObjectFactory
 } from '../services/response-object-factory.js';
-import { GlobalResponsesStorage } from '../storages/global-responses.storage.js';
 import { mergeAndUniq } from '../utils/merge-and-uniq.util.js';
 
 export const exploreGlobalApiResponseMetadata = (
   schemas: Record<string, SchemaObject>,
   responseObjectFactory: ResponseObjectFactory,
+  globalResponses: GlobalResponses,
   metatype: Type<unknown>,
   factories: FactoriesNeededByResponseFactory
 ) => {
@@ -27,7 +28,6 @@ export const exploreGlobalApiResponseMetadata = (
     DECORATORS.API_RESPONSE,
     metatype
   );
-  const globalResponses = GlobalResponsesStorage.getAll();
   const mappedGlobalResponsesOrUndefined = globalResponses
     ? mapResponsesToSwaggerResponses(
         globalResponses,
@@ -132,17 +132,27 @@ const mapResponsesToSwaggerResponses = (
 };
 
 function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
-  const classPrototype = prototype;
   do {
     if (!prototype.constructor) {
       return;
     }
-    if (!prototype.constructor[METADATA_FACTORY_NAME]) {
+    // A factory inherited through the static chain is applied once the loop
+    // reaches the class that declares it.
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        prototype.constructor,
+        METADATA_FACTORY_NAME
+      )
+    ) {
       continue;
     }
     const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
+    // The factory describes the methods its class declares, not the methods
+    // of a subclass that override them.
     const methodKeys = Object.keys(metadata).filter(
-      (key) => typeof instance[key] === 'function'
+      (key) =>
+        typeof instance[key] === 'function' &&
+        Object.prototype.hasOwnProperty.call(prototype, key)
     );
     methodKeys.forEach((key) => {
       const {
@@ -158,20 +168,20 @@ function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
         return;
       }
       if (meta.status === undefined) {
-        meta.status = getStatusCode(instance[key]);
+        meta.status = getStatusCode(prototype[key]);
       }
-      const descriptor = Object.getOwnPropertyDescriptor(classPrototype, key);
+      const descriptor = Object.getOwnPropertyDescriptor(prototype, key);
       // overrideExisting: false would skip every response after the first one.
       if (
         Reflect.getMetadata(
           DECORATORS.API_RESPONSE,
-          descriptor?.value ?? classPrototype
+          descriptor?.value ?? prototype
         )
       ) {
         return;
       }
       [meta, ...responses].forEach((response) =>
-        ApiResponse(response)(classPrototype, key, descriptor)
+        ApiResponse(response)(prototype, key, descriptor)
       );
     });
   } while (

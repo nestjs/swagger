@@ -472,5 +472,41 @@ describe('DeepPartialType', () => {
 
       expect(await validate(dto)).toHaveLength(0);
     });
+
+    it.each([{}, { skipNullProperties: false }])(
+      'should not whitelist documented properties that have no validation decorator (%j)',
+      async (options) => {
+        class UserDto {
+          @ApiProperty()
+          @IsString()
+          name: string;
+
+          @ApiProperty()
+          role: string;
+
+          active: boolean;
+
+          static [METADATA_FACTORY_NAME]() {
+            return { active: { required: true, type: () => Boolean } };
+          }
+        }
+        const UpdateUserDto = DeepPartialType(UserDto, options);
+
+        const dto = Object.assign(new (UpdateUserDto as any)(), {
+          name: 'John',
+          role: 'admin',
+          active: true
+        });
+        const errors = await validate(dto, {
+          whitelist: true,
+          forbidNonWhitelisted: true
+        });
+
+        expect(errors.map((error) => error.property)).toEqual([
+          'role',
+          'active'
+        ]);
+      }
+    );
   });
 });

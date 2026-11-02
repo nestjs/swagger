@@ -52,6 +52,10 @@ import {
   parameterPropertyDtoTextTranspiled
 } from './fixtures/parameter-property.dto';
 import {
+  parameterPropertyHiddenDtoText,
+  parameterPropertyHiddenDtoTextTranspiled
+} from './fixtures/parameter-property-hidden.dto';
+import {
   stringLiteralDtoText,
   stringLiteralDtoTextTranspiled
 } from './fixtures/string-literal.dto';
@@ -590,6 +594,57 @@ describe('API model properties', () => {
     });
     expect(esmResult.outputText).toEqual(
       parameterPropertyDtoTextTranspiled(true)
+    );
+  });
+
+  it('should apply the hide rules to parameter properties', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'parameter-property-hidden.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(parameterPropertyHiddenDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              classTransformerShim: true,
+              parameterProperties: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(
+      parameterPropertyHiddenDtoTextTranspiled()
+    );
+
+    const exclusiveResult = ts.transpileModule(parameterPropertyHiddenDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              classTransformerShim: 'exclusive',
+              parameterProperties: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(exclusiveResult.outputText).toEqual(
+      parameterPropertyHiddenDtoTextTranspiled(true)
     );
   });
 
@@ -1194,6 +1249,47 @@ describe('API model properties', () => {
 
     expect(result.outputText).toContain(
       `color: { required: true, type: () => String, enum: ["red", "green", "blue"] }`
+    );
+  });
+
+  it('should handle decorators imported under another name', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'decorator-with-renamed-import.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      import { ApiHideProperty as Hide } from '@nestjs/swagger';
+      import { Exclude as Hidden, Expose as Shown } from 'class-transformer';
+
+      export class HasRenamedImportDecoratorDto {
+        id: number;
+        @Hidden()
+        passwordHash: string;
+        @Hide()
+        internalNotes: string;
+        @Shown()
+        @Hidden()
+        conflicting: string;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classTransformerShim: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `return { id: { required: true, type: () => Number } };`
     );
   });
 });

@@ -76,4 +76,30 @@ describe('buildSwaggerInitJS', () => {
     expect(() => new Script(script)).not.toThrow();
     expect(script.match(/window\.onload/g)).toHaveLength(1);
   });
+
+  it('does not take the definition url from the query string of the page', () => {
+    let config: Record<string, any>;
+    const SwaggerUIBundle = Object.assign(
+      (options: Record<string, any>) => {
+        config = options;
+        return {};
+      },
+      { presets: {}, plugins: {} }
+    );
+    const window: Record<string, any> = {
+      location: {
+        origin: 'https://api.example.com',
+        search: '?url=https://attacker.example/spec.json'
+      }
+    };
+
+    new Script(buildSwaggerInitJS(undefined)).runInNewContext({
+      window,
+      SwaggerUIBundle,
+      SwaggerUIStandalonePreset: {}
+    });
+    window.onload();
+
+    expect(config.url).toBe('https://api.example.com');
+  });
 });

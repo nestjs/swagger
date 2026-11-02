@@ -496,6 +496,13 @@ export class SchemaObjectFactory {
 
     metadata = this.resolveLazyEnum(metadata);
 
+    if (metadata.default !== undefined) {
+      metadata = {
+        ...metadata,
+        default: this.pickDocumentedDefaultKeys(metadata.default, metadata.type)
+      };
+    }
+
     if (Array.isArray(metadata.type)) {
       return this.createFromNestedArray(
         key,
@@ -1018,6 +1025,65 @@ export class SchemaObjectFactory {
     type: Function | Type<unknown> | string
   ): type is { type: Function } & Function {
     return isFunction(type) && type.name == 'type';
+  }
+
+  /**
+   * Keeps only the keys of a default value that its model documents, so that a
+   * property hidden from the model (e.g. with "@ApiHideProperty()") is not
+   * published through the default of a property that holds the model.
+   */
+  private pickDocumentedDefaultKeys(
+    value: unknown,
+    type: unknown,
+    ancestors = new Set<object>()
+  ): unknown {
+    if (Array.isArray(value)) {
+      return value.map((item) =>
+        this.pickDocumentedDefaultKeys(item, type, ancestors)
+      );
+    }
+    if (!value || typeof value !== 'object' || value instanceof Date) {
+      return value;
+    }
+    while (Array.isArray(type)) {
+      type = type[0];
+    }
+    const model = value.constructor === Object ? type : value.constructor;
+    if (!this.isUserDefinedClass(model)) {
+      return value;
+    }
+    if (ancestors.has(value)) {
+      return undefined;
+    }
+    ancestors.add(value);
+
+    const documentedValue: Record<string, unknown> = {};
+    const prototype = model.prototype;
+    for (const key of this.modelPropertiesAccessor.getModelProperties(
+      prototype
+    )) {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) {
+        continue;
+      }
+      const { type: propertyType } =
+        Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ??
+        {};
+      documentedValue[key] = this.pickDocumentedDefaultKeys(
+        value[key],
+        this.isLazyTypeFunc(propertyType) ? propertyType() : propertyType,
+        ancestors
+      );
+    }
+    ancestors.delete(value);
+    return documentedValue;
+  }
+
+  private isUserDefinedClass(type: unknown): type is Type<unknown> {
+    return (
+      isFunction(type) &&
+      !isBuiltInType(type) &&
+      !Function.prototype.toString.call(type).includes('[native code]')
+    );
   }
 
   private getTypeName(type: Type<unknown> | string): string {

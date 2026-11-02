@@ -123,11 +123,37 @@ export function createApiPropertyDecorator(
     options.pattern = options.pattern.source;
   }
 
-  return createPropertyDecorator(
+  const decorator = createPropertyDecorator(
     DECORATORS.API_MODEL_PROPERTIES,
     options,
     overrideExisting
   );
+  if (!overrideExisting) {
+    return decorator;
+  }
+  // Recorded so that the CLI plugin metadata of a subclass re-declaring the
+  // property can tell the options set here from the ones the plugin inferred
+  const explicitOptions = Object.keys(options).filter(
+    (option) => options[option] !== undefined
+  );
+  return (target: object, propertyKey: string | symbol) => {
+    decorator(target, propertyKey);
+    Reflect.defineMetadata(
+      DECORATORS.API_MODEL_PROPERTY_EXPLICIT_OPTIONS,
+      [
+        ...new Set([
+          ...(Reflect.getOwnMetadata(
+            DECORATORS.API_MODEL_PROPERTY_EXPLICIT_OPTIONS,
+            target,
+            propertyKey
+          ) ?? []),
+          ...explicitOptions
+        ])
+      ],
+      target,
+      propertyKey
+    );
+  };
 }
 
 export function ApiPropertyOptional(

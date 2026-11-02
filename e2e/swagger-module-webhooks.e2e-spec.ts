@@ -1,6 +1,7 @@
-import { Controller, Module, Post } from '@nestjs/common';
+import { Controller, Logger, Module, Post } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
+  ApiBearerAuth,
   ApiOkResponse,
   ApiWebhook,
   DocumentBuilder,
@@ -50,6 +51,71 @@ describe('SwaggerModule webhooks handling', () => {
 
     expect(document.webhooks?.stripeEvent).toBeDefined();
     expect(document.paths['/stripe']).toBeUndefined();
+
+    await app.close();
+  });
+
+  it('keeps the regular operation when a webhook shares its path and method for OAS < 3.1', async () => {
+    @Controller({ path: 'orders', host: 'api.example.com' })
+    class OrdersController {
+      @Post()
+      @ApiBearerAuth()
+      create() {}
+    }
+
+    @Controller({ path: 'orders', host: 'hooks.example.com' })
+    class OrderEventsController {
+      @Post()
+      @ApiWebhook('orderEvent')
+      receive() {}
+    }
+
+    @Controller('invoices')
+    class InvoicesController {
+      @Post()
+      @ApiWebhook('invoiceCreated')
+      invoiceCreated() {}
+
+      @Post()
+      @ApiBearerAuth()
+      create() {}
+    }
+
+    @Module({
+      controllers: [OrderEventsController, OrdersController, InvoicesController]
+    })
+    class DuplicatesModule {}
+
+    const app = await NestFactory.create(DuplicatesModule, { logger: false });
+    await app.init();
+
+    const config = new DocumentBuilder()
+      .setTitle('t')
+      .setVersion('1')
+      .setOpenAPIVersion('3.0.0')
+      .addBearerAuth()
+      .build();
+    const warn = vi
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => {});
+    const document = SwaggerModule.createDocument(app, config);
+    const bearer = [{ bearer: [] }];
+
+    expect(warn.mock.calls.map(([message]) => message)).toEqual([
+      'Webhook "POST /orders" shares its path and method with a route, so it is left out of the OpenAPI 3.0.0 document. Use OpenAPI 3.1 or later to document both.',
+      'Webhook "POST /invoices" shares its path and method with a route, so it is left out of the OpenAPI 3.0.0 document. Use OpenAPI 3.1 or later to document both.'
+    ]);
+    warn.mockRestore();
+
+    expect(document.webhooks).toBeUndefined();
+    expect(document.paths['/orders'].post).toMatchObject({
+      operationId: 'OrdersController_create',
+      security: bearer
+    });
+    expect(document.paths['/invoices'].post).toMatchObject({
+      operationId: 'InvoicesController_create',
+      security: bearer
+    });
 
     await app.close();
   });

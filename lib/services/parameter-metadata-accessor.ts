@@ -53,12 +53,10 @@ export class ParameterMetadataAccessor {
     if (!types?.length) {
       return undefined;
     }
-    const routeArgsMetadata: ParamsMetadata =
-      Reflect.getMetadata(
-        ROUTE_ARGS_METADATA,
-        instance.constructor,
-        method.name
-      ) || {};
+    const routeArgsMetadata = this.getRouteArgsMetadata(
+      instance.constructor,
+      method.name
+    );
 
     const parametersWithType: ParamsWithType = mapValues(
       reverseObjectKeys(routeArgsMetadata),
@@ -81,6 +79,34 @@ export class ParameterMetadataAccessor {
       excludePredicate as Function
     );
     return !isEmpty(parameters) ? (parameters as ParamsWithType) : undefined;
+  }
+
+  /**
+   * When an override declares its own parameter decorators, Nest copies the
+   * route arguments of the parent class's handler into the override's metadata.
+   * Those describe the parent's parameters, not the override's.
+   */
+  private getRouteArgsMetadata(
+    target: Function,
+    methodName: string
+  ): ParamsMetadata {
+    const metadata: ParamsMetadata =
+      Reflect.getMetadata(ROUTE_ARGS_METADATA, target, methodName) || {};
+    if (!Reflect.hasOwnMetadata(ROUTE_ARGS_METADATA, target, methodName)) {
+      return metadata;
+    }
+    const parentMetadata: ParamsMetadata | undefined = Reflect.getMetadata(
+      ROUTE_ARGS_METADATA,
+      Object.getPrototypeOf(target),
+      methodName
+    );
+    if (!parentMetadata) {
+      return metadata;
+    }
+    return omitBy(
+      metadata,
+      (param, key) => parentMetadata[key] === param
+    ) as ParamsMetadata;
   }
 
   private mapParamType(key: string): string {
