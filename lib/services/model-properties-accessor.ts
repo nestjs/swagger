@@ -16,7 +16,43 @@ export class ModelPropertiesAccessor {
       .filter(
         (key: string) => key.charAt(0) === ':' && !isFunction(prototype[key])
       )
-      .map((key: string) => key.slice(1));
+      .map((key: string) => key.slice(1))
+      .filter((key: string) => !this.isHiddenProperty(prototype, key));
+  }
+
+  /**
+   * Checks whether "@ApiHideProperty()" applies to the given property.
+   * The nearest class in the prototype chain that declares anything about the
+   * property wins, so a subclass can hide a property its parent publishes and
+   * vice versa. When both decorators are declared on the same class, hiding
+   * takes priority (as in the CLI plugin). Classes above "stopAt" are not
+   * consulted.
+   */
+  isHiddenProperty(
+    prototype: Type<unknown>,
+    key: string,
+    stopAt?: object
+  ): boolean {
+    let current: object = prototype;
+    while (current && current !== Object.prototype) {
+      if (
+        Reflect.getOwnMetadata(
+          DECORATORS.API_MODEL_PROPERTY_HIDDEN,
+          current,
+          key
+        )
+      ) {
+        return true;
+      }
+      if (
+        current === stopAt ||
+        Reflect.getOwnMetadata(DECORATORS.API_MODEL_PROPERTIES, current, key)
+      ) {
+        return false;
+      }
+      current = Reflect.getPrototypeOf(current);
+    }
+    return false;
   }
 
   applyMetadataFactory(prototype: Type<unknown>) {
@@ -31,6 +67,11 @@ export class ModelPropertiesAccessor {
       const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
       const properties = Object.keys(metadata);
       properties.forEach((key) => {
+        // An ancestor's factory must not republish a property that the class
+        // itself (or a closer ancestor) marked with "@ApiHideProperty()".
+        if (this.isHiddenProperty(classPrototype, key, prototype)) {
+          return;
+        }
         createApiPropertyDecorator(metadata[key], false)(classPrototype, key);
       });
     } while (
