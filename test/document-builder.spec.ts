@@ -1,4 +1,5 @@
 import { DocumentBuilder } from '../lib/document-builder';
+import { GlobalResponsesStorage } from '../lib/storages/global-responses.storage';
 
 describe('DocumentBuilder', () => {
   describe('addTag', () => {
@@ -188,6 +189,28 @@ describe('DocumentBuilder', () => {
 
       const builder3 = new DocumentBuilder().setOpenAPIVersion('3.0.0-beta');
       expect(builder3.build().openapi).toBe(defaultVersion);
+    });
+  });
+
+  describe('addGlobalResponse', () => {
+    afterEach(() => {
+      GlobalResponsesStorage.clear();
+    });
+
+    it('should normalise the type and description of global responses', () => {
+      class ErrorDto {}
+
+      new DocumentBuilder().addGlobalResponse(
+        { status: 500, type: [ErrorDto] },
+        { status: 401 },
+        { status: 400, description: 'Bad request', type: ErrorDto }
+      );
+
+      expect(GlobalResponsesStorage.getAll()).toEqual({
+        500: { description: '', type: ErrorDto, isArray: true },
+        401: { description: '' },
+        400: { description: 'Bad request', type: ErrorDto, isArray: false }
+      });
     });
   });
 });
