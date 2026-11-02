@@ -17,6 +17,7 @@ import {
 import { ParametersMetadataMapper } from '../services/parameters-metadata-mapper.js';
 import { SchemaObjectFactory } from '../services/schema-object-factory.js';
 import { SwaggerTypesMapper } from '../services/swagger-types-mapper.js';
+import { isSameParameter } from '../utils/is-same-parameter.util.js';
 
 const parameterMetadataAccessor = new ParameterMetadataAccessor();
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
@@ -72,7 +73,7 @@ export const exploreApiParametersMetadata = (
       if (left.in === 'body' && right.in === 'body') {
         return true;
       }
-      return left.name === right.name && left.in === right.in;
+      return isSameParameter(left, right);
     };
 
     const mergeImplicitAndExplicit = (item: ParamWithTypeMetadata) =>
