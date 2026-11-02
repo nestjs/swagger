@@ -8,6 +8,11 @@ import { loadPackage } from '@nestjs/common/utils/load-package.util.js';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as jsyaml from 'js-yaml';
 import {
+  GLOBAL_PARAMETERS,
+  GLOBAL_RESPONSES,
+  GlobalMetadataHost
+} from './interfaces/global-metadata.interface.js';
+import {
   OpenAPIObject,
   OperationObject,
   PathItemObject,
@@ -122,10 +127,17 @@ export class SwaggerModule {
     config: Omit<OpenAPIObject, 'paths'>,
     options: SwaggerDocumentOptions = {}
   ): OpenAPIObject {
+    const {
+      webhooks: configWebhooks,
+      [GLOBAL_PARAMETERS]: globalParameters,
+      [GLOBAL_RESPONSES]: globalResponses,
+      ...configWithoutWebhooks
+    } = config as OpenAPIObject & GlobalMetadataHost;
     const swaggerScanner = new SwaggerScanner();
-    const document = swaggerScanner.scanApplication(app, options);
-    const { webhooks: configWebhooks, ...configWithoutWebhooks } =
-      config as OpenAPIObject;
+    const document = swaggerScanner.scanApplication(app, options, {
+      globalParameters,
+      globalResponses
+    });
 
     document.components = assignTwoLevelsDeep(
       {},

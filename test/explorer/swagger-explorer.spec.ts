@@ -48,8 +48,6 @@ import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
-import { GlobalParametersStorage } from '../../lib/storages/global-parameters.storage';
-import { GlobalResponsesStorage } from '../../lib/storages/global-responses.storage';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
 import { PartialType } from '../../lib/type-helpers';
 
@@ -2509,19 +2507,20 @@ describe('SwaggerExplorer', () => {
     }
 
     it('should properly define global parameters', () => {
-      GlobalParametersStorage.add(
-        {
-          name: 'x-tenant-id',
-          in: 'header',
-          schema: { type: 'string' }
-        },
-        {
-          name: 'x-tenant-id-2',
-          in: 'header',
-          schema: { type: 'string' }
-        }
-      );
-      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const explorer = new SwaggerExplorer(schemaObjectFactory, {
+        globalParameters: [
+          {
+            name: 'x-tenant-id',
+            in: 'header',
+            schema: { type: 'string' }
+          },
+          {
+            name: 'x-tenant-id-2',
+            in: 'header',
+            schema: { type: 'string' }
+          }
+        ]
+      });
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -2546,7 +2545,6 @@ describe('SwaggerExplorer', () => {
           schema: { type: 'string' }
         }
       ]);
-      GlobalParametersStorage.clear();
     });
   });
 
@@ -3053,13 +3051,13 @@ describe('SwaggerExplorer', () => {
     }
 
     it('should merge global responses with explicit ones', () => {
-      GlobalResponsesStorage.add({
-        401: { description: '401 - global error response' },
-        403: { description: '403 - global error response' },
-        500: { description: '500 - global internal server error' }
+      const explorer = new SwaggerExplorer(schemaObjectFactory, {
+        globalResponses: {
+          401: { description: '401 - global error response' },
+          403: { description: '403 - global error response' },
+          500: { description: '500 - global internal server error' }
+        }
       });
-
-      const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -3086,8 +3084,6 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[0].responses['403'] as ResponseObject).description
       ).toEqual('403 - global error response');
-
-      GlobalParametersStorage.clear();
     });
   });
 

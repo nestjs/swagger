@@ -190,4 +190,47 @@ describe('DocumentBuilder', () => {
       expect(builder3.build().openapi).toBe(defaultVersion);
     });
   });
+
+  describe('build', () => {
+    it('returns a snapshot that later builder calls do not alter', () => {
+      const createBuilder = () =>
+        new DocumentBuilder()
+          .setTitle('Admin')
+          .addServer('https://admin.example')
+          .addTag('admin')
+          .addExtension('x-audience', 'admin', 'info')
+          .addBearerAuth()
+          .addSecurityRequirements('bearer');
+
+      const builder = createBuilder();
+      const adminConfig = builder.build();
+      const partnerConfig = builder
+        .setTitle('Partner')
+        .setContact('Partner', 'https://partner.example', 'p@partner.example')
+        .addServer('https://partner.example')
+        .addTag('partner')
+        .addExtension('x-audience', 'partner', 'info')
+        .addExtension('x-partner', true)
+        .addApiKey({ type: 'apiKey' }, 'partner_key')
+        .addSecurityRequirements('partner_key')
+        .build();
+
+      expect(adminConfig).toEqual(createBuilder().build());
+      expect(partnerConfig.info.title).toEqual('Partner');
+      expect(partnerConfig.security).toEqual([
+        { bearer: [] },
+        { partner_key: [] }
+      ]);
+    });
+
+    it('does not let changes to a built config reach the builder', () => {
+      const builder = new DocumentBuilder().setTitle('Cats');
+      const config = builder.build();
+      config.info.title = 'Dogs';
+      config.servers.push({ url: 'https://dogs.example' });
+
+      expect(builder.build().info.title).toEqual('Cats');
+      expect(builder.build().servers).toEqual([]);
+    });
+  });
 });

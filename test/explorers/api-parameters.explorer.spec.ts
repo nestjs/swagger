@@ -43,6 +43,7 @@ describe('exploreApiParametersMetadata', () => {
     exploreApiParametersMetadata(
       {},
       schemaObjectFactory,
+      [],
       instance,
       Object.getPrototypeOf(instance) as Type<unknown>,
       method

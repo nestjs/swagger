@@ -11,6 +11,7 @@ import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { Module } from '@nestjs/core/injector/module.js';
 import flatten from 'es-toolkit/compat/flatten';
 import isEmpty from 'es-toolkit/compat/isEmpty';
+import { GlobalMetadata } from './interfaces/global-metadata.interface.js';
 import {
   OpenAPIObject,
   OperationIdFactory,
@@ -43,7 +44,8 @@ export class SwaggerScanner {
 
   public scanApplication(
     app: INestApplication,
-    options: SwaggerDocumentOptions
+    options: SwaggerDocumentOptions,
+    globalMetadata: GlobalMetadata = {}
   ): Omit<OpenAPIObject, 'openapi' | 'info'> {
     const {
       deepScanRoutes,
@@ -69,7 +71,11 @@ export class SwaggerScanner {
     const container = untypedApp.container as NestContainer;
     const internalConfigRef = untypedApp.config as ApplicationConfig;
     const httpAdapterType = app.getHttpAdapter().getType();
-    this.initializeSwaggerExplorer(httpAdapterType, standardSchemaConverter);
+    this.initializeSwaggerExplorer(
+      httpAdapterType,
+      standardSchemaConverter,
+      globalMetadata
+    );
 
     const modules: Module[] = this.getModules(
       container.getModules(),
@@ -262,11 +268,13 @@ export class SwaggerScanner {
 
   private initializeSwaggerExplorer(
     httpAdapterType: string,
-    standardSchemaConverter?: SwaggerDocumentOptions['standardSchemaConverter']
+    standardSchemaConverter?: SwaggerDocumentOptions['standardSchemaConverter'],
+    globalMetadata?: GlobalMetadata
   ) {
     this.explorer = new SwaggerExplorer(this.schemaObjectFactory, {
       httpAdapterType,
-      standardSchemaConverter
+      standardSchemaConverter,
+      ...globalMetadata
     });
   }
 }

@@ -8,18 +8,19 @@ import mapValues from 'es-toolkit/compat/mapValues';
 import omit from 'es-toolkit/compat/omit';
 import { DECORATORS } from '../constants.js';
 import { ApiResponse, ApiResponseMetadata } from '../decorators/index.js';
+import { GlobalResponses } from '../interfaces/global-metadata.interface.js';
 import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 import {
   FactoriesNeededByResponseFactory,
   ResponseObjectFactory
 } from '../services/response-object-factory.js';
-import { GlobalResponsesStorage } from '../storages/global-responses.storage.js';
 import { mergeAndUniq } from '../utils/merge-and-uniq.util.js';
 
 export const exploreGlobalApiResponseMetadata = (
   schemas: Record<string, SchemaObject>,
   responseObjectFactory: ResponseObjectFactory,
+  globalResponses: GlobalResponses,
   metatype: Type<unknown>,
   factories: FactoriesNeededByResponseFactory
 ) => {
@@ -27,7 +28,6 @@ export const exploreGlobalApiResponseMetadata = (
     DECORATORS.API_RESPONSE,
     metatype
   );
-  const globalResponses = GlobalResponsesStorage.getAll();
   const mappedGlobalResponsesOrUndefined = globalResponses
     ? mapResponsesToSwaggerResponses(
         globalResponses,

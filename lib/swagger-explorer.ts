@@ -56,6 +56,7 @@ import {
 } from './explorers/api-use-tags.explorer.js';
 import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolvers.interface.js';
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface.js';
+import { GlobalMetadata } from './interfaces/global-metadata.interface.js';
 import { OperationIdFactory } from './interfaces/index.js';
 import {
   OpenAPIObject,
@@ -100,7 +101,7 @@ export class SwaggerExplorer {
     private readonly options: {
       httpAdapterType?: string;
       standardSchemaConverter?: StandardSchemaConverter;
-    } = {}
+    } & GlobalMetadata = {}
   ) {
     this.responseObjectFactory = new ResponseObjectFactory(
       this.options.standardSchemaConverter
@@ -142,7 +143,8 @@ export class SwaggerExplorer {
         exploreApiParametersMetadata.bind(
           null,
           this.schemas,
-          this.schemaObjectFactory
+          this.schemaObjectFactory,
+          this.options.globalParameters ?? []
         )
       ],
       security: [exploreApiSecurityMetadata],
@@ -314,7 +316,8 @@ export class SwaggerExplorer {
       exploreGlobalApiResponseMetadata.bind(
         null,
         this.schemas,
-        this.responseObjectFactory
+        this.responseObjectFactory,
+        this.options.globalResponses ?? {}
       ),
       exploreGlobalApiHeaderMetadata
     ];

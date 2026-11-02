@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import clone from 'es-toolkit/compat/clone';
+import cloneDeep from 'es-toolkit/compat/cloneDeep';
 import isString from 'es-toolkit/compat/isString';
 import isUndefined from 'es-toolkit/compat/isUndefined';
 import negate from 'es-toolkit/compat/negate';
@@ -7,6 +8,11 @@ import omit from 'es-toolkit/compat/omit';
 import pickBy from 'es-toolkit/compat/pickBy';
 import { ApiResponseOptions } from './decorators/api-response.decorator.js';
 import { buildDocumentBase } from './fixtures/document.base.js';
+import {
+  GLOBAL_PARAMETERS,
+  GLOBAL_RESPONSES,
+  GlobalMetadataHost
+} from './interfaces/global-metadata.interface.js';
 import { OpenAPIObject } from './interfaces/index.js';
 import {
   ExtensionLocation,
@@ -17,15 +23,14 @@ import {
   ServerVariableObject,
   TagObject
 } from './interfaces/open-api-spec.interface.js';
-import { GlobalParametersStorage } from './storages/global-parameters.storage.js';
-import { GlobalResponsesStorage } from './storages/global-responses.storage.js';
 
 /**
  * @publicApi
  */
 export class DocumentBuilder {
   private readonly logger = new Logger(DocumentBuilder.name);
-  private readonly document: Omit<OpenAPIObject, 'paths'> = buildDocumentBase();
+  private readonly document: Omit<OpenAPIObject, 'paths'> & GlobalMetadataHost =
+    buildDocumentBase();
 
   public setTitle(title: string): this {
     this.document.info.title = title;
@@ -179,7 +184,10 @@ export class DocumentBuilder {
       {} as Record<string, Omit<ApiResponseOptions, 'status'>>
     );
 
-    GlobalResponsesStorage.add(groupedByStatus);
+    this.document[GLOBAL_RESPONSES] = {
+      ...this.document[GLOBAL_RESPONSES],
+      ...groupedByStatus
+    };
     return this;
   }
 
@@ -188,7 +196,10 @@ export class DocumentBuilder {
     // Top level attributes are ignored
     ...parameters: Omit<ParameterObject, 'example' | 'examples'>[]
   ): this {
-    GlobalParametersStorage.add(...parameters);
+    this.document[GLOBAL_PARAMETERS] = [
+      ...(this.document[GLOBAL_PARAMETERS] || []),
+      ...parameters
+    ];
     return this;
   }
 
@@ -284,6 +295,8 @@ export class DocumentBuilder {
   }
 
   public build(): Omit<OpenAPIObject, 'paths'> {
-    return this.document;
+    // Hand out a snapshot so that extending the builder afterwards does not
+    // alter configs (and documents created from them) that were built earlier.
+    return cloneDeep(this.document);
   }
 }
