@@ -1,5 +1,6 @@
 import {
   INestApplication,
+  Logger,
   NotFoundException,
   RequestMethod
 } from '@nestjs/common';
@@ -165,7 +166,20 @@ export class SwaggerModule {
     };
 
     // Webhooks only exist as a top-level field since 3.1; older documents keep
-    // them as regular paths.
+    // them as regular paths. A webhook handler must only add to the paths, not
+    // replace a regular operation sharing its path and method, so the regular
+    // paths are applied once more on top.
+    if (!isOas31 && webhookPaths) {
+      for (const [path, webhookPathItem] of Object.entries(webhookPaths)) {
+        for (const method of Object.keys(webhookPathItem)) {
+          if (baseDocument.paths?.[path]?.[method]) {
+            new Logger(SwaggerModule.name).warn(
+              `Webhook "${method.toUpperCase()} ${path}" shares its path and method with a route, so it is left out of the OpenAPI ${openApiVersion} document. Use OpenAPI 3.1 or later to document both.`
+            );
+          }
+        }
+      }
+    }
     const finalDocument: OpenAPIObject = isOas31
       ? {
           ...baseDocument,
@@ -174,7 +188,12 @@ export class SwaggerModule {
       : {
           ...baseDocument,
           paths: webhookPaths
-            ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
+            ? assignTwoLevelsDeep(
+                {},
+                baseDocument.paths || {},
+                webhookPaths,
+                baseDocument.paths || {}
+              )
             : baseDocument.paths
         };
 
