@@ -3267,4 +3267,33 @@ describe('SchemaObjectFactory', () => {
       });
     });
   });
+
+  describe('when a property is an array of bigint', () => {
+    class Ledger {
+      @ApiProperty({ type: [BigInt] })
+      tuple: bigint[];
+
+      @ApiProperty({ type: BigInt, isArray: true, minItems: 1 })
+      flag: bigint[];
+
+      @ApiProperty({ type: () => [BigInt] })
+      lazy: bigint[];
+    }
+
+    it('should document an array of int64 integers', () => {
+      const schemas: Record<string, SchemaObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(Ledger, schemas);
+
+      expect(schemas.Ledger.properties).toEqual({
+        tuple: { type: 'array', items: { type: 'integer', format: 'int64' } },
+        flag: {
+          type: 'array',
+          minItems: 1,
+          items: { type: 'integer', format: 'int64' }
+        },
+        lazy: { type: 'array', items: { type: 'integer', format: 'int64' } }
+      });
+    });
+  });
 });
