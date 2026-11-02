@@ -179,6 +179,30 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return node;
     }
 
+    if (this.isPropertyHidden(node, node.parent, options)) {
+      return node;
+    }
+
+    try {
+      this.inspectPropertyDeclaration(
+        ctx.factory,
+        node,
+        typeChecker,
+        options,
+        sourceFile.fileName,
+        sourceFile,
+        metadata
+      );
+    } catch (err) {
+      return node;
+    }
+  }
+
+  private isPropertyHidden(
+    node: ts.PropertyDeclaration | ts.ParameterDeclaration,
+    hostClass: ts.ClassLikeDeclaration,
+    options: PluginOptions
+  ): boolean {
     const decorators = ts.canHaveDecorators(node) && ts.getDecorators(node);
 
     const classTransformerShim = options.classTransformerShim;
@@ -201,29 +225,16 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       !annotatePropertyDecoratorExists &&
       (hidePropertyDecoratorExists || classTransformerShim === 'exclusive')
     ) {
-      return node;
+      return true;
     } else if (annotatePropertyDecoratorExists && hidePropertyDecoratorExists) {
       if (options.debug) {
         pluginDebugLogger.debug(
-          `"${node.parent.name.getText()}->${node.name.getText()}" has conflicting decorators, excluding as @ApiHideProperty() takes priority.`
+          `"${hostClass.name.getText()}->${node.name.getText()}" has conflicting decorators, excluding as @ApiHideProperty() takes priority.`
         );
       }
-      return node;
+      return true;
     }
-
-    try {
-      this.inspectPropertyDeclaration(
-        ctx.factory,
-        node,
-        typeChecker,
-        options,
-        sourceFile.fileName,
-        sourceFile,
-        metadata
-      );
-    } catch (err) {
-      return node;
-    }
+    return false;
   }
 
   visitConstructorDeclarationNode(
@@ -243,7 +254,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             modifier.kind === ts.SyntaxKind.PrivateKeyword ||
             modifier.kind === ts.SyntaxKind.PublicKeyword ||
             modifier.kind === ts.SyntaxKind.ProtectedKeyword
-        )
+        ) &&
+        !this.isPropertyHidden(node, constructorNode.parent, options)
       ) {
         const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
           factory,
