@@ -35,7 +35,7 @@ export function ApiHeader(
     ? undefined
     : {
         type: 'string',
-        ...(options.example ? { example: options.example } : {}),
+        ...(options.example !== undefined ? { example: options.example } : {}),
         ...(options.schema || {})
       };
 
