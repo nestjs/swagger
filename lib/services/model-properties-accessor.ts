@@ -1,5 +1,6 @@
 import { Type } from '@nestjs/common';
 import { isFunction, isString } from '@nestjs/common/utils/shared.utils.js';
+import pick from 'es-toolkit/compat/pick';
 import 'reflect-metadata';
 import { DECORATORS } from '../constants.js';
 import { createApiPropertyDecorator } from '../decorators/api-property.decorator.js';
@@ -55,6 +56,52 @@ export class ModelPropertiesAccessor {
     return false;
   }
 
+  /**
+   * When a class re-declares an inherited property without a decorator, its
+   * own CLI plugin metadata replaces what an ancestor's plugin metadata
+   * inferred for the property, whichever class was explored first. Options set
+   * with a decorator still apply, except for the type, which follows the
+   * re-declaration as it does for a decorator re-declaring the property.
+   */
+  private keepDecoratedInheritedOptions(prototype: object, key: string) {
+    if (
+      Reflect.hasOwnMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key)
+    ) {
+      return;
+    }
+    const inheritedMetadata = Reflect.getMetadata(
+      DECORATORS.API_MODEL_PROPERTIES,
+      prototype,
+      key
+    );
+    if (!inheritedMetadata) {
+      return;
+    }
+    const decoratedOptions = new Set<string>();
+    for (
+      let current = Reflect.getPrototypeOf(prototype);
+      current && current !== Object.prototype;
+      current = Reflect.getPrototypeOf(current)
+    ) {
+      (
+        Reflect.getOwnMetadata(
+          DECORATORS.API_MODEL_PROPERTY_EXPLICIT_OPTIONS,
+          current,
+          key
+        ) ?? []
+      ).forEach((option: string) => decoratedOptions.add(option));
+    }
+    decoratedOptions.delete('type');
+    decoratedOptions.delete('isArray');
+
+    Reflect.defineMetadata(
+      DECORATORS.API_MODEL_PROPERTIES,
+      pick(inheritedMetadata, [...decoratedOptions]),
+      prototype,
+      key
+    );
+  }
+
   applyMetadataFactory(prototype: Type<unknown>) {
     const classPrototype = prototype;
     do {
@@ -66,11 +113,20 @@ export class ModelPropertiesAccessor {
       }
       const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
       const properties = Object.keys(metadata);
+      const isOwnFactory =
+        prototype === classPrototype &&
+        Object.prototype.hasOwnProperty.call(
+          prototype.constructor,
+          METADATA_FACTORY_NAME
+        );
       properties.forEach((key) => {
         // An ancestor's factory must not republish a property that the class
         // itself (or a closer ancestor) marked with "@ApiHideProperty()".
         if (this.isHiddenProperty(classPrototype, key, prototype)) {
           return;
+        }
+        if (isOwnFactory) {
+          this.keepDecoratedInheritedOptions(classPrototype, key);
         }
         createApiPropertyDecorator(metadata[key], false)(classPrototype, key);
       });

@@ -2852,6 +2852,87 @@ describe('SchemaObjectFactory', () => {
     });
   });
 
+  describe('property re-declared with CLI plugin metadata', () => {
+    const createDtos = () => {
+      class BillingDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            plan: { required: true, type: () => String },
+            fraudScore: { required: true, type: () => Number }
+          };
+        }
+      }
+      class PublicBillingDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return { plan: { required: true, type: () => String } };
+        }
+      }
+      class AccountDto {
+        @ApiProperty({ description: 'Billing state', required: false })
+        status: string;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            billing: { required: true, type: () => BillingDto },
+            status: { required: true, type: () => BillingDto }
+          };
+        }
+      }
+      class PublicAccountDto extends AccountDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            billing: { required: true, type: () => PublicBillingDto },
+            status: { required: true, type: () => PublicBillingDto }
+          };
+        }
+      }
+      return { AccountDto, PublicAccountDto };
+    };
+    const refOf = (property: Record<string, any>) =>
+      property.$ref ?? property.allOf?.[0]?.$ref;
+
+    it.each([
+      ['alone', false],
+      ['after its parent', true]
+    ])(
+      'should document the type of the re-declaration when explored %s',
+      (_, exploreParentFirst) => {
+        const { AccountDto, PublicAccountDto } = createDtos();
+        const schemas: Record<string, any> = {};
+        if (exploreParentFirst) {
+          schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+        }
+        schemaObjectFactory.exploreModelSchema(PublicAccountDto, schemas);
+
+        const { properties, required } = schemas['PublicAccountDto'];
+        expect(refOf(properties.billing)).toEqual(
+          '#/components/schemas/PublicBillingDto'
+        );
+        expect(refOf(properties.status)).toEqual(
+          '#/components/schemas/PublicBillingDto'
+        );
+        expect(properties.status.description).toEqual('Billing state');
+        expect(required).toEqual(['billing']);
+      }
+    );
+
+    it('should document the type of the re-declaration in mapped types', () => {
+      const { AccountDto, PublicAccountDto } = createDtos();
+      class PublicBillingOnlyDto extends PickType(PublicAccountDto, [
+        'billing'
+      ] as never[]) {}
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+      schemaObjectFactory.exploreModelSchema(PublicAccountDto, schemas);
+      schemaObjectFactory.exploreModelSchema(PublicBillingOnlyDto, schemas);
+
+      expect(refOf(schemas['PublicBillingOnlyDto'].properties.billing)).toEqual(
+        '#/components/schemas/PublicBillingDto'
+      );
+    });
+  });
+
   describe('Record/additionalProperties (plugin output)', () => {
     it('should preserve additionalProperties emitted for Record<string, V>', () => {
       class RecordDto {
