@@ -177,14 +177,21 @@ export function getJSDocParamDescriptionsOfNode(
 }
 
 export function parseCommentDocValue(docValue: string, type: ts.Type) {
-  let value = docValue.replace(/'/g, '"').trim();
+  const rawValue = docValue.trim();
+  let value = rawValue.replace(/'/g, '"');
 
   if (!type || !isString(type)) {
     try {
-      value = JSON.parse(value);
+      value = JSON.parse(rawValue);
     } catch {
-      // Do nothing
+      try {
+        value = JSON.parse(value);
+      } catch {
+        // Do nothing
+      }
     }
+  } else if (/^"[^"]*"$/.test(rawValue)) {
+    value = rawValue.slice(1, -1);
   } else if (isString(type)) {
     if (value.split(' ').length !== 1 && !value.startsWith('"')) {
       value = null;
