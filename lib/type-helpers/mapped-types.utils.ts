@@ -20,13 +20,26 @@ export function setMappedTypeClassName<T, K extends keyof T>(
   classRef: Type<T>,
   keys: readonly K[] = []
 ) {
-  const parentTypeName = classRef.name || 'Anonymous';
-  const mappedProperties = keys
-    .map((key) => capitalizeFirstLetter(sanitizeTypeNameSegment(key)))
-    .join('');
-
+  // Resolved on access, as the parent's documented properties (and its own
+  // name, when it is a mapped type too) are only final once plugin metadata
+  // has been loaded
   Object.defineProperty(target, 'name', {
-    value: `${prefix}${parentTypeName}${mappedProperties}`
+    configurable: true,
+    get: () => {
+      const parentTypeName = classRef.name || 'Anonymous';
+      // Only the keys the parent documents are spelled out, so that the name
+      // does not reveal properties hidden from the document
+      const documentedKeys = new Set<string>(
+        modelPropertiesAccessor.getModelProperties(
+          classRef.prototype as Type<unknown>
+        )
+      );
+      const mappedProperties = keys
+        .filter((key) => documentedKeys.has(String(key)))
+        .map((key) => capitalizeFirstLetter(sanitizeTypeNameSegment(key)))
+        .join('');
+      return `${prefix}${parentTypeName}${mappedProperties}`;
+    }
   });
 }
 

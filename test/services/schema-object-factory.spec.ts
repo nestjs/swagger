@@ -793,6 +793,44 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should not spell properties hidden from the document in inline mapped type names', () => {
+      class AccountDto {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty()
+        email: string;
+
+        @ApiHideProperty()
+        passwordHash: string;
+
+        totpSecret: string;
+      }
+
+      class SessionDto {
+        @ApiProperty({
+          type: OmitType(AccountDto, ['passwordHash', 'totpSecret'])
+        })
+        account: Omit<AccountDto, 'passwordHash' | 'totpSecret'>;
+
+        @ApiProperty({ type: PickType(AccountDto, ['email', 'passwordHash']) })
+        contact: Pick<AccountDto, 'email' | 'passwordHash'>;
+
+        @ApiProperty({ type: OmitType(AccountDto, ['email', 'totpSecret']) })
+        owner: Omit<AccountDto, 'email' | 'totpSecret'>;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(SessionDto, schemas);
+
+      expect(schemas.SessionDto.properties).toEqual({
+        account: { $ref: '#/components/schemas/OmitAccountDto' },
+        contact: { $ref: '#/components/schemas/PickAccountDtoEmail' },
+        owner: { $ref: '#/components/schemas/OmitAccountDtoEmail' }
+      });
+      expect(JSON.stringify(schemas)).not.toMatch(/passwordHash|totpSecret/i);
+    });
+
     it('should keep inline PartialType schemas distinct', () => {
       class ActivityContentDto {
         @ApiProperty()
