@@ -258,14 +258,17 @@ export class SwaggerExplorer {
             ...methodMetadata,
             root: endpointMetadata as any
           });
+          // Controller-level values (e.g., "security", "tags") are the very
+          // objects stored by class decorators, so each operation needs a copy.
+          const controllerMetadata = cloneDeep(globalMetadata);
           const mergedMethodMetadata = this.mergeMetadata(
-            globalMetadata,
+            controllerMetadata,
             omitBy(endpointMetadata, isEmpty)
           );
           return this.migrateOperationSchema(
             {
               responses: {},
-              ...omit(globalMetadata, 'chunks'),
+              ...omit(controllerMetadata, 'chunks'),
               ...mergedMethodMetadata
             },
             prototype,

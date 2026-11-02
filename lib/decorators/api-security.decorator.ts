@@ -24,20 +24,18 @@ export function ApiSecurity(
     descriptor?: TypedPropertyDescriptor<any>
   ): any => {
     if (descriptor) {
-      metadata = extendMetadata(
-        metadata,
-        DECORATORS.API_SECURITY,
-        descriptor.value
-      );
       Reflect.defineMetadata(
         DECORATORS.API_SECURITY,
-        metadata,
+        extendMetadata(metadata, DECORATORS.API_SECURITY, descriptor.value),
         descriptor.value
       );
       return descriptor;
     }
-    metadata = extendMetadata(metadata, DECORATORS.API_SECURITY, target);
-    Reflect.defineMetadata(DECORATORS.API_SECURITY, metadata, target);
+    Reflect.defineMetadata(
+      DECORATORS.API_SECURITY,
+      extendMetadata(metadata, DECORATORS.API_SECURITY, target),
+      target
+    );
     return target;
   };
 }

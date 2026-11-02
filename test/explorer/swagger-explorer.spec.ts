@@ -19,6 +19,7 @@ import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import upperFirst from 'es-toolkit/compat/upperFirst';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
@@ -40,6 +41,7 @@ import {
   ApiResponse,
   ApiResponseProperty,
   ApiSchema,
+  ApiTags,
   ApiWebhook
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
@@ -3708,6 +3710,70 @@ describe('SwaggerExplorer', () => {
           schema: { $ref: '#/components/schemas/Foo' }
         }
       });
+    });
+  });
+
+  describe('when controller-level metadata is shared by several operations', () => {
+    @ApiBearerAuth()
+    @ApiTags('foos')
+    @ApiHeader({ name: 'X-Tenant' })
+    @ApiBadRequestResponse({ description: 'Bad request' })
+    @Controller('foos')
+    class FooController {
+      @Get()
+      find() {}
+
+      @ApiBearerAuth('other')
+      @Post()
+      create() {}
+
+      @Get(':id')
+      findOne() {}
+    }
+
+    const explore = () =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    it('should not share values between documents', () => {
+      const before = explore();
+      const [find, create] = explore();
+
+      find.security.push({ 'api-key': [] });
+      create.security[0].bearer.push('scope');
+      find.tags.push('extra');
+      find.root.parameters[0].name = 'X-Changed';
+      (find.responses['400'] as ResponseObject).description = 'Changed';
+
+      for (const routes of [before, explore()]) {
+        expect(routes.map((route) => route.security)).toEqual([
+          [{ bearer: [] }],
+          [{ bearer: [] }, { other: [] }],
+          [{ bearer: [] }]
+        ]);
+      }
+      const findOne = before[2];
+      expect(findOne.tags).toEqual(['foos']);
+      expect(findOne.root.parameters[0].name).toEqual('X-Tenant');
+      expect(findOne.responses['400']).toEqual({ description: 'Bad request' });
+    });
+
+    it('should not share values between operations of one document', () => {
+      const [find, create, findOne] = explore();
+
+      find.security.push({ 'api-key': [] });
+      find.security[0].bearer.push('scope');
+      find.tags.push('extra');
+
+      expect(create.security).toEqual([{ bearer: [] }, { other: [] }]);
+      expect(findOne.security).toEqual([{ bearer: [] }]);
+      expect(findOne.tags).toEqual(['foos']);
     });
   });
 
