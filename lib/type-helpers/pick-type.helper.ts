@@ -24,12 +24,17 @@ export function PickType<T, K extends keyof T>(
   classRef: Type<T>,
   keys: readonly K[]
 ): Type<Pick<T, (typeof keys)[number]>> {
+  // Property metadata is registered under string keys, whereas "keyof T"
+  // is a number for a numeric property (e.g. a numeric enum member)
+  const pickedKeys = keys.map((key) =>
+    typeof key === 'number' ? String(key) : key
+  );
+  const isInheritedPredicate = (propertyKey: string) =>
+    pickedKeys.includes(propertyKey);
+
   const fields = modelPropertiesAccessor
     .getModelProperties(classRef.prototype)
-    .filter((item) => keys.includes(item as K));
-
-  const isInheritedPredicate = (propertyKey: string) =>
-    keys.includes(propertyKey as K);
+    .filter(isInheritedPredicate);
 
   abstract class PickTypeClass {
     constructor() {
@@ -73,7 +78,7 @@ export function PickType<T, K extends keyof T>(
   MetadataLoader.addRefreshHook(() => {
     const fields = modelPropertiesAccessor
       .getModelProperties(classRef.prototype)
-      .filter((item) => keys.includes(item as K));
+      .filter(isInheritedPredicate);
 
     applyFields(fields);
   });
