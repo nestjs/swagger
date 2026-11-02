@@ -155,6 +155,24 @@ describe('SwaggerTypesMapper', () => {
       });
     });
 
+    it.each([
+      ['a format', { type: 'string', format: 'uuid' }],
+      ['a reference', { $ref: '#/components/schemas/Foo' }]
+    ])('should keep explicit array items with %s', (_, items) => {
+      const params = [
+        { name: 'ids', in: 'query', required: true, isArray: true, items }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'ids',
+        in: 'query',
+        required: true,
+        schema: { type: 'array', items }
+      });
+    });
+
     it('should drop `exampleMaxDepth` from type-based parameters', () => {
       const params = [
         {

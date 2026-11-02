@@ -139,25 +139,26 @@ export class SwaggerTypesMapper {
       'minLength',
       'pattern'
     ];
-    const items =
-      (param as SchemaObject).items ||
-      omitBy(
-        {
-          ...((param as BaseParameterObject).schema || {}),
-          enum: (param as ParamWithTypeMetadata).enum,
-          type: this.mapTypeToOpenAPIType((param as ParamWithTypeMetadata).type)
-        },
-        isUndefined
-      );
+    const explicitItems = (param as SchemaObject).items;
+    const items = omitBy(
+      {
+        ...((param as BaseParameterObject).schema || {}),
+        enum: (param as ParamWithTypeMetadata).enum,
+        type: this.mapTypeToOpenAPIType((param as ParamWithTypeMetadata).type)
+      },
+      isUndefined
+    );
     const modifierProperties = pick(param, itemsModifierKeys);
     return {
       ...omit(param, keysToRemove),
       schema: {
         ...omit(this.getSchemaOptions(param), [...itemsModifierKeys]),
         type: 'array',
-        items: isString((items as any).type)
-          ? { type: (items as any).type, ...modifierProperties }
-          : { ...(items as any).type, ...modifierProperties }
+        items: explicitItems
+          ? { ...explicitItems, ...modifierProperties }
+          : isString((items as any).type)
+            ? { type: (items as any).type, ...modifierProperties }
+            : { ...(items as any).type, ...modifierProperties }
       }
     };
   }
