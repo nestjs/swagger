@@ -3777,6 +3777,106 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when a controller extends a controller with plugin metadata', () => {
+    class InternalModel {
+      @ApiProperty()
+      name: string;
+    }
+
+    const createBaseController = () => {
+      abstract class BaseController {
+        static [METADATA_FACTORY_NAME]() {
+          return {
+            find: {
+              type: InternalModel,
+              summary: 'Internal summary',
+              description: 'Internal description'
+            }
+          };
+        }
+
+        @Get()
+        @ApiExcludeEndpoint()
+        find() {}
+      }
+      return BaseController;
+    };
+
+    const explore = (metatype: Type<any>) => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        { instance: new metatype(), metatype } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+      return { routes, schemas: explorer.getSchemas() };
+    };
+
+    it('does not describe an overriding handler with the metadata of the handler it overrides', () => {
+      @Controller('foo')
+      class FooController extends createBaseController() {
+        static [METADATA_FACTORY_NAME]() {
+          return { find: {} };
+        }
+
+        @Get()
+        find() {}
+      }
+
+      const { routes, schemas } = explore(FooController);
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].responses['200']).toEqual({ description: '' });
+      expect(routes[0].root!.summary).toBeUndefined();
+      expect(routes[0].root!.description).toBeUndefined();
+      expect(schemas).toEqual({});
+    });
+
+    it('does not describe an overriding handler with the factory its class inherits', () => {
+      @Controller('foo')
+      class FooController extends createBaseController() {
+        @Get()
+        find() {}
+      }
+
+      const { routes, schemas } = explore(FooController);
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].responses['200']).toEqual({ description: '' });
+      expect(routes[0].root!.summary).toBeUndefined();
+      expect(routes[0].root!.description).toBeUndefined();
+      expect(schemas).toEqual({});
+    });
+
+    it('describes an inherited handler with the metadata of the class that declares it', () => {
+      abstract class BaseController {
+        static [METADATA_FACTORY_NAME]() {
+          return { find: { type: InternalModel, summary: 'Find summary' } };
+        }
+
+        @Get()
+        find() {}
+      }
+
+      @Controller('foo')
+      class FooController extends BaseController {}
+
+      const { routes, schemas } = explore(FooController);
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].responses['200']).toEqual({
+        description: '',
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/InternalModel' }
+          }
+        }
+      });
+      expect(routes[0].root!.summary).toEqual('Find summary');
+      expect(Object.keys(schemas)).toEqual(['InternalModel']);
+    });
+  });
+
   describe('when using ApiWebhook', () => {
     @Controller()
     class StripeWebhooksController {
