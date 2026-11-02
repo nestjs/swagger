@@ -33,6 +33,7 @@ import { isOas31OrLater } from './utils/is-oas31-or-later.util.js';
 import { isOas32OrLater } from './utils/is-oas32-or-later.util.js';
 import { normalizeRelPath } from './utils/normalize-rel-path.js';
 import { convertNullableToOas31 } from './utils/nullable-to-oas31.util.js';
+import { removeDanglingLinks } from './utils/remove-dangling-links.util.js';
 import { resolvePath } from './utils/resolve-path.util.js';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
 import { validatePath } from './utils/validate-path.util.js';
@@ -213,6 +214,7 @@ export class SwaggerModule {
         isOas32
       );
     }
+    removeDanglingLinks(finalDocument);
 
     return finalDocument;
   }
