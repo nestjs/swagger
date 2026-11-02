@@ -948,6 +948,12 @@ export class SchemaObjectFactory {
       } as SchemaObjectMetadata;
     }
     if (this.isBigInt(typeRef as Function)) {
+      if (metadata.isArray) {
+        return this.transformToArraySchemaProperty(metadata, key, {
+          format: metadata.format || 'int64',
+          type: 'integer'
+        });
+      }
       return {
         format: 'int64',
         ...metadata,
