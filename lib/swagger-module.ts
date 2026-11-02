@@ -31,6 +31,12 @@ import { resolvePath } from './utils/resolve-path.util.js';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
 import { validatePath } from './utils/validate-path.util.js';
 
+/**
+ * Whether a path segment is a route parameter or wildcard (`:tenant`, `*`)
+ * rather than a literal.
+ */
+const isRoutePattern = (segment: string) => /[:*]/.test(segment);
+
 const FIXED_PATH_ITEM_METHODS = [
   'get',
   'put',
@@ -300,67 +306,54 @@ export class SwaggerModule {
     let swaggerUiHtmlForTrailingSlash: string;
     let swaggerUiInitJS: string;
 
+    async function serveSwaggerInitJs(req: any, res: any) {
+      res.type('application/javascript');
+      const document = getBuiltDocument();
+
+      if (swaggerOptions.patchDocumentOnRequest) {
+        const documentToSerialize = await Promise.resolve(
+          swaggerOptions.patchDocumentOnRequest(req, res, document)
+        );
+        const swaggerInitJsPerRequest = buildSwaggerInitJS(
+          documentToSerialize,
+          swaggerOptions
+        );
+        return res.send(swaggerInitJsPerRequest);
+      }
+
+      if (!swaggerUiInitJS) {
+        swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
+      }
+
+      return res.send(swaggerUiInitJS);
+    }
+
     httpAdapter.get(
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
-      async (req, res) => {
-        res.type('application/javascript');
-        const document = getBuiltDocument();
-
-        if (swaggerOptions.patchDocumentOnRequest) {
-          const documentToSerialize = await Promise.resolve(
-            swaggerOptions.patchDocumentOnRequest(req, res, document)
-          );
-          const swaggerInitJsPerRequest = buildSwaggerInitJS(
-            documentToSerialize,
-            swaggerOptions
-          );
-          return res.send(swaggerInitJsPerRequest);
-        }
-
-        if (!swaggerUiInitJS) {
-          swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
-        }
-
-        return res.send(swaggerUiInitJS);
-      }
+      serveSwaggerInitJs
     );
 
     /**
      * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
+     * Skipped when the last segment is a route parameter: repeating it
+     * ("/docs/:tenant/:tenant/...") would let its second match override the
+     * value an authorization layer on the prefix saw.
      * @see https://github.com/nestjs/swagger/issues/1976
      */
-    try {
-      httpAdapter.get(
-        normalizeRelPath(
-          `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
-        ),
-        async (req, res) => {
-          res.type('application/javascript');
-          const document = getBuiltDocument();
-
-          if (swaggerOptions.patchDocumentOnRequest) {
-            const documentToSerialize = await Promise.resolve(
-              swaggerOptions.patchDocumentOnRequest(req, res, document)
-            );
-            const swaggerInitJsPerRequest = buildSwaggerInitJS(
-              documentToSerialize,
-              swaggerOptions
-            );
-            return res.send(swaggerInitJsPerRequest);
-          }
-
-          if (!swaggerUiInitJS) {
-            swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
-          }
-
-          return res.send(swaggerUiInitJS);
-        }
-      );
-    } catch {
-      /**
-       * Error is expected when urlLastSubdirectory === ''
-       * in that case that route is going to be duplicating the one above
-       */
+    if (!isRoutePattern(urlLastSubdirectory)) {
+      try {
+        httpAdapter.get(
+          normalizeRelPath(
+            `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
+          ),
+          serveSwaggerInitJs
+        );
+      } catch {
+        /**
+         * Error is expected when urlLastSubdirectory === ''
+         * in that case that route is going to be duplicating the one above
+         */
+      }
     }
 
     const getSwaggerHtml = () => {
@@ -520,7 +513,10 @@ export class SwaggerModule {
        * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
        * @see https://github.com/nestjs/swagger/issues/1976
        */
-      if (finalPath === `/${urlLastSubdirectory}`) {
+      if (
+        isRoutePattern(urlLastSubdirectory) ||
+        finalPath === `/${urlLastSubdirectory}`
+      ) {
         return;
       }
       const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;

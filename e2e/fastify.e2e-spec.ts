@@ -698,6 +698,48 @@ describe('Fastify Swagger', () => {
       expect(response.text).toContain("tenant-1's API documentation");
     });
 
+    it('should not serve the document of another path param value below the swagger prefix', async () => {
+      const app = await NestFactory.create<NestFastifyApplication>(
+        ApplicationModule,
+        new FastifyAdapter(),
+        { logger: false }
+      );
+
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+
+      SwaggerModule.setup('/docs/:tenantId', app, swaggerDocument, {
+        patchDocumentOnRequest<ExpressRequest, ExpressResponse>(
+          req,
+          res,
+          document
+        ) {
+          return {
+            ...document,
+            info: {
+              description: `${req.params.tenantId}'s API documentation`
+            }
+          };
+        }
+      });
+
+      await app.init();
+      await app.getHttpAdapter().getInstance().ready();
+
+      const ownResponse: Response = await request(app.getHttpServer()).get(
+        '/docs/tenant-1/swagger-ui-init.js'
+      );
+      const otherResponse: Response = await request(app.getHttpServer()).get(
+        '/docs/tenant-1/tenant-2/swagger-ui-init.js'
+      );
+
+      await app.close();
+      expect(ownResponse.text).toContain("tenant-1's API documentation");
+      expect(otherResponse.status).toEqual(404);
+    });
+
     afterEach(async () => {
       await app.close();
     });

@@ -808,6 +808,47 @@ describe('Express Swagger', () => {
       expect(response.text).toContain("customer-1's API documentation");
     });
 
+    it('should not serve the document of another path param value below the swagger prefix', async () => {
+      const app = await NestFactory.create<NestExpressApplication>(
+        ApplicationModule,
+        new ExpressAdapter(),
+        { logger: false }
+      );
+
+      const swaggerDocument = SwaggerModule.createDocument(
+        app,
+        builder.build()
+      );
+
+      SwaggerModule.setup('/docs/:customer', app, swaggerDocument, {
+        patchDocumentOnRequest<ExpressRequest, ExpressResponse>(
+          req,
+          res,
+          document
+        ) {
+          return {
+            ...document,
+            info: {
+              description: `${req.params.customer}'s API documentation`
+            }
+          };
+        }
+      });
+
+      await app.init();
+
+      const ownResponse: Response = await request(app.getHttpServer()).get(
+        '/docs/customer-1/swagger-ui-init.js'
+      );
+      const otherResponse: Response = await request(app.getHttpServer()).get(
+        '/docs/customer-1/customer-2/swagger-ui-init.js'
+      );
+
+      await app.close();
+      expect(ownResponse.text).toContain("customer-1's API documentation");
+      expect(otherResponse.status).toEqual(404);
+    });
+
     afterEach(async () => {
       await app.close();
     });
