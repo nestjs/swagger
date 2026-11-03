@@ -31,7 +31,7 @@ import { applyExampleMaxDepth } from './utils/apply-example-max-depth.util.js';
 import { getGlobalPrefix } from './utils/get-global-prefix.js';
 import {
   stripDynamicDefaults,
-  stripDynamicParameterDefaults
+  stripDynamicOperationDefaults
 } from './utils/strip-dynamic-defaults.util.js';
 import { stripLastSlash } from './utils/strip-last-slash.util.js';
 
@@ -138,7 +138,7 @@ export class SwaggerScanner {
     if (excludeDynamicDefaults) {
       stripDynamicDefaults(schemas as Record<string, SchemaObject>);
       for (const route of routes) {
-        stripDynamicParameterDefaults(route.root?.parameters);
+        stripDynamicOperationDefaults(route);
       }
     }
 

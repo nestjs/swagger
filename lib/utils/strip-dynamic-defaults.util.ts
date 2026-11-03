@@ -1,8 +1,5 @@
-import {
-  ParameterObject,
-  ReferenceObject,
-  SchemaObject
-} from '../interfaces/open-api-spec.interface.js';
+import { DenormalizedDoc } from '../interfaces/denormalized-doc.interface.js';
+import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 
 /**
  * Returns true when a default value is "dynamic" — i.e. it is a runtime
@@ -50,17 +47,33 @@ export function stripDynamicDefaults(
 }
 
 /**
- * Removes the dynamic `default` values from the schemas of operation
- * parameters, e.g. the properties of a `@Query()` DTO, which are inlined into
- * the operation instead of being registered as component schemas.
+ * Removes the dynamic `default` values from the schemas that are inlined into
+ * an operation instead of being registered as component schemas: parameters
+ * (e.g. the properties of a `@Query()` DTO), request bodies and responses.
  */
-export function stripDynamicParameterDefaults(
-  parameters: Array<ParameterObject | ReferenceObject> = []
-): void {
-  for (const parameter of parameters) {
-    if ('schema' in parameter) {
-      stripFromSchema(parameter.schema as SchemaObject);
+export function stripDynamicOperationDefaults(route: DenormalizedDoc): void {
+  const { root, responses } = route;
+  for (const parameter of (root?.parameters ?? []) as any[]) {
+    stripFromSchema(parameter.schema);
+    stripFromContent(parameter.content);
+  }
+  stripFromContent((root?.requestBody as any)?.content);
+  stripFromResponses(root?.responses);
+  stripFromResponses(responses);
+}
+
+function stripFromResponses(responses: object | undefined): void {
+  for (const response of Object.values(responses ?? {}) as any[]) {
+    stripFromContent(response?.content);
+    for (const header of Object.values(response?.headers ?? {}) as any[]) {
+      stripFromSchema(header?.schema);
     }
+  }
+}
+
+function stripFromContent(content: Record<string, any> | undefined): void {
+  for (const mediaType of Object.values(content ?? {})) {
+    stripFromSchema(mediaType?.schema);
   }
 }
 
