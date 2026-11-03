@@ -1,4 +1,8 @@
-import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
+import {
+  ParameterObject,
+  ReferenceObject,
+  SchemaObject
+} from '../interfaces/open-api-spec.interface.js';
 
 /**
  * Returns true when a default value is "dynamic" — i.e. it is a runtime
@@ -42,6 +46,21 @@ export function stripDynamicDefaults(
 ): void {
   for (const schema of Object.values(schemas)) {
     stripFromSchema(schema);
+  }
+}
+
+/**
+ * Removes the dynamic `default` values from the schemas of operation
+ * parameters, e.g. the properties of a `@Query()` DTO, which are inlined into
+ * the operation instead of being registered as component schemas.
+ */
+export function stripDynamicParameterDefaults(
+  parameters: Array<ParameterObject | ReferenceObject> = []
+): void {
+  for (const parameter of parameters) {
+    if ('schema' in parameter) {
+      stripFromSchema(parameter.schema as SchemaObject);
+    }
   }
 }
 
