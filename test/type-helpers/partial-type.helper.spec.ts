@@ -59,6 +59,31 @@ describe('PartialType', () => {
         isString: 'firstName must be a string'
       });
     });
+
+    it.each([{}, { skipNullProperties: false }])(
+      'should not whitelist documented properties that have no validation decorator (%j)',
+      async (options) => {
+        class UpdateUserWithOptionsDto extends PartialType(
+          CreateUserDto,
+          options
+        ) {}
+        await metadataLoader.load(SERIALIZED_METADATA);
+
+        const updateDto = Object.assign(new UpdateUserWithOptionsDto(), {
+          firstName: 'John',
+          login: 'admin',
+          active: true
+        });
+        const validationErrors = await validate(updateDto, {
+          whitelist: true,
+          forbidNonWhitelisted: true
+        });
+        expect(validationErrors.map((error) => error.property)).toEqual([
+          'login',
+          'active'
+        ]);
+      }
+    );
   });
   describe('OpenAPI metadata', () => {
     it('should return partial class', async () => {

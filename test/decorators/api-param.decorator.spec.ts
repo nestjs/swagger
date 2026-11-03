@@ -1,6 +1,10 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { DECORATORS } from '../../lib/constants';
 import { ApiParam } from '../../lib/decorators';
+import { exploreApiParametersMetadata } from '../../lib/explorers/api-parameters.explorer';
+import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
+import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
+import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 
 describe('ApiParam', () => {
   describe('when applied on the class level', () => {
@@ -86,6 +90,36 @@ describe('ApiParam', () => {
       expect(Reflect.hasMetadata(DECORATORS.API_PARAMETERS, controller.get)).toBeTruthy();
       expect(Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.get)).toEqual([
         { in: 'path', name: 'testId', required: true, 'x-permissions': ['test.customer.add'] }
+      ]);
+    });
+  });
+
+  describe('when the type is written as an array', () => {
+    it('should document an array of that type', () => {
+      class TestAppController {
+        @ApiParam({ name: 'ids', type: [String] })
+        @Get(':ids')
+        public get(): void {}
+      }
+
+      const accessor = new ModelPropertiesAccessor();
+      const mapper = new SwaggerTypesMapper();
+      const result = exploreApiParametersMetadata(
+        {},
+        new SchemaObjectFactory(accessor, mapper),
+        undefined,
+        new TestAppController(),
+        TestAppController as any,
+        TestAppController.prototype.get
+      );
+
+      expect(result.parameters).toEqual([
+        {
+          name: 'ids',
+          in: 'path',
+          required: true,
+          schema: { type: 'array', items: { type: 'string' } }
+        }
       ]);
     });
   });

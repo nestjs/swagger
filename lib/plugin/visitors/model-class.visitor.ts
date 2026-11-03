@@ -1,4 +1,6 @@
-import { compact, flatten, head } from 'es-toolkit/compat';
+import compact from 'es-toolkit/compat/compact';
+import flatten from 'es-toolkit/compat/flatten';
+import head from 'es-toolkit/compat/head';
 import { posix } from 'path';
 import * as ts from 'typescript';
 import { factory, PropertyAssignment } from 'typescript';
@@ -177,6 +179,30 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       return node;
     }
 
+    if (this.isPropertyHidden(node, node.parent, options)) {
+      return node;
+    }
+
+    try {
+      this.inspectPropertyDeclaration(
+        ctx.factory,
+        node,
+        typeChecker,
+        options,
+        sourceFile.fileName,
+        sourceFile,
+        metadata
+      );
+    } catch (err) {
+      return node;
+    }
+  }
+
+  private isPropertyHidden(
+    node: ts.PropertyDeclaration | ts.ParameterDeclaration,
+    hostClass: ts.ClassLikeDeclaration,
+    options: PluginOptions
+  ): boolean {
     const decorators = ts.canHaveDecorators(node) && ts.getDecorators(node);
 
     const classTransformerShim = options.classTransformerShim;
@@ -199,29 +225,16 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       !annotatePropertyDecoratorExists &&
       (hidePropertyDecoratorExists || classTransformerShim === 'exclusive')
     ) {
-      return node;
+      return true;
     } else if (annotatePropertyDecoratorExists && hidePropertyDecoratorExists) {
       if (options.debug) {
         pluginDebugLogger.debug(
-          `"${node.parent.name.getText()}->${node.name.getText()}" has conflicting decorators, excluding as @ApiHideProperty() takes priority.`
+          `"${hostClass.name.getText()}->${node.name.getText()}" has conflicting decorators, excluding as @ApiHideProperty() takes priority.`
         );
       }
-      return node;
+      return true;
     }
-
-    try {
-      this.inspectPropertyDeclaration(
-        ctx.factory,
-        node,
-        typeChecker,
-        options,
-        sourceFile.fileName,
-        sourceFile,
-        metadata
-      );
-    } catch (err) {
-      return node;
-    }
+    return false;
   }
 
   visitConstructorDeclarationNode(
@@ -241,7 +254,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             modifier.kind === ts.SyntaxKind.PrivateKeyword ||
             modifier.kind === ts.SyntaxKind.PublicKeyword ||
             modifier.kind === ts.SyntaxKind.ProtectedKeyword
-        )
+        ) &&
+        !this.isPropertyHidden(node, constructorNode.parent, options)
       ) {
         const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
           factory,
@@ -492,7 +506,9 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       // Union types (where nullable/undefined might be part of the union)
       if (ts.isUnionTypeNode(node)) {
         const { nullableType, isNullable } = this.isNullableUnion(node);
-        const remainingTypes = node.types.filter((t) => t !== nullableType);
+        const remainingTypes = node.types.filter(
+          (t) => t !== nullableType && t.kind !== ts.SyntaxKind.UndefinedKeyword
+        );
 
         // If exactly one non-nullish type remains, we can reason about it.
         if (remainingTypes.length === 1) {

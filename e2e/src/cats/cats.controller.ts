@@ -601,4 +601,14 @@ export class CatsController {
   dateBody(@Body() date: Date): Date {
     return date;
   }
+
+  @Get('nullable-schema-response')
+  @ApiResponse({
+    status: 200,
+    schema: { type: 'object', properties: { name: { type: 'string' } } },
+    nullable: true
+  })
+  nullableSchemaResponse() {
+    return null;
+  }
 }

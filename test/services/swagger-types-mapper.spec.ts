@@ -126,5 +126,95 @@ describe('SwaggerTypesMapper', () => {
         schema: { $ref: '#/components/schemas/Pet' }
       });
     });
+
+    it('should move string length constraints of array parameters to the items', () => {
+      const params = [
+        {
+          name: 'tags',
+          in: 'query',
+          required: false,
+          type: String,
+          isArray: true,
+          minLength: 2,
+          maxLength: 5,
+          maxItems: 3
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'tags',
+        in: 'query',
+        required: false,
+        schema: {
+          type: 'array',
+          maxItems: 3,
+          items: { type: 'string', minLength: 2, maxLength: 5 }
+        }
+      });
+    });
+
+    it.each([
+      ['a format', { type: 'string', format: 'uuid' }],
+      ['a reference', { $ref: '#/components/schemas/Foo' }]
+    ])('should keep explicit array items with %s', (_, items) => {
+      const params = [
+        { name: 'ids', in: 'query', required: true, isArray: true, items }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'ids',
+        in: 'query',
+        required: true,
+        schema: { type: 'array', items }
+      });
+    });
+
+    it('should drop `exampleMaxDepth` from type-based parameters', () => {
+      const params = [
+        {
+          name: 'tags',
+          in: 'query',
+          required: false,
+          type: String,
+          isArray: true,
+          example: ['a'],
+          exampleMaxDepth: 1
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'tags',
+        in: 'query',
+        required: false,
+        schema: { type: 'array', items: { type: 'string' }, example: ['a'] }
+      });
+    });
+
+    it('should drop `exampleMaxDepth` from parameters with an explicit schema', () => {
+      const params = [
+        {
+          name: 'filter',
+          in: 'query',
+          required: true,
+          schema: { type: 'object', example: { a: { b: 1 } } },
+          exampleMaxDepth: 1
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'filter',
+        in: 'query',
+        required: true,
+        schema: { type: 'object', example: { a: { b: 1 } } }
+      });
+    });
   });
 });

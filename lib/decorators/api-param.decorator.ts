@@ -1,5 +1,7 @@
 import { Type } from '@nestjs/common';
-import { clone, isNil, omit } from 'es-toolkit/compat';
+import clone from 'es-toolkit/compat/clone';
+import isNil from 'es-toolkit/compat/isNil';
+import omit from 'es-toolkit/compat/omit';
 import { EnumSchemaAttributes } from '../interfaces/enum-schema-attributes.interface.js';
 import {
   ParameterObject,
@@ -7,7 +9,7 @@ import {
 } from '../interfaces/open-api-spec.interface.js';
 import { SwaggerEnumType } from '../types/swagger-enum.type.js';
 import { addEnumSchema, isEnumDefined } from '../utils/enum.utils.js';
-import { createParamDecorator } from './helpers.js';
+import { createParamDecorator, getTypeIsArrayTuple } from './helpers.js';
 
 type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
 
@@ -50,6 +52,15 @@ export function ApiParam(
     in: 'path',
     ...omit(options, ['enum', 'extensions'])
   };
+
+  const [type, isArray] = getTypeIsArrayTuple(
+    (options as ApiParamMetadata).type,
+    undefined
+  );
+  if (isArray) {
+    param.type = type;
+    param.isArray = isArray;
+  }
 
   if (isEnumDefined(options)) {
     addEnumSchema(param, options);

@@ -1,4 +1,7 @@
-import { isEmpty, isFunction, omit, pick } from 'es-toolkit/compat';
+import isEmpty from 'es-toolkit/compat/isEmpty';
+import isFunction from 'es-toolkit/compat/isFunction';
+import omit from 'es-toolkit/compat/omit';
+import pick from 'es-toolkit/compat/pick';
 import { DECORATORS } from '../constants.js';
 import {
   ApiPropertyOptions,
@@ -64,14 +67,16 @@ export class ResponseObjectFactory {
             ? { type: 'array', items: schemaOverride }
             : schemaOverride
         } as ApiResponseSchemaHost & ApiResponseMetadata,
-        produces
+        produces,
+        schemas
       );
     }
 
     if (!type) {
       return this.responseObjectMapper.wrapSchemaWithContent(
         response as ApiResponseSchemaHost,
-        produces
+        produces,
+        schemas
       );
     }
 

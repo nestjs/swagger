@@ -1,11 +1,9 @@
-import {
-  isFunction,
-  isString,
-  isUndefined,
-  omit,
-  omitBy,
-  pick
-} from 'es-toolkit/compat';
+import isFunction from 'es-toolkit/compat/isFunction';
+import isString from 'es-toolkit/compat/isString';
+import isUndefined from 'es-toolkit/compat/isUndefined';
+import omit from 'es-toolkit/compat/omit';
+import omitBy from 'es-toolkit/compat/omitBy';
+import pick from 'es-toolkit/compat/pick';
 import { ApiPropertyOptions } from '../decorators/index.js';
 import {
   BaseParameterObject,
@@ -34,6 +32,7 @@ export class SwaggerTypesMapper {
     '$ref',
     'standardSchema',
     'selfRequired',
+    'exampleMaxDepth',
     // Only meaningful for properties sent in responses; a request parameter
     // cannot be read-only, so it is dropped rather than moved into the schema.
     'readOnly',
@@ -132,26 +131,34 @@ export class SwaggerTypesMapper {
     param: (ParamWithTypeMetadata & SchemaObject) | BaseParameterObject,
     keysToRemove: KeysToRemove[]
   ) {
-    const itemsModifierKeys = ['format', 'maximum', 'minimum', 'pattern'];
-    const items =
-      (param as SchemaObject).items ||
-      omitBy(
-        {
-          ...((param as BaseParameterObject).schema || {}),
-          enum: (param as ParamWithTypeMetadata).enum,
-          type: this.mapTypeToOpenAPIType((param as ParamWithTypeMetadata).type)
-        },
-        isUndefined
-      );
+    const itemsModifierKeys = [
+      'format',
+      'maximum',
+      'maxLength',
+      'minimum',
+      'minLength',
+      'pattern'
+    ];
+    const explicitItems = (param as SchemaObject).items;
+    const items = omitBy(
+      {
+        ...((param as BaseParameterObject).schema || {}),
+        enum: (param as ParamWithTypeMetadata).enum,
+        type: this.mapTypeToOpenAPIType((param as ParamWithTypeMetadata).type)
+      },
+      isUndefined
+    );
     const modifierProperties = pick(param, itemsModifierKeys);
     return {
       ...omit(param, keysToRemove),
       schema: {
         ...omit(this.getSchemaOptions(param), [...itemsModifierKeys]),
         type: 'array',
-        items: isString((items as any).type)
-          ? { type: (items as any).type, ...modifierProperties }
-          : { ...(items as any).type, ...modifierProperties }
+        items: explicitItems
+          ? { ...explicitItems, ...modifierProperties }
+          : isString((items as any).type)
+            ? { type: (items as any).type, ...modifierProperties }
+            : { ...(items as any).type, ...modifierProperties }
       }
     };
   }

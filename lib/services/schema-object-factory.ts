@@ -1,16 +1,14 @@
 import { Logger, Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
-import {
-  flatten,
-  isEqual,
-  isFunction,
-  isString,
-  keyBy,
-  mapValues,
-  omit,
-  omitBy,
-  pick
-} from 'es-toolkit/compat';
+import flatten from 'es-toolkit/compat/flatten';
+import isEqual from 'es-toolkit/compat/isEqual';
+import isFunction from 'es-toolkit/compat/isFunction';
+import isString from 'es-toolkit/compat/isString';
+import keyBy from 'es-toolkit/compat/keyBy';
+import mapValues from 'es-toolkit/compat/mapValues';
+import omit from 'es-toolkit/compat/omit';
+import omitBy from 'es-toolkit/compat/omitBy';
+import pick from 'es-toolkit/compat/pick';
 import { DECORATORS } from '../constants.js';
 import { getTypeIsArrayTuple } from '../decorators/helpers.js';
 import { ApiSchemaOptions } from '../decorators/index.js';
@@ -23,11 +21,13 @@ import {
 } from '../interfaces/open-api-spec.interface.js';
 import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface.js';
 import { StandardSchemaConverter } from '../interfaces/swagger-document-options.interface.js';
+import { SwaggerEnumType } from '../types/swagger-enum.type.js';
 import {
   getEnumType,
   getEnumValues,
   isEnumArray,
-  isEnumMetadata
+  isEnumMetadata,
+  isLazyEnumTypeInferred
 } from '../utils/enum.utils.js';
 import { getSchemaPath } from '../utils/index.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
@@ -70,6 +70,7 @@ export class SchemaObjectFactory {
           undefined
         ) as [Type<any>, boolean];
       }
+      param = this.resolveLazyEnum(param);
       if (!isBodyParameter(param) && param.enumName) {
         return this.createEnumParam(param, schemas);
       }
@@ -493,6 +494,15 @@ export class SchemaObjectFactory {
       );
     }
 
+    metadata = this.resolveLazyEnum(metadata);
+
+    if (metadata.default !== undefined) {
+      metadata = {
+        ...metadata,
+        default: this.pickDocumentedDefaultKeys(metadata.default, metadata.type)
+      };
+    }
+
     if (Array.isArray(metadata.type)) {
       return this.createFromNestedArray(
         key,
@@ -503,6 +513,35 @@ export class SchemaObjectFactory {
     }
 
     return this.createSchemaMetadata(key, metadata, schemas, pendingSchemaRefs);
+  }
+
+  /**
+   * Resolves an `enum` given as a function (see `ApiProperty`) into the same
+   * metadata the decorator would have produced for static values.
+   */
+  private resolveLazyEnum<
+    T extends { enum?: unknown; isArray?: boolean; type?: unknown }
+  >(metadata: T): T {
+    if (typeof metadata.enum !== 'function') {
+      return metadata;
+    }
+    const lazyEnum = metadata.enum as () => SwaggerEnumType;
+    const enumValues = getEnumValues(lazyEnum);
+
+    if (metadata.isArray) {
+      return {
+        ...omit(metadata, 'enum'),
+        type: 'array',
+        items: { type: getEnumType(enumValues), enum: enumValues }
+      } as unknown as T;
+    }
+    return {
+      ...metadata,
+      enum: enumValues,
+      type: isLazyEnumTypeInferred(lazyEnum)
+        ? getEnumType(enumValues)
+        : metadata.type
+    };
   }
 
   createEnumParam(
@@ -909,6 +948,12 @@ export class SchemaObjectFactory {
       } as SchemaObjectMetadata;
     }
     if (this.isBigInt(typeRef as Function)) {
+      if (metadata.isArray) {
+        return this.transformToArraySchemaProperty(metadata, key, {
+          format: metadata.format || 'int64',
+          type: 'integer'
+        });
+      }
       return {
         format: 'int64',
         ...metadata,
@@ -986,6 +1031,65 @@ export class SchemaObjectFactory {
     type: Function | Type<unknown> | string
   ): type is { type: Function } & Function {
     return isFunction(type) && type.name == 'type';
+  }
+
+  /**
+   * Keeps only the keys of a default value that its model documents, so that a
+   * property hidden from the model (e.g. with "@ApiHideProperty()") is not
+   * published through the default of a property that holds the model.
+   */
+  private pickDocumentedDefaultKeys(
+    value: unknown,
+    type: unknown,
+    ancestors = new Set<object>()
+  ): unknown {
+    if (Array.isArray(value)) {
+      return value.map((item) =>
+        this.pickDocumentedDefaultKeys(item, type, ancestors)
+      );
+    }
+    if (!value || typeof value !== 'object' || value instanceof Date) {
+      return value;
+    }
+    while (Array.isArray(type)) {
+      type = type[0];
+    }
+    const model = value.constructor === Object ? type : value.constructor;
+    if (!this.isUserDefinedClass(model)) {
+      return value;
+    }
+    if (ancestors.has(value)) {
+      return undefined;
+    }
+    ancestors.add(value);
+
+    const documentedValue: Record<string, unknown> = {};
+    const prototype = model.prototype;
+    for (const key of this.modelPropertiesAccessor.getModelProperties(
+      prototype
+    )) {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) {
+        continue;
+      }
+      const { type: propertyType } =
+        Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ??
+        {};
+      documentedValue[key] = this.pickDocumentedDefaultKeys(
+        value[key],
+        this.isLazyTypeFunc(propertyType) ? propertyType() : propertyType,
+        ancestors
+      );
+    }
+    ancestors.delete(value);
+    return documentedValue;
+  }
+
+  private isUserDefinedClass(type: unknown): type is Type<unknown> {
+    return (
+      isFunction(type) &&
+      !isBuiltInType(type) &&
+      !Function.prototype.toString.call(type).includes('[native code]')
+    );
   }
 
   private getTypeName(type: Type<unknown> | string): string {

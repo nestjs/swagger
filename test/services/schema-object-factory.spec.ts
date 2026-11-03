@@ -1,11 +1,17 @@
-import { Logger } from '@nestjs/common';
+import { Logger, Type } from '@nestjs/common';
 import type { BaseIssue, BaseSchema } from 'valibot';
 import { toJsonSchema } from '@valibot/to-json-schema';
 import * as v from 'valibot';
 import { z, type ZodType } from 'zod';
 import { createSchema } from 'zod-openapi';
 import { DECORATORS } from '../../lib/constants';
-import { ApiExtension, ApiProperty, ApiSchema } from '../../lib/decorators';
+import {
+  ApiExtension,
+  ApiHideProperty,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiSchema
+} from '../../lib/decorators';
 import { StandardSchemaConverter } from '../../lib/interfaces';
 import {
   BaseParameterObject,
@@ -14,11 +20,13 @@ import {
   SchemasObject
 } from '../../lib/interfaces/open-api-spec.interface';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
+import { ParametersMetadataMapper } from '../../lib/services/parameters-metadata-mapper';
 import { ParamWithTypeMetadata } from '../../lib/services/parameter-metadata-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import {
   DeepPartialType,
+  IntersectionType,
   OmitType,
   PartialType,
   PickType
@@ -785,6 +793,44 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should not spell properties hidden from the document in inline mapped type names', () => {
+      class AccountDto {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty()
+        email: string;
+
+        @ApiHideProperty()
+        passwordHash: string;
+
+        totpSecret: string;
+      }
+
+      class SessionDto {
+        @ApiProperty({
+          type: OmitType(AccountDto, ['passwordHash', 'totpSecret'])
+        })
+        account: Omit<AccountDto, 'passwordHash' | 'totpSecret'>;
+
+        @ApiProperty({ type: PickType(AccountDto, ['email', 'passwordHash']) })
+        contact: Pick<AccountDto, 'email' | 'passwordHash'>;
+
+        @ApiProperty({ type: OmitType(AccountDto, ['email', 'totpSecret']) })
+        owner: Omit<AccountDto, 'email' | 'totpSecret'>;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(SessionDto, schemas);
+
+      expect(schemas.SessionDto.properties).toEqual({
+        account: { $ref: '#/components/schemas/OmitAccountDto' },
+        contact: { $ref: '#/components/schemas/PickAccountDtoEmail' },
+        owner: { $ref: '#/components/schemas/OmitAccountDtoEmail' }
+      });
+      expect(JSON.stringify(schemas)).not.toMatch(/passwordHash|totpSecret/i);
+    });
+
     it('should keep inline PartialType schemas distinct', () => {
       class ActivityContentDto {
         @ApiProperty()
@@ -1236,6 +1282,63 @@ describe('SchemaObjectFactory', () => {
           { $ref: '#/components/schemas/AllOfNestedDto' }
         ]
       });
+    });
+
+    it('should not publish properties hidden from a model through a default', () => {
+      class SettingsDto {
+        @ApiProperty()
+        email: boolean;
+
+        @ApiHideProperty()
+        bypassRateLimit: boolean;
+      }
+      class TreeDto {
+        @ApiProperty({ type: () => TreeDto })
+        parent: TreeDto;
+
+        @ApiHideProperty()
+        secret: string;
+      }
+      const settings = Object.assign(new SettingsDto(), {
+        email: true,
+        bypassRateLimit: true
+      });
+      const tree = Object.assign(new TreeDto(), { secret: 'x' });
+      tree.parent = tree;
+
+      class AccountDto {
+        @ApiProperty({
+          type: () => SettingsDto,
+          default: { email: true, bypassRateLimit: true }
+        })
+        settings: SettingsDto;
+
+        @ApiProperty({ type: [SettingsDto], default: [settings] })
+        history: SettingsDto[];
+
+        @ApiProperty({ type: Object, default: settings })
+        raw: object;
+
+        @ApiProperty({ type: Object, default: { bypassRateLimit: true } })
+        plain: object;
+
+        @ApiProperty({ type: () => TreeDto, default: tree })
+        tree: TreeDto;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+      const properties = schemas[AccountDto.name].properties as Record<
+        string,
+        SchemaObject
+      >;
+
+      expect(properties.settings.default).toEqual({ email: true });
+      expect(properties.history.default).toEqual([{ email: true }]);
+      expect(properties.raw.default).toEqual({ email: true });
+      expect(properties.plain.default).toEqual({ bypassRateLimit: true });
+      expect(properties.tree.default).toEqual({ parent: undefined });
+      expect(settings.bypassRateLimit).toBe(true);
     });
 
     describe('@ApiSchema', () => {
@@ -2623,6 +2726,213 @@ describe('SchemaObjectFactory', () => {
     });
   });
 
+  describe('inherited property required override', () => {
+    const requiredOf = (type: Type<unknown>) => {
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(type, schemas);
+      return schemas[type.name].required ?? [];
+    };
+
+    it('should make a property required when a subclass re-declares an optional one with a bare @ApiProperty()', () => {
+      class ParentWithOptionalName {
+        @ApiPropertyOptional({ description: 'Display name', example: 'Ada' })
+        name?: string;
+      }
+      class ChildWithRequiredName extends ParentWithOptionalName {
+        @ApiProperty()
+        override name!: string;
+      }
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(ChildWithRequiredName, schemas);
+      schemaObjectFactory.exploreModelSchema(ParentWithOptionalName, schemas);
+
+      expect(schemas['ChildWithRequiredName'].required).toEqual(['name']);
+      // The other inherited options are kept; only `required` falls back to the default.
+      expect(schemas['ChildWithRequiredName'].properties.name).toEqual({
+        type: 'string',
+        description: 'Display name',
+        example: 'Ada'
+      });
+      expect(schemas['ParentWithOptionalName'].required).toBeUndefined();
+    });
+
+    it('should keep the property optional when the subclass says so', () => {
+      class ParentWithRequiredName {
+        @ApiProperty()
+        name: string;
+      }
+      class ChildWithOptionalDecorator extends ParentWithRequiredName {
+        @ApiPropertyOptional()
+        override name: string;
+      }
+      class ChildWithExplicitRequiredFalse extends ParentWithRequiredName {
+        @ApiProperty({ required: false })
+        override name: string;
+      }
+
+      expect(requiredOf(ChildWithOptionalDecorator)).toEqual([]);
+      expect(requiredOf(ChildWithExplicitRequiredFalse)).toEqual([]);
+    });
+
+    it('should keep inheriting required: false when the subclass does not re-declare the property', () => {
+      class ParentWithOptionalName {
+        @ApiPropertyOptional()
+        name?: string;
+      }
+      class ChildWithOwnProperty extends ParentWithOptionalName {
+        @ApiProperty()
+        id: number;
+      }
+
+      expect(requiredOf(ChildWithOwnProperty)).toEqual(['id']);
+    });
+
+    it('should apply through more than one level of inheritance', () => {
+      class GrandparentWithOptionalName {
+        @ApiPropertyOptional()
+        name?: string;
+      }
+      class ParentWithoutRedeclaration extends GrandparentWithOptionalName {}
+      class ChildWithRequiredName extends ParentWithoutRedeclaration {
+        @ApiProperty()
+        override name!: string;
+      }
+      class GrandchildWithOptionalName extends ChildWithRequiredName {
+        @ApiPropertyOptional()
+        override name!: string;
+      }
+
+      expect(requiredOf(ParentWithoutRedeclaration)).toEqual([]);
+      expect(requiredOf(ChildWithRequiredName)).toEqual(['name']);
+      expect(requiredOf(GrandchildWithOptionalName)).toEqual([]);
+    });
+
+    it('should not change how decorators stacked on the same class are merged', () => {
+      class StackedDecorators {
+        @ApiProperty({ description: 'Display name' })
+        @ApiPropertyOptional()
+        name?: string;
+      }
+
+      expect(requiredOf(StackedDecorators)).toEqual([]);
+    });
+
+    it('should also apply when the CLI plugin metadata describes the subclass', () => {
+      class PluginParent {
+        @ApiPropertyOptional()
+        name?: string;
+      }
+      class PluginChild extends PluginParent {
+        @ApiProperty({ description: 'Display name' })
+        override name!: string;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return { name: { required: true, type: () => String } };
+        }
+      }
+
+      expect(requiredOf(PluginChild)).toEqual(['name']);
+    });
+
+    it("should keep the parent's explicit decorator over CLI plugin metadata when the subclass has no decorator", () => {
+      class PluginParentWithOptionalName {
+        @ApiPropertyOptional()
+        name?: string;
+      }
+      class PluginChildWithoutDecorator extends PluginParentWithOptionalName {
+        override name!: string;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return { name: { required: true, type: () => String } };
+        }
+      }
+
+      expect(requiredOf(PluginChildWithoutDecorator)).toEqual([]);
+    });
+  });
+
+  describe('property re-declared with CLI plugin metadata', () => {
+    const createDtos = () => {
+      class BillingDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            plan: { required: true, type: () => String },
+            fraudScore: { required: true, type: () => Number }
+          };
+        }
+      }
+      class PublicBillingDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return { plan: { required: true, type: () => String } };
+        }
+      }
+      class AccountDto {
+        @ApiProperty({ description: 'Billing state', required: false })
+        status: string;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            billing: { required: true, type: () => BillingDto },
+            status: { required: true, type: () => BillingDto }
+          };
+        }
+      }
+      class PublicAccountDto extends AccountDto {
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            billing: { required: true, type: () => PublicBillingDto },
+            status: { required: true, type: () => PublicBillingDto }
+          };
+        }
+      }
+      return { AccountDto, PublicAccountDto };
+    };
+    const refOf = (property: Record<string, any>) =>
+      property.$ref ?? property.allOf?.[0]?.$ref;
+
+    it.each([
+      ['alone', false],
+      ['after its parent', true]
+    ])(
+      'should document the type of the re-declaration when explored %s',
+      (_, exploreParentFirst) => {
+        const { AccountDto, PublicAccountDto } = createDtos();
+        const schemas: Record<string, any> = {};
+        if (exploreParentFirst) {
+          schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+        }
+        schemaObjectFactory.exploreModelSchema(PublicAccountDto, schemas);
+
+        const { properties, required } = schemas['PublicAccountDto'];
+        expect(refOf(properties.billing)).toEqual(
+          '#/components/schemas/PublicBillingDto'
+        );
+        expect(refOf(properties.status)).toEqual(
+          '#/components/schemas/PublicBillingDto'
+        );
+        expect(properties.status.description).toEqual('Billing state');
+        expect(required).toEqual(['billing']);
+      }
+    );
+
+    it('should document the type of the re-declaration in mapped types', () => {
+      const { AccountDto, PublicAccountDto } = createDtos();
+      class PublicBillingOnlyDto extends PickType(PublicAccountDto, [
+        'billing'
+      ] as never[]) {}
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+      schemaObjectFactory.exploreModelSchema(PublicAccountDto, schemas);
+      schemaObjectFactory.exploreModelSchema(PublicBillingOnlyDto, schemas);
+
+      expect(refOf(schemas['PublicBillingOnlyDto'].properties.billing)).toEqual(
+        '#/components/schemas/PublicBillingDto'
+      );
+    });
+  });
+
   describe('Record/additionalProperties (plugin output)', () => {
     it('should preserve additionalProperties emitted for Record<string, V>', () => {
       class RecordDto {
@@ -2681,6 +2991,308 @@ describe('SchemaObjectFactory', () => {
       expect(schemas['PluginRecordDto'].properties['attributes']).toEqual({
         type: 'object',
         additionalProperties: { type: 'string' }
+      });
+    });
+  });
+
+  describe('lazy enum', () => {
+    // Fresh array on each call: an eager call would only see the values registered before the decorator ran
+    let registry: string[];
+    let numericRegistry: number[];
+
+    const serialize = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+    beforeEach(() => {
+      registry = ['first'];
+      numericRegistry = [1];
+    });
+
+    function defineDto() {
+      class LazyEnumDto {
+        @ApiProperty({ enum: () => [...registry], enumName: 'LazyEnum' })
+        named: string;
+
+        @ApiProperty({ enum: () => [...registry] })
+        unnamed: string;
+
+        @ApiProperty({
+          enum: () => [...registry],
+          enumName: 'LazyArrayEnum',
+          isArray: true
+        })
+        many: string[];
+
+        @ApiProperty({
+          enum: () => [...registry],
+          enumName: 'TypedLazyEnum',
+          type: 'string'
+        })
+        typed: string;
+
+        @ApiProperty({
+          enum: () => [...numericRegistry],
+          enumName: 'NumericLazyEnum'
+        })
+        numeric: number;
+
+        @ApiProperty({
+          enum: () => [...registry],
+          enumName: 'LazyTypeArrayEnum',
+          type: () => [String]
+        })
+        lazyTypeArray: string[];
+      }
+      return LazyEnumDto;
+    }
+
+    it('should call the enum function when the schema is generated, not when the decorator runs', () => {
+      const LazyEnumDto = defineDto();
+      registry.push('second');
+      numericRegistry.push(2);
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(LazyEnumDto, schemas);
+      const serialized = serialize(schemas);
+
+      for (const name of [
+        'LazyEnum',
+        'LazyArrayEnum',
+        'TypedLazyEnum',
+        'LazyTypeArrayEnum'
+      ]) {
+        expect(serialized[name]).toEqual({
+          type: 'string',
+          enum: ['first', 'second']
+        });
+      }
+      expect(serialized.NumericLazyEnum).toEqual({
+        type: 'number',
+        enum: [1, 2]
+      });
+    });
+
+    it('should keep the shape of the generated properties', () => {
+      const LazyEnumDto = defineDto();
+      registry.push('second');
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(LazyEnumDto, schemas);
+
+      expect(serialize(schemas.LazyEnumDto).properties).toEqual({
+        named: { allOf: [{ $ref: '#/components/schemas/LazyEnum' }] },
+        unnamed: { type: 'string', enum: ['first', 'second'] },
+        many: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/LazyArrayEnum' }
+        },
+        typed: { allOf: [{ $ref: '#/components/schemas/TypedLazyEnum' }] },
+        numeric: {
+          allOf: [{ $ref: '#/components/schemas/NumericLazyEnum' }]
+        },
+        lazyTypeArray: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/LazyTypeArrayEnum' }
+        }
+      });
+    });
+
+    it('should not infer the type from the values when it is explicit', () => {
+      class ExplicitTypeDto {
+        @ApiProperty({ enum: () => [1, 2], type: 'string' })
+        value: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(ExplicitTypeDto, schemas);
+
+      expect(serialize(schemas.ExplicitTypeDto).properties).toEqual({
+        value: { type: 'string', enum: [1, 2] }
+      });
+    });
+
+    it('should infer the type separately for each property sharing an enum function', () => {
+      const sharedEnum = () => [...registry];
+      class SharedEnumDto {
+        @ApiProperty({ enum: sharedEnum })
+        inferred: string;
+
+        @ApiProperty({ enum: sharedEnum, type: 'integer' })
+        explicit: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(SharedEnumDto, schemas);
+
+      expect(serialize(schemas.SharedEnumDto).properties).toEqual({
+        inferred: { type: 'string', enum: ['first'] },
+        explicit: { type: 'integer', enum: ['first'] }
+      });
+    });
+
+    describe('in a mapped type', () => {
+      class BaseDto {
+        @ApiProperty({ enum: () => [...registry], enumName: 'MappedEnum' })
+        named: string;
+
+        // declared as `string`, but the values are numbers
+        @ApiProperty({ enum: () => [...numericRegistry] })
+        numeric: string;
+
+        @ApiProperty({ enum: () => [...numericRegistry] })
+        untyped: any;
+      }
+
+      const mappedTypes: Array<[string, () => Type<any>]> = [
+        ['PartialType', () => PartialType(BaseDto)],
+        ['PickType', () => PickType(BaseDto, ['named', 'numeric', 'untyped'])],
+        ['OmitType', () => OmitType(BaseDto, [])],
+        ['IntersectionType', () => IntersectionType(BaseDto, class {})],
+        ['DeepPartialType', () => DeepPartialType(BaseDto)]
+      ];
+
+      it.each(mappedTypes)(
+        'should keep resolving the enums lazily with %s',
+        (_name, createMappedType) => {
+          const MappedDto = createMappedType();
+          registry.push('second');
+          numericRegistry.push(2);
+
+          const schemas: Record<string, SchemasObject> = {};
+          schemaObjectFactory.exploreModelSchema(MappedDto, schemas);
+          const serialized = serialize(schemas);
+
+          expect(serialized.MappedEnum).toEqual({
+            type: 'string',
+            enum: ['first', 'second']
+          });
+          const properties = serialized[MappedDto.name].properties;
+          expect(properties.named).toEqual({
+            allOf: [{ $ref: '#/components/schemas/MappedEnum' }]
+          });
+          expect(properties.numeric).toEqual({
+            type: 'number',
+            enum: [1, 2]
+          });
+          expect(properties.untyped).toEqual({
+            type: 'number',
+            enum: [1, 2]
+          });
+        }
+      );
+
+      it('should keep resolving the enums lazily in a mapped query DTO', () => {
+        const params = new ParametersMetadataMapper(
+          modelPropertiesAccessor
+        ).transformModelToProperties([
+          { in: 'query', type: PartialType(BaseDto) } as any
+        ]) as ParamWithTypeMetadata[];
+        registry.push('second');
+        numericRegistry.push(2);
+
+        const schemas: Record<string, SchemasObject> = {};
+        const byName = Object.fromEntries(
+          serialize(schemaObjectFactory.createFromModel(params, schemas)).map(
+            (param: any) => [param.name, param]
+          )
+        );
+
+        expect(byName.named.schema).toEqual({
+          $ref: '#/components/schemas/MappedEnum'
+        });
+        expect(byName.numeric).toMatchObject({
+          type: 'number',
+          enum: [1, 2]
+        });
+        expect(byName.untyped).toMatchObject({
+          type: 'number',
+          enum: [1, 2]
+        });
+        expect(serialize(schemas)).toEqual({
+          MappedEnum: { type: 'string', enum: ['first', 'second'] }
+        });
+      });
+    });
+
+    describe('in a query DTO', () => {
+      function createParams() {
+        class LazyEnumQueryDto {
+          @ApiProperty({ enum: () => [...registry], enumName: 'QueryEnum' })
+          named: string;
+
+          @ApiProperty({ enum: () => [...registry] })
+          unnamed: string;
+
+          @ApiProperty({
+            enum: () => [...registry],
+            enumName: 'QueryArrayEnum',
+            isArray: true
+          })
+          many: string[];
+        }
+        const params = new ParametersMetadataMapper(
+          modelPropertiesAccessor
+        ).transformModelToProperties([
+          { in: 'query', type: LazyEnumQueryDto } as any
+        ]);
+        return params as ParamWithTypeMetadata[];
+      }
+
+      it('should resolve the enums when the parameters are generated', () => {
+        const params = createParams();
+        registry.push('second');
+
+        const schemas: Record<string, SchemasObject> = {};
+        const result = serialize(
+          schemaObjectFactory.createFromModel(params, schemas)
+        );
+        const byName = Object.fromEntries(
+          result.map((param: any) => [param.name, param])
+        );
+
+        expect(byName.named.schema).toEqual({
+          $ref: '#/components/schemas/QueryEnum'
+        });
+        expect(byName.unnamed).toMatchObject({
+          type: 'string',
+          enum: ['first', 'second']
+        });
+        expect(byName.many.schema).toEqual({
+          type: 'array',
+          items: { $ref: '#/components/schemas/QueryArrayEnum' }
+        });
+        expect(serialize(schemas)).toEqual({
+          QueryEnum: { type: 'string', enum: ['first', 'second'] },
+          QueryArrayEnum: { type: 'string', enum: ['first', 'second'] }
+        });
+      });
+    });
+  });
+
+  describe('when a property is an array of bigint', () => {
+    class Ledger {
+      @ApiProperty({ type: [BigInt] })
+      tuple: bigint[];
+
+      @ApiProperty({ type: BigInt, isArray: true, minItems: 1 })
+      flag: bigint[];
+
+      @ApiProperty({ type: () => [BigInt] })
+      lazy: bigint[];
+    }
+
+    it('should document an array of int64 integers', () => {
+      const schemas: Record<string, SchemaObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(Ledger, schemas);
+
+      expect(schemas.Ledger.properties).toEqual({
+        tuple: { type: 'array', items: { type: 'integer', format: 'int64' } },
+        flag: {
+          type: 'array',
+          minItems: 1,
+          items: { type: 'integer', format: 'int64' }
+        },
+        lazy: { type: 'array', items: { type: 'integer', format: 'int64' } }
       });
     });
   });

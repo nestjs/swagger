@@ -1,5 +1,6 @@
 import {
   INestApplication,
+  Logger,
   NotFoundException,
   RequestMethod
 } from '@nestjs/common';
@@ -7,6 +8,12 @@ import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface
 import { loadPackage } from '@nestjs/common/utils/load-package.util.js';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as jsyaml from 'js-yaml';
+import { posix } from 'path';
+import {
+  GLOBAL_PARAMETERS,
+  GLOBAL_RESPONSES,
+  GlobalMetadataHost
+} from './interfaces/global-metadata.interface.js';
 import {
   OpenAPIObject,
   OperationObject,
@@ -27,9 +34,38 @@ import { isOas31OrLater } from './utils/is-oas31-or-later.util.js';
 import { isOas32OrLater } from './utils/is-oas32-or-later.util.js';
 import { normalizeRelPath } from './utils/normalize-rel-path.js';
 import { convertNullableToOas31 } from './utils/nullable-to-oas31.util.js';
+import { removeDanglingLinks } from './utils/remove-dangling-links.util.js';
 import { resolvePath } from './utils/resolve-path.util.js';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
 import { validatePath } from './utils/validate-path.util.js';
+
+/**
+ * Whether a path segment is a route parameter or wildcard (`:tenant`, `*`)
+ * rather than a literal.
+ */
+const isRoutePattern = (segment: string) => /[:*]/.test(segment);
+
+/**
+ * Whether a path below a static assets prefix points at a file of the
+ * "swagger-ui-dist" package that is not part of the UI: its demo page (set up
+ * for the petstore example) or its license. The path is decoded and normalized
+ * the way the static file servers do, and compared case-insensitively since the
+ * file system may be.
+ */
+function isStockSwaggerUiFile(pathname: string): boolean {
+  let decodedPathname: string;
+  try {
+    decodedPathname = decodeURIComponent(pathname);
+  } catch {
+    return false;
+  }
+  const normalizedPathname = posix
+    .normalize(`/${decodedPathname}`)
+    .toLowerCase();
+  return (
+    normalizedPathname === '/index.html' || normalizedPathname === '/license'
+  );
+}
 
 const FIXED_PATH_ITEM_METHODS = [
   'get',
@@ -116,10 +152,17 @@ export class SwaggerModule {
     config: Omit<OpenAPIObject, 'paths'>,
     options: SwaggerDocumentOptions = {}
   ): OpenAPIObject {
+    const {
+      webhooks: configWebhooks,
+      [GLOBAL_PARAMETERS]: globalParameters,
+      [GLOBAL_RESPONSES]: globalResponses,
+      ...configWithoutWebhooks
+    } = config as OpenAPIObject & GlobalMetadataHost;
     const swaggerScanner = new SwaggerScanner();
-    const document = swaggerScanner.scanApplication(app, options);
-    const { webhooks: configWebhooks, ...configWithoutWebhooks } =
-      config as OpenAPIObject;
+    const document = swaggerScanner.scanApplication(app, options, {
+      globalParameters,
+      globalResponses
+    });
 
     document.components = assignTwoLevelsDeep(
       {},
@@ -147,7 +190,20 @@ export class SwaggerModule {
     };
 
     // Webhooks only exist as a top-level field since 3.1; older documents keep
-    // them as regular paths.
+    // them as regular paths. A webhook handler must only add to the paths, not
+    // replace a regular operation sharing its path and method, so the regular
+    // paths are applied once more on top.
+    if (!isOas31 && webhookPaths) {
+      for (const [path, webhookPathItem] of Object.entries(webhookPaths)) {
+        for (const method of Object.keys(webhookPathItem)) {
+          if (baseDocument.paths?.[path]?.[method]) {
+            new Logger(SwaggerModule.name).warn(
+              `Webhook "${method.toUpperCase()} ${path}" shares its path and method with a route, so it is left out of the OpenAPI ${openApiVersion} document. Use OpenAPI 3.1 or later to document both.`
+            );
+          }
+        }
+      }
+    }
     const finalDocument: OpenAPIObject = isOas31
       ? {
           ...baseDocument,
@@ -156,7 +212,12 @@ export class SwaggerModule {
       : {
           ...baseDocument,
           paths: webhookPaths
-            ? assignTwoLevelsDeep({}, baseDocument.paths || {}, webhookPaths)
+            ? assignTwoLevelsDeep(
+                {},
+                baseDocument.paths || {},
+                webhookPaths,
+                baseDocument.paths || {}
+              )
             : baseDocument.paths
         };
 
@@ -176,6 +237,7 @@ export class SwaggerModule {
         isOas32
       );
     }
+    removeDanglingLinks(finalDocument);
 
     return finalDocument;
   }
@@ -222,12 +284,18 @@ export class SwaggerModule {
         instance.register(fastifyStatic, {
           root: swaggerAssetsPath,
           prefix: finalPath,
-          decorateReply: false
+          decorateReply: false,
+          index: false,
+          allowedPath: (pathname: string) => !isStockSwaggerUiFile(pathname)
         });
       });
     } else {
+      app.use(finalPath, (req: any, res: any, next: Function) =>
+        isStockSwaggerUiFile(req.path) ? next(new NotFoundException()) : next()
+      );
       (app as NestExpressApplication).useStaticAssets(swaggerAssetsPath, {
-        prefix: finalPath
+        prefix: finalPath,
+        index: false
       });
     }
   }
@@ -300,67 +368,54 @@ export class SwaggerModule {
     let swaggerUiHtmlForTrailingSlash: string;
     let swaggerUiInitJS: string;
 
+    async function serveSwaggerInitJs(req: any, res: any) {
+      res.type('application/javascript');
+      const document = getBuiltDocument();
+
+      if (swaggerOptions.patchDocumentOnRequest) {
+        const documentToSerialize = await Promise.resolve(
+          swaggerOptions.patchDocumentOnRequest(req, res, document)
+        );
+        const swaggerInitJsPerRequest = buildSwaggerInitJS(
+          documentToSerialize,
+          swaggerOptions
+        );
+        return res.send(swaggerInitJsPerRequest);
+      }
+
+      if (!swaggerUiInitJS) {
+        swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
+      }
+
+      return res.send(swaggerUiInitJS);
+    }
+
     httpAdapter.get(
       normalizeRelPath(`${finalPath}/swagger-ui-init.js`),
-      async (req, res) => {
-        res.type('application/javascript');
-        const document = getBuiltDocument();
-
-        if (swaggerOptions.patchDocumentOnRequest) {
-          const documentToSerialize = await Promise.resolve(
-            swaggerOptions.patchDocumentOnRequest(req, res, document)
-          );
-          const swaggerInitJsPerRequest = buildSwaggerInitJS(
-            documentToSerialize,
-            swaggerOptions
-          );
-          return res.send(swaggerInitJsPerRequest);
-        }
-
-        if (!swaggerUiInitJS) {
-          swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
-        }
-
-        return res.send(swaggerUiInitJS);
-      }
+      serveSwaggerInitJs
     );
 
     /**
      * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
+     * Skipped when the last segment is a route parameter: repeating it
+     * ("/docs/:tenant/:tenant/...") would let its second match override the
+     * value an authorization layer on the prefix saw.
      * @see https://github.com/nestjs/swagger/issues/1976
      */
-    try {
-      httpAdapter.get(
-        normalizeRelPath(
-          `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
-        ),
-        async (req, res) => {
-          res.type('application/javascript');
-          const document = getBuiltDocument();
-
-          if (swaggerOptions.patchDocumentOnRequest) {
-            const documentToSerialize = await Promise.resolve(
-              swaggerOptions.patchDocumentOnRequest(req, res, document)
-            );
-            const swaggerInitJsPerRequest = buildSwaggerInitJS(
-              documentToSerialize,
-              swaggerOptions
-            );
-            return res.send(swaggerInitJsPerRequest);
-          }
-
-          if (!swaggerUiInitJS) {
-            swaggerUiInitJS = buildSwaggerInitJS(document, swaggerOptions);
-          }
-
-          return res.send(swaggerUiInitJS);
-        }
-      );
-    } catch {
-      /**
-       * Error is expected when urlLastSubdirectory === ''
-       * in that case that route is going to be duplicating the one above
-       */
+    if (!isRoutePattern(urlLastSubdirectory)) {
+      try {
+        httpAdapter.get(
+          normalizeRelPath(
+            `${finalPath}/${urlLastSubdirectory}/swagger-ui-init.js`
+          ),
+          serveSwaggerInitJs
+        );
+      } catch {
+        /**
+         * Error is expected when urlLastSubdirectory === ''
+         * in that case that route is going to be duplicating the one above
+         */
+      }
     }
 
     const getSwaggerHtml = () => {
@@ -520,7 +575,10 @@ export class SwaggerModule {
        * Covers assets fetched through a relative path when Swagger url ends with a slash '/'.
        * @see https://github.com/nestjs/swagger/issues/1976
        */
-      if (finalPath === `/${urlLastSubdirectory}`) {
+      if (
+        isRoutePattern(urlLastSubdirectory) ||
+        finalPath === `/${urlLastSubdirectory}`
+      ) {
         return;
       }
       const serveStaticSlashEndingPath = `${finalPath}/${urlLastSubdirectory}`;

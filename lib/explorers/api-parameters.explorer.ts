@@ -1,14 +1,13 @@
 import { Type } from '@nestjs/common';
-import {
-  assign,
-  find,
-  isNil,
-  map,
-  omitBy,
-  some,
-  unionWith
-} from 'es-toolkit/compat';
+import assign from 'es-toolkit/compat/assign';
+import find from 'es-toolkit/compat/find';
+import isNil from 'es-toolkit/compat/isNil';
+import map from 'es-toolkit/compat/map';
+import omitBy from 'es-toolkit/compat/omitBy';
+import some from 'es-toolkit/compat/some';
+import unionWith from 'es-toolkit/compat/unionWith';
 import { DECORATORS } from '../constants.js';
+import { GlobalParameters } from '../interfaces/global-metadata.interface.js';
 import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
 import {
@@ -18,7 +17,7 @@ import {
 import { ParametersMetadataMapper } from '../services/parameters-metadata-mapper.js';
 import { SchemaObjectFactory } from '../services/schema-object-factory.js';
 import { SwaggerTypesMapper } from '../services/swagger-types-mapper.js';
-import { GlobalParametersStorage } from '../storages/global-parameters.storage.js';
+import { isSameParameter } from '../utils/is-same-parameter.util.js';
 
 const parameterMetadataAccessor = new ParameterMetadataAccessor();
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
@@ -29,6 +28,7 @@ const swaggerTypesMapper = new SwaggerTypesMapper();
 export const exploreApiParametersMetadata = (
   schemas: Record<string, SchemaObject>,
   schemaObjectFactory: SchemaObjectFactory,
+  globalParameters: GlobalParameters,
   instance: object,
   prototype: Type<unknown>,
   method: Function
@@ -37,7 +37,6 @@ export const exploreApiParametersMetadata = (
     DECORATORS.API_PARAMETERS,
     method
   );
-  const globalParameters = GlobalParametersStorage.getAll();
   const parametersMetadata = parameterMetadataAccessor.explore(
     instance,
     prototype,
@@ -74,7 +73,7 @@ export const exploreApiParametersMetadata = (
       if (left.in === 'body' && right.in === 'body') {
         return true;
       }
-      return left.name === right.name && left.in === right.in;
+      return isSameParameter(left, right);
     };
 
     const mergeImplicitAndExplicit = (item: ParamWithTypeMetadata) =>

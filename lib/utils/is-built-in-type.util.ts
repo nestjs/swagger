@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { isFunction } from 'es-toolkit/compat';
+import isFunction from 'es-toolkit/compat/isFunction';
 import { BUILT_IN_TYPES } from '../services/constants.js';
 
 export function isBuiltInType(

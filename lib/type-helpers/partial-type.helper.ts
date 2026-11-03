@@ -6,7 +6,7 @@ import {
   inheritTransformationMetadata,
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
-import { mapValues } from 'es-toolkit/compat';
+import mapValues from 'es-toolkit/compat/mapValues';
 import { DECORATORS } from '../constants.js';
 import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';
@@ -53,10 +53,12 @@ export function PartialType<T>(
     classRef,
     PartialTypeClass
   );
+  // Only properties that carry a validation decorator are made optional. Adding
+  // one to any other property would put it on the "ValidationPipe" whitelist.
   if (keysWithValidationConstraints) {
-    keysWithValidationConstraints
-      .filter((key) => !fields.includes(key))
-      .forEach((key) => applyPartialDecoratorFn(PartialTypeClass, key));
+    new Set(keysWithValidationConstraints).forEach((key) =>
+      applyPartialDecoratorFn(PartialTypeClass, key)
+    );
   }
 
   inheritTransformationMetadata(classRef, PartialTypeClass);
@@ -82,7 +84,6 @@ export function PartialType<T>(
         required: false
       });
       decoratorFactory(PartialTypeClass.prototype, key);
-      applyPartialDecoratorFn(PartialTypeClass, key);
     });
 
     if (PartialTypeClass[METADATA_FACTORY_NAME]) {
@@ -96,7 +97,6 @@ export function PartialType<T>(
           });
           decoratorFactory(PartialTypeClass.prototype, key);
         }
-        applyPartialDecoratorFn(PartialTypeClass, key);
       });
     }
   }

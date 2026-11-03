@@ -5,7 +5,11 @@ import {
   EnumAllowedTypes,
   SchemaObjectMetadata
 } from '../interfaces/schema-object-metadata.interface.js';
-import { getEnumType, getEnumValues } from '../utils/enum.utils.js';
+import {
+  createLazyEnum,
+  getEnumType,
+  getEnumValues
+} from '../utils/enum.utils.js';
 import { createPropertyDecorator, getTypeIsArrayTuple } from './helpers.js';
 
 export type ApiPropertyCommonOptions = SchemaObjectMetadata & {
@@ -67,7 +71,14 @@ export function createApiPropertyDecorator(
     isArray
   } as ApiPropertyOptions;
 
-  if (isEnumArray(options)) {
+  if (typeof options.enum === 'function') {
+    // Called when the document is generated, not now: the values may depend on
+    // modules that are not loaded yet when the decorator is evaluated.
+    options.enum = createLazyEnum(
+      options.enum as () => any[] | Record<string, any>,
+      !options.type
+    );
+  } else if (isEnumArray(options)) {
     options.type = 'array';
 
     const enumValues = getEnumValues(options.enum);
@@ -112,11 +123,37 @@ export function createApiPropertyDecorator(
     options.pattern = options.pattern.source;
   }
 
-  return createPropertyDecorator(
+  const decorator = createPropertyDecorator(
     DECORATORS.API_MODEL_PROPERTIES,
     options,
     overrideExisting
   );
+  if (!overrideExisting) {
+    return decorator;
+  }
+  // Recorded so that the CLI plugin metadata of a subclass re-declaring the
+  // property can tell the options set here from the ones the plugin inferred
+  const explicitOptions = Object.keys(options).filter(
+    (option) => options[option] !== undefined
+  );
+  return (target: object, propertyKey: string | symbol) => {
+    decorator(target, propertyKey);
+    Reflect.defineMetadata(
+      DECORATORS.API_MODEL_PROPERTY_EXPLICIT_OPTIONS,
+      [
+        ...new Set([
+          ...(Reflect.getOwnMetadata(
+            DECORATORS.API_MODEL_PROPERTY_EXPLICIT_OPTIONS,
+            target,
+            propertyKey
+          ) ?? []),
+          ...explicitOptions
+        ])
+      ],
+      target,
+      propertyKey
+    );
+  };
 }
 
 export function ApiPropertyOptional(

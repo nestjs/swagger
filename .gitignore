@@ -24,3 +24,6 @@ dist
 index.js
 index.d.ts
 /sample
+
+# Claude Code
+.claude/worktrees/
