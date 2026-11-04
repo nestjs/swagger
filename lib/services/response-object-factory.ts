@@ -132,11 +132,17 @@ export class ResponseObjectFactory {
           field
         );
 
+        // The linked operation keeps the ID given with `@ApiOperation`, if any
+        const { operationId } =
+          Reflect.getMetadata(DECORATORS.API_OPERATION, method) ?? {};
+
         links[linkName] = {
-          operationId: factories.operationId(
-            controllerPrototype.constructor.name,
-            method.name
-          ),
+          operationId:
+            operationId ??
+            factories.operationId(
+              controllerPrototype.constructor.name,
+              method.name
+            ),
           parameters: {
             [parameter]: `$response.body#/${field}`
           }
