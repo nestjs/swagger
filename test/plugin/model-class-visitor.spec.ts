@@ -299,6 +299,68 @@ describe('API model properties', () => {
     );
   });
 
+  it('should keep @example values as strings for optional string properties', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'optional-string-example.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      export class OptionalStringExampleDto {
+        /** @example 12345 */
+        zip?: string;
+
+        /** @example 12345 */
+        zipOrNull: string | null;
+
+        /** @example 12345 */
+        zipOrNullOrUndefined?: string | null;
+
+        /** @example true */
+        flag?: string;
+
+        /** @example 12345 */
+        code?: string | number;
+
+        /** @example ignore this */
+        note?: string;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `zip: { required: false, type: () => String, example: "12345" }`
+    );
+    expect(result.outputText).toContain(
+      `zipOrNull: { required: true, type: () => String, nullable: true, example: "12345" }`
+    );
+    expect(result.outputText).toContain(
+      `zipOrNullOrUndefined: { required: false, type: () => String, nullable: true, example: "12345" }`
+    );
+    expect(result.outputText).toContain(
+      `flag: { required: false, type: () => String, example: "true" }`
+    );
+    expect(result.outputText).toContain(
+      `code: { required: false, type: () => Object, example: 12345 }`
+    );
+    expect(result.outputText).toContain(
+      `note: { required: false, type: () => String }`
+    );
+  });
+
   it('should manage imports statements when code "downleveled"', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
