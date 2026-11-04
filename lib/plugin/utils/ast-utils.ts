@@ -233,7 +233,9 @@ export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
         tagResults[tag] = [];
       }
 
-      const type = typeChecker.getTypeAtLocation(node);
+      const type = typeChecker.getNonNullableType(
+        typeChecker.getTypeAtLocation(node)
+      );
       if (hasProperties) {
         blocks.forEach((block) => {
           const docValue = renderDocNode(block.content).trim().split('\n')[0];
