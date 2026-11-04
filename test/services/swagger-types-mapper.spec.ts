@@ -105,6 +105,57 @@ describe('SwaggerTypesMapper', () => {
       });
     });
 
+    it('should move OpenAPI 3.1 schema keywords into the schema for type-based parameters', () => {
+      const params = [
+        {
+          name: 'token',
+          in: 'path',
+          required: true,
+          type: 'string',
+          format: 'base64url',
+          contentEncoding: 'base64url',
+          contentMediaType: 'application/octet-stream',
+          const: 'abc'
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'token',
+        in: 'path',
+        required: true,
+        schema: {
+          type: 'string',
+          format: 'base64url',
+          contentEncoding: 'base64url',
+          contentMediaType: 'application/octet-stream',
+          const: 'abc'
+        }
+      });
+    });
+
+    it('should move OpenAPI 3.1 schema keywords into an explicit parameter schema', () => {
+      const params = [
+        {
+          name: 'token',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' },
+          contentEncoding: 'base64url'
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'token',
+        in: 'path',
+        required: true,
+        schema: { type: 'string', contentEncoding: 'base64url' }
+      });
+    });
+
     it('should not merge structural keywords like `not` into an explicit parameter schema', () => {
       const params = [
         {

@@ -195,7 +195,10 @@ export class SwaggerTypesMapper {
       'xml',
       'not',
       'discriminator',
-      'externalDocs'
+      'externalDocs',
+      'const',
+      'contentEncoding',
+      'contentMediaType'
     ];
   }
 

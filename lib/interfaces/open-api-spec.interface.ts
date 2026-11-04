@@ -269,6 +269,12 @@ export interface SchemaObject {
   minProperties?: number;
   required?: string[];
   enum?: any[];
+  /** Only valid in OpenAPI 3.1 or later. */
+  const?: any;
+  /** Only valid in OpenAPI 3.1 or later. */
+  contentEncoding?: string;
+  /** Only valid in OpenAPI 3.1 or later. */
+  contentMediaType?: string;
   'x-enumNames'?: string[];
 }
 
