@@ -29,7 +29,10 @@ import { SwaggerExplorer } from './swagger-explorer.js';
 import { SwaggerTransformer } from './swagger-transformer.js';
 import { applyExampleMaxDepth } from './utils/apply-example-max-depth.util.js';
 import { getGlobalPrefix } from './utils/get-global-prefix.js';
-import { stripDynamicDefaults } from './utils/strip-dynamic-defaults.util.js';
+import {
+  stripDynamicDefaults,
+  stripDynamicOperationDefaults
+} from './utils/strip-dynamic-defaults.util.js';
 import { stripLastSlash } from './utils/strip-last-slash.util.js';
 
 export class SwaggerScanner {
@@ -128,11 +131,15 @@ export class SwaggerScanner {
       );
     });
 
+    const routes = flatten(denormalizedPaths);
     const schemas = this.explorer.getSchemas();
     this.addExtraModels(schemas, extraModels);
 
     if (excludeDynamicDefaults) {
       stripDynamicDefaults(schemas as Record<string, SchemaObject>);
+      for (const route of routes) {
+        stripDynamicOperationDefaults(route);
+      }
     }
 
     applyExampleMaxDepth(
@@ -141,7 +148,7 @@ export class SwaggerScanner {
     );
 
     return {
-      ...this.transformer.normalizePaths(flatten(denormalizedPaths)),
+      ...this.transformer.normalizePaths(routes),
       components: {
         schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }
