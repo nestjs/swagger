@@ -2740,6 +2740,59 @@ describe('SwaggerExplorer', () => {
         }
       });
     });
+
+    it('should link to the operation ID set with @ApiOperation', () => {
+      class Pet {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty({ link: () => Pet })
+        motherId: string;
+      }
+
+      @Controller('pets')
+      class PetController {
+        @ApiDefaultGetter(Pet, 'id')
+        @ApiOperation({ operationId: 'getPet' })
+        @Get(':id')
+        @ApiOkResponse({ type: Pet })
+        getPet(@Param('id') id: string) {}
+
+        @Get(':id/toys')
+        @ApiOperation({ operationId: 'listPetToys' })
+        @ApiLink({ from: Pet, routeParam: 'id' })
+        getToys(@Param('id') id: string) {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new PetController(),
+          metatype: PetController
+        } as InstanceWrapper<PetController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes.map((route) => route.root.operationId)).toEqual([
+        'getPet',
+        'listPetToys'
+      ]);
+      expect((routes[0].responses['200'] as ResponseObject).links).toEqual({
+        PetController_getPet_from_motherId: {
+          operationId: 'getPet',
+          parameters: {
+            id: '$response.body#/motherId'
+          }
+        },
+        PetController_getToys_from_id: {
+          operationId: 'listPetToys',
+          parameters: {
+            id: '$response.body#/id'
+          }
+        }
+      });
+    });
   });
 
   describe('when params are defined', () => {
