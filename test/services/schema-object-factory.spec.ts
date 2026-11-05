@@ -1146,6 +1146,30 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should keep an explicit type when property also declares allOf (issue #4249)', () => {
+      class DtoWithExplicitTypeAndAllOf {
+        @ApiProperty({
+          type: 'string',
+          allOf: [{ pattern: '^[a-z]' }, { pattern: '^[a-z0-9_.-]*$' }]
+        })
+        username: string;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        DtoWithExplicitTypeAndAllOf,
+        schemas
+      );
+
+      expect(
+        (schemas['DtoWithExplicitTypeAndAllOf'] as Record<string, any>)
+          .properties.username
+      ).toEqual({
+        type: 'string',
+        allOf: [{ pattern: '^[a-z]' }, { pattern: '^[a-z0-9_.-]*$' }]
+      });
+    });
+
     it('should purge linked types from properties', () => {
       class Human {
         @ApiProperty()
