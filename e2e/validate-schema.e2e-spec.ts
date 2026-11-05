@@ -592,6 +592,23 @@ describe('Validate OpenAPI schema', () => {
       });
     });
 
+    it('should emit numeric exclusive bounds in parameter schemas', () => {
+      const document = createOas31Document();
+      const parameters = document.paths['/api/cats']?.get
+        ?.parameters as ParameterObject[];
+      const page = parameters.find((parameter) => parameter.name === 'page');
+
+      expect(page?.schema).toEqual({
+        exclusiveMaximum: 10000,
+        exclusiveMinimum: 0,
+        title: 'Page',
+        format: 'int32',
+        default: 0,
+        example: 123,
+        type: 'number'
+      });
+    });
+
     it('should not leave the 3.0 nullable keyword anywhere in the document', () => {
       const document = createOas31Document();
 

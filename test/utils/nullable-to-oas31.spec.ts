@@ -182,6 +182,72 @@ describe('convertNullableToOas31', () => {
     });
   });
 
+  describe('exclusive bounds', () => {
+    it('turns boolean exclusive bounds into the bounds they qualify', () => {
+      expect(
+        convertSchema({
+          type: 'integer',
+          minimum: 0,
+          maximum: 10,
+          exclusiveMinimum: true,
+          exclusiveMaximum: true
+        })
+      ).toEqual({
+        type: 'integer',
+        exclusiveMinimum: 0,
+        exclusiveMaximum: 10
+      });
+    });
+
+    it('drops exclusive bounds set to false', () => {
+      expect(
+        convertSchema({
+          type: 'number',
+          minimum: 0,
+          maximum: 10,
+          exclusiveMinimum: false,
+          exclusiveMaximum: false
+        })
+      ).toEqual({
+        type: 'number',
+        minimum: 0,
+        maximum: 10
+      });
+    });
+
+    it('drops a boolean exclusive bound that has no bound to qualify', () => {
+      expect(convertSchema({ type: 'number', exclusiveMinimum: true })).toEqual(
+        {
+          type: 'number'
+        }
+      );
+    });
+
+    it('leaves numeric exclusive bounds untouched', () => {
+      expect(
+        convertSchema({ type: 'number', minimum: 1, exclusiveMaximum: 5 })
+      ).toEqual({
+        type: 'number',
+        minimum: 1,
+        exclusiveMaximum: 5
+      });
+    });
+
+    it('converts the bounds of a nullable schema', () => {
+      expect(
+        convertSchema({
+          type: 'integer',
+          minimum: 0,
+          exclusiveMinimum: true,
+          nullable: true
+        })
+      ).toEqual({
+        type: ['integer', 'null'],
+        exclusiveMinimum: 0
+      });
+    });
+  });
+
   describe('nested positions', () => {
     it('converts nested properties, items and additionalProperties', () => {
       expect(

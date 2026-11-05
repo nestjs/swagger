@@ -8,6 +8,11 @@ type UnknownRecord = Record<string, any>;
 
 const COMBINATOR_KEYS = ['allOf', 'oneOf', 'anyOf'] as const;
 
+const EXCLUSIVE_BOUND_KEYS = [
+  ['exclusiveMinimum', 'minimum'],
+  ['exclusiveMaximum', 'maximum']
+] as const;
+
 /**
  * Keywords whose values are arbitrary user data rather than subschemas. The
  * OpenAPI/JSON Schema object model has no other free-form positions, so
@@ -37,8 +42,9 @@ const NAME_KEYED_MAPS = new Set([
 ]);
 
 /**
- * Rewrites the OpenAPI 3.0 `nullable` keyword into its OpenAPI 3.1 (JSON
- * Schema 2020-12) equivalent everywhere in the document, in place.
+ * Rewrites the OpenAPI 3.0 `nullable` keyword and the boolean
+ * `exclusiveMinimum` / `exclusiveMaximum` into their OpenAPI 3.1 (JSON
+ * Schema 2020-12) equivalents everywhere in the document, in place.
  */
 export function convertNullableToOas31(document: OpenAPIObject): void {
   walk(document);
@@ -74,6 +80,7 @@ function walk(node: unknown): void {
   }
 
   convertSchema(node);
+  convertExclusiveBounds(node);
 }
 
 function convertSchema(schema: UnknownRecord): void {
@@ -103,6 +110,24 @@ function convertSchema(schema: UnknownRecord): void {
 
   if (Array.isArray(schema.enum) && !schema.enum.includes(null)) {
     schema.enum = [...schema.enum, null];
+  }
+}
+
+/**
+ * In 3.0 `exclusiveMinimum: true` qualifies `minimum`; in 3.1 the keyword
+ * holds the bound itself.
+ */
+function convertExclusiveBounds(schema: UnknownRecord): void {
+  for (const [exclusiveKey, boundKey] of EXCLUSIVE_BOUND_KEYS) {
+    if (typeof schema[exclusiveKey] !== 'boolean') {
+      continue;
+    }
+    if (schema[exclusiveKey] && typeof schema[boundKey] === 'number') {
+      schema[exclusiveKey] = schema[boundKey];
+      delete schema[boundKey];
+    } else {
+      delete schema[exclusiveKey];
+    }
   }
 }
 
