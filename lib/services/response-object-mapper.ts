@@ -1,4 +1,5 @@
-import { omit, pick } from 'es-toolkit/compat';
+import omit from 'es-toolkit/compat/omit';
+import pick from 'es-toolkit/compat/pick';
 import {
   ApiResponseMetadata,
   ApiResponseSchemaHost

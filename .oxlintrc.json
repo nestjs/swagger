@@ -1,7 +1,18 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicolo-ribaudo/oxc-project/refs/heads/nicolo/json-schema/npm/oxlint/configuration_schema.json",
   "rules": {
-    "no-useless-escape": "off"
+    "no-useless-escape": "off",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "es-toolkit/compat",
+            "message": "Import each helper from its subpath (es-toolkit/compat/<name>): the barrel loads the whole compat layer at startup."
+          }
+        ]
+      }
+    ]
   },
   "ignorePatterns": ["dist", "node_modules"]
 }

@@ -13,17 +13,27 @@ export const exploreApiOperationMetadata = (
 };
 
 function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
-  const classPrototype = prototype;
   do {
     if (!prototype.constructor) {
       return;
     }
-    if (!prototype.constructor[METADATA_FACTORY_NAME]) {
+    // A factory inherited through the static chain is applied once the loop
+    // reaches the class that declares it.
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        prototype.constructor,
+        METADATA_FACTORY_NAME
+      )
+    ) {
       continue;
     }
     const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
+    // The factory describes the methods its class declares, not the methods
+    // of a subclass that override them.
     const methodKeys = Object.keys(metadata).filter(
-      (key) => typeof instance[key] === 'function'
+      (key) =>
+        typeof instance[key] === 'function' &&
+        Object.prototype.hasOwnProperty.call(prototype, key)
     );
 
     methodKeys.forEach((key) => {
@@ -39,9 +49,9 @@ function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
         return;
       }
       ApiOperation(operationMeta, { overrideExisting: false })(
-        classPrototype,
+        prototype,
         key,
-        Object.getOwnPropertyDescriptor(classPrototype, key)
+        Object.getOwnPropertyDescriptor(prototype, key)
       );
     });
   } while (

@@ -52,6 +52,10 @@ import {
   parameterPropertyDtoTextTranspiled
 } from './fixtures/parameter-property.dto';
 import {
+  parameterPropertyHiddenDtoText,
+  parameterPropertyHiddenDtoTextTranspiled
+} from './fixtures/parameter-property-hidden.dto';
+import {
   stringLiteralDtoText,
   stringLiteralDtoTextTranspiled
 } from './fixtures/string-literal.dto';
@@ -207,6 +211,156 @@ describe('API model properties', () => {
     expect(result.outputText).toEqual(createCatDtoTextAlt2Transpiled);
   });
 
+  it('should read @example values written on the line after the tag', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'next-line-example.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      export class NextLineExampleDto {
+        /**
+         * @example
+         * 42
+         */
+        count: number;
+
+        /**
+         * @example
+         * 'version 123'
+         */
+        version: string;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `count: { required: true, type: () => Number, example: 42 }`
+    );
+    expect(result.outputText).toContain(
+      `version: { required: true, type: () => String, example: "version 123" }`
+    );
+  });
+
+  it('should keep apostrophes in double-quoted @example values', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'apostrophe-example.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      export class ApostropheExampleDto {
+        /** @example "O'Brien" */
+        surname: string;
+
+        /** @example ["O'Brien", "Don't"] */
+        surnames: string[];
+
+        /** @example { "surname": "O'Brien" } */
+        person: Record<string, string>;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `surname: { required: true, type: () => String, example: "O'Brien" }`
+    );
+    expect(result.outputText).toContain(
+      `surnames: { required: true, type: () => [String], example: ["O'Brien", "Don't"] }`
+    );
+    expect(result.outputText).toContain(
+      `person: { required: true, type: "object", additionalProperties: { type: "string" }, example: { "surname": "O'Brien" } }`
+    );
+  });
+
+  it('should keep @example values as strings for optional string properties', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'optional-string-example.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      export class OptionalStringExampleDto {
+        /** @example 12345 */
+        zip?: string;
+
+        /** @example 12345 */
+        zipOrNull: string | null;
+
+        /** @example 12345 */
+        zipOrNullOrUndefined?: string | null;
+
+        /** @example true */
+        flag?: string;
+
+        /** @example 12345 */
+        code?: string | number;
+
+        /** @example ignore this */
+        note?: string;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `zip: { required: false, type: () => String, example: "12345" }`
+    );
+    expect(result.outputText).toContain(
+      `zipOrNull: { required: true, type: () => String, nullable: true, example: "12345" }`
+    );
+    expect(result.outputText).toContain(
+      `zipOrNullOrUndefined: { required: false, type: () => String, nullable: true, example: "12345" }`
+    );
+    expect(result.outputText).toContain(
+      `flag: { required: false, type: () => String, example: "true" }`
+    );
+    expect(result.outputText).toContain(
+      `code: { required: false, type: () => Object, example: 12345 }`
+    );
+    expect(result.outputText).toContain(
+      `note: { required: false, type: () => String }`
+    );
+  });
+
   it('should manage imports statements when code "downleveled"', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,
@@ -266,6 +420,69 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(nullableDtoTextTranspiled);
+  });
+
+  it('should keep the type of unions with both null and undefined', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'null-and-undefined.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      enum Status {
+        ENABLED,
+        DISABLED
+      }
+
+      class Item {}
+
+      export class NullAndUndefinedDto {
+        text: string | null | undefined;
+        item: Item | null | undefined;
+        status: Status | null | undefined;
+        optionalText?: string | null | undefined;
+        texts: string[] | null | undefined;
+        statuses: Status[] | null | undefined;
+        color: 'red' | 'green' | null | undefined;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({}, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `text: { required: true, type: () => String, nullable: true }`
+    );
+    expect(result.outputText).toContain(
+      `item: { required: true, type: () => Item, nullable: true }`
+    );
+    expect(result.outputText).toContain(
+      `status: { required: true, nullable: true, enum: Status }`
+    );
+    expect(result.outputText).toContain(
+      `optionalText: { required: false, type: () => String, nullable: true }`
+    );
+    expect(result.outputText).toContain(
+      `texts: { required: true, type: () => [String], nullable: true }`
+    );
+    expect(result.outputText).toContain(
+      `statuses: { required: true, nullable: true, enum: Status, isArray: true }`
+    );
+    expect(result.outputText).toContain(
+      `color: { required: true, nullable: true, enum: ["red", "green"] }`
+    );
+    expect(result.outputText).not.toContain(`type: () => Object`);
   });
 
   it('should emit additionalProperties for Record/index-signature types', () => {
@@ -439,6 +656,57 @@ describe('API model properties', () => {
     });
     expect(esmResult.outputText).toEqual(
       parameterPropertyDtoTextTranspiled(true)
+    );
+  });
+
+  it('should apply the hide rules to parameter properties', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'parameter-property-hidden.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(parameterPropertyHiddenDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              classTransformerShim: true,
+              parameterProperties: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(
+      parameterPropertyHiddenDtoTextTranspiled()
+    );
+
+    const exclusiveResult = ts.transpileModule(parameterPropertyHiddenDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            {
+              classTransformerShim: 'exclusive',
+              parameterProperties: true
+            },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(exclusiveResult.outputText).toEqual(
+      parameterPropertyHiddenDtoTextTranspiled(true)
     );
   });
 
@@ -1043,6 +1311,47 @@ describe('API model properties', () => {
 
     expect(result.outputText).toContain(
       `color: { required: true, type: () => String, enum: ["red", "green", "blue"] }`
+    );
+  });
+
+  it('should handle decorators imported under another name', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'decorator-with-renamed-import.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      import { ApiHideProperty as Hide } from '@nestjs/swagger';
+      import { Exclude as Hidden, Expose as Shown } from 'class-transformer';
+
+      export class HasRenamedImportDecoratorDto {
+        id: number;
+        @Hidden()
+        passwordHash: string;
+        @Hide()
+        internalNotes: string;
+        @Shown()
+        @Hidden()
+        conflicting: string;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ classTransformerShim: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `return { id: { required: true, type: () => Number } };`
     );
   });
 });

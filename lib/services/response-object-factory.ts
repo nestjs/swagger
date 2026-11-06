@@ -1,4 +1,7 @@
-import { isEmpty, isFunction, omit, pick } from 'es-toolkit/compat';
+import isEmpty from 'es-toolkit/compat/isEmpty';
+import isFunction from 'es-toolkit/compat/isFunction';
+import omit from 'es-toolkit/compat/omit';
+import pick from 'es-toolkit/compat/pick';
 import { DECORATORS } from '../constants.js';
 import {
   ApiPropertyOptions,
@@ -129,11 +132,17 @@ export class ResponseObjectFactory {
           field
         );
 
+        // The linked operation keeps the ID given with `@ApiOperation`, if any
+        const { operationId } =
+          Reflect.getMetadata(DECORATORS.API_OPERATION, method) ?? {};
+
         links[linkName] = {
-          operationId: factories.operationId(
-            controllerPrototype.constructor.name,
-            method.name
-          ),
+          operationId:
+            operationId ??
+            factories.operationId(
+              controllerPrototype.constructor.name,
+              method.name
+            ),
           parameters: {
             [parameter]: `$response.body#/${field}`
           }

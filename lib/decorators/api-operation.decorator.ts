@@ -1,4 +1,6 @@
-import { isUndefined, negate, pickBy } from 'es-toolkit/compat';
+import isUndefined from 'es-toolkit/compat/isUndefined';
+import negate from 'es-toolkit/compat/negate';
+import pickBy from 'es-toolkit/compat/pickBy';
 import { DECORATORS } from '../constants.js';
 import { OperationObject } from '../interfaces/open-api-spec.interface.js';
 import { createMethodDecorator } from './helpers.js';

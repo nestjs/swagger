@@ -4,11 +4,13 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Post,
   Query,
   RequestMapping,
   RequestMethod,
+  Type,
   Version,
   VERSION_NEUTRAL,
   VersioningType
@@ -16,9 +18,10 @@ import {
 import { VersionValue } from '@nestjs/common/internal';
 import { ApplicationConfig } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { upperFirst } from 'es-toolkit/compat';
+import upperFirst from 'es-toolkit/compat/upperFirst';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
@@ -40,6 +43,7 @@ import {
   ApiResponse,
   ApiResponseProperty,
   ApiSchema,
+  ApiTags,
   ApiWebhook
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
@@ -48,8 +52,6 @@ import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
-import { GlobalParametersStorage } from '../../lib/storages/global-parameters.storage';
-import { GlobalResponsesStorage } from '../../lib/storages/global-responses.storage';
 import { SwaggerExplorer } from '../../lib/swagger-explorer';
 import { PartialType } from '../../lib/type-helpers';
 
@@ -1824,6 +1826,70 @@ describe('SwaggerExplorer', () => {
 
       expect(routes).toHaveLength(0);
     });
+
+    it('should exclude a derived controller when the base is not excluded', () => {
+      @ApiExcludeController(false)
+      @Controller('')
+      class BaseController {
+        @Get('base')
+        findBase(): Promise<Foo[]> {
+          return Promise.resolve([]);
+        }
+      }
+
+      @ApiExcludeController()
+      @Controller('')
+      class DerivedController extends BaseController {
+        @Get('derived')
+        findDerived(): Promise<Foo[]> {
+          return Promise.resolve([]);
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new DerivedController(),
+          metatype: DerivedController
+        } as InstanceWrapper<DerivedController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes).toHaveLength(0);
+    });
+
+    it('should include a derived controller that opts out of an inherited exclusion', () => {
+      @ApiExcludeController()
+      @Controller('')
+      class BaseController {
+        @Get('base')
+        findBase(): Promise<Foo[]> {
+          return Promise.resolve([]);
+        }
+      }
+
+      @ApiExcludeController(false)
+      @Controller('')
+      class DerivedController extends BaseController {
+        @Get('derived')
+        findDerived(): Promise<Foo[]> {
+          return Promise.resolve([]);
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new DerivedController(),
+          metatype: DerivedController
+        } as InstanceWrapper<DerivedController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes).toHaveLength(2);
+    });
   });
 
   describe('when defaultVersion is defined', () => {
@@ -2509,19 +2575,20 @@ describe('SwaggerExplorer', () => {
     }
 
     it('should properly define global parameters', () => {
-      GlobalParametersStorage.add(
-        {
-          name: 'x-tenant-id',
-          in: 'header',
-          schema: { type: 'string' }
-        },
-        {
-          name: 'x-tenant-id-2',
-          in: 'header',
-          schema: { type: 'string' }
-        }
-      );
-      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const explorer = new SwaggerExplorer(schemaObjectFactory, {
+        globalParameters: [
+          {
+            name: 'x-tenant-id',
+            in: 'header',
+            schema: { type: 'string' }
+          },
+          {
+            name: 'x-tenant-id-2',
+            in: 'header',
+            schema: { type: 'string' }
+          }
+        ]
+      });
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -2546,7 +2613,6 @@ describe('SwaggerExplorer', () => {
           schema: { type: 'string' }
         }
       ]);
-      GlobalParametersStorage.clear();
     });
   });
 
@@ -2668,6 +2734,59 @@ describe('SwaggerExplorer', () => {
         },
         Children: {
           operationId: 'HumanController_getChildren',
+          parameters: {
+            id: '$response.body#/id'
+          }
+        }
+      });
+    });
+
+    it('should link to the operation ID set with @ApiOperation', () => {
+      class Pet {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty({ link: () => Pet })
+        motherId: string;
+      }
+
+      @Controller('pets')
+      class PetController {
+        @ApiDefaultGetter(Pet, 'id')
+        @ApiOperation({ operationId: 'getPet' })
+        @Get(':id')
+        @ApiOkResponse({ type: Pet })
+        getPet(@Param('id') id: string) {}
+
+        @Get(':id/toys')
+        @ApiOperation({ operationId: 'listPetToys' })
+        @ApiLink({ from: Pet, routeParam: 'id' })
+        getToys(@Param('id') id: string) {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new PetController(),
+          metatype: PetController
+        } as InstanceWrapper<PetController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes.map((route) => route.root.operationId)).toEqual([
+        'getPet',
+        'listPetToys'
+      ]);
+      expect((routes[0].responses['200'] as ResponseObject).links).toEqual({
+        PetController_getPet_from_motherId: {
+          operationId: 'getPet',
+          parameters: {
+            id: '$response.body#/motherId'
+          }
+        },
+        PetController_getToys_from_id: {
+          operationId: 'listPetToys',
           parameters: {
             id: '$response.body#/id'
           }
@@ -3110,13 +3229,13 @@ describe('SwaggerExplorer', () => {
     }
 
     it('should merge global responses with explicit ones', () => {
-      GlobalResponsesStorage.add({
-        401: { description: '401 - global error response' },
-        403: { description: '403 - global error response' },
-        500: { description: '500 - global internal server error' }
+      const explorer = new SwaggerExplorer(schemaObjectFactory, {
+        globalResponses: {
+          401: { description: '401 - global error response' },
+          403: { description: '403 - global error response' },
+          500: { description: '500 - global internal server error' }
+        }
       });
-
-      const explorer = new SwaggerExplorer(schemaObjectFactory);
       const routes = explorer.exploreController(
         {
           instance: new FooController(),
@@ -3143,8 +3262,6 @@ describe('SwaggerExplorer', () => {
       expect(
         (routes[0].responses['403'] as ResponseObject).description
       ).toEqual('403 - global error response');
-
-      GlobalParametersStorage.clear();
     });
   });
 
@@ -3400,15 +3517,16 @@ describe('SwaggerExplorer', () => {
       );
     });
 
-    it('still includes routes decorated with @ApiIncludeEndpoint(false) when onlyIncludeDecoratedEndpoints is true (current behavior: disable arg is a no-op for include)', () => {
-      // The explorer only checks the *presence* of the include metadata; the
-      // `disable` argument on @ApiIncludeEndpoint is currently not honored.
-      // If that ever changes, this test should be updated accordingly.
+    it('drops routes decorated with @ApiIncludeEndpoint(false) when onlyIncludeDecoratedEndpoints is true', () => {
       @Controller('bar')
       class BarController {
         @Get('disabled-include')
         @ApiIncludeEndpoint(false)
         disabledInclude() {}
+
+        @Get('enabled-include')
+        @ApiIncludeEndpoint(true)
+        enabledInclude() {}
 
         @Get('not-included')
         notIncluded() {}
@@ -3430,7 +3548,7 @@ describe('SwaggerExplorer', () => {
 
       expect(routes).toHaveLength(1);
       expect(routes[0].root!.path).toEqual(
-        '/globalPrefix/modulePath/bar/disabled-include'
+        '/globalPrefix/modulePath/bar/enabled-include'
       );
     });
 
@@ -3465,6 +3583,105 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root!.path).toEqual(
         '/globalPrefix/modulePath/baz/only-include'
       );
+    });
+  });
+
+  describe('when none of the controller endpoints is included', () => {
+    class ErrorDto {
+      @ApiProperty()
+      reason: string;
+    }
+
+    class ExtraModel {
+      @ApiProperty()
+      p1: string;
+    }
+
+    class Foo {
+      @ApiProperty()
+      name: string;
+    }
+
+    it('does not register class-level schemas when no route is decorated with @ApiIncludeEndpoint', () => {
+      @ApiResponse({ status: 403, type: ErrorDto })
+      @ApiExtraModels(ExtraModel)
+      @Controller('foo')
+      class FooController {
+        @Get()
+        @ApiOkResponse({ type: Foo })
+        find() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path', onlyIncludeDecoratedEndpoints: true }
+      );
+
+      expect(routes).toHaveLength(0);
+      expect(explorer.getSchemas()).toEqual({});
+    });
+
+    it('does not register class-level schemas when every route is decorated with @ApiExcludeEndpoint', () => {
+      @ApiResponse({ status: 403, type: ErrorDto })
+      @ApiExtraModels(ExtraModel)
+      @Controller('foo')
+      class FooController {
+        @Get()
+        @ApiExcludeEndpoint()
+        @ApiOkResponse({ type: Foo })
+        find() {}
+
+        helper() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes).toHaveLength(0);
+      expect(explorer.getSchemas()).toEqual({});
+    });
+
+    it('registers class-level schemas as soon as one route is included', () => {
+      @ApiResponse({ status: 403, type: ErrorDto })
+      @ApiExtraModels(ExtraModel)
+      @Controller('foo')
+      class FooController {
+        @Get()
+        @ApiExcludeEndpoint()
+        @ApiOkResponse({ type: Foo })
+        find() {}
+
+        @Get('included')
+        included() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes).toHaveLength(1);
+      expect(Object.keys(explorer.getSchemas()).sort()).toEqual([
+        'ErrorDto',
+        'ExtraModel'
+      ]);
     });
   });
 
@@ -3608,6 +3825,170 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when controller-level metadata is shared by several operations', () => {
+    @ApiBearerAuth()
+    @ApiTags('foos')
+    @ApiHeader({ name: 'X-Tenant' })
+    @ApiBadRequestResponse({ description: 'Bad request' })
+    @Controller('foos')
+    class FooController {
+      @Get()
+      find() {}
+
+      @ApiBearerAuth('other')
+      @Post()
+      create() {}
+
+      @Get(':id')
+      findOne() {}
+    }
+
+    const explore = () =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    it('should not share values between documents', () => {
+      const before = explore();
+      const [find, create] = explore();
+
+      find.security.push({ 'api-key': [] });
+      create.security[0].bearer.push('scope');
+      find.tags.push('extra');
+      find.root.parameters[0].name = 'X-Changed';
+      (find.responses['400'] as ResponseObject).description = 'Changed';
+
+      for (const routes of [before, explore()]) {
+        expect(routes.map((route) => route.security)).toEqual([
+          [{ bearer: [] }],
+          [{ bearer: [] }, { other: [] }],
+          [{ bearer: [] }]
+        ]);
+      }
+      const findOne = before[2];
+      expect(findOne.tags).toEqual(['foos']);
+      expect(findOne.root.parameters[0].name).toEqual('X-Tenant');
+      expect(findOne.responses['400']).toEqual({ description: 'Bad request' });
+    });
+
+    it('should not share values between operations of one document', () => {
+      const [find, create, findOne] = explore();
+
+      find.security.push({ 'api-key': [] });
+      find.security[0].bearer.push('scope');
+      find.tags.push('extra');
+
+      expect(create.security).toEqual([{ bearer: [] }, { other: [] }]);
+      expect(findOne.security).toEqual([{ bearer: [] }]);
+      expect(findOne.tags).toEqual(['foos']);
+    });
+  });
+
+  describe('when a controller extends a controller with plugin metadata', () => {
+    class InternalModel {
+      @ApiProperty()
+      name: string;
+    }
+
+    const createBaseController = () => {
+      abstract class BaseController {
+        static [METADATA_FACTORY_NAME]() {
+          return {
+            find: {
+              type: InternalModel,
+              summary: 'Internal summary',
+              description: 'Internal description'
+            }
+          };
+        }
+
+        @Get()
+        @ApiExcludeEndpoint()
+        find() {}
+      }
+      return BaseController;
+    };
+
+    const explore = (metatype: Type<any>) => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        { instance: new metatype(), metatype } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+      return { routes, schemas: explorer.getSchemas() };
+    };
+
+    it('does not describe an overriding handler with the metadata of the handler it overrides', () => {
+      @Controller('foo')
+      class FooController extends createBaseController() {
+        static [METADATA_FACTORY_NAME]() {
+          return { find: {} };
+        }
+
+        @Get()
+        find() {}
+      }
+
+      const { routes, schemas } = explore(FooController);
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].responses['200']).toEqual({ description: '' });
+      expect(routes[0].root!.summary).toBeUndefined();
+      expect(routes[0].root!.description).toBeUndefined();
+      expect(schemas).toEqual({});
+    });
+
+    it('does not describe an overriding handler with the factory its class inherits', () => {
+      @Controller('foo')
+      class FooController extends createBaseController() {
+        @Get()
+        find() {}
+      }
+
+      const { routes, schemas } = explore(FooController);
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].responses['200']).toEqual({ description: '' });
+      expect(routes[0].root!.summary).toBeUndefined();
+      expect(routes[0].root!.description).toBeUndefined();
+      expect(schemas).toEqual({});
+    });
+
+    it('describes an inherited handler with the metadata of the class that declares it', () => {
+      abstract class BaseController {
+        static [METADATA_FACTORY_NAME]() {
+          return { find: { type: InternalModel, summary: 'Find summary' } };
+        }
+
+        @Get()
+        find() {}
+      }
+
+      @Controller('foo')
+      class FooController extends BaseController {}
+
+      const { routes, schemas } = explore(FooController);
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].responses['200']).toEqual({
+        description: '',
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/InternalModel' }
+          }
+        }
+      });
+      expect(routes[0].root!.summary).toEqual('Find summary');
+      expect(Object.keys(schemas)).toEqual(['InternalModel']);
+    });
+  });
+
   describe('when using ApiWebhook', () => {
     @Controller()
     class StripeWebhooksController {
@@ -3631,6 +4012,131 @@ describe('SwaggerExplorer', () => {
 
       expect(routes[0].root.isWebhook).toBe(true);
       expect(routes[0].root.webhookName).toBe('stripeEvent');
+    });
+  });
+
+  describe('when a method declares a header that its controller also declares', () => {
+    const explore = (controller: Type<unknown>) =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new (controller as any)(),
+          metatype: controller
+        } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    it('should merge an @ApiHeader() into one parameter, with the method values first', () => {
+      @ApiHeader({ name: 'X-Tenant', description: 'class', required: true })
+      @Controller('foos')
+      class FooController {
+        @ApiHeader({ name: 'X-Tenant', description: 'method' })
+        @Get()
+        find() {}
+      }
+
+      expect(explore(FooController)[0].root.parameters).toEqual([
+        {
+          name: 'X-Tenant',
+          in: 'header',
+          description: 'method',
+          required: true,
+          schema: { type: 'string' }
+        }
+      ]);
+    });
+
+    it('should match a @Headers() parameter regardless of the header name case', () => {
+      @ApiHeader({ name: 'X-Tenant', description: 'tenant' })
+      @Controller('foos')
+      class FooController {
+        @Get()
+        find(@Headers('x-tenant') tenant: string) {
+          return tenant;
+        }
+      }
+
+      expect(explore(FooController)[0].root.parameters).toEqual([
+        {
+          name: 'x-tenant',
+          in: 'header',
+          description: 'tenant',
+          required: true,
+          schema: { type: 'string' }
+        }
+      ]);
+    });
+
+    it('should keep controller headers that the method does not declare', () => {
+      @ApiHeader({ name: 'X-Tenant' })
+      @Controller('foos')
+      class FooController {
+        @ApiHeader({ name: 'X-Trace' })
+        @Get()
+        find() {}
+      }
+
+      expect(
+        explore(FooController)[0].root.parameters.map((p: any) => p.name)
+      ).toEqual(['X-Tenant', 'X-Trace']);
+    });
+
+    it('should keep the schema values that only the controller sets', () => {
+      @ApiHeader({ name: 'X-Region', enum: ['eu', 'us'], example: 'eu' })
+      @Controller('foos')
+      class FooController {
+        @Get()
+        find(@Headers('x-region') region: string) {
+          return region;
+        }
+      }
+
+      expect(explore(FooController)[0].root.parameters).toEqual([
+        {
+          name: 'x-region',
+          in: 'header',
+          required: true,
+          schema: { type: 'string', enum: ['eu', 'us'], example: 'eu' }
+        }
+      ]);
+    });
+
+    it('should not keep both a schema and a content on one parameter', () => {
+      @ApiHeader({
+        name: 'X-Filter',
+        content: { 'application/json': { schema: { type: 'object' } } }
+      })
+      @Controller('foos')
+      class FooController {
+        @ApiHeader({ name: 'X-Filter', schema: { type: 'string' } })
+        @Get()
+        find() {}
+      }
+
+      const [parameter] = explore(FooController)[0].root.parameters;
+
+      expect(parameter.schema).toEqual({ type: 'string' });
+      expect(parameter).not.toHaveProperty('content');
+    });
+
+    it('should merge an @ApiHeader() and a @Headers() parameter of the same method regardless of the header name case', () => {
+      @Controller('foos')
+      class FooController {
+        @ApiHeader({ name: 'X-Tenant', description: 'tenant' })
+        @Get()
+        find(@Headers('x-tenant') tenant: string) {
+          return tenant;
+        }
+      }
+
+      const parameters = explore(FooController)[0].root.parameters;
+
+      expect(parameters).toHaveLength(1);
+      expect(parameters[0]).toMatchObject({
+        name: 'X-Tenant',
+        in: 'header',
+        description: 'tenant'
+      });
     });
   });
 });

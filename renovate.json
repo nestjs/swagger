@@ -1,11 +1,20 @@
 {
-  "semanticCommits": true,
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "semanticCommits": "enabled",
+  "labels": ["dependencies"],
   "packageRules": [
     {
-      "depTypeList": ["devDependencies"],
+      "matchDepTypes": ["devDependencies"],
       "automerge": true
+    },
+    {
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7.0.0"
+    },
+    {
+      "matchPackageNames": ["prettier-v2"],
+      "enabled": false
     }
-  ],
-  "labels": ["dependencies"],
-  "extends": ["config:base"]
+  ]
 }

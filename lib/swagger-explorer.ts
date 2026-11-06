@@ -19,18 +19,16 @@ import { ApplicationConfig, MetadataScanner } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { LegacyRouteConverter } from '@nestjs/core/router/legacy-route-converter.js';
 import { RoutePathFactory } from '@nestjs/core/router/route-path-factory.js';
-import {
-  cloneDeep,
-  flatten,
-  get,
-  head,
-  isArray,
-  isEmpty,
-  mapValues,
-  omit,
-  omitBy,
-  pick
-} from 'es-toolkit/compat';
+import cloneDeep from 'es-toolkit/compat/cloneDeep';
+import flatten from 'es-toolkit/compat/flatten';
+import get from 'es-toolkit/compat/get';
+import head from 'es-toolkit/compat/head';
+import isArray from 'es-toolkit/compat/isArray';
+import isEmpty from 'es-toolkit/compat/isEmpty';
+import mapValues from 'es-toolkit/compat/mapValues';
+import omit from 'es-toolkit/compat/omit';
+import omitBy from 'es-toolkit/compat/omitBy';
+import pick from 'es-toolkit/compat/pick';
 import { parse, Wildcard } from 'path-to-regexp';
 import { DECORATORS } from './constants.js';
 import { exploreApiCallbacksMetadata } from './explorers/api-callbacks.explorer.js';
@@ -58,6 +56,7 @@ import {
 } from './explorers/api-use-tags.explorer.js';
 import { DenormalizedDocResolvers } from './interfaces/denormalized-doc-resolvers.interface.js';
 import { DenormalizedDoc } from './interfaces/denormalized-doc.interface.js';
+import { GlobalMetadata } from './interfaces/global-metadata.interface.js';
 import { OperationIdFactory } from './interfaces/index.js';
 import {
   OpenAPIObject,
@@ -68,6 +67,7 @@ import { MimetypeContentWrapper } from './services/mimetype-content-wrapper.js';
 import { ResponseObjectFactory } from './services/response-object-factory.js';
 import { SchemaObjectFactory } from './services/schema-object-factory.js';
 import { isBodyParameter } from './utils/is-body-parameter.util.js';
+import { isSameParameter } from './utils/is-same-parameter.util.js';
 import { mergeAndUniq } from './utils/merge-and-uniq.util.js';
 
 export class SwaggerExplorer {
@@ -102,7 +102,7 @@ export class SwaggerExplorer {
     private readonly options: {
       httpAdapterType?: string;
       standardSchemaConverter?: StandardSchemaConverter;
-    } = {}
+    } & GlobalMetadata = {}
   ) {
     this.responseObjectFactory = new ResponseObjectFactory(
       this.options.standardSchemaConverter
@@ -144,7 +144,8 @@ export class SwaggerExplorer {
         exploreApiParametersMetadata.bind(
           null,
           this.schemas,
-          this.schemaObjectFactory
+          this.schemaObjectFactory,
+          this.options.globalParameters ?? []
         )
       ],
       security: [exploreApiSecurityMetadata],
@@ -196,33 +197,24 @@ export class SwaggerExplorer {
     if (excludeController) {
       return [];
     }
+    const methodNames = this.metadataScanner
+      .getAllMethodNames(prototype)
+      .filter((name) =>
+        this.isEndpointIncluded(instance, prototype, prototype[name], options)
+      );
+    // Exploring class-level metadata registers the schemas it refers to, so
+    // skip controllers that do not contribute any endpoint to the document
+    if (isEmpty(methodNames)) {
+      return [];
+    }
     const globalMetadata = this.exploreGlobalMetadata(metatype, {
       autoTagControllers: options.autoTagControllers
     });
     const ctrlExtraModels = exploreGlobalApiExtraModelsMetadata(metatype);
     this.registerExtraModels(ctrlExtraModels);
 
-    const denormalizedPaths = this.metadataScanner.scanFromPrototype<
-      any,
-      DenormalizedDoc[]
-    >(instance, prototype, (name) => {
+    const denormalizedPaths = methodNames.map((name): DenormalizedDoc[] => {
       const targetCallback = prototype[name];
-      const includeEndpoint = exploreApiIncludeEndpointMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-      if (options.onlyIncludeDecoratedEndpoints && !includeEndpoint) {
-        return;
-      }
-      const excludeEndpoint = exploreApiExcludeEndpointMetadata(
-        instance,
-        prototype,
-        targetCallback
-      );
-      if (excludeEndpoint && excludeEndpoint.disable) {
-        return;
-      }
       const ctrlExtraModels = exploreApiExtraModelsMetadata(
         instance,
         prototype,
@@ -267,14 +259,17 @@ export class SwaggerExplorer {
             ...methodMetadata,
             root: endpointMetadata as any
           });
+          // Controller-level values (e.g., "security", "tags") are the very
+          // objects stored by class decorators, so each operation needs a copy.
+          const controllerMetadata = cloneDeep(globalMetadata);
           const mergedMethodMetadata = this.mergeMetadata(
-            globalMetadata,
+            controllerMetadata,
             omitBy(endpointMetadata, isEmpty)
           );
           return this.migrateOperationSchema(
             {
               responses: {},
-              ...omit(globalMetadata, 'chunks'),
+              ...omit(controllerMetadata, 'chunks'),
               ...mergedMethodMetadata
             },
             prototype,
@@ -304,6 +299,33 @@ export class SwaggerExplorer {
     return flatten(denormalizedPaths).filter((path) => path.root?.path);
   }
 
+  private isEndpointIncluded(
+    instance: object,
+    prototype: Type<unknown>,
+    method: Function,
+    options: {
+      onlyIncludeDecoratedEndpoints?: boolean;
+    }
+  ): boolean {
+    if (isUndefined(Reflect.getMetadata(PATH_METADATA, method))) {
+      return false;
+    }
+    const includeEndpoint = exploreApiIncludeEndpointMetadata(
+      instance,
+      prototype,
+      method
+    );
+    if (options.onlyIncludeDecoratedEndpoints && !includeEndpoint?.disable) {
+      return false;
+    }
+    const excludeEndpoint = exploreApiExcludeEndpointMetadata(
+      instance,
+      prototype,
+      method
+    );
+    return !(excludeEndpoint && excludeEndpoint.disable);
+  }
+
   private exploreGlobalMetadata(
     metatype: Type<unknown>,
     options: {
@@ -316,7 +338,8 @@ export class SwaggerExplorer {
       exploreGlobalApiResponseMetadata.bind(
         null,
         this.schemas,
-        this.responseObjectFactory
+        this.responseObjectFactory,
+        this.options.globalResponses ?? {}
       ),
       exploreGlobalApiHeaderMetadata
     ];
@@ -593,6 +616,12 @@ export class SwaggerExplorer {
     }
     return mapValues(methodValue, (value, key) => {
       if (key in globalValue) {
+        if (key === 'parameters') {
+          return this.mergeParameters(
+            (globalValue as Record<string, any>)[key],
+            value as any[]
+          );
+        }
         return this.deepMergeMetadata(
           (globalValue as Record<string, any>)[key],
           (methodValue as Record<string, any>)[key],
@@ -602,6 +631,50 @@ export class SwaggerExplorer {
       }
       return value;
     });
+  }
+
+  /**
+   * A parameter may only appear once in an operation. When both the controller
+   * and the method declare it, the method's values take precedence.
+   */
+  private mergeParameters(
+    controllerParameters: Array<Record<string, any>>,
+    methodParameters: Array<Record<string, any>>
+  ) {
+    const inherited = [...controllerParameters];
+    const merged = methodParameters.map((param) => {
+      const index = inherited.findIndex((controllerParameter) =>
+        isSameParameter(controllerParameter, param)
+      );
+      if (index < 0) {
+        return param;
+      }
+      const [controllerParameter] = inherited.splice(index, 1);
+      return this.mergeParameter(controllerParameter, param);
+    });
+    return [...inherited, ...merged];
+  }
+
+  /**
+   * The schema is merged too, so that an `enum` or `example` documented on the
+   * controller isn't lost to the plain schema of a `@Headers()` parameter.
+   */
+  private mergeParameter(
+    controllerParameter: Record<string, any>,
+    methodParameter: Record<string, any>
+  ) {
+    const parameter = { ...controllerParameter, ...methodParameter };
+    // `schema` and `content` are mutually exclusive, so keep the method's one
+    if (methodParameter.content) {
+      delete parameter.schema;
+    } else if (methodParameter.schema) {
+      delete parameter.content;
+      parameter.schema = {
+        ...controllerParameter.schema,
+        ...methodParameter.schema
+      };
+    }
+    return parameter;
   }
 
   private mergeValues(

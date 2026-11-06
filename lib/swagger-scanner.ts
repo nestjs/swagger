@@ -9,7 +9,9 @@ import { MODULE_METADATA, MODULE_PATH } from '@nestjs/common/constants.js';
 import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { Module } from '@nestjs/core/injector/module.js';
-import { flatten, isEmpty } from 'es-toolkit/compat';
+import flatten from 'es-toolkit/compat/flatten';
+import isEmpty from 'es-toolkit/compat/isEmpty';
+import { GlobalMetadata } from './interfaces/global-metadata.interface.js';
 import {
   OpenAPIObject,
   OperationIdFactory,
@@ -27,7 +29,10 @@ import { SwaggerExplorer } from './swagger-explorer.js';
 import { SwaggerTransformer } from './swagger-transformer.js';
 import { applyExampleMaxDepth } from './utils/apply-example-max-depth.util.js';
 import { getGlobalPrefix } from './utils/get-global-prefix.js';
-import { stripDynamicDefaults } from './utils/strip-dynamic-defaults.util.js';
+import {
+  stripDynamicDefaults,
+  stripDynamicOperationDefaults
+} from './utils/strip-dynamic-defaults.util.js';
 import { stripLastSlash } from './utils/strip-last-slash.util.js';
 
 export class SwaggerScanner {
@@ -42,7 +47,8 @@ export class SwaggerScanner {
 
   public scanApplication(
     app: INestApplication,
-    options: SwaggerDocumentOptions
+    options: SwaggerDocumentOptions,
+    globalMetadata: GlobalMetadata = {}
   ): Omit<OpenAPIObject, 'openapi' | 'info'> {
     const {
       deepScanRoutes,
@@ -68,7 +74,11 @@ export class SwaggerScanner {
     const container = untypedApp.container as NestContainer;
     const internalConfigRef = untypedApp.config as ApplicationConfig;
     const httpAdapterType = app.getHttpAdapter().getType();
-    this.initializeSwaggerExplorer(httpAdapterType, standardSchemaConverter);
+    this.initializeSwaggerExplorer(
+      httpAdapterType,
+      standardSchemaConverter,
+      globalMetadata
+    );
 
     const modules: Module[] = this.getModules(
       container.getModules(),
@@ -121,11 +131,15 @@ export class SwaggerScanner {
       );
     });
 
+    const routes = flatten(denormalizedPaths);
     const schemas = this.explorer.getSchemas();
     this.addExtraModels(schemas, extraModels);
 
     if (excludeDynamicDefaults) {
       stripDynamicDefaults(schemas as Record<string, SchemaObject>);
+      for (const route of routes) {
+        stripDynamicOperationDefaults(route);
+      }
     }
 
     applyExampleMaxDepth(
@@ -134,7 +148,7 @@ export class SwaggerScanner {
     );
 
     return {
-      ...this.transformer.normalizePaths(flatten(denormalizedPaths)),
+      ...this.transformer.normalizePaths(routes),
       components: {
         schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }
@@ -261,11 +275,13 @@ export class SwaggerScanner {
 
   private initializeSwaggerExplorer(
     httpAdapterType: string,
-    standardSchemaConverter?: SwaggerDocumentOptions['standardSchemaConverter']
+    standardSchemaConverter?: SwaggerDocumentOptions['standardSchemaConverter'],
+    globalMetadata?: GlobalMetadata
   ) {
     this.explorer = new SwaggerExplorer(this.schemaObjectFactory, {
       httpAdapterType,
-      standardSchemaConverter
+      standardSchemaConverter,
+      ...globalMetadata
     });
   }
 }

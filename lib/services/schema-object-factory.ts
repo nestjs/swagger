@@ -1,16 +1,14 @@
 import { Logger, Type } from '@nestjs/common';
 import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
-import {
-  flatten,
-  isEqual,
-  isFunction,
-  isString,
-  keyBy,
-  mapValues,
-  omit,
-  omitBy,
-  pick
-} from 'es-toolkit/compat';
+import flatten from 'es-toolkit/compat/flatten';
+import isEqual from 'es-toolkit/compat/isEqual';
+import isFunction from 'es-toolkit/compat/isFunction';
+import isString from 'es-toolkit/compat/isString';
+import keyBy from 'es-toolkit/compat/keyBy';
+import mapValues from 'es-toolkit/compat/mapValues';
+import omit from 'es-toolkit/compat/omit';
+import omitBy from 'es-toolkit/compat/omitBy';
+import pick from 'es-toolkit/compat/pick';
 import { DECORATORS } from '../constants.js';
 import { getTypeIsArrayTuple } from '../decorators/helpers.js';
 import { ApiSchemaOptions } from '../decorators/index.js';
@@ -367,9 +365,16 @@ export class SchemaObjectFactory {
           prototype,
           key
         );
+        const explicitOptions: string[] =
+          Reflect.getMetadata(
+            DECORATORS.API_MODEL_PROPERTY_EXPLICIT_OPTIONS,
+            prototype,
+            key
+          ) ?? [];
         const hasDeclaredSchemaCombinator = schemaCombinators.some(
           (combinator) => combinator in (reflectedPropertyMetadata || {})
         );
+        const hasExplicitType = explicitOptions.includes('type');
         const schemaObjectMetadata = property as SchemaObjectMetadata;
 
         if (
@@ -380,7 +385,7 @@ export class SchemaObjectFactory {
           schemaObjectMetadata.items[declaredSchemaCombinator] =
             property[declaredSchemaCombinator];
           delete property[declaredSchemaCombinator];
-        } else if (hasDeclaredSchemaCombinator) {
+        } else if (hasDeclaredSchemaCombinator && !hasExplicitType) {
           delete schemaObjectMetadata.type;
         }
       }
@@ -497,6 +502,13 @@ export class SchemaObjectFactory {
     }
 
     metadata = this.resolveLazyEnum(metadata);
+
+    if (metadata.default !== undefined) {
+      metadata = {
+        ...metadata,
+        default: this.pickDocumentedDefaultKeys(metadata.default, metadata.type)
+      };
+    }
 
     if (Array.isArray(metadata.type)) {
       return this.createFromNestedArray(
@@ -940,6 +952,12 @@ export class SchemaObjectFactory {
       } as SchemaObjectMetadata;
     }
     if (this.isBigInt(typeRef as Function)) {
+      if (metadata.isArray) {
+        return this.transformToArraySchemaProperty(metadata, key, {
+          format: metadata.format || 'int64',
+          type: 'integer'
+        });
+      }
       return {
         format: 'int64',
         ...metadata,
@@ -1017,6 +1035,65 @@ export class SchemaObjectFactory {
     type: Function | Type<unknown> | string
   ): type is { type: Function } & Function {
     return isFunction(type) && type.name == 'type';
+  }
+
+  /**
+   * Keeps only the keys of a default value that its model documents, so that a
+   * property hidden from the model (e.g. with "@ApiHideProperty()") is not
+   * published through the default of a property that holds the model.
+   */
+  private pickDocumentedDefaultKeys(
+    value: unknown,
+    type: unknown,
+    ancestors = new Set<object>()
+  ): unknown {
+    if (Array.isArray(value)) {
+      return value.map((item) =>
+        this.pickDocumentedDefaultKeys(item, type, ancestors)
+      );
+    }
+    if (!value || typeof value !== 'object' || value instanceof Date) {
+      return value;
+    }
+    while (Array.isArray(type)) {
+      type = type[0];
+    }
+    const model = value.constructor === Object ? type : value.constructor;
+    if (!this.isUserDefinedClass(model)) {
+      return value;
+    }
+    if (ancestors.has(value)) {
+      return undefined;
+    }
+    ancestors.add(value);
+
+    const documentedValue: Record<string, unknown> = {};
+    const prototype = model.prototype;
+    for (const key of this.modelPropertiesAccessor.getModelProperties(
+      prototype
+    )) {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) {
+        continue;
+      }
+      const { type: propertyType } =
+        Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key) ??
+        {};
+      documentedValue[key] = this.pickDocumentedDefaultKeys(
+        value[key],
+        this.isLazyTypeFunc(propertyType) ? propertyType() : propertyType,
+        ancestors
+      );
+    }
+    ancestors.delete(value);
+    return documentedValue;
+  }
+
+  private isUserDefinedClass(type: unknown): type is Type<unknown> {
+    return (
+      isFunction(type) &&
+      !isBuiltInType(type) &&
+      !Function.prototype.toString.call(type).includes('[native code]')
+    );
   }
 
   private getTypeName(type: Type<unknown> | string): string {

@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { omit } from 'es-toolkit/compat';
+import omit from 'es-toolkit/compat/omit';
 import {
   EncodingObject,
   ExamplesObject,

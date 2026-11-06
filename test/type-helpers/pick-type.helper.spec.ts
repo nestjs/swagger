@@ -45,5 +45,23 @@ describe('PickType', () => {
         'firstName'
       ]);
     });
+
+    it('should pick a property whose key is a number', () => {
+      class PricesDto {
+        @ApiProperty()
+        0: number;
+
+        @ApiProperty()
+        1: number;
+      }
+
+      class PublicPricesDto extends PickType(PricesDto, [0]) {}
+
+      const prototype = PublicPricesDto.prototype as any as Type<unknown>;
+
+      expect(modelPropertiesAccessor.getModelProperties(prototype)).toEqual([
+        '0'
+      ]);
+    });
   });
 });

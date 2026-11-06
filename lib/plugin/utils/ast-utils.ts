@@ -177,14 +177,21 @@ export function getJSDocParamDescriptionsOfNode(
 }
 
 export function parseCommentDocValue(docValue: string, type: ts.Type) {
-  let value = docValue.replace(/'/g, '"').trim();
+  const rawValue = docValue.trim();
+  let value = rawValue.replace(/'/g, '"');
 
   if (!type || !isString(type)) {
     try {
-      value = JSON.parse(value);
+      value = JSON.parse(rawValue);
     } catch {
-      // Do nothing
+      try {
+        value = JSON.parse(value);
+      } catch {
+        // Do nothing
+      }
     }
+  } else if (/^"[^"]*"$/.test(rawValue)) {
+    value = rawValue.slice(1, -1);
   } else if (isString(type)) {
     if (value.split(' ').length !== 1 && !value.startsWith('"')) {
       value = null;
@@ -226,10 +233,12 @@ export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
         tagResults[tag] = [];
       }
 
-      const type = typeChecker.getTypeAtLocation(node);
+      const type = typeChecker.getNonNullableType(
+        typeChecker.getTypeAtLocation(node)
+      );
       if (hasProperties) {
         blocks.forEach((block) => {
-          const docValue = renderDocNode(block.content).split('\n')[0];
+          const docValue = renderDocNode(block.content).trim().split('\n')[0];
           const value = parseCommentDocValue(docValue, type);
 
           if (value !== null) {
@@ -308,11 +317,11 @@ export function getDecoratorName(decorator: Decorator) {
     if (isDynamicallyAdded(identifier)) {
       return undefined;
     }
-    return getIdentifierFromName(
-      (callExpression as CallExpression).expression
-    ).getText();
+    return getImportedName(
+      getIdentifierFromName((callExpression as CallExpression).expression)
+    );
   }
-  return getIdentifierFromName(decorator.expression).getText();
+  return getImportedName(getIdentifierFromName(decorator.expression));
 }
 
 /**
@@ -394,7 +403,7 @@ function getIdentifierFromName(expression: LeftHandSideExpression) {
   if (identifier && identifier.kind !== SyntaxKind.Identifier) {
     throw new Error();
   }
-  return identifier;
+  return identifier as Identifier;
 }
 
 function getNameFromExpression(expression: LeftHandSideExpression) {
@@ -402,6 +411,35 @@ function getNameFromExpression(expression: LeftHandSideExpression) {
     return (expression as PropertyAccessExpression).name;
   }
   return expression;
+}
+
+/**
+ * Returns the name the decorator was exported under rather than the local
+ * binding: `import { Exclude as Hidden }` binds `Hidden` in the file, but the
+ * decorator is still `Exclude`. Only renames written in the file itself are
+ * followed; `@ns.Name()` already refers to the exported name.
+ */
+function getImportedName(identifier: Identifier) {
+  const name = identifier.getText();
+  if (identifier.parent.kind === SyntaxKind.PropertyAccessExpression) {
+    return name;
+  }
+  for (const statement of identifier.getSourceFile().statements) {
+    if (!ts.isImportDeclaration(statement)) {
+      continue;
+    }
+    const namedBindings = statement.importClause?.namedBindings;
+    if (!namedBindings || !ts.isNamedImports(namedBindings)) {
+      continue;
+    }
+    const importSpecifier = namedBindings.elements.find(
+      (element) => element.name.text === name
+    );
+    if (importSpecifier) {
+      return (importSpecifier.propertyName ?? importSpecifier.name).text;
+    }
+  }
+  return name;
 }
 
 export function findNullableTypeFromUnion(

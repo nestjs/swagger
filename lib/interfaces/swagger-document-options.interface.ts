@@ -79,7 +79,8 @@ export interface SwaggerDocumentOptions {
   autoTagControllers?: boolean;
 
   /**
-   * If `true`, swagger will only include routes that are decorated with the `@ApiIncludeEndpoint()` decorator
+   * If `true`, swagger will only include routes that are decorated with the `@ApiIncludeEndpoint()` decorator.
+   * Routes decorated with `@ApiIncludeEndpoint(false)` are treated as not decorated.
    * @default false
    */
   onlyIncludeDecoratedEndpoints?: boolean;

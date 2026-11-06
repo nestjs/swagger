@@ -105,6 +105,57 @@ describe('SwaggerTypesMapper', () => {
       });
     });
 
+    it('should move OpenAPI 3.1 schema keywords into the schema for type-based parameters', () => {
+      const params = [
+        {
+          name: 'token',
+          in: 'path',
+          required: true,
+          type: 'string',
+          format: 'base64url',
+          contentEncoding: 'base64url',
+          contentMediaType: 'application/octet-stream',
+          const: 'abc'
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'token',
+        in: 'path',
+        required: true,
+        schema: {
+          type: 'string',
+          format: 'base64url',
+          contentEncoding: 'base64url',
+          contentMediaType: 'application/octet-stream',
+          const: 'abc'
+        }
+      });
+    });
+
+    it('should move OpenAPI 3.1 schema keywords into an explicit parameter schema', () => {
+      const params = [
+        {
+          name: 'token',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' },
+          contentEncoding: 'base64url'
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'token',
+        in: 'path',
+        required: true,
+        schema: { type: 'string', contentEncoding: 'base64url' }
+      });
+    });
+
     it('should not merge structural keywords like `not` into an explicit parameter schema', () => {
       const params = [
         {
@@ -124,6 +175,52 @@ describe('SwaggerTypesMapper', () => {
         in: 'query',
         required: true,
         schema: { $ref: '#/components/schemas/Pet' }
+      });
+    });
+
+    it('should move string length constraints of array parameters to the items', () => {
+      const params = [
+        {
+          name: 'tags',
+          in: 'query',
+          required: false,
+          type: String,
+          isArray: true,
+          minLength: 2,
+          maxLength: 5,
+          maxItems: 3
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'tags',
+        in: 'query',
+        required: false,
+        schema: {
+          type: 'array',
+          maxItems: 3,
+          items: { type: 'string', minLength: 2, maxLength: 5 }
+        }
+      });
+    });
+
+    it.each([
+      ['a format', { type: 'string', format: 'uuid' }],
+      ['a reference', { $ref: '#/components/schemas/Foo' }]
+    ])('should keep explicit array items with %s', (_, items) => {
+      const params = [
+        { name: 'ids', in: 'query', required: true, isArray: true, items }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'ids',
+        in: 'query',
+        required: true,
+        schema: { type: 'array', items }
       });
     });
 

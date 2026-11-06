@@ -1,6 +1,7 @@
 import { Type } from '@nestjs/common';
 import { isFunction } from '@nestjs/common/utils/shared.utils.js';
-import { flatMap, identity } from 'es-toolkit/compat';
+import flatMap from 'es-toolkit/compat/flatMap';
+import identity from 'es-toolkit/compat/identity';
 import { DECORATORS } from '../constants.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';

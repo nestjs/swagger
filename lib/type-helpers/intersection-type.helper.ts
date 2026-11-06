@@ -72,9 +72,12 @@ export function IntersectionType<T extends Type[]>(...classRefs: T) {
     });
   });
 
-  const intersectedNames = classRefs.reduce((prev, ref) => prev + ref.name, '');
+  // Resolved on access, as the name of a mapped type can change once plugin
+  // metadata has been loaded
   Object.defineProperty(IntersectionClassType, 'name', {
-    value: `Intersection${intersectedNames}`
+    configurable: true,
+    get: () =>
+      `Intersection${classRefs.reduce((prev, ref) => prev + ref.name, '')}`
   });
   return IntersectionClassType as Intersection<T>;
 }
