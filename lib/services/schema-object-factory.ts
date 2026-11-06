@@ -570,10 +570,7 @@ export class SchemaObjectFactory {
             : undefined;
 
       schemas[enumName] = {
-        type:
-          (param.isArray
-            ? param.schema?.['items']?.['type']
-            : param.schema?.['type']) ?? 'string',
+        type: this.getEnumParamType(param),
         enum: _enum,
         ...param.enumSchema,
         ...(param['x-enumNames'] ? { 'x-enumNames': param['x-enumNames'] } : {})
@@ -1133,6 +1130,19 @@ export class SchemaObjectFactory {
       !isDateCtor(param.type as Function) &&
       !this.isBigInt(param.type as Function)
     );
+  }
+
+  private getEnumParamType(
+    param: ParamWithTypeMetadata & BaseParameterObject
+  ): string {
+    const type = param.isArray
+      ? (param.schema?.['items']?.['type'] ?? param.items?.type)
+      : (param.schema?.['type'] ?? param.type);
+    const name = isFunction(type) ? type.name : type;
+    const mapped = isString(name)
+      ? this.swaggerTypesMapper.mapTypeToOpenAPIType(name)
+      : undefined;
+    return mapped ?? 'string';
   }
 
   /**
