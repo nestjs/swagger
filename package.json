@@ -1,6 +1,6 @@
 {
   "name": "@nestjs/swagger",
-  "version": "12.1.0",
+  "version": "12.1.1",
   "description": "OpenAPI for NestJS: generate the API document from controllers and decorators, serve Swagger UI, and derive request types with mapped types.",
   "keywords": [
     "nestjs",
