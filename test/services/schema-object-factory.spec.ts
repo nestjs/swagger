@@ -1763,7 +1763,7 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
-    it('should default to string when the parameter type is a constructor', () => {
+    it('should map the parameter type when it is a constructor', () => {
       const params: ParamWithTypeMetadata & BaseParameterObject = {
         type: Number,
         required: true,
@@ -1776,7 +1776,7 @@ describe('SchemaObjectFactory', () => {
 
       expect(schemas['MyEnum']).toEqual({
         enum: [1, 2],
-        type: 'string'
+        type: 'number'
       });
     });
 

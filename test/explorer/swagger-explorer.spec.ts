@@ -3013,6 +3013,11 @@ describe('SwaggerExplorer', () => {
       Major = 2
     }
 
+    enum Size {
+      Small = 1,
+      Large = 2
+    }
+
     enum Color {
       Red = 'red',
       Blue = 'blue'
@@ -3021,6 +3026,9 @@ describe('SwaggerExplorer', () => {
     class ListQuery {
       @ApiPropertyOptional({ enum: Level, enumName: 'Level' })
       level?: Level;
+
+      @ApiPropertyOptional({ enum: Size, enumName: 'Size', type: Number })
+      size?: Size;
 
       @ApiPropertyOptional({
         enum: Priority,
@@ -3054,6 +3062,7 @@ describe('SwaggerExplorer', () => {
 
       const schemas = explorer.getSchemas();
       expect(schemas.Level).toEqual({ type: 'number', enum: [1, 2] });
+      expect(schemas.Size).toEqual({ type: 'number', enum: [1, 2] });
       expect(schemas.Priority).toEqual({ type: 'number', enum: [1, 2] });
       expect(schemas.Color).toEqual({ type: 'string', enum: ['red', 'blue'] });
     });

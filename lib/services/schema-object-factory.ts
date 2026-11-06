@@ -1138,7 +1138,11 @@ export class SchemaObjectFactory {
     const type = param.isArray
       ? (param.schema?.['items']?.['type'] ?? param.items?.type)
       : (param.schema?.['type'] ?? param.type);
-    return isString(type) ? type : 'string';
+    const name = isFunction(type) ? type.name : type;
+    const mapped = isString(name)
+      ? this.swaggerTypesMapper.mapTypeToOpenAPIType(name)
+      : undefined;
+    return mapped ?? 'string';
   }
 
   /**
