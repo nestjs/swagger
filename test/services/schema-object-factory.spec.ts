@@ -1365,6 +1365,52 @@ describe('SchemaObjectFactory', () => {
       expect(settings.bypassRateLimit).toBe(true);
     });
 
+    it('should read plugin metadata before picking the keys of a nested default', () => {
+      const loggerWarnSpy = vi
+        .spyOn(Logger, 'warn')
+        .mockImplementation(() => {});
+
+      class SettingsDto {
+        enabled = true;
+
+        @ApiHideProperty()
+        secret = 'x';
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            enabled: { required: true, type: () => Boolean, default: true }
+          };
+        }
+      }
+      class ResponseDto {
+        settings = new SettingsDto();
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            settings: {
+              required: true,
+              type: () => SettingsDto,
+              default: new SettingsDto()
+            }
+          };
+        }
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      const settingsDefault = () =>
+        (schemas[ResponseDto.name].properties as Record<string, SchemaObject>)
+          .settings.default;
+
+      schemaObjectFactory.exploreModelSchema(ResponseDto, schemas);
+      expect(settingsDefault()).toEqual({ enabled: true });
+
+      schemaObjectFactory.exploreModelSchema(ResponseDto, schemas);
+      expect(settingsDefault()).toEqual({ enabled: true });
+      expect(loggerWarnSpy).not.toHaveBeenCalled();
+
+      loggerWarnSpy.mockRestore();
+    });
+
     describe('@ApiSchema', () => {
       it('should use the class name when no options object was passed', () => {
         @ApiSchema()

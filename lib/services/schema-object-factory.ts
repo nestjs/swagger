@@ -1069,6 +1069,7 @@ export class SchemaObjectFactory {
 
     const documentedValue: Record<string, unknown> = {};
     const prototype = model.prototype;
+    this.modelPropertiesAccessor.applyMetadataFactory(prototype);
     for (const key of this.modelPropertiesAccessor.getModelProperties(
       prototype
     )) {
