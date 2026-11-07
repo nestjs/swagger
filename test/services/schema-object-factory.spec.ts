@@ -2847,6 +2847,98 @@ describe('SchemaObjectFactory', () => {
         'InfoPostDTO'
       );
     });
+
+    it('should keep the type the parent declared unless the re-declaration narrows it', () => {
+      enum Status {
+        Active = 'active',
+        Archived = 'archived'
+      }
+      class Tag {}
+      class PinnedTag extends Tag {}
+      class CreateItemDto {
+        @ApiProperty({ type: [Tag] })
+        tags: Tag[];
+
+        @ApiProperty({ type: 'integer' })
+        count: number;
+
+        @ApiProperty({ enum: Status, enumName: 'Status' })
+        status: Status;
+
+        @ApiProperty()
+        mainTag: Tag;
+
+        @ApiProperty()
+        value: string | number;
+      }
+      class UpdateItemDto extends CreateItemDto {
+        @ApiPropertyOptional({ description: 'Replaces every tag' })
+        override tags: Tag[];
+
+        @ApiPropertyOptional()
+        override count: number;
+
+        @ApiPropertyOptional()
+        override status: Status;
+
+        @ApiPropertyOptional()
+        override mainTag: PinnedTag;
+
+        @ApiPropertyOptional()
+        override value: number;
+      }
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(UpdateItemDto, schemas);
+
+      expect(schemas['UpdateItemDto'].properties).toEqual({
+        tags: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/Tag' },
+          description: 'Replaces every tag'
+        },
+        count: { type: 'integer' },
+        status: { allOf: [{ $ref: '#/components/schemas/Status' }] },
+        mainTag: { $ref: '#/components/schemas/PinnedTag' },
+        value: { type: 'number' }
+      });
+    });
+
+    it('should keep the type the parent declared when CLI plugin metadata describes the re-declaration', () => {
+      class Tag {}
+      class CreateTagsDto {
+        @ApiProperty({ type: [Tag] })
+        tags: Tag[];
+
+        @ApiProperty({ type: 'integer' })
+        count: number;
+      }
+      class UpdateTagsDto extends CreateTagsDto {
+        @ApiPropertyOptional()
+        override tags?: Tag[];
+
+        @ApiPropertyOptional()
+        override count?: number;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            tags: { required: false, type: () => [Tag] },
+            count: { required: false, type: () => Number }
+          };
+        }
+      }
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(UpdateTagsDto, schemas);
+
+      expect(schemas['UpdateTagsDto']).toEqual({
+        type: 'object',
+        properties: {
+          tags: { type: 'array', items: { $ref: '#/components/schemas/Tag' } },
+          count: { type: 'integer' }
+        }
+      });
+    });
   });
 
   describe('inherited property required override', () => {
