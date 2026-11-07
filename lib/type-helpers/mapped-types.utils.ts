@@ -1,6 +1,7 @@
 import { Type } from '@nestjs/common';
 import identity from 'es-toolkit/compat/identity';
 import omitBy from 'es-toolkit/compat/omitBy';
+import { DECORATORS } from '../constants.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
 
@@ -88,4 +89,38 @@ export function clonePluginMetadataFactory(
   } else {
     target[METADATA_FACTORY_NAME] = () => targetMetadata;
   }
+}
+
+/**
+ * Re-applying `@ApiProperty()` on a mapped type records every option of the
+ * parent's metadata as explicit, including the `type` reflected from the
+ * parent's TypeScript type. Gives the property the options that the parent
+ * declared explicitly instead (plus `extraOptions`).
+ */
+export function inheritExplicitApiPropertyOptions(
+  source: object,
+  target: object,
+  propertyKey: string,
+  extraOptions: string[] = []
+) {
+  const explicitOptions = new Set<string>(extraOptions);
+  for (
+    let current: object | null = source;
+    current && current !== Object.prototype;
+    current = Reflect.getPrototypeOf(current)
+  ) {
+    (
+      Reflect.getOwnMetadata(
+        DECORATORS.API_MODEL_PROPERTY_EXPLICIT_OPTIONS,
+        current,
+        propertyKey
+      ) ?? []
+    ).forEach((option: string) => explicitOptions.add(option));
+  }
+  Reflect.defineMetadata(
+    DECORATORS.API_MODEL_PROPERTY_EXPLICIT_OPTIONS,
+    [...explicitOptions],
+    target,
+    propertyKey
+  );
 }

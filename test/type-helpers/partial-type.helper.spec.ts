@@ -3,7 +3,15 @@ import { validate } from 'class-validator';
 import { DECORATORS } from '../../lib/constants';
 import { MetadataLoader } from '../../lib/plugin/metadata-loader';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
-import { PartialType } from '../../lib/type-helpers';
+import { ApiProperty } from '../../lib/decorators';
+import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
+import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
+import {
+  IntersectionType,
+  OmitType,
+  PartialType,
+  PickType
+} from '../../lib/type-helpers';
 import { CreateUserDto } from './fixtures/create-user-dto.fixture';
 import { SERIALIZED_METADATA } from './fixtures/serialized-metadata.fixture';
 
@@ -128,6 +136,69 @@ describe('PartialType', () => {
         isArray: false,
         required: false,
         type: String
+      });
+    });
+  });
+  describe('Schema', () => {
+    const schemaObjectFactory = new SchemaObjectFactory(
+      new ModelPropertiesAccessor(),
+      new SwaggerTypesMapper()
+    );
+
+    it('should not turn a type inferred for a property declaring oneOf into an explicit one', () => {
+      class NullableBinDto {
+        @ApiProperty({
+          required: false,
+          oneOf: [{ type: 'string' }, { type: 'null' }]
+        })
+        bin?: string | null;
+      }
+      class UpdateNullableBinDto extends PartialType(NullableBinDto) {}
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(NullableBinDto, schemas);
+      schemaObjectFactory.exploreModelSchema(UpdateNullableBinDto, schemas);
+
+      const oneOf = [{ type: 'string' }, { type: 'null' }];
+      expect(schemas.NullableBinDto.properties.bin).toEqual({ oneOf });
+      expect(schemas.UpdateNullableBinDto.properties.bin).toEqual({ oneOf });
+    });
+
+    it.each([
+      ['PickType', (base: Type<any>) => PickType(base, ['bin'])],
+      ['OmitType', (base: Type<any>) => OmitType(base, [])],
+      ['IntersectionType', (base: Type<any>) => IntersectionType(base, base)]
+    ])('should leave the type of a oneOf property inferred in %s', (_, map) => {
+      class NullableBinDto {
+        @ApiProperty({ oneOf: [{ type: 'string' }, { type: 'null' }] })
+        bin: string | null;
+      }
+      class MappedDto extends (map(NullableBinDto) as Type<any>) {}
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(MappedDto, schemas);
+
+      expect(schemas.MappedDto.properties.bin).toEqual({
+        oneOf: [{ type: 'string' }, { type: 'null' }]
+      });
+    });
+
+    it('should keep a type declared explicitly next to oneOf', () => {
+      class ExplicitTypeDto {
+        @ApiProperty({
+          type: 'string',
+          oneOf: [{ maxLength: 3 }, { minLength: 10 }]
+        })
+        code: string;
+      }
+      class UpdateExplicitTypeDto extends PartialType(ExplicitTypeDto) {}
+
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(UpdateExplicitTypeDto, schemas);
+
+      expect(schemas.UpdateExplicitTypeDto.properties.code).toEqual({
+        type: 'string',
+        oneOf: [{ maxLength: 3 }, { minLength: 10 }]
       });
     });
   });

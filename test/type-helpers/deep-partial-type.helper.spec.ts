@@ -3,6 +3,8 @@ import { DECORATORS } from '../../lib/constants';
 import { ApiProperty } from '../../lib/decorators';
 import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
+import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
+import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import { DeepPartialType } from '../../lib/type-helpers';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
@@ -508,5 +510,23 @@ describe('DeepPartialType', () => {
         ]);
       }
     );
+  });
+
+  it('should leave the type of a oneOf property inferred', () => {
+    class NullableBinDto {
+      @ApiProperty({ oneOf: [{ type: 'string' }, { type: 'null' }] })
+      bin: string | null;
+    }
+    class UpdateNullableBinDto extends DeepPartialType(NullableBinDto) {}
+
+    const schemas: Record<string, any> = {};
+    new SchemaObjectFactory(
+      new ModelPropertiesAccessor(),
+      new SwaggerTypesMapper()
+    ).exploreModelSchema(UpdateNullableBinDto, schemas);
+
+    expect(schemas.UpdateNullableBinDto.properties.bin).toEqual({
+      oneOf: [{ type: 'string' }, { type: 'null' }]
+    });
   });
 });
