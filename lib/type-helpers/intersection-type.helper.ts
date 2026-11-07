@@ -8,7 +8,10 @@ import { DECORATORS } from '../constants.js';
 import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
-import { clonePluginMetadataFactory } from './mapped-types.utils.js';
+import {
+  clonePluginMetadataFactory,
+  inheritExplicitApiPropertyOptions
+} from './mapped-types.utils.js';
 
 const modelPropertiesAccessor = new ModelPropertiesAccessor();
 
@@ -60,6 +63,11 @@ export function IntersectionType<T extends Type[]>(...classRefs: T) {
         );
         const decoratorFactory = ApiProperty(metadata);
         decoratorFactory(IntersectionClassType.prototype, propertyKey);
+        inheritExplicitApiPropertyOptions(
+          classRef.prototype,
+          IntersectionClassType.prototype,
+          propertyKey
+        );
       });
     }
     applyFields(fields);

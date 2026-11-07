@@ -12,6 +12,7 @@ import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
 import {
   clonePluginMetadataFactory,
+  inheritExplicitApiPropertyOptions,
   setMappedTypeClassName
 } from './mapped-types.utils.js';
 
@@ -61,6 +62,11 @@ export function PickType<T, K extends keyof T>(
       );
       const decoratorFactory = ApiProperty(metadata);
       decoratorFactory(PickTypeClass.prototype, propertyKey);
+      inheritExplicitApiPropertyOptions(
+        classRef.prototype,
+        PickTypeClass.prototype,
+        propertyKey
+      );
     });
 
     if (PickTypeClass[METADATA_FACTORY_NAME]) {
