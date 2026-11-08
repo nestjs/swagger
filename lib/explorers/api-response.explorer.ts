@@ -131,6 +131,12 @@ const mapResponsesToSwaggerResponses = (
   return mapValues(openApiResponses, omitParamType);
 };
 
+// Error statuses (4xx/5xx) must not suppress the inferred success response.
+const hasSuccessResponse = (responses?: Record<string, unknown>) =>
+  Object.keys(responses ?? {}).some(
+    (status) => isNaN(Number(status)) || Number(status) < 400
+  );
+
 function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
   do {
     if (!prototype.constructor) {
@@ -171,18 +177,19 @@ function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
         meta.status = getStatusCode(prototype[key]);
       }
       const descriptor = Object.getOwnPropertyDescriptor(prototype, key);
-      // overrideExisting: false would skip every response after the first one.
-      if (
-        Reflect.getMetadata(
-          DECORATORS.API_RESPONSE,
-          descriptor?.value ?? prototype
-        )
-      ) {
+      const existing = Reflect.getMetadata(
+        DECORATORS.API_RESPONSE,
+        descriptor?.value ?? prototype
+      );
+      if (hasSuccessResponse(existing)) {
         return;
       }
-      [meta, ...responses].forEach((response) =>
-        ApiResponse(response)(prototype, key, descriptor)
-      );
+      // overrideExisting: false would skip every response after the first one.
+      [meta, ...responses]
+        .filter((response) => !existing?.[response.status])
+        .forEach((response) =>
+          ApiResponse(response)(prototype, key, descriptor)
+        );
     });
   } while (
     (prototype = Reflect.getPrototypeOf(prototype) as Type<any>) &&
