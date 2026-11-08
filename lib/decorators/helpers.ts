@@ -1,12 +1,14 @@
 import { METHOD_METADATA } from '@nestjs/common/constants.js';
 import { isConstructor } from '@nestjs/common/utils/shared.utils.js';
 import isArray from 'es-toolkit/compat/isArray';
+import isString from 'es-toolkit/compat/isString';
 import isUndefined from 'es-toolkit/compat/isUndefined';
 import negate from 'es-toolkit/compat/negate';
 import omit from 'es-toolkit/compat/omit';
 import pickBy from 'es-toolkit/compat/pickBy';
 import { DECORATORS } from '../constants.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
+import { isBuiltInType } from '../utils/is-built-in-type.util.js';
 
 export function createMethodDecorator<T = any>(
   metakey: string,
@@ -81,7 +83,7 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
         const designType =
           target?.constructor?.[METADATA_FACTORY_NAME]?.()[propertyKey]?.type ??
           Reflect.getMetadata('design:type', target, propertyKey);
-        if (designType) {
+        if (replacesInheritedType(existingMetadata, designType)) {
           newMetadata.type = designType;
         }
       }
@@ -120,6 +122,20 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
       );
     }
   };
+}
+
+/**
+ * An inferred type replaces the inherited one, except where it would drop an
+ * array or a string type, or swap a class for a built-in.
+ */
+function replacesInheritedType(
+  inherited: Record<string, any>,
+  type: Function | undefined
+): boolean {
+  if (!type || inherited.isArray || isString(inherited.type)) {
+    return false;
+  }
+  return !isBuiltInType(type) || isBuiltInType(inherited.type);
 }
 
 export function createMixedDecorator<T = any>(
