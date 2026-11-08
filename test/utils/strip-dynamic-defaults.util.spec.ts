@@ -90,4 +90,30 @@ describe('stripDynamicDefaults', () => {
 
     expect(schemas.Dto.allOf[0].properties.ts.default).toBeUndefined();
   });
+
+  it('should strip defaults from additionalProperties schemas', () => {
+    const schemas: any = {
+      Dto: {
+        type: 'object',
+        properties: {
+          lastSeen: {
+            type: 'object',
+            additionalProperties: {
+              type: 'string',
+              format: 'date-time',
+              default: new Date()
+            }
+          },
+          flags: { type: 'object', additionalProperties: true }
+        }
+      }
+    };
+
+    stripDynamicDefaults(schemas);
+
+    expect(
+      schemas.Dto.properties.lastSeen.additionalProperties.default
+    ).toBeUndefined();
+    expect(schemas.Dto.properties.flags.additionalProperties).toBe(true);
+  });
 });
