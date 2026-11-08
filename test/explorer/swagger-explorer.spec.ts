@@ -33,6 +33,7 @@ import {
   ApiHeader,
   ApiIncludeEndpoint,
   ApiLink,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -538,6 +539,18 @@ describe('SwaggerExplorer', () => {
       @Delete(':id')
       remove(): void {}
 
+      @Post()
+      @ApiNotFoundResponse({ description: 'Parent foo not found' })
+      create(): Promise<Foo> {
+        return Promise.resolve(new Foo());
+      }
+
+      @Get()
+      @ApiDefaultResponse({ description: 'Latest foo' })
+      findLatest(): Promise<Foo> {
+        return Promise.resolve(new Foo());
+      }
+
       static [METADATA_FACTORY_NAME]() {
         return {
           find: {
@@ -551,7 +564,15 @@ describe('SwaggerExplorer', () => {
           },
           remove: {
             responses: [{ status: 404, description: 'Foo not found' }]
-          }
+          },
+          create: {
+            responses: [
+              { status: 404, description: 'Foo not found' },
+              { status: 409, description: 'Foo already exists' }
+            ],
+            type: Foo
+          },
+          findLatest: { type: Foo }
         };
       }
     }
@@ -591,6 +612,31 @@ describe('SwaggerExplorer', () => {
       expect(routes[1].responses).toEqual({
         '200': { description: '' },
         '404': { description: 'Foo not found' }
+      });
+    });
+
+    it('should keep the success response next to an error response decorator', () => {
+      const routes = exploreFooController();
+
+      expect(routes[2].responses).toEqual({
+        '201': {
+          description: '',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/Foo' }
+            }
+          }
+        },
+        '404': { description: 'Parent foo not found' },
+        '409': { description: 'Foo already exists' }
+      });
+    });
+
+    it('should not add the success response next to an explicit one', () => {
+      const routes = exploreFooController();
+
+      expect(routes[3].responses).toEqual({
+        default: { description: 'Latest foo' }
       });
     });
   });
