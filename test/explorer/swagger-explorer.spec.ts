@@ -2422,6 +2422,40 @@ describe('SwaggerExplorer', () => {
         ).length
       ).toEqual(1);
     });
+
+    it('should give every path and version its own operation ids', () => {
+      @Controller('proxy')
+      class AllAliasesController {
+        @All(['a', 'b'])
+        forward(): void {}
+
+        @Version(['1', '2'])
+        @All('versioned')
+        forwardVersioned(): void {}
+      }
+
+      const config = new ApplicationConfig();
+      config.enableVersioning({ type: VersioningType.URI });
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new AllAliasesController(),
+          metatype: AllAliasesController
+        } as InstanceWrapper<AllAliasesController>,
+        config,
+        { modulePath: undefined, globalPrefix: undefined }
+      );
+
+      const operationIds = routes
+        .filter((route) => route.root.method === 'get')
+        .map((route) => [route.root.path, route.root.operationId]);
+      expect(operationIds).toEqual([
+        ['/proxy/a', 'AllAliasesController_forward[0]_get'],
+        ['/proxy/b', 'AllAliasesController_forward[1]_get'],
+        ['/v1/proxy/versioned', 'AllAliasesController_forwardVersioned_v1_get'],
+        ['/v2/proxy/versioned', 'AllAliasesController_forwardVersioned_v2_get']
+      ]);
+    });
   });
 
   describe('when the HTTP QUERY method is used', () => {

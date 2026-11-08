@@ -418,6 +418,20 @@ export class SwaggerExplorer {
           DECORATORS.API_EXTENSION,
           method
         );
+        const pathVersion = versions.find(
+          (v) => fullPath.includes(`/${v}/`) || fullPath.endsWith(`/${v}`)
+        );
+        const isAlias =
+          allRoutePaths.length > 1 && allRoutePaths.length !== versions.length;
+        const methodKey = isAlias ? `${method.name}[${index}]` : method.name;
+
+        const nonPathVersion = this.getNonPathVersion(
+          methodVersion,
+          metatype,
+          versioningOptions
+        );
+        const operationVersion = pathVersion ?? nonPathVersion;
+
         if (requestMethod === RequestMethod.ALL) {
           // Workaround for the invalid "ALL" Method
           const validMethods = [
@@ -446,25 +460,12 @@ export class SwaggerExplorer {
               : {}),
             operationId: `${this.getOperationId(
               instance,
-              method.name
+              methodKey,
+              operationVersion
             )}_${requestMethod.toLowerCase()}`,
             ...apiExtension
           }));
         }
-
-        const pathVersion = versions.find(
-          (v) => fullPath.includes(`/${v}/`) || fullPath.endsWith(`/${v}`)
-        );
-        const isAlias =
-          allRoutePaths.length > 1 && allRoutePaths.length !== versions.length;
-        const methodKey = isAlias ? `${method.name}[${index}]` : method.name;
-
-        const nonPathVersion = this.getNonPathVersion(
-          methodVersion,
-          metatype,
-          versioningOptions
-        );
-        const operationVersion = pathVersion ?? nonPathVersion;
 
         return {
           method: RequestMethod[requestMethod].toLowerCase(),
