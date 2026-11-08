@@ -800,10 +800,23 @@ export class SchemaObjectFactory {
         propertyCompilerMetadata
       );
 
-      if ('required' in propertyMetadata && propertyMetadata.required) {
+      // A nested object literal tells whether it is required itself with
+      // "selfRequired", and lists the required keys of its own properties
+      // with "required".
+      const nestedRequired = Array.isArray(propertyMetadata['required'])
+        ? (propertyMetadata['required'] as string[])
+        : undefined;
+      const isRequired =
+        'selfRequired' in propertyMetadata
+          ? propertyMetadata.selfRequired
+          : !nestedRequired && propertyMetadata['required'];
+      if (isRequired) {
         required.push(key);
       }
-      const keysToRemove = ['isArray', 'name', 'required'];
+      const keysToRemove = ['isArray', 'name', 'selfRequired'];
+      if (!nestedRequired?.length) {
+        keysToRemove.push('required');
+      }
       const validMetadataObject = omit(propertyMetadata, keysToRemove);
       properties[key] = validMetadataObject;
     });

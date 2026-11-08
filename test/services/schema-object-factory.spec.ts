@@ -3511,4 +3511,56 @@ describe('SchemaObjectFactory', () => {
       });
     });
   });
+
+  describe('when an object literal property holds another object literal', () => {
+    // Metadata the CLI plugin generates for
+    // `address: { street?: { name: string; number?: string }; tags: { id: string }[] }`
+    class Customer {
+      @ApiProperty({
+        type: () => ({
+          street: {
+            required: false,
+            type: () => ({
+              name: { required: true, type: () => String },
+              number: { required: false, type: () => String }
+            })
+          },
+          tags: {
+            required: true,
+            type: () => [{ id: { required: true, type: () => String } }]
+          }
+        })
+      })
+      address: Record<string, any>;
+    }
+
+    it('should document whether it is required next to its own required keys', () => {
+      const schemas: Record<string, SchemaObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(Customer, schemas);
+
+      expect(schemas.Customer.properties.address).toEqual({
+        type: 'object',
+        properties: {
+          street: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              number: { type: 'string' }
+            },
+            required: ['name']
+          },
+          tags: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: { id: { type: 'string' } },
+              required: ['id']
+            }
+          }
+        },
+        required: ['tags']
+      });
+    });
+  });
 });
