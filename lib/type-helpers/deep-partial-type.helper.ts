@@ -14,6 +14,7 @@ import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
 import {
   clonePluginMetadataFactory,
+  inheritExplicitApiPropertyOptions,
   setMappedTypeClassName
 } from './mapped-types.utils.js';
 
@@ -181,6 +182,12 @@ export function DeepPartialType<T>(
         required: false
       });
       decoratorFactory(DeepPartialTypeClass.prototype, key);
+      inheritExplicitApiPropertyOptions(
+        classRef.prototype,
+        DeepPartialTypeClass.prototype,
+        key,
+        ['required']
+      );
     }
 
     fields.forEach((key) => {

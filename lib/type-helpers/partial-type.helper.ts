@@ -14,6 +14,7 @@ import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
 import {
   clonePluginMetadataFactory,
+  inheritExplicitApiPropertyOptions,
   setMappedTypeClassName
 } from './mapped-types.utils.js';
 
@@ -84,6 +85,12 @@ export function PartialType<T>(
         required: false
       });
       decoratorFactory(PartialTypeClass.prototype, key);
+      inheritExplicitApiPropertyOptions(
+        classRef.prototype,
+        PartialTypeClass.prototype,
+        key,
+        ['required']
+      );
     });
 
     if (PartialTypeClass[METADATA_FACTORY_NAME]) {
