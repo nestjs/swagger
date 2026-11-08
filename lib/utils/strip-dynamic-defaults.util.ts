@@ -92,6 +92,9 @@ function stripFromSchema(schema: SchemaObject | null | undefined): void {
   if (schema.items) {
     stripFromSchema(schema.items as SchemaObject);
   }
+  if (schema.additionalProperties) {
+    stripFromSchema(schema.additionalProperties as SchemaObject);
+  }
   for (const key of ['allOf', 'oneOf', 'anyOf'] as const) {
     if ((schema as any)[key]) {
       for (const sub of (schema as any)[key]) {
