@@ -206,6 +206,42 @@ describe('SwaggerTypesMapper', () => {
       });
     });
 
+    it('should move numeric constraints of array parameters to the items', () => {
+      const params = [
+        {
+          name: 'quantities',
+          in: 'query',
+          required: true,
+          type: Number,
+          isArray: true,
+          minimum: 0,
+          exclusiveMinimum: true,
+          maximum: 100,
+          exclusiveMaximum: true,
+          multipleOf: 5
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'quantities',
+        in: 'query',
+        required: true,
+        schema: {
+          type: 'array',
+          items: {
+            type: 'number',
+            minimum: 0,
+            exclusiveMinimum: true,
+            maximum: 100,
+            exclusiveMaximum: true,
+            multipleOf: 5
+          }
+        }
+      });
+    });
+
     it.each([
       ['a format', { type: 'string', format: 'uuid' }],
       ['a reference', { $ref: '#/components/schemas/Foo' }]

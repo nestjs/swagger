@@ -2534,6 +2534,35 @@ describe('SchemaObjectFactory', () => {
       });
       expect(result.type).toBe('array');
     });
+
+    it('should move numeric constraints to the items', () => {
+      class Order {
+        @ApiProperty({
+          type: [Number],
+          minimum: 0,
+          exclusiveMinimum: true,
+          maximum: 100,
+          exclusiveMaximum: true,
+          multipleOf: 5
+        })
+        quantities: number[];
+      }
+      const schemas: Record<string, SchemaObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(Order, schemas);
+
+      expect(schemas.Order.properties.quantities).toEqual({
+        type: 'array',
+        items: {
+          type: 'number',
+          minimum: 0,
+          exclusiveMinimum: true,
+          maximum: 100,
+          exclusiveMaximum: true,
+          multipleOf: 5
+        }
+      });
+    });
   });
 
   describe('boolean enum and explicit type preservation', () => {
