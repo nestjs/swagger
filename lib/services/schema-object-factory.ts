@@ -374,7 +374,6 @@ export class SchemaObjectFactory {
         const hasDeclaredSchemaCombinator = schemaCombinators.some(
           (combinator) => combinator in (reflectedPropertyMetadata || {})
         );
-        const hasExplicitType = explicitOptions.includes('type');
         const schemaObjectMetadata = property as SchemaObjectMetadata;
 
         if (
@@ -385,8 +384,14 @@ export class SchemaObjectFactory {
           schemaObjectMetadata.items[declaredSchemaCombinator] =
             property[declaredSchemaCombinator];
           delete property[declaredSchemaCombinator];
-        } else if (hasDeclaredSchemaCombinator && !hasExplicitType) {
-          delete schemaObjectMetadata.type;
+        } else if (hasDeclaredSchemaCombinator) {
+          // A declared combinator describes the property, so the keywords
+          // inferred from its TypeScript type give way to it.
+          for (const keyword of ['type', 'additionalProperties']) {
+            if (!explicitOptions.includes(keyword)) {
+              delete schemaObjectMetadata[keyword];
+            }
+          }
         }
       }
       return property as ParameterObject;

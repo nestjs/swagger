@@ -1170,6 +1170,73 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should drop the additionalProperties inferred from a record when property declares oneOf', () => {
+      class DtoWithRecordAndOneOf {
+        @ApiProperty({
+          oneOf: [{ type: 'object', properties: { score: { type: 'number' } } }]
+        })
+        grade: Record<string, string>;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            grade: {
+              required: true,
+              type: 'object',
+              additionalProperties: { type: 'string' }
+            }
+          };
+        }
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithRecordAndOneOf, schemas);
+
+      expect(
+        (schemas['DtoWithRecordAndOneOf'] as Record<string, any>).properties
+          .grade
+      ).toEqual({
+        oneOf: [{ type: 'object', properties: { score: { type: 'number' } } }]
+      });
+    });
+
+    it('should keep an explicit additionalProperties when property also declares oneOf', () => {
+      class DtoWithExplicitAdditionalPropertiesAndOneOf {
+        @ApiProperty({
+          additionalProperties: false,
+          oneOf: [{ type: 'object', properties: { score: { type: 'number' } } }]
+        })
+        grade: Record<string, string>;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            grade: {
+              required: true,
+              type: 'object',
+              additionalProperties: { type: 'string' }
+            }
+          };
+        }
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(
+        DtoWithExplicitAdditionalPropertiesAndOneOf,
+        schemas
+      );
+
+      expect(
+        (
+          schemas['DtoWithExplicitAdditionalPropertiesAndOneOf'] as Record<
+            string,
+            any
+          >
+        ).properties.grade
+      ).toEqual({
+        additionalProperties: false,
+        oneOf: [{ type: 'object', properties: { score: { type: 'number' } } }]
+      });
+    });
+
     it('should purge linked types from properties', () => {
       class Human {
         @ApiProperty()
