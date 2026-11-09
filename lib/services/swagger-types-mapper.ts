@@ -132,11 +132,14 @@ export class SwaggerTypesMapper {
     keysToRemove: KeysToRemove[]
   ) {
     const itemsModifierKeys = [
+      'exclusiveMaximum',
+      'exclusiveMinimum',
       'format',
       'maximum',
       'maxLength',
       'minimum',
       'minLength',
+      'multipleOf',
       'pattern'
     ];
     const explicitItems = (param as SchemaObject).items;

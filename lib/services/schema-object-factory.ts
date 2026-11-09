@@ -1185,11 +1185,14 @@ export class SchemaObjectFactory {
     metadata: SchemaObjectMetadata
   ): [Partial<SchemaObjectMetadata>, string[]] {
     const modifierKeys = [
+      'exclusiveMaximum',
+      'exclusiveMinimum',
       'format',
       'maximum',
       'maxLength',
       'minimum',
       'minLength',
+      'multipleOf',
       'pattern'
     ];
     return [pick(metadata, modifierKeys), modifierKeys];
