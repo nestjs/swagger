@@ -758,6 +758,15 @@ export function collectSourceImportSpecifiers(
       if (!specifiers.has(symbol)) {
         specifiers.set(symbol, specifier);
       }
+      // A type such as `Status.ACTIVE` names a member of the imported enum,
+      // which the file reaches through that same import.
+      if (symbol.flags & ts.SymbolFlags.Enum) {
+        symbol.exports?.forEach((member) => {
+          if (!specifiers.has(member)) {
+            specifiers.set(member, specifier);
+          }
+        });
+      }
     }
   }
   return specifiers;
