@@ -1,4 +1,5 @@
 import { Type } from '@nestjs/common';
+import omitBy from 'es-toolkit/compat/omitBy';
 import { DECORATORS } from '../constants.js';
 import { ApiOperation } from '../decorators/api-operation.decorator.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
@@ -48,10 +49,16 @@ function applyMetadataFactory(prototype: Type<unknown>, instance: object) {
       if (Object.keys(operationMeta).length === 0) {
         return;
       }
-      ApiOperation(operationMeta, { overrideExisting: false })(
+      const descriptor = Object.getOwnPropertyDescriptor(prototype, key);
+      // @ApiOperation() defaults summary to '', which must not hide comments.
+      const existing = omitBy(
+        Reflect.getMetadata(DECORATORS.API_OPERATION, descriptor.value),
+        (value, name) => name === 'summary' && value === ''
+      );
+      ApiOperation({ ...operationMeta, ...existing })(
         prototype,
         key,
-        Object.getOwnPropertyDescriptor(prototype, key)
+        descriptor
       );
     });
   } while (
