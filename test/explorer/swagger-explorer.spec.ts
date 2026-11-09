@@ -641,6 +641,72 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when metadata has comments next to an explicit @ApiOperation', () => {
+    @Controller('foos')
+    class FooController {
+      @Get()
+      @ApiOperation({ operationId: 'listFoos' })
+      findAll(): void {}
+
+      @Get(':id')
+      @ApiOperation({ summary: 'Find foo', deprecated: false })
+      find(): void {}
+
+      static [METADATA_FACTORY_NAME]() {
+        return {
+          findAll: {
+            summary: 'List foos',
+            description: 'Returns every foo',
+            deprecated: true
+          },
+          find: {
+            summary: 'Find foo by id',
+            description: 'Finds a foo by id',
+            deprecated: true
+          }
+        };
+      }
+    }
+
+    const exploreFooController = () =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    it('should add the comment metadata to an explicit @ApiOperation', () => {
+      const routes = exploreFooController();
+
+      expect(routes[0].root).toEqual({
+        method: 'get',
+        path: '/foos',
+        operationId: 'listFoos',
+        summary: 'List foos',
+        description: 'Returns every foo',
+        deprecated: true,
+        parameters: []
+      });
+    });
+
+    it('should keep the keys an explicit @ApiOperation sets', () => {
+      const routes = exploreFooController();
+
+      expect(routes[1].root).toEqual({
+        method: 'get',
+        path: '/foos/{id}',
+        operationId: 'FooController_find',
+        summary: 'Find foo',
+        description: 'Finds a foo by id',
+        deprecated: false,
+        parameters: []
+      });
+    });
+  });
+
   describe('when explicit decorators and metadata are used', () => {
     class Foo {}
 
