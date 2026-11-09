@@ -5,6 +5,7 @@ import { before } from '../../lib/plugin/compiler-plugin';
 // Fixture layout (tsconfig: rootDir="./app/src", outDir="./app/dist"):
 //   app/src/item.dto.ts               imports ItemStatus from '@fixture/shared/messages'
 //   app/src/cjs/item.dto.ts           the same, from a commonjs package
+//   app/src/active-item.dto.ts        types a property with one member of ItemStatus
 //   shared/build/messages/entry.d.ts   re-exports './item.js'
 //   shared/build/messages/item.d.ts    declares ItemStatus
 //
@@ -63,6 +64,16 @@ describe('CLI plugin with a type imported from a workspace package', () => {
 
     expect(output).not.toContain('shared/build/messages/item');
     expect(output).not.toMatch(/\.\.\/\.\.\//);
+  });
+
+  it('should import an enum member through the specifier of its enum', () => {
+    const output = transpileFixture({}, 'active-item.dto.ts');
+
+    expect(output).toContain(
+      `import * as openapi_import_1 from "${packageSpecifier}"`
+    );
+    expect(output).toContain('enum: openapi_import_1.ItemStatus.ACTIVE');
+    expect(output).not.toContain('shared/build/messages/item');
   });
 
   it('should emit a valid require from a commonjs file', () => {
