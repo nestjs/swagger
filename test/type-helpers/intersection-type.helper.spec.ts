@@ -1,5 +1,5 @@
 import { Type } from '@nestjs/common';
-import { Expose, Transform } from 'class-transformer';
+import { Expose, Transform, instanceToInstance } from 'class-transformer';
 import { IsBoolean, IsString } from 'class-validator';
 import { ApiProperty } from '../../lib/decorators';
 import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
@@ -68,6 +68,25 @@ describe('IntersectionType', () => {
         'dateOfBirth',
         'dateOfBirth3'
       ]);
+    });
+  });
+
+  describe('Transformation metadata', () => {
+    class ClassA {
+      @Transform(({ value }) => value + '_transformed')
+      repeatedProperty = 'value';
+    }
+
+    class ClassB {
+      @Transform(({ value }) => value + '_transformed')
+      repeatedProperty = 'value';
+    }
+
+    class IntersectionDto extends IntersectionType(ClassA, ClassB) {}
+
+    it('should not stack transformers declared on the same property', () => {
+      const result = instanceToInstance(new IntersectionDto());
+      expect(result.repeatedProperty).toEqual('value_transformed');
     });
   });
 });
