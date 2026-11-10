@@ -26,9 +26,14 @@ export class MetadataLoader {
     meta: Array<[Promise<unknown>, Record<string, any>]>
   ) {
     const loadPromises = meta.map(async ([fileImport, fileMeta]) => {
-      const fileRef = await fileImport;
+      const fileRef = (await fileImport) as Record<string, any>;
       Object.keys(fileMeta).map((key) => {
-        const clsRef = fileRef[key];
+        const clsRef =
+          fileRef[key] ??
+          (fileRef.default?.name === key ? fileRef.default : undefined);
+        if (!clsRef) {
+          return;
+        }
         clsRef[METADATA_FACTORY_NAME] = () => fileMeta[key];
       });
     });
