@@ -1,9 +1,15 @@
 import { Type } from '@nestjs/common';
+import isFunction from 'es-toolkit/compat/isFunction';
 import { DECORATORS } from '../constants.js';
 import { getSchemaPath } from '../utils/index.js';
 import { CallBackObject } from '../interfaces/callback-object.interface.js';
+import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
+import { SchemaObjectFactory } from '../services/schema-object-factory.js';
+import { isBuiltInType } from '../utils/is-built-in-type.util.js';
 
 export const exploreApiCallbacksMetadata = (
+  schemas: Record<string, SchemaObject>,
+  schemaObjectFactory: SchemaObjectFactory,
   instance: object,
   prototype: Type<unknown>,
   method: object
@@ -20,6 +26,9 @@ export const exploreApiCallbacksMetadata = (
         requestBody,
         expectedResponse
       } = callbackData;
+      if (isFunction(requestBody.type) && !isBuiltInType(requestBody.type)) {
+        schemaObjectFactory.exploreModelSchema(requestBody.type, schemas);
+      }
       return {
         ...acc,
         [eventName]: {

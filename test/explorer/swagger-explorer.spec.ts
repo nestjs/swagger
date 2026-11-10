@@ -23,6 +23,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiCallbacks,
   ApiConsumes,
   ApiCreatedResponse,
   ApiDefaultGetter,
@@ -1908,6 +1909,83 @@ describe('SwaggerExplorer', () => {
       expect(schemas.ExtraModel).toBeDefined();
     });
   });
+
+  describe('when callbacks have a request body', () => {
+    class OrderEvent {
+      @ApiProperty()
+      orderId: string;
+    }
+
+    it('should add the callback request body model to the schemas', () => {
+      @Controller('orders')
+      class OrdersController {
+        @ApiCallbacks({
+          name: 'orderCreated',
+          callbackUrl: '{$request.body#/callbackUrl}',
+          method: 'post',
+          requestBody: { type: OrderEvent },
+          expectedResponse: { status: 200 }
+        })
+        @Post()
+        create() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new OrdersController(),
+          metatype: OrdersController
+        } as InstanceWrapper<OrdersController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(explorer.getSchemas().OrderEvent).toEqual({
+        type: 'object',
+        properties: { orderId: { type: 'string' } },
+        required: ['orderId']
+      });
+      expect(
+        routes[0].callbacks.orderCreated['{$request.body#/callbackUrl}'].post
+          .requestBody
+      ).toEqual({
+        required: true,
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/OrderEvent' }
+          }
+        }
+      });
+    });
+
+    it('should not add a schema for a built-in callback request body type', () => {
+      @Controller('orders')
+      class OrdersController {
+        @ApiCallbacks({
+          name: 'orderCreated',
+          callbackUrl: '{$request.body#/callbackUrl}',
+          method: 'post',
+          requestBody: { type: String },
+          expectedResponse: { status: 200 }
+        })
+        @Post()
+        create() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      explorer.exploreController(
+        {
+          instance: new OrdersController(),
+          metatype: OrdersController
+        } as InstanceWrapper<OrdersController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(explorer.getSchemas()).toEqual({});
+    });
+  });
+
   describe('when a controller is excluded', () => {
     class Foo {}
 

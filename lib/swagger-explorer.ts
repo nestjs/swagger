@@ -150,7 +150,13 @@ export class SwaggerExplorer {
       ],
       security: [exploreApiSecurityMetadata],
       tags: [exploreApiTagsMetadata],
-      callbacks: [exploreApiCallbacksMetadata],
+      callbacks: [
+        exploreApiCallbacksMetadata.bind(
+          null,
+          this.schemas,
+          this.schemaObjectFactory
+        )
+      ],
       responses: [
         exploreApiResponseMetadata.bind(
           null,

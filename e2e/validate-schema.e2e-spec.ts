@@ -203,6 +203,13 @@ describe('Validate OpenAPI schema', () => {
           'properties'
         ]['breed']['type']
       ).toEqual('string');
+      expect(
+        api.paths['/api/cats']['post']['callbacks']['catCreated'][
+          '{$request.body#/callbackUrl}'
+        ]['post']['requestBody']['content']['application/json']['schema'][
+          'properties'
+        ]['name']['type']
+      ).toEqual('string');
       expect(api.paths['/api/cats']['get']['x-codeSamples'][0]['lang']).toEqual(
         'JavaScript'
       );
