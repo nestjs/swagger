@@ -166,6 +166,14 @@ export class SchemaObjectFactory {
       };
     }
     if (isFunction(param.type)) {
+      if (param.name && param.type === Object && !param.isArray) {
+        // any, object, Record and unions reflect as Object, which is not a model
+        const { type: _type, ...rest } = param;
+        const hasCombinator = ['oneOf', 'anyOf', 'allOf'].some(
+          (key) => key in rest
+        );
+        return hasCombinator ? rest : { ...rest, type: 'object' };
+      }
       if (param.name) {
         // We should not spread parameters that have a name
         // Just generate the schema for the type instead and link it with ref if needed
