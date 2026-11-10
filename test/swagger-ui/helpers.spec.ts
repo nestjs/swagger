@@ -52,4 +52,35 @@ describe('buildJSInitOptions', () => {
     expect(js).toContain(requestInterceptor.toString());
     expect(js).toContain(responseInterceptor.toString());
   });
+
+  it('serializes method shorthand into valid JS', async () => {
+    const customOptions = {
+      requestInterceptor(req: any) {
+        return req;
+      },
+      async responseInterceptor(res: any) {
+        return res;
+      },
+      plugins: [
+        {
+          *items() {
+            yield 1;
+          }
+        }
+      ]
+    };
+    const js = buildJSInitOptions({
+      swaggerDoc: {} as any,
+      swaggerUrl: undefined,
+      customOptions: customOptions as any
+    });
+
+    const options = new Function(`${js}; return options;`)().customOptions;
+    const req = { url: '/a' };
+    expect(options.requestInterceptor(req)).toBe(req);
+    await expect(options.responseInterceptor({ ok: 1 })).resolves.toEqual({
+      ok: 1
+    });
+    expect([...options.plugins[0].items()]).toEqual([1]);
+  });
 });
