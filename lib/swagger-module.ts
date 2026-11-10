@@ -36,6 +36,7 @@ import { normalizeRelPath } from './utils/normalize-rel-path.js';
 import { convertNullableToOas31 } from './utils/nullable-to-oas31.util.js';
 import { removeDanglingLinks } from './utils/remove-dangling-links.util.js';
 import { resolvePath } from './utils/resolve-path.util.js';
+import { stripLastSlash } from './utils/strip-last-slash.util.js';
 import { validateGlobalPrefix } from './utils/validate-global-prefix.util.js';
 import { validatePath } from './utils/validate-path.util.js';
 
@@ -530,7 +531,7 @@ export class SwaggerModule {
     documentOrFactory: OpenAPIObject | (() => OpenAPIObject),
     options?: SwaggerCustomOptions
   ) {
-    const globalPrefix = getGlobalPrefix(app);
+    const globalPrefix = stripLastSlash(getGlobalPrefix(app));
     const finalPath = validatePath(
       options?.useGlobalPrefix && validateGlobalPrefix(globalPrefix)
         ? `${globalPrefix}${validatePath(path)}`
