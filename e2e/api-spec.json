@@ -325,6 +325,27 @@
                 }
               }
             }
+          },
+          "catCreated": {
+            "{$request.body#/callbackUrl}": {
+              "post": {
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/CatCreatedEvent"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Your server returns this code if it accepts the callback"
+                  }
+                }
+              }
+            }
           }
         },
         "operationId": "CatsController_create",
@@ -3919,6 +3940,18 @@
           "oneOfExample",
           "enumNamedWithOneOf",
           "kittenIds"
+        ]
+      },
+      "CatCreatedEvent": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the created Cat"
+          }
+        },
+        "required": [
+          "name"
         ]
       },
       "Letter": {

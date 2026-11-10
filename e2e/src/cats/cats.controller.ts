@@ -26,6 +26,7 @@ import {
   getSchemaPath
 } from '../../../lib/index.js';
 import { CatsService } from './cats.service.js';
+import { CatCreatedEvent } from './classes/cat-created-event.class.js';
 import { Cat } from './classes/cat.class.js';
 import { CreateCatDto } from './dto/create-cat.dto.js';
 import { LettersEnum, PaginationQuery } from './dto/pagination-query.dto.js';
@@ -213,6 +214,17 @@ const standardResponseRichSchema = z.object({
 export class CatsController {
   constructor(private readonly catsService: CatsService) {}
 
+  @ApiCallbacks({
+    name: 'catCreated',
+    callbackUrl: '{$request.body#/callbackUrl}',
+    method: 'post',
+    requestBody: {
+      type: CatCreatedEvent
+    },
+    expectedResponse: {
+      status: 200
+    }
+  })
   @ApiCallbacks({
     name: 'mySecondEvent',
     callbackUrl: '{$request.body#/callbackUrl}',
