@@ -376,9 +376,12 @@ export class SchemaObjectFactory {
         );
         const schemaObjectMetadata = property as SchemaObjectMetadata;
 
+        const hasExplicitItemsOrType =
+          explicitOptions.includes('items') || explicitOptions.includes('type');
         if (
-          schemaObjectMetadata?.type === 'array' ||
-          schemaObjectMetadata.isArray
+          (schemaObjectMetadata?.type === 'array' ||
+            schemaObjectMetadata.isArray) &&
+          !hasExplicitItemsOrType
         ) {
           schemaObjectMetadata.items = {};
           schemaObjectMetadata.items[declaredSchemaCombinator] =

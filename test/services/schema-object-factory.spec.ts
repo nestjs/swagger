@@ -1744,6 +1744,39 @@ describe('SchemaObjectFactory', () => {
         required: ['matrix']
       });
     });
+
+    it('should keep explicit array items and item type when array declares allOf', () => {
+      class Tag {}
+      class DtoWithArrayAndAllOf {
+        @ApiProperty({
+          type: [Tag],
+          allOf: [{ minItems: 1 }]
+        })
+        tags: Tag[];
+
+        @ApiProperty({
+          type: [String],
+          allOf: [{ minItems: 1 }]
+        })
+        names: string[];
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithArrayAndAllOf, schemas);
+
+      const props = (schemas['DtoWithArrayAndAllOf'] as Record<string, any>)
+        .properties;
+      expect(props.tags).toEqual({
+        type: 'array',
+        items: { $ref: '#/components/schemas/Tag' },
+        allOf: [{ minItems: 1 }]
+      });
+      expect(props.names).toEqual({
+        type: 'array',
+        items: { type: 'string' },
+        allOf: [{ minItems: 1 }]
+      });
+    });
   });
 
   describe('createEnumSchemaType', () => {
