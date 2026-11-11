@@ -521,6 +521,45 @@ describe('Fastify Swagger', () => {
     });
   });
 
+  describe('global prefix with a trailing slash', () => {
+    let appGlobalPrefix: NestFastifyApplication;
+
+    beforeEach(async () => {
+      appGlobalPrefix = await NestFactory.create<NestFastifyApplication>(
+        ApplicationModule,
+        new FastifyAdapter(),
+        { logger: false }
+      );
+      appGlobalPrefix.setGlobalPrefix('api/');
+
+      const swaggerDocument = SwaggerModule.createDocument(
+        appGlobalPrefix,
+        builder.build()
+      );
+      SwaggerModule.setup('docs', appGlobalPrefix, swaggerDocument, {
+        useGlobalPrefix: true
+      });
+
+      await appGlobalPrefix.init();
+      await appGlobalPrefix.getHttpAdapter().getInstance().ready();
+    });
+
+    afterEach(async () => {
+      await appGlobalPrefix.close();
+    });
+
+    it.each(['/api/docs', '/api/docs-json', '/api/docs-yaml'])(
+      'should serve %s',
+      async (url) => {
+        const response = await request(appGlobalPrefix.getHttpServer()).get(
+          url
+        );
+
+        expect(response.status).toEqual(200);
+      }
+    );
+  });
+
   describe('trailing slash static asset loading', () => {
     const SWAGGER_RELATIVE_URL = '/apidoc';
 
