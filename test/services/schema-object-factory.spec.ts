@@ -3579,6 +3579,45 @@ describe('SchemaObjectFactory', () => {
     });
   });
 
+  describe('when a query DTO property is reflected as Object', () => {
+    class ObjectQueryDto {
+      @ApiPropertyOptional()
+      filter?: any;
+
+      @ApiPropertyOptional()
+      record?: Record<string, string>;
+
+      @ApiPropertyOptional({ oneOf: [{ type: 'string' }, { type: 'number' }] })
+      either?: string | number;
+
+      @ApiPropertyOptional({ type: [Object] })
+      list?: object[];
+    }
+
+    it('should not create an Object component', () => {
+      const params = new ParametersMetadataMapper(
+        modelPropertiesAccessor
+      ).transformModelToProperties([
+        { in: 'query', type: ObjectQueryDto } as any
+      ]) as ParamWithTypeMetadata[];
+      const schemas: Record<string, SchemaObject> = {};
+
+      const result = schemaObjectFactory.createFromModel(params, schemas);
+      const byName = Object.fromEntries(
+        result.map((param: any) => [param.name, param])
+      );
+
+      expect(schemas).toEqual({});
+      expect(byName.filter).toMatchObject({ type: 'object' });
+      expect(byName.record).toMatchObject({ type: 'object' });
+      expect(byName.either).toMatchObject({
+        oneOf: [{ type: 'string' }, { type: 'number' }]
+      });
+      expect(byName.either.type).toBeUndefined();
+      expect(byName.list).toMatchObject({ type: 'object', isArray: true });
+    });
+  });
+
   describe('when a property is an array of bigint', () => {
     class Ledger {
       @ApiProperty({ type: [BigInt] })
