@@ -1,5 +1,23 @@
 import { randomUUID } from 'crypto';
+import { Script } from 'vm';
 import { SwaggerUIInitOptions } from '../interfaces/swagger-ui-init-options.interface.js';
+
+/**
+ * Method shorthand (`{ intercept(req) {} }`) stringifies to a source that is
+ * not a valid expression, so it is read back from an object literal by name
+ */
+function serializeFunction(fn: Function): string {
+  const source = fn.toString();
+  try {
+    new Script(`(${source})`);
+    return source;
+  } catch (err) {
+    if (!(err instanceof SyntaxError)) {
+      return source;
+    }
+    return `({ ${source} })[${JSON.stringify(fn.name)}]`;
+  }
+}
 
 /**
  * Transforms options JS object into a string that can be inserted as 'variable' into JS file
@@ -33,7 +51,7 @@ export function buildJSInitOptions(initOptions: SwaggerUIInitOptions) {
   // matched substring) would be silently corrupted in the generated JS, with
   // the placeholder UUID leaking into the running browser code.
   placeholders.forEach((placeholder, i) => {
-    json = json.replace(`"${placeholder}"`, () => fns[i].toString());
+    json = json.replace(`"${placeholder}"`, () => serializeFunction(fns[i]));
   });
 
   return `let options = ${json};`;

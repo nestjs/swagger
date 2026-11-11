@@ -52,4 +52,52 @@ describe('buildJSInitOptions', () => {
     expect(js).toContain(requestInterceptor.toString());
     expect(js).toContain(responseInterceptor.toString());
   });
+
+  it('serializes method shorthand into valid JS', async () => {
+    const customOptions = {
+      requestInterceptor(req: any) {
+        return req;
+      },
+      async responseInterceptor(res: any) {
+        return res;
+      },
+      plugins: [
+        {
+          *items() {
+            yield 1;
+          }
+        }
+      ]
+    };
+    const js = buildJSInitOptions({
+      swaggerDoc: {} as any,
+      swaggerUrl: undefined,
+      customOptions: customOptions as any
+    });
+
+    const options = new Function(`${js}; return options;`)().customOptions;
+    const req = { url: '/a' };
+    expect(options.requestInterceptor(req)).toBe(req);
+    await expect(options.responseInterceptor({ ok: 1 })).resolves.toEqual({
+      ok: 1
+    });
+    expect([...options.plugins[0].items()]).toEqual([1]);
+  });
+
+  it('keeps minified and non-ASCII arrow functions as they are', async () => {
+    // Built from source text, as a minifier emits it: the TS transform would reformat these
+    const requestInterceptor = new Function('return async(e)=>e')();
+    const responseInterceptor = new Function('return ñ => ñ')();
+    const js = buildJSInitOptions({
+      swaggerDoc: {} as any,
+      swaggerUrl: undefined,
+      customOptions: { requestInterceptor, responseInterceptor } as any
+    });
+
+    const options = new Function(`${js}; return options;`)().customOptions;
+    await expect(options.requestInterceptor({ ok: 1 })).resolves.toEqual({
+      ok: 1
+    });
+    expect(options.responseInterceptor(2)).toBe(2);
+  });
 });
