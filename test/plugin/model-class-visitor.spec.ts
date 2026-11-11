@@ -1244,6 +1244,60 @@ describe('API model properties', () => {
     expect(result.outputText).not.toContain(`type: () => String`);
   });
 
+  it('should emit an enum array for a member of a multi-member enum', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'enum-member.dto.ts';
+    const enumMemberDtoText = `
+      export enum Color { Red = 'red', Blue = 'blue' }
+      export enum Level { Only = 'only' }
+      export enum Merged { First = 'first' }
+      export enum Merged { Second = 'second' }
+      export class EnumMemberDto {
+        kind: Color.Red;
+        kinds: Color.Red[];
+        level: Level.Only;
+        merged: Merged.First;
+      }
+    `;
+    const host = ts.createCompilerHost(options);
+    const getSourceFile = host.getSourceFile.bind(host);
+    host.getSourceFile = (name, languageVersion, ...rest) =>
+      name === filename
+        ? ts.createSourceFile(name, enumMemberDtoText, languageVersion)
+        : getSourceFile(name, languageVersion, ...rest);
+    const program = ts.createProgram([filename], options, host);
+
+    const result = ts.transpileModule(enumMemberDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before({ autoFillEnumName: true, classValidatorShim: false }, program)
+        ]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `kind: { required: true, type: () => String, enum: [require("./enum-member.dto").Color.Red] }`
+    );
+    expect(result.outputText).toContain(
+      `kinds: { required: true, type: () => [String], enum: [require("./enum-member.dto").Color.Red], isArray: true }`
+    );
+    expect(result.outputText).toContain(
+      `level: { required: true, type: () => String, enum: require("./enum-member.dto").Level, enumName: "Level" }`
+    );
+    expect(result.outputText).toContain(
+      `merged: { required: true, type: () => String, enum: [require("./enum-member.dto").Merged.First] }`
+    );
+  });
+
   it('should emit IsIn enum metadata for literal union properties that fall back to Object', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,

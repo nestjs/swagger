@@ -72,7 +72,7 @@ describe('CLI plugin with a type imported from a workspace package', () => {
     expect(output).toContain(
       `import * as openapi_import_1 from "${packageSpecifier}"`
     );
-    expect(output).toContain('enum: openapi_import_1.ItemStatus.ACTIVE');
+    expect(output).toContain('enum: [openapi_import_1.ItemStatus.ACTIVE]');
     expect(output).not.toContain('shared/build/messages/item');
   });
 

@@ -836,6 +836,12 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       type = typeIsArrayTuple.type;
     }
 
+    // A single-member enum is also typed as its only member: keep it as the enum object
+    const isMultiMemberEnumMember =
+      isEnumMember &&
+      typeChecker.getDeclaredTypeOfSymbol((type.symbol as any).parent) !==
+        type;
+
     const typeReferenceDescriptor = { typeName: getText(type, typeChecker) };
     const enumIdentifier = typeReferenceToIdentifier(
       typeReferenceDescriptor,
@@ -848,12 +854,18 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       this._sourceImportSpecifiers
     );
 
-    const enumProperty = factory.createPropertyAssignment(key, enumIdentifier);
+    const enumProperty = factory.createPropertyAssignment(
+      key,
+      isMultiMemberEnumMember
+        ? factory.createArrayLiteralExpression([enumIdentifier])
+        : enumIdentifier
+    );
 
     const extraProperties: ts.PropertyAssignment[] = [];
 
     if (
       options.autoFillEnumName &&
+      !isMultiMemberEnumMember &&
       !hasPropertyKey('enumName', existingProperties)
     ) {
       const fullTypeName = typeReferenceDescriptor.typeName;
