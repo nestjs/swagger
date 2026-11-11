@@ -1,5 +1,11 @@
 import { Type } from '@nestjs/common';
-import { Expose, Transform, instanceToInstance } from 'class-transformer';
+import {
+  Expose,
+  Transform,
+  Type as TransformType,
+  instanceToInstance,
+  plainToInstance
+} from 'class-transformer';
 import { IsBoolean, IsString } from 'class-validator';
 import { ApiProperty } from '../../lib/decorators';
 import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
@@ -87,6 +93,44 @@ describe('IntersectionType', () => {
     it('should not stack transformers declared on the same property', () => {
       const result = instanceToInstance(new IntersectionDto());
       expect(result.repeatedProperty).toEqual('value_transformed');
+    });
+
+    class OtherClass {
+      other = 'other';
+    }
+
+    it('should keep the transformers of a derived class and its base', () => {
+      class BaseClass {
+        @Transform(({ value }) => value + '_base')
+        property = 'value';
+      }
+      class DerivedClass extends BaseClass {
+        @Transform(({ value }) => value + '_derived')
+        declare property: string;
+      }
+      class Dto extends IntersectionType(DerivedClass, OtherClass) {}
+
+      expect(instanceToInstance(new Dto()).property).toEqual(
+        instanceToInstance(new DerivedClass()).property
+      );
+    });
+
+    it('should keep the @Type() override of a derived class', () => {
+      class FirstNested {}
+      class SecondNested {}
+      class BaseClass {
+        @TransformType(() => FirstNested)
+        nested: object;
+      }
+      class DerivedClass extends BaseClass {
+        @TransformType(() => SecondNested)
+        declare nested: object;
+      }
+      class Dto extends IntersectionType(DerivedClass, OtherClass) {}
+
+      expect(plainToInstance(Dto, { nested: {} }).nested).toBeInstanceOf(
+        SecondNested
+      );
     });
   });
 });
