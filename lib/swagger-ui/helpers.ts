@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto';
+import { Script } from 'vm';
 import { SwaggerUIInitOptions } from '../interfaces/swagger-ui-init-options.interface.js';
-
-const EXPRESSION_SOURCE = /^(async\s+)?(function\b|class\b|\(|[\w$]+\s*=>)/;
 
 /**
  * Method shorthand (`{ intercept(req) {} }`) stringifies to a source that is
@@ -9,9 +8,15 @@ const EXPRESSION_SOURCE = /^(async\s+)?(function\b|class\b|\(|[\w$]+\s*=>)/;
  */
 function serializeFunction(fn: Function): string {
   const source = fn.toString();
-  return EXPRESSION_SOURCE.test(source)
-    ? source
-    : `({ ${source} })[${JSON.stringify(fn.name)}]`;
+  try {
+    new Script(`(${source})`);
+    return source;
+  } catch (err) {
+    if (!(err instanceof SyntaxError)) {
+      return source;
+    }
+    return `({ ${source} })[${JSON.stringify(fn.name)}]`;
+  }
 }
 
 /**
