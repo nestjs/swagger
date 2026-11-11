@@ -1257,10 +1257,13 @@ describe('API model properties', () => {
     const enumMemberDtoText = `
       export enum Color { Red = 'red', Blue = 'blue' }
       export enum Level { Only = 'only' }
+      export enum Merged { First = 'first' }
+      export enum Merged { Second = 'second' }
       export class EnumMemberDto {
         kind: Color.Red;
         kinds: Color.Red[];
         level: Level.Only;
+        merged: Merged.First;
       }
     `;
     const host = ts.createCompilerHost(options);
@@ -1289,6 +1292,9 @@ describe('API model properties', () => {
     );
     expect(result.outputText).toContain(
       `level: { required: true, type: () => String, enum: require("./enum-member.dto").Level, enumName: "Level" }`
+    );
+    expect(result.outputText).toContain(
+      `merged: { required: true, type: () => String, enum: [require("./enum-member.dto").Merged.First] }`
     );
   });
 

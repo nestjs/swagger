@@ -837,13 +837,10 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     }
 
     // A single-member enum is also typed as its only member: keep it as the enum object
-    const enumDeclaration = isEnumMember
-      ? type.symbol.valueDeclaration?.parent
-      : undefined;
     const isMultiMemberEnumMember =
-      !!enumDeclaration &&
-      ts.isEnumDeclaration(enumDeclaration) &&
-      enumDeclaration.members.length > 1;
+      isEnumMember &&
+      typeChecker.getDeclaredTypeOfSymbol((type.symbol as any).parent) !==
+        type;
 
     const typeReferenceDescriptor = { typeName: getText(type, typeChecker) };
     const enumIdentifier = typeReferenceToIdentifier(
