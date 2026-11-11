@@ -3589,6 +3589,9 @@ describe('SchemaObjectFactory', () => {
 
       @ApiPropertyOptional({ oneOf: [{ type: 'string' }, { type: 'number' }] })
       either?: string | number;
+
+      @ApiPropertyOptional({ type: [Object] })
+      list?: object[];
     }
 
     it('should not create an Object component', () => {
@@ -3611,6 +3614,7 @@ describe('SchemaObjectFactory', () => {
         oneOf: [{ type: 'string' }, { type: 'number' }]
       });
       expect(byName.either.type).toBeUndefined();
+      expect(byName.list).toMatchObject({ type: 'object', isArray: true });
     });
   });
 

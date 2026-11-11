@@ -166,7 +166,7 @@ export class SchemaObjectFactory {
       };
     }
     if (isFunction(param.type)) {
-      if (param.name && param.type === Object && !param.isArray) {
+      if (param.name && param.type === Object) {
         // any, object, Record and unions reflect as Object, which is not a model
         const { type: _type, ...rest } = param;
         const hasCombinator = ['oneOf', 'anyOf', 'allOf'].some(
