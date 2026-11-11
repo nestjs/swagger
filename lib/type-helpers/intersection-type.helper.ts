@@ -47,7 +47,16 @@ export function IntersectionType<T extends Type[]>(...classRefs: T) {
     );
 
     inheritValidationMetadata(classRef, IntersectionClassType);
-    inheritTransformationMetadata(classRef, IntersectionClassType);
+    // Flatten the prototype chain of classRef first, so that only the classes
+    // of the intersection replace one another
+    class InheritedClassType {}
+    inheritTransformationMetadata(classRef, InheritedClassType);
+    inheritTransformationMetadata(
+      InheritedClassType,
+      IntersectionClassType,
+      undefined,
+      false
+    );
 
     function applyFields(fields: string[]) {
       clonePluginMetadataFactory(
