@@ -376,12 +376,38 @@ export class SchemaObjectFactory {
         );
         const schemaObjectMetadata = property as SchemaObjectMetadata;
 
-        const hasExplicitItemsOrType =
-          explicitOptions.includes('items') || explicitOptions.includes('type');
+        const arrayKeywords = [
+          'items',
+          'prefixItems',
+          'minItems',
+          'maxItems',
+          'uniqueItems',
+          'contains',
+          'minContains',
+          'maxContains',
+          'additionalItems',
+          'unevaluatedItems'
+        ];
+        const combinatorEntries = property[declaredSchemaCombinator];
+        const hasArrayLevelCombinator =
+          Array.isArray(combinatorEntries) &&
+          combinatorEntries.some(
+            (entry) =>
+              entry &&
+              typeof entry === 'object' &&
+              arrayKeywords.some((kw) => kw in entry)
+          );
+        const keepCombinatorOnArray =
+          explicitOptions.includes('items') ||
+          hasArrayLevelCombinator ||
+          (declaredSchemaCombinator === 'allOf' &&
+            explicitOptions.includes('type') &&
+            reflectedPropertyMetadata?.type !== 'array' &&
+            reflectedPropertyMetadata?.type !== Object);
         if (
           (schemaObjectMetadata?.type === 'array' ||
             schemaObjectMetadata.isArray) &&
-          !hasExplicitItemsOrType
+          !keepCombinatorOnArray
         ) {
           schemaObjectMetadata.items = {};
           schemaObjectMetadata.items[declaredSchemaCombinator] =

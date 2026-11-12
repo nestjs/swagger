@@ -1759,6 +1759,13 @@ describe('SchemaObjectFactory', () => {
           allOf: [{ minItems: 1 }]
         })
         names: string[];
+
+        @ApiProperty({
+          type: 'array',
+          items: { type: 'string' },
+          allOf: [{ minItems: 1 }]
+        })
+        explicitItems: string[];
       }
 
       const schemas: Record<string, SchemasObject> = {};
@@ -1775,6 +1782,79 @@ describe('SchemaObjectFactory', () => {
         type: 'array',
         items: { type: 'string' },
         allOf: [{ minItems: 1 }]
+      });
+      expect(props.explicitItems).toEqual({
+        type: 'array',
+        items: { type: 'string' },
+        allOf: [{ minItems: 1 }]
+      });
+    });
+
+    it('should migrate oneOf and anyOf combinators to array items for generic array types', () => {
+      class Cat {}
+      class Dog {}
+      class DtoWithArrayUnionItems {
+        @ApiProperty({
+          type: 'array',
+          oneOf: [{ type: 'string' }, { type: 'number' }]
+        })
+        mixed: (string | number)[];
+
+        @ApiProperty({
+          type: [Object],
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ]
+        })
+        petsOneOf: (Cat | Dog)[];
+
+        @ApiProperty({
+          type: 'array',
+          anyOf: [{ type: 'string' }, { type: 'number' }]
+        })
+        mixedAnyOf: (string | number)[];
+
+        @ApiProperty({
+          type: [Object],
+          anyOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ]
+        })
+        petsAnyOf: (Cat | Dog)[];
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithArrayUnionItems, schemas);
+
+      const props = (schemas['DtoWithArrayUnionItems'] as Record<string, any>)
+        .properties;
+      expect(props.mixed).toEqual({
+        type: 'array',
+        items: { oneOf: [{ type: 'string' }, { type: 'number' }] }
+      });
+      expect(props.petsOneOf).toEqual({
+        type: 'array',
+        items: {
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ]
+        }
+      });
+      expect(props.mixedAnyOf).toEqual({
+        type: 'array',
+        items: { anyOf: [{ type: 'string' }, { type: 'number' }] }
+      });
+      expect(props.petsAnyOf).toEqual({
+        type: 'array',
+        items: {
+          anyOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ]
+        }
       });
     });
   });
