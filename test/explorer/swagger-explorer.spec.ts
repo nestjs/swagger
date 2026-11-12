@@ -3105,6 +3105,94 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when a controller with class-level params inherits its routes', () => {
+    const explore = (controller: Type<unknown>) =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new (controller as any)(),
+          metatype: controller
+        } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    abstract class BaseController {
+      @Get(':id')
+      findOne(@Param('id') id: string) {
+        return id;
+      }
+    }
+
+    it('should add the class-level params to the inherited routes', () => {
+      @ApiParam({ name: 'tenantId', type: String })
+      @ApiQuery({ name: 'locale', type: String, required: false })
+      @Controller(':tenantId/items')
+      class ItemsController extends BaseController {}
+
+      expect(explore(ItemsController)[0].root.parameters).toEqual([
+        {
+          name: 'id',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' }
+        },
+        {
+          name: 'locale',
+          in: 'query',
+          required: false,
+          schema: { type: 'string' }
+        },
+        {
+          name: 'tenantId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' }
+        }
+      ]);
+    });
+
+    it("should add a base controller's class-level params to the subclass routes", () => {
+      @ApiParam({ name: 'tenantId', type: String })
+      abstract class TenantController {}
+
+      @Controller(':tenantId/items')
+      class ItemsController extends TenantController {
+        @Get()
+        findAll() {
+          return [];
+        }
+      }
+
+      expect(explore(ItemsController)[0].root.parameters).toEqual([
+        {
+          name: 'tenantId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' }
+        }
+      ]);
+    });
+
+    it("should not add a subclass's class-level params to its sibling's routes", () => {
+      @ApiParam({ name: 'tenantId', type: String })
+      @Controller(':tenantId/items')
+      class ItemsController extends BaseController {}
+
+      @Controller('items')
+      class PublicItemsController extends BaseController {}
+
+      expect(explore(ItemsController)[0].root.parameters).toHaveLength(2);
+      expect(explore(PublicItemsController)[0].root.parameters).toEqual([
+        {
+          name: 'id',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' }
+        }
+      ]);
+    });
+  });
+
   describe('when a query DTO is built from a response DTO', () => {
     class UserDto {
       @ApiResponseProperty({ format: 'uuid' })

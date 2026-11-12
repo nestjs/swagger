@@ -204,6 +204,8 @@ export function createParamDecorator<T extends Record<string, any> = any>(
       return target;
     }
 
+    createClassDecorator(DECORATORS.API_PARAMETERS, [paramOptions])(target);
+
     const propertyKeys = Object.getOwnPropertyNames(target.prototype);
 
     for (const propertyKey of propertyKeys) {
