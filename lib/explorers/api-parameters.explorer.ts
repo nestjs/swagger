@@ -6,6 +6,7 @@ import map from 'es-toolkit/compat/map';
 import omitBy from 'es-toolkit/compat/omitBy';
 import some from 'es-toolkit/compat/some';
 import unionWith from 'es-toolkit/compat/unionWith';
+import uniq from 'es-toolkit/compat/uniq';
 import { DECORATORS } from '../constants.js';
 import { GlobalParameters } from '../interfaces/global-metadata.interface.js';
 import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
@@ -31,12 +32,19 @@ export const exploreApiParametersMetadata = (
   globalParameters: GlobalParameters,
   instance: object,
   prototype: Type<unknown>,
-  method: Function
+  method: Function,
+  metatype?: Type<unknown>
 ) => {
-  const explicitParameters: any[] = Reflect.getMetadata(
+  const methodParameters: any[] = Reflect.getMetadata(
     DECORATORS.API_PARAMETERS,
     method
   );
+  // Inherited methods are shared with the base, so read these from the class
+  const classParameters: any[] =
+    metatype && Reflect.getMetadata(DECORATORS.API_PARAMETERS, metatype);
+  const explicitParameters = classParameters
+    ? uniq([...(methodParameters ?? []), ...classParameters])
+    : methodParameters;
   const parametersMetadata = parameterMetadataAccessor.explore(
     instance,
     prototype,
