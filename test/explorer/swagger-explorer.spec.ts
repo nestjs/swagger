@@ -2983,6 +2983,68 @@ describe('SwaggerExplorer', () => {
         }
       });
     });
+
+    it('should link to the operation ID of a versioned route', () => {
+      class Owner {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty({ link: () => Owner })
+        partnerId: string;
+      }
+
+      @Controller({ path: 'owners', version: '1' })
+      class OwnerController {
+        @ApiDefaultGetter(Owner, 'id')
+        @Get(':id')
+        @ApiOkResponse({ type: Owner })
+        getOwner(@Param('id') id: string) {}
+
+        @Version('2')
+        @Get(':id/pets')
+        @ApiLink({ from: Owner, routeParam: 'id' })
+        getPets(@Param('id') id: string) {}
+      }
+
+      const exploreOwnerController = (config: ApplicationConfig) =>
+        new SwaggerExplorer(schemaObjectFactory).exploreController(
+          {
+            instance: new OwnerController(),
+            metatype: OwnerController
+          } as InstanceWrapper<OwnerController>,
+          config,
+          { modulePath: 'path' }
+        );
+
+      const uriConfig = new ApplicationConfig();
+      uriConfig.enableVersioning({ type: VersioningType.URI });
+      const uriRoutes = exploreOwnerController(uriConfig);
+      expect(uriRoutes.map((route) => route.root.operationId)).toEqual([
+        'OwnerController_getOwner_v1',
+        'OwnerController_getPets_v2'
+      ]);
+      expect(
+        Object.values(
+          (uriRoutes[0].responses['200'] as ResponseObject).links
+        ).map((link) => link.operationId)
+      ).toEqual(['OwnerController_getOwner_v1', 'OwnerController_getPets_v2']);
+
+      const headerConfig = new ApplicationConfig();
+      headerConfig.enableVersioning({
+        type: VersioningType.HEADER,
+        header: 'X-Version'
+      });
+      const headerRoutes = exploreOwnerController(headerConfig);
+      expect(headerRoutes.map((route) => route.root.operationId)).toEqual([
+        'OwnerController_getOwner_1',
+        'OwnerController_getPets_2'
+      ]);
+      expect(
+        Object.values(
+          (headerRoutes[0].responses['200'] as ResponseObject).links
+        ).map((link) => link.operationId)
+      ).toEqual(['OwnerController_getOwner_1', 'OwnerController_getPets_2']);
+    });
   });
 
   describe('when params are defined', () => {
