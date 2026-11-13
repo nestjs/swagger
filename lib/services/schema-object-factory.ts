@@ -417,7 +417,14 @@ export class SchemaObjectFactory {
           // A declared combinator describes the property, so the keywords
           // inferred from its TypeScript type give way to it.
           for (const keyword of ['type', 'additionalProperties']) {
-            if (!explicitOptions.includes(keyword)) {
+            if (
+              !explicitOptions.includes(keyword) &&
+              !(
+                keyword === 'type' &&
+                (schemaObjectMetadata.isArray ||
+                  explicitOptions.includes('isArray'))
+              )
+            ) {
               delete schemaObjectMetadata[keyword];
             }
           }

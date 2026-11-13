@@ -1766,6 +1766,13 @@ describe('SchemaObjectFactory', () => {
           allOf: [{ minItems: 1 }]
         })
         explicitItems: string[];
+
+        @ApiProperty({
+          isArray: true,
+          items: { type: 'string' },
+          allOf: [{ description: 'x' }]
+        })
+        itemsWithAllOf: string[];
       }
 
       const schemas: Record<string, SchemasObject> = {};
@@ -1787,6 +1794,11 @@ describe('SchemaObjectFactory', () => {
         type: 'array',
         items: { type: 'string' },
         allOf: [{ minItems: 1 }]
+      });
+      expect(props.itemsWithAllOf).toEqual({
+        type: 'array',
+        items: { type: 'string' },
+        allOf: [{ description: 'x' }]
       });
     });
 
