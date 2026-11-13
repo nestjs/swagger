@@ -419,11 +419,7 @@ export class SchemaObjectFactory {
           for (const keyword of ['type', 'additionalProperties']) {
             if (
               !explicitOptions.includes(keyword) &&
-              !(
-                keyword === 'type' &&
-                (schemaObjectMetadata.isArray ||
-                  explicitOptions.includes('isArray'))
-              )
+              !(keyword === 'type' && schemaObjectMetadata.isArray)
             ) {
               delete schemaObjectMetadata[keyword];
             }

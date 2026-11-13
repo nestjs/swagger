@@ -1802,6 +1802,25 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should drop the reflected type next to a combinator when isArray is false', () => {
+      class DtoWithScalarUnion {
+        @ApiProperty({
+          isArray: false,
+          oneOf: [{ type: 'string' }, { type: 'number' }]
+        })
+        value: string | number;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithScalarUnion, schemas);
+
+      const props = (schemas['DtoWithScalarUnion'] as Record<string, any>)
+        .properties;
+      expect(props.value).toEqual({
+        oneOf: [{ type: 'string' }, { type: 'number' }]
+      });
+    });
+
     it('should migrate oneOf and anyOf combinators to array items for generic array types', () => {
       class Cat {}
       class Dog {}
