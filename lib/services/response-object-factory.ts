@@ -29,7 +29,15 @@ export type FactoriesNeededByResponseFactory = {
     methodKey: string,
     fieldKey: string
   ) => string;
-  operationId: (controllerKey: string, methodKey: string) => string;
+  operationId: (
+    controllerKey: string,
+    methodKey: string,
+    version?: string
+  ) => string;
+  operationVersion?: (
+    controller: Function,
+    method: Function
+  ) => string | undefined;
 };
 
 export class ResponseObjectFactory {
@@ -118,7 +126,7 @@ export class ResponseObjectFactory {
         this.modelPropertiesAccessor.getModelProperties(prototype);
 
       const generateLink = (
-        controllerPrototype: { constructor: { name: string } },
+        controllerPrototype: { constructor: Function },
         method: Function,
         parameter: string,
         field: string
@@ -141,7 +149,11 @@ export class ResponseObjectFactory {
             operationId ??
             factories.operationId(
               controllerPrototype.constructor.name,
-              method.name
+              method.name,
+              factories.operationVersion?.(
+                controllerPrototype.constructor,
+                method
+              )
             ),
           parameters: {
             [parameter]: `$response.body#/${field}`

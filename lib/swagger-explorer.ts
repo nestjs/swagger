@@ -164,6 +164,12 @@ export class SwaggerExplorer {
           this.responseObjectFactory,
           {
             operationId: this.operationIdFactory,
+            operationVersion: (controller: Function, method: Function) =>
+              this.getLinkedOperationVersion(
+                controller,
+                method,
+                applicationConfig.getVersioning()
+              ),
             linkName: this.linkNameFactory
           }
         )
@@ -504,6 +510,32 @@ export class SwaggerExplorer {
       instance.constructor?.name || '',
       methodKey,
       version
+    );
+  }
+
+  /**
+   * The version in the operation ID of a linked route, which is the one of
+   * its first path when the route is published under several URI versions.
+   */
+  private getLinkedOperationVersion(
+    metatype: Function,
+    method: Function,
+    versioningOptions: VersioningOptions | undefined
+  ): string | undefined {
+    const methodVersion: VersionValue | undefined = Reflect.getMetadata(
+      VERSION_METADATA,
+      method
+    );
+    if (versioningOptions?.type === VersioningType.URI) {
+      return this.getRoutePathVersions(
+        methodVersion ?? this.getVersionMetadata(metatype, versioningOptions),
+        versioningOptions
+      )[0];
+    }
+    return this.getNonPathVersion(
+      methodVersion,
+      metatype as Type<unknown>,
+      versioningOptions
     );
   }
 
