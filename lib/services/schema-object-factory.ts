@@ -384,9 +384,38 @@ export class SchemaObjectFactory {
         );
         const schemaObjectMetadata = property as SchemaObjectMetadata;
 
+        const arrayKeywords = [
+          'items',
+          'prefixItems',
+          'minItems',
+          'maxItems',
+          'uniqueItems',
+          'contains',
+          'minContains',
+          'maxContains',
+          'additionalItems',
+          'unevaluatedItems'
+        ];
+        const combinatorEntries = property[declaredSchemaCombinator];
+        const hasArrayLevelCombinator =
+          Array.isArray(combinatorEntries) &&
+          combinatorEntries.some(
+            (entry) =>
+              entry &&
+              typeof entry === 'object' &&
+              arrayKeywords.some((kw) => kw in entry)
+          );
+        const keepCombinatorOnArray =
+          explicitOptions.includes('items') ||
+          hasArrayLevelCombinator ||
+          (declaredSchemaCombinator === 'allOf' &&
+            explicitOptions.includes('type') &&
+            reflectedPropertyMetadata?.type !== 'array' &&
+            reflectedPropertyMetadata?.type !== Object);
         if (
-          schemaObjectMetadata?.type === 'array' ||
-          schemaObjectMetadata.isArray
+          (schemaObjectMetadata?.type === 'array' ||
+            schemaObjectMetadata.isArray) &&
+          !keepCombinatorOnArray
         ) {
           schemaObjectMetadata.items = {};
           schemaObjectMetadata.items[declaredSchemaCombinator] =
@@ -396,7 +425,10 @@ export class SchemaObjectFactory {
           // A declared combinator describes the property, so the keywords
           // inferred from its TypeScript type give way to it.
           for (const keyword of ['type', 'additionalProperties']) {
-            if (!explicitOptions.includes(keyword)) {
+            if (
+              !explicitOptions.includes(keyword) &&
+              !(keyword === 'type' && schemaObjectMetadata.isArray)
+            ) {
               delete schemaObjectMetadata[keyword];
             }
           }

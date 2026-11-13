@@ -1744,6 +1744,150 @@ describe('SchemaObjectFactory', () => {
         required: ['matrix']
       });
     });
+
+    it('should keep explicit array items and item type when array declares allOf', () => {
+      class Tag {}
+      class DtoWithArrayAndAllOf {
+        @ApiProperty({
+          type: [Tag],
+          allOf: [{ minItems: 1 }]
+        })
+        tags: Tag[];
+
+        @ApiProperty({
+          type: [String],
+          allOf: [{ minItems: 1 }]
+        })
+        names: string[];
+
+        @ApiProperty({
+          type: 'array',
+          items: { type: 'string' },
+          allOf: [{ minItems: 1 }]
+        })
+        explicitItems: string[];
+
+        @ApiProperty({
+          isArray: true,
+          items: { type: 'string' },
+          allOf: [{ description: 'x' }]
+        })
+        itemsWithAllOf: string[];
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithArrayAndAllOf, schemas);
+
+      const props = (schemas['DtoWithArrayAndAllOf'] as Record<string, any>)
+        .properties;
+      expect(props.tags).toEqual({
+        type: 'array',
+        items: { $ref: '#/components/schemas/Tag' },
+        allOf: [{ minItems: 1 }]
+      });
+      expect(props.names).toEqual({
+        type: 'array',
+        items: { type: 'string' },
+        allOf: [{ minItems: 1 }]
+      });
+      expect(props.explicitItems).toEqual({
+        type: 'array',
+        items: { type: 'string' },
+        allOf: [{ minItems: 1 }]
+      });
+      expect(props.itemsWithAllOf).toEqual({
+        type: 'array',
+        items: { type: 'string' },
+        allOf: [{ description: 'x' }]
+      });
+    });
+
+    it('should drop the reflected type next to a combinator when isArray is false', () => {
+      class DtoWithScalarUnion {
+        @ApiProperty({
+          isArray: false,
+          oneOf: [{ type: 'string' }, { type: 'number' }]
+        })
+        value: string | number;
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithScalarUnion, schemas);
+
+      const props = (schemas['DtoWithScalarUnion'] as Record<string, any>)
+        .properties;
+      expect(props.value).toEqual({
+        oneOf: [{ type: 'string' }, { type: 'number' }]
+      });
+    });
+
+    it('should migrate oneOf and anyOf combinators to array items for generic array types', () => {
+      class Cat {}
+      class Dog {}
+      class DtoWithArrayUnionItems {
+        @ApiProperty({
+          type: 'array',
+          oneOf: [{ type: 'string' }, { type: 'number' }]
+        })
+        mixed: (string | number)[];
+
+        @ApiProperty({
+          type: [Object],
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ]
+        })
+        petsOneOf: (Cat | Dog)[];
+
+        @ApiProperty({
+          type: 'array',
+          anyOf: [{ type: 'string' }, { type: 'number' }]
+        })
+        mixedAnyOf: (string | number)[];
+
+        @ApiProperty({
+          type: [Object],
+          anyOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ]
+        })
+        petsAnyOf: (Cat | Dog)[];
+      }
+
+      const schemas: Record<string, SchemasObject> = {};
+      schemaObjectFactory.exploreModelSchema(DtoWithArrayUnionItems, schemas);
+
+      const props = (schemas['DtoWithArrayUnionItems'] as Record<string, any>)
+        .properties;
+      expect(props.mixed).toEqual({
+        type: 'array',
+        items: { oneOf: [{ type: 'string' }, { type: 'number' }] }
+      });
+      expect(props.petsOneOf).toEqual({
+        type: 'array',
+        items: {
+          oneOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ]
+        }
+      });
+      expect(props.mixedAnyOf).toEqual({
+        type: 'array',
+        items: { anyOf: [{ type: 'string' }, { type: 'number' }] }
+      });
+      expect(props.petsAnyOf).toEqual({
+        type: 'array',
+        items: {
+          anyOf: [
+            { $ref: '#/components/schemas/Cat' },
+            { $ref: '#/components/schemas/Dog' }
+          ]
+        }
+      });
+    });
   });
 
   describe('createEnumSchemaType', () => {
