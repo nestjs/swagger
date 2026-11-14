@@ -30,6 +30,7 @@ import {
   ApiDefaultResponse,
   ApiExcludeController,
   ApiExcludeEndpoint,
+  ApiExtension,
   ApiExtraModels,
   ApiHeader,
   ApiIncludeEndpoint,
@@ -3252,6 +3253,85 @@ describe('SwaggerExplorer', () => {
           schema: { type: 'string' }
         }
       ]);
+    });
+  });
+
+  describe('when a controller with a class-level extension inherits its routes', () => {
+    const explore = (controller: Type<unknown>) =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new (controller as any)(),
+          metatype: controller
+        } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    abstract class BaseController {
+      @Get(':id')
+      findOne(@Param('id') id: string) {
+        return id;
+      }
+    }
+
+    it('should add the extension to the inherited routes', () => {
+      @ApiExtension('x-tenant', true)
+      @Controller('items')
+      class ItemsController extends BaseController {
+        @Get()
+        findAll() {
+          return [];
+        }
+      }
+
+      const routes = explore(ItemsController);
+      expect(routes[0].root['x-tenant']).toBe(true);
+      expect(routes[1].root['x-tenant']).toBe(true);
+    });
+
+    it("should add a base controller's extension to the subclass routes", () => {
+      @ApiExtension('x-tenant', true)
+      abstract class TenantController {}
+
+      @Controller('items')
+      class ItemsController extends TenantController {
+        @Get()
+        findAll() {
+          return [];
+        }
+      }
+
+      expect(explore(ItemsController)[0].root['x-tenant']).toBe(true);
+    });
+
+    it("should not add a subclass's extension to its sibling's routes", () => {
+      @ApiExtension('x-tenant', true)
+      @Controller('items')
+      class ItemsController extends BaseController {}
+
+      @Controller('public-items')
+      class PublicItemsController extends BaseController {}
+
+      expect(explore(ItemsController)[0].root['x-tenant']).toBe(true);
+      expect(explore(PublicItemsController)[0].root).not.toHaveProperty(
+        'x-tenant'
+      );
+    });
+
+    it('should keep the method-level value over the class-level one', () => {
+      @ApiExtension('x-tenant', true)
+      @Controller('items')
+      class ItemsController extends BaseController {
+        @Get()
+        @ApiExtension('x-tenant', false)
+        findAll() {
+          return [];
+        }
+      }
+
+      const routes = explore(ItemsController);
+      expect(routes[0].root['x-tenant']).toBe(false);
+      expect(routes[1].root['x-tenant']).toBe(true);
     });
   });
 

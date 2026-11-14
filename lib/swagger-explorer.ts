@@ -426,10 +426,10 @@ export class SwaggerExplorer {
     return flatten(
       allRoutePaths.map((routePath, index) => {
         const fullPath = this.validateRoutePath(routePath);
-        const apiExtension = Reflect.getMetadata(
-          DECORATORS.API_EXTENSION,
-          method
-        );
+        const apiExtension = {
+          ...Reflect.getMetadata(DECORATORS.API_EXTENSION, metatype),
+          ...Reflect.getMetadata(DECORATORS.API_EXTENSION, method)
+        };
         if (requestMethod === RequestMethod.ALL) {
           // Workaround for the invalid "ALL" Method
           const validMethods = [
