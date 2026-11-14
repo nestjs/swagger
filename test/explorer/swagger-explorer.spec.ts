@@ -13,6 +13,7 @@ import {
   Type,
   Version,
   VERSION_NEUTRAL,
+  VersioningOptions,
   VersioningType
 } from '@nestjs/common';
 import { VersionValue } from '@nestjs/common/internal';
@@ -2454,6 +2455,58 @@ describe('SwaggerExplorer', () => {
         ['/proxy/b', 'AllAliasesController_forward[1]_get'],
         ['/v1/proxy/versioned', 'AllAliasesController_forwardVersioned_v1_get'],
         ['/v2/proxy/versioned', 'AllAliasesController_forwardVersioned_v2_get']
+      ]);
+    });
+
+    it('should keep the operation ids of routes that do not collide', () => {
+      @Controller('proxy')
+      class AllSingleRouteController {
+        @Version('1')
+        @All('versioned')
+        forwardVersioned(): void {}
+
+        @All('default')
+        forwardDefault(): void {}
+      }
+
+      const exploreGetOperationIds = (versioning: VersioningOptions) => {
+        const config = new ApplicationConfig();
+        config.enableVersioning(versioning);
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        return explorer
+          .exploreController(
+            {
+              instance: new AllSingleRouteController(),
+              metatype: AllSingleRouteController
+            } as InstanceWrapper<AllSingleRouteController>,
+            config,
+            { modulePath: undefined, globalPrefix: undefined }
+          )
+          .filter((route) => route.root.method === 'get')
+          .map((route) => [route.root.path, route.root.operationId]);
+      };
+
+      expect(
+        exploreGetOperationIds({
+          type: VersioningType.URI,
+          defaultVersion: '1'
+        })
+      ).toEqual([
+        [
+          '/v1/proxy/versioned',
+          'AllSingleRouteController_forwardVersioned_get'
+        ],
+        ['/v1/proxy/default', 'AllSingleRouteController_forwardDefault_get']
+      ]);
+      expect(
+        exploreGetOperationIds({
+          type: VersioningType.HEADER,
+          header: 'version',
+          defaultVersion: '1'
+        })
+      ).toEqual([
+        ['/proxy/versioned', 'AllSingleRouteController_forwardVersioned_get'],
+        ['/proxy/default', 'AllSingleRouteController_forwardDefault_get']
       ]);
     });
   });

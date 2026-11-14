@@ -446,6 +446,11 @@ export class SwaggerExplorer {
             'query'
           ];
 
+          // Only routes with several paths get the path version, so that
+          // operation ids that are already unique stay unchanged.
+          const allMethodsVersion =
+            allRoutePaths.length > 1 ? pathVersion : undefined;
+
           return validMethods.map((requestMethod) => ({
             method: requestMethod,
             path: fullPath === '' ? '/' : fullPath,
@@ -461,7 +466,7 @@ export class SwaggerExplorer {
             operationId: `${this.getOperationId(
               instance,
               methodKey,
-              operationVersion
+              allMethodsVersion
             )}_${requestMethod.toLowerCase()}`,
             ...apiExtension
           }));
