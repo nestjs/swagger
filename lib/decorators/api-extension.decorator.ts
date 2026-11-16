@@ -54,14 +54,11 @@ export function ApiExtension(extensionKey: string, extensionProperties: any) {
           Reflect.hasMetadata(METHOD_METADATA, methodDescriptor)
       );
 
-    // If we found API methods, apply the extension, otherwise assume it's a DTO and apply to the class itself.
-    if (apiMethods.length > 0) {
-      apiMethods.forEach((method) =>
-        applyExtension(method, extensionKey, extensionValue)
-      );
-    } else {
-      applyExtension(target, extensionKey, extensionValue);
-    }
+    apiMethods.forEach((method) =>
+      applyExtension(method, extensionKey, extensionValue)
+    );
+    // Inherited methods are shared with the base, so the explorer reads these from the class
+    applyExtension(target, extensionKey, extensionValue);
 
     return target;
   };
