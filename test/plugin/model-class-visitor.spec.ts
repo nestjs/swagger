@@ -75,6 +75,7 @@ import {
   recordDtoText,
   recordDtoTextTranspiled
 } from './fixtures/record-type.dto';
+import { temporalDtoText } from './fixtures/temporal.dto';
 
 describe('API model properties', () => {
   it.each(['true', 'false'])(
@@ -420,6 +421,34 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(nullableDtoTextTranspiled);
+  });
+
+  it('should reference Temporal types instead of Object', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'temporal.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(temporalDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toContain(
+      'return { createdAt: { required: true, type: () => Temporal.Instant }, ' +
+        'day: { required: true, type: () => Temporal.PlainDate }, ' +
+        'ttl: { required: true, type: () => Temporal.Duration }, ' +
+        'times: { required: true, type: () => [Temporal.Instant] }, ' +
+        'endedAt: { required: true, type: () => Temporal.Instant, nullable: true } };'
+    );
   });
 
   it('should keep the type of unions with both null and undefined', () => {

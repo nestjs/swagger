@@ -38,6 +38,43 @@ export function getDecoratorOrUndefinedByNames(
   });
 }
 
+const TEMPORAL_TYPE_NAMES = new Set([
+  'Temporal.Instant',
+  'Temporal.ZonedDateTime',
+  'Temporal.PlainDate',
+  'Temporal.PlainDateTime',
+  'Temporal.PlainTime',
+  'Temporal.PlainYearMonth',
+  'Temporal.PlainMonthDay',
+  'Temporal.Duration'
+]);
+
+function getTemporalTypeName(
+  type: ts.Type,
+  typeChecker: ts.TypeChecker
+): string | undefined {
+  const typeName = getQualifiedTypeName(type, typeChecker);
+  if (TEMPORAL_TYPE_NAMES.has(typeName)) {
+    return typeName;
+  } else {
+    return undefined;
+  }
+}
+
+function getQualifiedTypeName(
+  type: ts.Type,
+  typeChecker: ts.TypeChecker
+): string {
+  if (type.symbol) {
+    // Types from a module's `declare global` block, as in temporal-spec, get a `global.` prefix.
+    return typeChecker
+      .getFullyQualifiedName(type.symbol)
+      .replace(/^global\./, '');
+  } else {
+    return getText(type, typeChecker);
+  }
+}
+
 export function getTypeReferenceAsString(
   type: ts.Type,
   typeChecker: ts.TypeChecker,
@@ -83,6 +120,10 @@ export function getTypeReferenceAsString(
       arrayDepth
     );
     return elementType;
+  }
+  const temporalTypeName = getTemporalTypeName(type, typeChecker);
+  if (temporalTypeName) {
+    return { typeName: temporalTypeName, arrayDepth };
   }
   if (type.isClass()) {
     return { typeName: getText(type, typeChecker), arrayDepth };
