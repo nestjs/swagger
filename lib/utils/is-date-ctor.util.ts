@@ -1,5 +1,4 @@
 import { Type } from '@nestjs/common';
-import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 
 const TEMPORAL_STRING_FORMATS: Record<string, string | undefined> = {
   Instant: 'date-time',
@@ -29,16 +28,11 @@ export function isDateCtor(type: Type<unknown> | Function | string): boolean {
   return type === Date || getTemporalTypeName(type) !== undefined;
 }
 
-export function getDateCtorSchema(
+export function getDateCtorFormat(
   type: Type<unknown> | Function | string
-): SchemaObject {
+): string | undefined {
   if (type === Date) {
-    return { type: 'string', format: 'date-time' };
+    return 'date-time';
   }
-  const format = TEMPORAL_STRING_FORMATS[getTemporalTypeName(type) ?? ''];
-  if (format) {
-    return { type: 'string', format };
-  } else {
-    return { type: 'string' };
-  }
+  return TEMPORAL_STRING_FORMATS[getTemporalTypeName(type) ?? ''];
 }
