@@ -42,7 +42,7 @@ export class SwaggerTypesMapper {
   mapParamTypes(
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
   ) {
-    return parameters.map((param) => {
+    const mapped = parameters.map((param) => {
       if (
         this.hasSchemaDefinition(param as BaseParameterObject) ||
         this.hasRawContentDefinition(param)
@@ -107,6 +107,17 @@ export class SwaggerTypesMapper {
         )
       };
     });
+    mapped.forEach((param) => this.moveArrayExamplesIntoSchema(param));
+    return mapped;
+  }
+
+  private moveArrayExamplesIntoSchema(param: Record<string, any>) {
+    if (!Array.isArray(param.examples) || !param.schema) {
+      return;
+    }
+    const schema = { examples: param.examples, ...param.schema };
+    param.schema = '$ref' in schema ? wrapRefInAllOf(schema) : schema;
+    delete param.examples;
   }
 
   mapTypeToOpenAPIType(type: string | Function): string {
