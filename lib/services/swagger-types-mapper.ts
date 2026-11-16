@@ -42,7 +42,7 @@ export class SwaggerTypesMapper {
   mapParamTypes(
     parameters: Array<ParamWithTypeMetadata | BaseParameterObject>
   ) {
-    return parameters.map((param) => {
+    const mapped = parameters.map((param) => {
       if (
         this.hasSchemaDefinition(param as BaseParameterObject) ||
         this.hasRawContentDefinition(param)
@@ -107,6 +107,28 @@ export class SwaggerTypesMapper {
         )
       };
     });
+    mapped.forEach((param) => this.moveArrayExamplesIntoSchema(param));
+    return mapped;
+  }
+
+  /**
+   * An array `examples` is the JSON Schema keyword, which only the schema
+   * accepts. A map of Example Objects is the parameter's own and stays.
+   */
+  private moveArrayExamplesIntoSchema(param: Record<string, any>) {
+    if (
+      !Array.isArray(param.examples) ||
+      !param.schema ||
+      isBodyParameter(param as ParamWithTypeMetadata)
+    ) {
+      return;
+    }
+    const schema = {
+      ...param.schema,
+      examples: param.schema.examples ?? param.examples
+    };
+    param.schema = '$ref' in schema ? wrapRefInAllOf(schema) : schema;
+    delete param.examples;
   }
 
   mapTypeToOpenAPIType(type: string | Function): string {

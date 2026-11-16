@@ -1,10 +1,11 @@
-import { INestApplication } from '@nestjs/common';
+import { Controller, Get, INestApplication, Query } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { writeFileSync } from 'fs';
 import { OpenAPIV3 } from 'openapi-types';
 import { join } from 'path';
 import type { BaseIssue, BaseSchema } from 'valibot';
 import {
+  ApiPropertyOptional,
   DocumentBuilder,
   getSchemaPath,
   OpenAPIObject,
@@ -648,6 +649,43 @@ describe('Validate OpenAPI schema', () => {
         documentOptions
       );
 
+      await expect(
+        SwaggerParser.validate(JSON.parse(JSON.stringify(document)) as any)
+      ).resolves.toBeDefined();
+    });
+  });
+
+  describe('OpenAPI 3.1 parameter examples', () => {
+    class SearchQuery {
+      @ApiPropertyOptional({ examples: ['cat', 'dog'] })
+      term?: string;
+    }
+
+    @Controller('search')
+    class SearchController {
+      @Get()
+      find(@Query() query: SearchQuery) {}
+    }
+
+    it('should move array `examples` of query parameters into the schema', async () => {
+      const searchApp = await NestFactory.create(
+        { module: class {}, controllers: [SearchController] },
+        { logger: false }
+      );
+      const document = SwaggerModule.createDocument(
+        searchApp,
+        new DocumentBuilder().setOpenAPIVersion('3.1.0').build()
+      );
+      await searchApp.close();
+
+      expect(document.paths['/search'].get.parameters).toEqual([
+        {
+          name: 'term',
+          in: 'query',
+          required: false,
+          schema: { type: 'string', examples: ['cat', 'dog'] }
+        }
+      ]);
       await expect(
         SwaggerParser.validate(JSON.parse(JSON.stringify(document)) as any)
       ).resolves.toBeDefined();
