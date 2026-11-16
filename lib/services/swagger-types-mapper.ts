@@ -111,11 +111,22 @@ export class SwaggerTypesMapper {
     return mapped;
   }
 
+  /**
+   * An array `examples` is the JSON Schema keyword, which only the schema
+   * accepts. A map of Example Objects is the parameter's own and stays.
+   */
   private moveArrayExamplesIntoSchema(param: Record<string, any>) {
-    if (!Array.isArray(param.examples) || !param.schema) {
+    if (
+      !Array.isArray(param.examples) ||
+      !param.schema ||
+      isBodyParameter(param as ParamWithTypeMetadata)
+    ) {
       return;
     }
-    const schema = { examples: param.examples, ...param.schema };
+    const schema = {
+      ...param.schema,
+      examples: param.schema.examples ?? param.examples
+    };
     param.schema = '$ref' in schema ? wrapRefInAllOf(schema) : schema;
     delete param.examples;
   }

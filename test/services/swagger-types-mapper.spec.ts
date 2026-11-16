@@ -359,6 +359,21 @@ describe('SwaggerTypesMapper', () => {
       });
     });
 
+    it('should leave the `examples` of body parameters to the request body', () => {
+      const params = [
+        {
+          name: 'body',
+          in: 'body',
+          schema: { $ref: '#/components/schemas/Cat' },
+          examples: [{ name: 'Tom' }]
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual(params[0]);
+    });
+
     it('should drop `exampleMaxDepth` from type-based parameters', () => {
       const params = [
         {
