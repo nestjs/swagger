@@ -426,10 +426,24 @@ export class SwaggerExplorer {
     return flatten(
       allRoutePaths.map((routePath, index) => {
         const fullPath = this.validateRoutePath(routePath);
-        const apiExtension = Reflect.getMetadata(
-          DECORATORS.API_EXTENSION,
-          method
+        const apiExtension = {
+          ...Reflect.getMetadata(DECORATORS.API_EXTENSION, metatype),
+          ...Reflect.getMetadata(DECORATORS.API_EXTENSION, method)
+        };
+        const pathVersion = versions.find(
+          (v) => fullPath.includes(`/${v}/`) || fullPath.endsWith(`/${v}`)
         );
+        const isAlias =
+          allRoutePaths.length > 1 && allRoutePaths.length !== versions.length;
+        const methodKey = isAlias ? `${method.name}[${index}]` : method.name;
+
+        const nonPathVersion = this.getNonPathVersion(
+          methodVersion,
+          metatype,
+          versioningOptions
+        );
+        const operationVersion = pathVersion ?? nonPathVersion;
+
         if (requestMethod === RequestMethod.ALL) {
           // Workaround for the invalid "ALL" Method
           const validMethods = [
@@ -443,6 +457,11 @@ export class SwaggerExplorer {
             'search',
             'query'
           ];
+
+          // Only routes with several paths get the path version, so that
+          // operation ids that are already unique stay unchanged.
+          const allMethodsVersion =
+            allRoutePaths.length > 1 ? pathVersion : undefined;
 
           return validMethods.map((requestMethod) => ({
             method: requestMethod,
@@ -458,25 +477,12 @@ export class SwaggerExplorer {
               : {}),
             operationId: `${this.getOperationId(
               instance,
-              method.name
+              methodKey,
+              allMethodsVersion
             )}_${requestMethod.toLowerCase()}`,
             ...apiExtension
           }));
         }
-
-        const pathVersion = versions.find(
-          (v) => fullPath.includes(`/${v}/`) || fullPath.endsWith(`/${v}`)
-        );
-        const isAlias =
-          allRoutePaths.length > 1 && allRoutePaths.length !== versions.length;
-        const methodKey = isAlias ? `${method.name}[${index}]` : method.name;
-
-        const nonPathVersion = this.getNonPathVersion(
-          methodVersion,
-          metatype,
-          versioningOptions
-        );
-        const operationVersion = pathVersion ?? nonPathVersion;
 
         return {
           method: RequestMethod[requestMethod].toLowerCase(),

@@ -260,6 +260,120 @@ describe('SwaggerTypesMapper', () => {
       });
     });
 
+    it('should move array `examples` into the schema for type-based parameters', () => {
+      const params = [
+        { name: 'term', in: 'query', type: String, examples: ['cat', 'dog'] }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'term',
+        in: 'query',
+        schema: { type: 'string', examples: ['cat', 'dog'] }
+      });
+    });
+
+    it('should move array `examples` into the schema for array parameters', () => {
+      const params = [
+        {
+          name: 'tags',
+          in: 'query',
+          type: String,
+          isArray: true,
+          examples: [['a'], ['b', 'c']]
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'tags',
+        in: 'query',
+        schema: {
+          type: 'array',
+          items: { type: 'string' },
+          examples: [['a'], ['b', 'c']]
+        }
+      });
+    });
+
+    it('should move array `examples` next to a `$ref` parameter schema', () => {
+      const params = [
+        {
+          name: 'kind',
+          in: 'query',
+          schema: { $ref: '#/components/schemas/Animal' },
+          examples: ['dog']
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'kind',
+        in: 'query',
+        schema: {
+          examples: ['dog'],
+          allOf: [{ $ref: '#/components/schemas/Animal' }]
+        }
+      });
+    });
+
+    it('should keep the `examples` of an explicit parameter schema', () => {
+      const params = [
+        {
+          name: 'id',
+          in: 'path',
+          schema: { type: 'string', examples: ['own'] },
+          examples: ['param']
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'id',
+        in: 'path',
+        schema: { type: 'string', examples: ['own'] }
+      });
+    });
+
+    it('should keep map `examples` on the parameter', () => {
+      const params = [
+        {
+          name: 'q',
+          in: 'query',
+          type: String,
+          examples: { a: { value: 'x' } }
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'q',
+        in: 'query',
+        examples: { a: { value: 'x' } },
+        schema: { type: 'string' }
+      });
+    });
+
+    it('should leave the `examples` of body parameters to the request body', () => {
+      const params = [
+        {
+          name: 'body',
+          in: 'body',
+          schema: { $ref: '#/components/schemas/Cat' },
+          examples: [{ name: 'Tom' }]
+        }
+      ];
+
+      const result = mapper.mapParamTypes(params as any) as any[];
+
+      expect(result[0]).toEqual(params[0]);
+    });
+
     it('should drop `exampleMaxDepth` from type-based parameters', () => {
       const params = [
         {

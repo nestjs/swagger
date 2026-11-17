@@ -13,6 +13,7 @@ import {
   Type,
   Version,
   VERSION_NEUTRAL,
+  VersioningOptions,
   VersioningType
 } from '@nestjs/common';
 import { VersionValue } from '@nestjs/common/internal';
@@ -30,6 +31,7 @@ import {
   ApiDefaultResponse,
   ApiExcludeController,
   ApiExcludeEndpoint,
+  ApiExtension,
   ApiExtraModels,
   ApiHeader,
   ApiIncludeEndpoint,
@@ -2566,6 +2568,92 @@ describe('SwaggerExplorer', () => {
         ).length
       ).toEqual(1);
     });
+
+    it('should give every path and version its own operation ids', () => {
+      @Controller('proxy')
+      class AllAliasesController {
+        @All(['a', 'b'])
+        forward(): void {}
+
+        @Version(['1', '2'])
+        @All('versioned')
+        forwardVersioned(): void {}
+      }
+
+      const config = new ApplicationConfig();
+      config.enableVersioning({ type: VersioningType.URI });
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new AllAliasesController(),
+          metatype: AllAliasesController
+        } as InstanceWrapper<AllAliasesController>,
+        config,
+        { modulePath: undefined, globalPrefix: undefined }
+      );
+
+      const operationIds = routes
+        .filter((route) => route.root.method === 'get')
+        .map((route) => [route.root.path, route.root.operationId]);
+      expect(operationIds).toEqual([
+        ['/proxy/a', 'AllAliasesController_forward[0]_get'],
+        ['/proxy/b', 'AllAliasesController_forward[1]_get'],
+        ['/v1/proxy/versioned', 'AllAliasesController_forwardVersioned_v1_get'],
+        ['/v2/proxy/versioned', 'AllAliasesController_forwardVersioned_v2_get']
+      ]);
+    });
+
+    it('should keep the operation ids of routes that do not collide', () => {
+      @Controller('proxy')
+      class AllSingleRouteController {
+        @Version('1')
+        @All('versioned')
+        forwardVersioned(): void {}
+
+        @All('default')
+        forwardDefault(): void {}
+      }
+
+      const exploreGetOperationIds = (versioning: VersioningOptions) => {
+        const config = new ApplicationConfig();
+        config.enableVersioning(versioning);
+        const explorer = new SwaggerExplorer(schemaObjectFactory);
+        return explorer
+          .exploreController(
+            {
+              instance: new AllSingleRouteController(),
+              metatype: AllSingleRouteController
+            } as InstanceWrapper<AllSingleRouteController>,
+            config,
+            { modulePath: undefined, globalPrefix: undefined }
+          )
+          .filter((route) => route.root.method === 'get')
+          .map((route) => [route.root.path, route.root.operationId]);
+      };
+
+      expect(
+        exploreGetOperationIds({
+          type: VersioningType.URI,
+          defaultVersion: '1'
+        })
+      ).toEqual([
+        [
+          '/v1/proxy/versioned',
+          'AllSingleRouteController_forwardVersioned_get'
+        ],
+        ['/v1/proxy/default', 'AllSingleRouteController_forwardDefault_get']
+      ]);
+      expect(
+        exploreGetOperationIds({
+          type: VersioningType.HEADER,
+          header: 'version',
+          defaultVersion: '1'
+        })
+      ).toEqual([
+        ['/proxy/versioned', 'AllSingleRouteController_forwardVersioned_get'],
+        ['/proxy/default', 'AllSingleRouteController_forwardDefault_get']
+      ]);
+    });
   });
 
   describe('when the HTTP QUERY method is used', () => {
@@ -3252,6 +3340,85 @@ describe('SwaggerExplorer', () => {
           schema: { type: 'string' }
         }
       ]);
+    });
+  });
+
+  describe('when a controller with a class-level extension inherits its routes', () => {
+    const explore = (controller: Type<unknown>) =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new (controller as any)(),
+          metatype: controller
+        } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    abstract class BaseController {
+      @Get(':id')
+      findOne(@Param('id') id: string) {
+        return id;
+      }
+    }
+
+    it('should add the extension to the inherited routes', () => {
+      @ApiExtension('x-tenant', true)
+      @Controller('items')
+      class ItemsController extends BaseController {
+        @Get()
+        findAll() {
+          return [];
+        }
+      }
+
+      const routes = explore(ItemsController);
+      expect(routes[0].root['x-tenant']).toBe(true);
+      expect(routes[1].root['x-tenant']).toBe(true);
+    });
+
+    it("should add a base controller's extension to the subclass routes", () => {
+      @ApiExtension('x-tenant', true)
+      abstract class TenantController {}
+
+      @Controller('items')
+      class ItemsController extends TenantController {
+        @Get()
+        findAll() {
+          return [];
+        }
+      }
+
+      expect(explore(ItemsController)[0].root['x-tenant']).toBe(true);
+    });
+
+    it("should not add a subclass's extension to its sibling's routes", () => {
+      @ApiExtension('x-tenant', true)
+      @Controller('items')
+      class ItemsController extends BaseController {}
+
+      @Controller('public-items')
+      class PublicItemsController extends BaseController {}
+
+      expect(explore(ItemsController)[0].root['x-tenant']).toBe(true);
+      expect(explore(PublicItemsController)[0].root).not.toHaveProperty(
+        'x-tenant'
+      );
+    });
+
+    it('should keep the method-level value over the class-level one', () => {
+      @ApiExtension('x-tenant', true)
+      @Controller('items')
+      class ItemsController extends BaseController {
+        @Get()
+        @ApiExtension('x-tenant', false)
+        findAll() {
+          return [];
+        }
+      }
+
+      const routes = explore(ItemsController);
+      expect(routes[0].root['x-tenant']).toBe(false);
+      expect(routes[1].root['x-tenant']).toBe(true);
     });
   });
 
