@@ -123,7 +123,11 @@ export function getTypeReferenceAsString(
   }
   const temporalTypeName = getTemporalTypeName(type, typeChecker);
   if (temporalTypeName) {
-    return { typeName: temporalTypeName, arrayDepth };
+    // Runtimes without a global Temporal keep the `Object` type, as before.
+    return {
+      typeName: `typeof Temporal !== "undefined" ? ${temporalTypeName} : Object`,
+      arrayDepth
+    };
   }
   if (type.isClass()) {
     return { typeName: getText(type, typeChecker), arrayDepth };

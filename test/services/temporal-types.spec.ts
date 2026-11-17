@@ -96,4 +96,47 @@ describe('Temporal types', () => {
       });
     });
   });
+
+  describe('without a global Temporal', () => {
+    let descriptor: PropertyDescriptor | undefined;
+
+    beforeAll(() => {
+      descriptor = Object.getOwnPropertyDescriptor(globalThis, 'Temporal');
+      delete globalWithTemporal.Temporal;
+    });
+
+    afterAll(() => {
+      Object.defineProperty(globalThis, 'Temporal', descriptor!);
+    });
+
+    it('maps the Object fallback the plugin emits to object schemas', () => {
+      class EventDto {
+        @ApiProperty({ type: () => Object })
+        createdAt: unknown;
+
+        @ApiProperty({ type: () => [Object] })
+        times: unknown;
+
+        @ApiProperty({ type: () => Temporal.Instant })
+        standIn: unknown;
+
+        @ApiProperty({ type: () => Date })
+        legacy: unknown;
+      }
+
+      const schemaObjectFactory = new SchemaObjectFactory(
+        new ModelPropertiesAccessor(),
+        new SwaggerTypesMapper()
+      );
+      const schemas: Record<string, SchemaObject> = {};
+      schemaObjectFactory.exploreModelSchema(EventDto, schemas);
+
+      expect(schemas.EventDto.properties).toEqual({
+        createdAt: { type: 'object' },
+        times: { type: 'array', items: { type: 'object' } },
+        standIn: { $ref: '#/components/schemas/Instant' },
+        legacy: { type: 'string', format: 'date-time' }
+      });
+    });
+  });
 });
