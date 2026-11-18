@@ -32,7 +32,7 @@ import {
 import { getSchemaPath } from '../utils/index.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
 import { isBuiltInType } from '../utils/is-built-in-type.util.js';
-import { isDateCtor } from '../utils/is-date-ctor.util.js';
+import { getDateCtorFormat, isDateCtor } from '../utils/is-date-ctor.util.js';
 import { wrapRefInAllOf } from '../utils/wrap-ref-in-all-of.util.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import { ParamWithTypeMetadata } from './parameter-metadata-accessor.js';
@@ -152,8 +152,9 @@ export class SchemaObjectFactory {
     schemas: Record<string, SchemaObject>
   ) {
     if (isDateCtor(param.type as Function)) {
+      const format = getDateCtorFormat(param.type as Function);
       return {
-        format: 'date-time',
+        ...(format && { format }),
         ...param,
         type: 'string'
       };
@@ -996,14 +997,15 @@ export class SchemaObjectFactory {
       };
     }
     if (isDateCtor(typeRef as Function)) {
+      const format = metadata.format || getDateCtorFormat(typeRef as Function);
       if (metadata.isArray) {
         return this.transformToArraySchemaProperty(metadata, key, {
-          format: metadata.format || 'date-time',
+          ...(format && { format }),
           type: 'string'
         });
       }
       return {
-        format: 'date-time',
+        ...(format && { format }),
         ...metadata,
         type: 'string',
         name: metadata.name || key

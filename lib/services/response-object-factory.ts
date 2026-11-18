@@ -15,7 +15,7 @@ import {
 } from '../interfaces/open-api-spec.interface.js';
 import { StandardSchemaConverter } from '../interfaces/swagger-document-options.interface.js';
 import { isBuiltInType } from '../utils/is-built-in-type.util.js';
-import { isDateCtor } from '../utils/is-date-ctor.util.js';
+import { getDateCtorFormat, isDateCtor } from '../utils/is-date-ctor.util.js';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import { ResponseObjectMapper } from './response-object-mapper.js';
@@ -226,7 +226,8 @@ export class ResponseObjectFactory {
 
   private getBuiltInTypeSchema(type: Function | string): SchemaObject {
     if (isDateCtor(type)) {
-      return { type: 'string', format: 'date-time' };
+      const format = getDateCtorFormat(type);
+      return { type: 'string', ...(format && { format }) };
     }
     if (type === BigInt) {
       return { type: 'integer', format: 'int64' };

@@ -75,6 +75,7 @@ import {
   recordDtoText,
   recordDtoTextTranspiled
 } from './fixtures/record-type.dto';
+import { temporalDtoText } from './fixtures/temporal.dto';
 
 describe('API model properties', () => {
   it.each(['true', 'false'])(
@@ -420,6 +421,96 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(nullableDtoTextTranspiled);
+  });
+
+  it('should reference Temporal types instead of Object', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'temporal.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(temporalDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    const temporal = (name: string) =>
+      `typeof Temporal !== "undefined" ? Temporal.${name} : Object`;
+    expect(result.outputText).toContain(
+      `return { createdAt: { required: true, type: () => ${temporal('Instant')} }, ` +
+        `day: { required: true, type: () => ${temporal('PlainDate')} }, ` +
+        `ttl: { required: true, type: () => ${temporal('Duration')} }, ` +
+        `times: { required: true, type: () => [${temporal('Instant')}] }, ` +
+        `endedAt: { required: true, type: () => ${temporal('Instant')}, nullable: true } };`
+    );
+  });
+
+  it('should resolve Temporal types to Object when the runtime has no global Temporal', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'temporal.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(temporalDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({}, fakeProgram)]
+      }
+    });
+
+    // Runs the emitted module with `Temporal` bound to the given value, so the
+    // global (present or not in this Node.js version) plays no part.
+    const resolveTypes = (temporal: unknown) => {
+      const exports: Record<string, any> = {};
+      new Function('exports', 'require', 'Temporal', result.outputText)(
+        exports,
+        () => ({}),
+        temporal
+      );
+      const metadata = exports.EventDto._OPENAPI_METADATA_FACTORY();
+      return Object.fromEntries(
+        Object.entries(metadata).map(([key, value]: [string, any]) => [
+          key,
+          value.type()
+        ])
+      );
+    };
+
+    expect(resolveTypes(undefined)).toEqual({
+      createdAt: Object,
+      day: Object,
+      ttl: Object,
+      times: [Object],
+      endedAt: Object
+    });
+
+    const Temporal = {
+      Instant: class Instant {},
+      PlainDate: class PlainDate {},
+      Duration: class Duration {}
+    };
+    expect(resolveTypes(Temporal)).toEqual({
+      createdAt: Temporal.Instant,
+      day: Temporal.PlainDate,
+      ttl: Temporal.Duration,
+      times: [Temporal.Instant],
+      endedAt: Temporal.Instant
+    });
   });
 
   it('should keep the type of unions with both null and undefined', () => {

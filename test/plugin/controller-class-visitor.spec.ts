@@ -49,6 +49,7 @@ import {
   appControllerParamEnumText,
   appControllerParamEnumTextTranspiled
 } from './fixtures/app.controller-param-enum';
+import { appControllerTemporalText } from './fixtures/app.controller-temporal';
 
 describe('Controller methods', () => {
   it('should add response based on the return value (spaces)', () => {
@@ -405,5 +406,73 @@ export class AppController {
       }
     });
     expect(result.outputText).toEqual(appControllerParamEnumTextTranspiled);
+  });
+
+  it('should resolve Temporal response types to Object when the runtime has no global Temporal', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerTemporalText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({}, fakeProgram)]
+      }
+    });
+
+    // `@ApiResponse()` arguments are evaluated when the module loads. Runs the
+    // emitted module with `Temporal` bound to the given value, so the global
+    // (present or not in this Node.js version) plays no part.
+    const loadResponseTypes = (temporal: unknown) => {
+      const types: unknown[] = [];
+      const decorator = () => () => undefined;
+      const modules: Record<string, unknown> = {
+        '@nestjs/common': { Controller: decorator, Get: decorator },
+        '@nestjs/swagger': {
+          ApiResponse: (response: { type: unknown }) => {
+            types.push(response.type);
+            return () => undefined;
+          }
+        }
+      };
+      new Function(
+        'exports',
+        'require',
+        '__decorate',
+        'Temporal',
+        result.outputText
+      )(
+        {},
+        (id: string) => modules[id],
+        () => undefined,
+        temporal
+      );
+      return types;
+    };
+
+    expect(loadResponseTypes(undefined)).toEqual([[Object], Object]);
+
+    const Temporal = {
+      Instant: class Instant {},
+      PlainDate: class PlainDate {}
+    };
+    expect(loadResponseTypes(Temporal)).toEqual([
+      [Temporal.PlainDate],
+      Temporal.Instant
+    ]);
+
+    expect(result.outputText).toContain(
+      'openapi.ApiResponse({ status: 200, type: [typeof Temporal !== "undefined" ? Temporal.PlainDate : Object] })'
+    );
+    expect(result.outputText).toContain(
+      'openapi.ApiResponse({ status: 200, type: typeof Temporal !== "undefined" ? Temporal.Instant : Object })'
+    );
   });
 });
