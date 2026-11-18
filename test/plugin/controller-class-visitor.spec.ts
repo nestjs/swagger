@@ -42,6 +42,10 @@ import {
   appControllerApiOperationArgsTextTranspiled
 } from './fixtures/app.controller-api-operation-args';
 import {
+  appControllerApiOperationTagsText,
+  appControllerApiOperationTagsTextTranspiled
+} from './fixtures/app.controller-api-operation-tags';
+import {
   appControllerPromisePrefixText,
   appControllerPromisePrefixTextTranspiled
 } from './fixtures/app.controller-promise-prefix';
@@ -405,5 +409,28 @@ export class AppController {
       }
     });
     expect(result.outputText).toEqual(appControllerParamEnumTextTranspiled);
+  });
+
+  it('should keep @deprecated and @remarks on methods without a summary', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerApiOperationTagsText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(
+      appControllerApiOperationTagsTextTranspiled
+    );
   });
 });

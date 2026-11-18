@@ -297,14 +297,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     }
 
     const extractedComments = getMainCommentOfNode(node);
-    if (!extractedComments) {
+    const tags = getTsDocTagsOfNode(node, typeChecker);
+    if (!this.hasOperationComment(extractedComments, tags)) {
       return [];
     }
     const properties = [
       ...(apiOperationExistingProps ?? factory.createNodeArray())
     ];
 
-    const tags = getTsDocTagsOfNode(node, typeChecker);
     const existingPropsArray = factory.createNodeArray(
       apiOperationExistingProps
     );
@@ -313,7 +313,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
     // explicit @ApiOperation({...}) call; otherwise the generated object
     // literal would contain duplicate keys (e.g. `{ summary: 'doc', summary: 'user' }`).
     const unshiftIfNotExisting = (key: string, value: string) => {
-      if (hasPropertyKey(key, existingPropsArray)) {
+      if (!value || hasPropertyKey(key, existingPropsArray)) {
         return;
       }
       properties.unshift(
@@ -399,11 +399,42 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
               `${OPENAPI_NAMESPACE}.${ApiOperation.name}`
             ),
             undefined,
-            apiOperationDecoratorArguments
+            [
+              ...apiOperationDecoratorArguments,
+              ...this.createApiOperationOptionsArguments(
+                factory,
+                extractedComments
+              )
+            ]
           )
         )
       ];
     }
+  }
+
+  private hasOperationComment(
+    summary: string,
+    tags: Record<string, unknown>
+  ): boolean {
+    return Boolean(summary || tags.remarks || tags.deprecated);
+  }
+
+  private createApiOperationOptionsArguments(
+    factory: ts.NodeFactory,
+    summary: string
+  ): ts.Expression[] {
+    // Without a summary, keep the one set by a custom ApiOperation wrapper (#2153).
+    if (summary) {
+      return [];
+    }
+    return [
+      factory.createObjectLiteralExpression([
+        factory.createPropertyAssignment(
+          'overrideExisting',
+          factory.createFalse()
+        )
+      ])
+    ];
   }
 
   createApiResponseDecorator(
