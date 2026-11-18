@@ -1986,6 +1986,71 @@ describe('SwaggerExplorer', () => {
 
       expect(explorer.getSchemas()).toEqual({});
     });
+
+    it('should explore class-level callbacks and merge with method-level callbacks', () => {
+      class ClassCallbackEvent {
+        @ApiProperty()
+        id: string;
+      }
+
+      class MethodCallbackEvent {
+        @ApiProperty()
+        status: string;
+      }
+
+      @ApiCallbacks({
+        name: 'orderUpdated',
+        callbackUrl: '{$request.body#/callbackUrl}',
+        method: 'post',
+        requestBody: { type: ClassCallbackEvent },
+        expectedResponse: { status: 200 }
+      })
+      @Controller('orders')
+      class OrdersController {
+        @Get()
+        findAll() {}
+
+        @ApiCallbacks({
+          name: 'orderCreated',
+          callbackUrl: '{$request.body#/createdUrl}',
+          method: 'post',
+          requestBody: { type: MethodCallbackEvent },
+          expectedResponse: { status: 201 }
+        })
+        @Post()
+        create() {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new OrdersController(),
+          metatype: OrdersController
+        } as InstanceWrapper<OrdersController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(explorer.getSchemas().ClassCallbackEvent).toEqual({
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id']
+      });
+      expect(explorer.getSchemas().MethodCallbackEvent).toEqual({
+        type: 'object',
+        properties: { status: { type: 'string' } },
+        required: ['status']
+      });
+
+      const getRoute = routes.find((r) => r.root.method === 'get');
+      const postRoute = routes.find((r) => r.root.method === 'post');
+
+      expect(Object.keys(getRoute.callbacks)).toEqual(['orderUpdated']);
+      expect(Object.keys(postRoute.callbacks).sort()).toEqual([
+        'orderCreated',
+        'orderUpdated'
+      ]);
+    });
   });
 
   describe('when a controller is excluded', () => {

@@ -7,16 +7,11 @@ import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 import { SchemaObjectFactory } from '../services/schema-object-factory.js';
 import { isBuiltInType } from '../utils/is-built-in-type.util.js';
 
-export const exploreApiCallbacksMetadata = (
+const mapCallbacksToSwaggerCallbacks = (
+  callbacksData: CallBackObject<string | Function>[],
   schemas: Record<string, SchemaObject>,
-  schemaObjectFactory: SchemaObjectFactory,
-  instance: object,
-  prototype: Type<unknown>,
-  method: object
+  schemaObjectFactory: SchemaObjectFactory
 ) => {
-  const callbacksData = Reflect.getMetadata(DECORATORS.API_CALLBACKS, method);
-  if (!callbacksData) return callbacksData;
-
   return callbacksData.reduce(
     (acc, callbackData: CallBackObject<string | Function>) => {
       const {
@@ -57,5 +52,41 @@ export const exploreApiCallbacksMetadata = (
       };
     },
     {}
+  );
+};
+
+export const exploreGlobalApiCallbacksMetadata = (
+  schemas: Record<string, SchemaObject>,
+  schemaObjectFactory: SchemaObjectFactory,
+  metatype: Type<unknown>
+) => {
+  const callbacksData = Reflect.getMetadata(DECORATORS.API_CALLBACKS, metatype);
+  if (!callbacksData) {
+    return undefined;
+  }
+
+  return {
+    callbacks: mapCallbacksToSwaggerCallbacks(
+      callbacksData,
+      schemas,
+      schemaObjectFactory
+    )
+  };
+};
+
+export const exploreApiCallbacksMetadata = (
+  schemas: Record<string, SchemaObject>,
+  schemaObjectFactory: SchemaObjectFactory,
+  instance: object,
+  prototype: Type<unknown>,
+  method: object
+) => {
+  const callbacksData = Reflect.getMetadata(DECORATORS.API_CALLBACKS, method);
+  if (!callbacksData) return callbacksData;
+
+  return mapCallbacksToSwaggerCallbacks(
+    callbacksData,
+    schemas,
+    schemaObjectFactory
   );
 };
