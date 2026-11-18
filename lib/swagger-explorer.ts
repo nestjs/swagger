@@ -31,7 +31,10 @@ import omitBy from 'es-toolkit/compat/omitBy';
 import pick from 'es-toolkit/compat/pick';
 import { parse, Wildcard } from 'path-to-regexp';
 import { DECORATORS } from './constants.js';
-import { exploreApiCallbacksMetadata } from './explorers/api-callbacks.explorer.js';
+import {
+  exploreApiCallbacksMetadata,
+  exploreGlobalApiCallbacksMetadata
+} from './explorers/api-callbacks.explorer.js';
 import { exploreApiExcludeControllerMetadata } from './explorers/api-exclude-controller.explorer.js';
 import { exploreApiExcludeEndpointMetadata } from './explorers/api-exclude-endpoint.explorer.js';
 import {
@@ -353,7 +356,12 @@ export class SwaggerExplorer {
         this.responseObjectFactory,
         this.options.globalResponses ?? {}
       ),
-      exploreGlobalApiHeaderMetadata
+      exploreGlobalApiHeaderMetadata,
+      exploreGlobalApiCallbacksMetadata.bind(
+        null,
+        this.schemas,
+        this.schemaObjectFactory
+      )
     ];
     const globalMetadata = globalExplorers
       .map((explorer) => (explorer as Function).call(explorer, metatype))
