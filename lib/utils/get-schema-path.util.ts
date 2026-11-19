@@ -26,6 +26,6 @@ function getSchemaNameByClass(target: Function): string {
 
 export function refs(...models: Function[]) {
   return models.map((item) => ({
-    $ref: getSchemaPath(item.name)
+    $ref: getSchemaPath(item)
   }));
 }
