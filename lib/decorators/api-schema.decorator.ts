@@ -1,8 +1,24 @@
 import { DECORATORS } from '../constants.js';
-import { SchemaObjectMetadata } from '../interfaces/schema-object-metadata.interface.js';
+import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
 import { createClassDecorator } from './helpers.js';
 
-export interface ApiSchemaOptions extends Pick<SchemaObjectMetadata, 'name'> {
+export interface ApiSchemaOptions extends Pick<
+  SchemaObject,
+  | 'title'
+  | 'additionalProperties'
+  | 'patternProperties'
+  | 'minProperties'
+  | 'maxProperties'
+  | 'deprecated'
+  | 'example'
+  | 'examples'
+  | 'externalDocs'
+  | 'xml'
+  | 'discriminator'
+  | 'readOnly'
+  | 'writeOnly'
+  | 'nullable'
+> {
   /**
    * Name of the schema.
    */
