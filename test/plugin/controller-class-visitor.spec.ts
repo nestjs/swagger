@@ -34,6 +34,10 @@ import {
   appControllerThrowsQuotesTextTranspiled
 } from './fixtures/app.controller-throws-quotes';
 import {
+  appControllerThrowsMultilineText,
+  appControllerThrowsMultilineTextTranspiled
+} from './fixtures/app.controller-throws-multiline';
+import {
   appControllerApiOperationDedupeText,
   appControllerApiOperationDedupeTextTranspiled
 } from './fixtures/app.controller-api-operation-dedupe';
@@ -321,6 +325,29 @@ export class AppController {
       }
     });
     expect(result.outputText).toEqual(appControllerThrowsQuotesTextTranspiled);
+  });
+
+  it('should read multi-line and next-line @throws descriptions', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(appControllerThrowsMultilineText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+    expect(result.outputText).toEqual(
+      appControllerThrowsMultilineTextTranspiled
+    );
   });
 
   it('should not emit duplicate keys when user has supplied controllerKeyOfComment already', () => {

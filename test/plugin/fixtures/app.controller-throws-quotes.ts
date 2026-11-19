@@ -40,7 +40,7 @@ exports.AppController = AppController;
 __decorate([
     openapi.ApiOperation({ summary: "create" }),
     openapi.ApiResponse({ status: 400, description: "foo \\"bar\\"." }),
-    openapi.ApiResponse({ status: 500, description: "line one" }),
+    openapi.ApiResponse({ status: 500, description: "line one line two" }),
     (0, common_1.Post)(),
     openapi.ApiResponse({ status: 201, type: Cat })
 ], AppController.prototype, "a", null);
