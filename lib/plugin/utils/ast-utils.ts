@@ -275,7 +275,7 @@ export function getTsDocErrorsOfNode(node: Node) {
   const docComment: DocComment = parserContext.docComment;
 
   const tagResults = [];
-  const errorParsingRegex = /{(\d+)} (.*)/;
+  const errorParsingRegex = /{(\d+)}\s*(.*)/;
 
   const introspectTsDocTags = (docComment: DocComment) => {
     const blocks = docComment.customBlocks.filter(
@@ -284,7 +284,16 @@ export function getTsDocErrorsOfNode(node: Node) {
 
     blocks.forEach((block) => {
       try {
-        const docValue = renderDocNode(block.content).split('\n')[0].trim();
+        const lines = renderDocNode(block.content).split('\n');
+        // TSDoc keeps an unknown tag such as `@memberof` inside the block.
+        const tagLineIndex = lines.findIndex((line) =>
+          line.trim().startsWith('@')
+        );
+        const docValue = lines
+          .slice(0, tagLineIndex === -1 ? lines.length : tagLineIndex)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .join(' ');
         const match = docValue.match(errorParsingRegex);
         // Keep the raw description text so the caller can safely emit it as a
         // string literal. Pre-wrapping it in quotes breaks round-tripping when
