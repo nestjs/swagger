@@ -1588,6 +1588,42 @@ describe('SchemaObjectFactory', () => {
         );
       });
 
+      it('should apply object-level schema keywords', () => {
+        @ApiSchema({
+          name: 'CreateUser',
+          title: 'Create user',
+          additionalProperties: false,
+          minProperties: 1,
+          maxProperties: 10,
+          deprecated: true,
+          example: { name: 'Alice' },
+          externalDocs: { url: 'https://example.com/users' }
+        })
+        class CreateUserDto {
+          @ApiProperty()
+          name: string;
+        }
+
+        const schemas: Record<string, SchemasObject> = {};
+
+        schemaObjectFactory.exploreModelSchema(CreateUserDto, schemas);
+
+        expect(schemas['CreateUser']).toEqual({
+          type: 'object',
+          title: 'Create user',
+          additionalProperties: false,
+          minProperties: 1,
+          maxProperties: 10,
+          deprecated: true,
+          example: { name: 'Alice' },
+          externalDocs: { url: 'https://example.com/users' },
+          properties: {
+            name: { type: 'string' }
+          },
+          required: ['name']
+        });
+      });
+
       it('should not use the the description of the base class', () => {
         @ApiSchema({
           description: 'Represents a user.'
