@@ -3792,6 +3792,40 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when primitive type name bodies are used', () => {
+    class FooController {
+      @Post('/string')
+      @ApiBody({ type: 'string' })
+      string(@Body() body: string) {}
+
+      @Post('/integers')
+      @ApiBody({ type: 'integer', isArray: true })
+      integers(@Body() body: number[]) {}
+    }
+
+    it('should map primitive type name bodies to scalar schemas', () => {
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new FooController(),
+          metatype: FooController
+        } as InstanceWrapper<FooController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      const bodySchema = (index: number) =>
+        (routes[index].root.requestBody as any).content['application/json']
+          .schema;
+      expect(bodySchema(0)).toEqual({ type: 'string' });
+      expect(bodySchema(1)).toEqual({
+        type: 'array',
+        items: { type: 'integer' }
+      });
+      expect(explorer.getSchemas()).toEqual({});
+    });
+  });
+
   describe('when global responses defined', () => {
     @Controller('')
     @ApiResponse({

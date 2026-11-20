@@ -614,6 +614,13 @@ export class CatsController {
     return date;
   }
 
+  @Post('name-typed')
+  @ApiBody({ type: 'string' })
+  @ApiResponse({ status: 200, type: 'integer', isArray: true })
+  nameTyped(@Body() name: string): number[] {
+    return [name.length];
+  }
+
   @Get('nullable-schema-response')
   @ApiResponse({
     status: 200,
