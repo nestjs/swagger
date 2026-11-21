@@ -299,6 +299,71 @@ describe('API model properties', () => {
     );
   });
 
+  it('should read the JSDoc comment that follows other leading comments', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'leading-comments.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      export class LeadingCommentsDto {
+        id: string; // primary key
+
+        /** The name */
+        name: string;
+
+        // legacy: string;
+        /**
+         * The age
+         * @example 3
+         */
+        age: number;
+
+        /* eslint-disable-next-line */
+        /** The color */
+        color: string;
+
+        /** Old description */
+        /** New description */
+        label: string;
+
+        /** The nickname */
+        // TODO: rename
+        nickname: string;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `name: { required: true, type: () => String, description: "The name" }`
+    );
+    expect(result.outputText).toContain(
+      `age: { required: true, type: () => Number, description: "The age", example: 3 }`
+    );
+    expect(result.outputText).toContain(
+      `color: { required: true, type: () => String, description: "The color" }`
+    );
+    expect(result.outputText).toContain(
+      `label: { required: true, type: () => String, description: "New description" }`
+    );
+    expect(result.outputText).toContain(
+      `nickname: { required: true, type: () => String, description: "The nickname" }`
+    );
+  });
+
   it('should keep @example values as strings for optional string properties', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.ES2020,
