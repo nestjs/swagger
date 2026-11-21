@@ -143,6 +143,28 @@ describe('ResponseObjectFactory', () => {
       expect(schemas).toEqual({});
     });
 
+    it('should map primitive type names to scalar response schemas', () => {
+      const schemas: Record<string, SchemaObject> = {};
+      const create = (response: Record<string, any>) =>
+        (
+          factory.create(
+            { description: 'OK', ...response } as any,
+            produces,
+            schemas,
+            factories
+          ) as any
+        ).content['application/json'].schema;
+
+      expect(create({ type: 'string' })).toEqual({ type: 'string' });
+      expect(create({ type: 'integer' })).toEqual({ type: 'integer' });
+      expect(create({ type: 'boolean' })).toEqual({ type: 'boolean' });
+      expect(create({ type: 'number', isArray: true })).toEqual({
+        type: 'array',
+        items: { type: 'number' }
+      });
+      expect(schemas).toEqual({});
+    });
+
     it('should preserve example alongside nullable for built-in scalar', () => {
       const result = factory.create(
         {
