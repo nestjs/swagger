@@ -460,4 +460,56 @@ export class AppController {
       appControllerApiOperationTagsTextTranspiled
     );
   });
+
+  it('should read the JSDoc comment that follows other leading comments', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const controllerText = `
+      import { Controller, Delete, Get } from '@nestjs/common';
+
+      @Controller('cats')
+      export class AppController {
+        // list endpoint
+        /** List the cats */
+        @Get()
+        findAll(): string[] {
+          return [];
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        /**
+         * Delete a cat
+         * @throws {404} Not found
+         */
+        @Delete(':id')
+        remove(): void {}
+      }
+    `;
+
+    const result = ts.transpileModule(controllerText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `openapi.ApiOperation({ summary: "List the cats" })`
+    );
+    expect(result.outputText).toContain(
+      `openapi.ApiOperation({ summary: "Delete a cat" })`
+    );
+    expect(result.outputText).toContain(
+      `openapi.ApiResponse({ status: 404, description: "Not found" })`
+    );
+  });
 });
