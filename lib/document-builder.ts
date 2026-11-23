@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import clone from 'es-toolkit/compat/clone';
-import cloneDeep from 'es-toolkit/compat/cloneDeep';
+import cloneDeepWith from 'es-toolkit/compat/cloneDeepWith';
 import isString from 'es-toolkit/compat/isString';
 import isUndefined from 'es-toolkit/compat/isUndefined';
 import negate from 'es-toolkit/compat/negate';
@@ -310,6 +310,12 @@ export class DocumentBuilder {
   public build(): Omit<OpenAPIObject, 'paths'> {
     // Hand out a snapshot so that extending the builder afterwards does not
     // alter configs (and documents created from them) that were built earlier.
-    return cloneDeep(this.document);
+    // Standard schemas (e.g., zod) are shared as is: some vendors keep their
+    // internals in non-enumerable properties, which a deep clone drops.
+    return cloneDeepWith(this.document, (value: unknown) =>
+      value !== null && typeof value === 'object' && '~standard' in value
+        ? value
+        : undefined
+    );
   }
 }
