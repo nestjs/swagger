@@ -336,6 +336,10 @@ describe('API model properties', () => {
         /** The nickname */
         // TODO: rename
         nickname: string;
+
+        /** The title */
+        /**/
+        title: string;
       }
     `;
 
@@ -361,6 +365,9 @@ describe('API model properties', () => {
     );
     expect(result.outputText).toContain(
       `nickname: { required: true, type: () => String, description: "The nickname" }`
+    );
+    expect(result.outputText).toContain(
+      `title: { required: true, type: () => String, description: "The title" }`
     );
   });
 

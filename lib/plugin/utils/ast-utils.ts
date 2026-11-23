@@ -147,11 +147,15 @@ export function getDocComment(node: Node): DocComment {
   return parserContext.docComment;
 }
 
-// TSDoc only parses text that starts with `/**`, so skip the comments before the JSDoc block
+// TSDoc only parses text that starts with `/**`, so skip the comments before the JSDoc block.
+// `/**/` is an empty block comment, not a JSDoc (TypeScript skips it too).
 function getJSDocText(node: Node): string {
   const text = node.getSourceFile().text;
   const jsDoc = (ts.getLeadingCommentRanges(text, node.pos) ?? [])
-    .filter((range) => text.startsWith('/**', range.pos))
+    .filter(
+      (range) =>
+        text.startsWith('/**', range.pos) && text[range.pos + 3] !== '/'
+    )
     .pop();
   return jsDoc ? text.slice(jsDoc.pos, jsDoc.end) : node.getFullText();
 }
