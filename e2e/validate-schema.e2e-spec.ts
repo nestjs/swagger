@@ -294,6 +294,19 @@ describe('Validate OpenAPI schema', () => {
     expect(document.components!.schemas).not.toHaveProperty('Date');
   });
 
+  it('should map primitive type names to scalar schemas', () => {
+    const document = SwaggerModule.createDocument(app, options, documentOptions);
+
+    const operation = document.paths['/api/cats/name-typed']['post'];
+    expect(
+      asResponseObject(operation.responses['200']).content!['application/json']
+        .schema
+    ).toEqual({ type: 'array', items: { type: 'integer' } });
+    expect(
+      (operation.requestBody as any).content['application/json'].schema
+    ).toEqual({ type: 'string' });
+  });
+
   it('should move nullable from a schema response into the schema', () => {
     const document = SwaggerModule.createDocument(app, options, documentOptions);
 

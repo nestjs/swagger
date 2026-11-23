@@ -14,7 +14,10 @@ import {
   SchemaObject
 } from '../interfaces/open-api-spec.interface.js';
 import { StandardSchemaConverter } from '../interfaces/swagger-document-options.interface.js';
-import { isBuiltInType } from '../utils/is-built-in-type.util.js';
+import {
+  isBuiltInType,
+  isPrimitiveTypeName
+} from '../utils/is-built-in-type.util.js';
 import { isDateCtor } from '../utils/is-date-ctor.util.js';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';
@@ -88,11 +91,7 @@ export class ResponseObjectFactory {
       );
     }
 
-    if (
-      isBuiltInType(type as Function) ||
-      isDateCtor(type as Function) ||
-      type === BigInt
-    ) {
+    if (this.isScalarType(type)) {
       const itemSchema = this.getBuiltInTypeSchema(type as Function | string);
 
       const exampleKeys = ['example', 'examples'];
@@ -222,6 +221,15 @@ export class ResponseObjectFactory {
       );
     }
     return this.responseObjectMapper.toRefObject(response, name, produces);
+  }
+
+  private isScalarType(type: unknown): boolean {
+    return (
+      isBuiltInType(type as Function) ||
+      isPrimitiveTypeName(type) ||
+      isDateCtor(type as Function) ||
+      type === BigInt
+    );
   }
 
   private getBuiltInTypeSchema(type: Function | string): SchemaObject {
