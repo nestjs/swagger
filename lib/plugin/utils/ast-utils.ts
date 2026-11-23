@@ -142,9 +142,22 @@ export function getDefaultTypeFormatFlags(enclosingNode: Node) {
 export function getDocComment(node: Node): DocComment {
   const tsdocParser: TSDocParser = new TSDocParser();
   const parserContext: ParserContext = tsdocParser.parseString(
-    node.getFullText()
+    getJSDocText(node)
   );
   return parserContext.docComment;
+}
+
+// TSDoc only parses text that starts with `/**`, so skip the comments before the JSDoc block.
+// `/**/` is an empty block comment, not a JSDoc (TypeScript skips it too).
+function getJSDocText(node: Node): string {
+  const text = node.getSourceFile().text;
+  const jsDoc = (ts.getLeadingCommentRanges(text, node.pos) ?? [])
+    .filter(
+      (range) =>
+        text.startsWith('/**', range.pos) && text[range.pos + 3] !== '/'
+    )
+    .pop();
+  return jsDoc ? text.slice(jsDoc.pos, jsDoc.end) : node.getFullText();
 }
 
 export function getMainCommentOfNode(node: Node): string {
@@ -268,11 +281,7 @@ export function getTsDocTagsOfNode(node: Node, typeChecker: TypeChecker) {
 }
 
 export function getTsDocErrorsOfNode(node: Node) {
-  const tsdocParser: TSDocParser = new TSDocParser();
-  const parserContext: ParserContext = tsdocParser.parseString(
-    node.getFullText()
-  );
-  const docComment: DocComment = parserContext.docComment;
+  const docComment = getDocComment(node);
 
   const tagResults = [];
   const errorParsingRegex = /{(\d+)}\s*(.*)/;
