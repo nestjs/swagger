@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { DocumentBuilder } from '../lib/document-builder';
 import { GLOBAL_RESPONSES } from '../lib/interfaces/global-metadata.interface';
 
@@ -261,6 +262,23 @@ describe('DocumentBuilder', () => {
       new DocumentBuilder().addGlobalResponse(response);
 
       expect(response).toEqual({ status: 500, type: [ErrorDto] });
+    });
+
+    it('keeps standard schemas usable in the built config', () => {
+      const schema = z.object({
+        statusCode: z.literal(401),
+        message: z.string()
+      });
+
+      const config = new DocumentBuilder()
+        .addGlobalResponse({ status: 401, standardSchema: schema })
+        .build();
+
+      const builtSchema = config[GLOBAL_RESPONSES]![401].standardSchema;
+      expect(builtSchema).toBeInstanceOf(z.ZodObject);
+      expect(z.toJSONSchema(builtSchema as z.ZodType)).toEqual(
+        z.toJSONSchema(schema)
+      );
     });
   });
 });

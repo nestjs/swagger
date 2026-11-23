@@ -1,6 +1,12 @@
 import { Controller, Get, Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { ApiProperty, DocumentBuilder, SwaggerModule } from '../lib/index.js';
+import { z } from 'zod';
+import {
+  ApiProperty,
+  ApiResponse,
+  DocumentBuilder,
+  SwaggerModule
+} from '../lib/index.js';
 
 describe('SwaggerModule global parameters and responses', () => {
   class StaffErrorDto {
@@ -50,6 +56,57 @@ describe('SwaggerModule global parameters and responses', () => {
     expect(operation.parameters).toEqual([]);
     expect(Object.keys(operation.responses)).toEqual(['200']);
     expect(document.components!.schemas).toEqual({});
+
+    await app.close();
+  });
+
+  it('renders standard schemas from global, controller and method responses', async () => {
+    const unauthorized = z.object({
+      statusCode: z.literal(401),
+      message: z.string()
+    });
+    const forbidden = z.object({ reason: z.string() });
+    const notFound = z.object({ id: z.string() });
+
+    @ApiResponse({ status: 403, standardSchema: forbidden })
+    @Controller('dogs')
+    class DogsController {
+      @ApiResponse({ status: 404, standardSchema: notFound })
+      @Get()
+      findAll() {}
+
+      @Get('count')
+      count() {}
+    }
+
+    @Module({ controllers: [DogsController] })
+    class DogsModule {}
+
+    const app = await NestFactory.create(DogsModule, { logger: false });
+    await app.init();
+
+    const config = new DocumentBuilder()
+      .addGlobalResponse({ status: 401, standardSchema: unauthorized })
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+
+    const toSchema = (schema: z.ZodType) =>
+      schema['~standard'].jsonSchema.output({ target: 'openapi-3.0' });
+
+    for (const path of ['/dogs', '/dogs/count']) {
+      const responses = document.paths[path].get!.responses as any;
+      expect(responses['401'].content['application/json'].schema).toEqual(
+        toSchema(unauthorized)
+      );
+      expect(responses['403'].content['application/json'].schema).toEqual(
+        toSchema(forbidden)
+      );
+    }
+    expect(
+      (document.paths['/dogs'].get!.responses as any)['404'].content[
+        'application/json'
+      ].schema
+    ).toEqual(toSchema(notFound));
 
     await app.close();
   });
