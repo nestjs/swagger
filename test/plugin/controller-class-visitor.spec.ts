@@ -512,4 +512,49 @@ export class AppController {
       `openapi.ApiResponse({ status: 404, description: "Not found" })`
     );
   });
+
+  it('should emit negative members of numeric literal union params', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const controllerText = `
+      import { Controller, Get, Param } from '@nestjs/common';
+
+      class Item {}
+
+      @Controller('items')
+      export class AppController {
+        /** Find items in one direction */
+        @Get(':dir')
+        findByDirection(@Param('dir') dir: -1 | 1): Item[] {
+          return [];
+        }
+      }
+    `;
+
+    const result = ts.transpileModule(controllerText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `openapi.ApiParam({ name: "dir", enum: [1, -1] })`
+    );
+    expect(result.outputText).toContain(
+      `openapi.ApiOperation({ summary: "Find items in one direction" })`
+    );
+    expect(result.outputText).toContain(
+      `openapi.ApiResponse({ status: 200, type: [Item] })`
+    );
+  });
 });
