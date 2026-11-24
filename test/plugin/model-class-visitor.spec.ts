@@ -1275,6 +1275,65 @@ describe('API model properties', () => {
     expect(result.outputText).not.toContain(`type: () => Object`);
   });
 
+  it('should emit negative members of numeric literal unions', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2022,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'negative-literal-union.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      type Direction = -1 | 1;
+
+      export class NegativeLiteralUnionDto {
+        level: -1 | 0 | 1;
+        direction?: Direction;
+        offset: -2.5 | 2.5 | null;
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({}, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `level: { required: true, enum: [0, 1, -1] }`
+    );
+    expect(result.outputText).toContain(
+      `direction: { required: false, enum: [1, -1] }`
+    );
+    expect(result.outputText).toContain(
+      `offset: { required: true, nullable: true, enum: [2.5, -2.5] }`
+    );
+
+    const parameterPropertyText = `
+      export class NegativeLiteralUnionDto {
+        constructor(public level: -1 | 1) {}
+      }
+    `;
+
+    const parameterPropertyResult = ts.transpileModule(parameterPropertyText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ parameterProperties: true }, fakeProgram)]
+      }
+    });
+
+    expect(parameterPropertyResult.outputText).toContain(
+      `level: { required: true, enum: [1, -1] }`
+    );
+  });
+
   it('should produce enum metadata for single literal types', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.ES2022,

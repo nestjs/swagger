@@ -802,9 +802,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
         key,
         factory.createArrayLiteralExpression(
           stringLiteralUnion.values.map((v) =>
-            typeof v === 'number'
-              ? factory.createNumericLiteral(v)
-              : factory.createStringLiteral(v)
+            createPrimitiveLiteral(factory, v)
           )
         )
       );

@@ -14,6 +14,7 @@ import { OPENAPI_NAMESPACE } from '../plugin-constants.js';
 import {
   collectExistingApiParamNames,
   createLiteralFromAnyValue,
+  createPrimitiveLiteral,
   getDecoratorArguments,
   getDecoratorName,
   getJSDocParamDescriptionsOfNode,
@@ -701,11 +702,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
           factory.createPropertyAssignment(
             'enum',
             factory.createArrayLiteralExpression(
-              enumValues.map((value) =>
-                typeof value === 'number'
-                  ? factory.createNumericLiteral(value)
-                  : factory.createStringLiteral(value)
-              ),
+              enumValues.map((value) => createPrimitiveLiteral(factory, value)),
               false
             )
           )
