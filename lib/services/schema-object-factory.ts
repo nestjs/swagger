@@ -884,26 +884,49 @@ export class SchemaObjectFactory {
     schemas: Record<string, SchemaObject>,
     pendingSchemaRefs: string[]
   ) {
-    const recurse = (type: unknown) => {
-      if (!Array.isArray(type)) {
-        const schemaMetadata = this.createSchemaMetadata(
-          key,
-          metadata,
-          schemas,
-          pendingSchemaRefs,
-          type
-        );
-        return omit(schemaMetadata, ['isArray', 'name']);
-      }
+    let elementType: unknown = metadata.type;
+    let depth = 0;
+    while (Array.isArray(elementType)) {
+      elementType = elementType[0];
+      depth++;
+    }
+    const schema = omit(
+      this.createSchemaMetadata(
+        key,
+        metadata,
+        schemas,
+        pendingSchemaRefs,
+        elementType
+      ),
+      ['isArray']
+    ) as SchemaObject & { name?: string };
 
-      return {
-        name: key,
+    // A lazy nested array type such as `type: () => [[Cell]]` (which the CLI
+    // plugin also emits for `Cell[][]`) arrives here with `isArray`, so the
+    // schema built above is already the outermost array and carries the
+    // property metadata ("required", "description", "nullable", ...). Only
+    // its items are wrapped in the nested arrays
+    if (schema.type === 'array' && schema.items) {
+      return { ...schema, items: this.wrapInArrays(schema.items, depth) };
+    }
+
+    // Without `isArray` the schema built above is the element schema
+    return this.wrapInArrays(omit(schema, ['name']), depth, key);
+  }
+
+  private wrapInArrays(
+    items: SchemaObject | ReferenceObject,
+    depth: number,
+    name?: string
+  ): SchemaObject | ReferenceObject {
+    for (let i = 0; i < depth; i++) {
+      items = {
+        ...(name !== undefined && { name }),
         type: 'array',
-        items: recurse(type[0])
-      };
-    };
-
-    return recurse(metadata.type);
+        items
+      } as SchemaObject;
+    }
+    return items;
   }
 
   private createSchemaMetadata(
