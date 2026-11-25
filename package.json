@@ -99,7 +99,7 @@
     "valibot": "1.5.0",
     "vitest": "5.1.1",
     "zod": "4.6.7",
-    "zod-openapi": "6.0.2"
+    "zod-openapi": "6.0.3"
   },
   "peerDependencies": {
     "@fastify/static": "^8.0.0 || ^9.0.0 || ^10.0.0",
