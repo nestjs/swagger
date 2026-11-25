@@ -190,4 +190,33 @@ describe('ApiQuery', () => {
       expect(metadata[0].type).toEqual('uuid');
     });
   });
+
+  describe('when enum is combined with an array type', () => {
+    enum Role {
+      Admin = 'admin',
+      User = 'user'
+    }
+
+    class TestAppController {
+      @Get('array-type')
+      @ApiQuery({ name: 'roles', enum: Role, type: [String] })
+      public getArrayType(@Query('roles') roles: Role[]) {}
+    }
+
+    const controller = new TestAppController();
+
+    it('should attach an array enum schema', () => {
+      const metadata = Reflect.getMetadata(
+        DECORATORS.API_PARAMETERS,
+        controller.getArrayType
+      );
+      expect(metadata[0].schema).toEqual({
+        type: 'array',
+        items: {
+          type: 'string',
+          enum: ['admin', 'user']
+        }
+      });
+    });
+  });
 });
