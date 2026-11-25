@@ -96,7 +96,10 @@ export function createApiPropertyDecorator(
     }
   }
 
-  if (Array.isArray(options.type)) {
+  if (
+    Array.isArray(options.type) &&
+    !isNestedArrayOfSchemaTypes(options.type)
+  ) {
     // `getTypeIsArrayTuple` strips one level of array wrapping, so when
     // `options.type` is still an array here the caller provided a nested
     // array type (e.g. `type: [[String]]` or `type: [String], isArray: true`).
@@ -175,4 +178,23 @@ export function ApiResponseProperty(
     readOnly: true,
     ...options
   } as ApiPropertyOptions);
+}
+
+const PRIMITIVE_CONSTRUCTORS: Function[] = [String, Number, Boolean];
+
+/**
+ * Whether the items of a nested array type (e.g. `type: [[Cat]]`) need a
+ * schema of their own: a model reference, or a type such as `Date` that is
+ * not named after its OpenAPI type. Those are left to the schema object
+ * factory, which resolves nested array types.
+ */
+function isNestedArrayOfSchemaTypes(type: unknown[]): boolean {
+  let innerType = type[0];
+  while (Array.isArray(innerType)) {
+    innerType = innerType[0];
+  }
+  return (
+    typeof innerType === 'function' &&
+    !PRIMITIVE_CONSTRUCTORS.includes(innerType)
+  );
 }
