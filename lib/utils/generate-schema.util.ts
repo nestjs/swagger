@@ -31,7 +31,7 @@ export function generateSchema<T = any>(
   );
 
   const schemas: Record<string, SchemaObject> = { ...extraSchemas };
-  factory.exploreModelSchema(target, schemas);
+  const schemaName = factory.exploreModelSchema(target, schemas);
 
-  return { schema: schemas[target.name], schemas };
+  return { schema: schemas[schemaName], schemas };
 }
