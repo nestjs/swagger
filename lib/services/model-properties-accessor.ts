@@ -115,17 +115,40 @@ export class ModelPropertiesAccessor {
     prototype: object,
     key: string
   ): Record<string, any> | undefined {
-    const inheritedMetadata = Reflect.getMetadata(
+    return this.pickDecoratedOptions(
+      prototype,
+      Reflect.getPrototypeOf(prototype),
+      key
+    );
+  }
+
+  /**
+   * Returns the options of the metadata of a property that the class, or one
+   * of its ancestors, set with a decorator, without the type.
+   */
+  getDecoratedOptions(
+    prototype: object,
+    key: string
+  ): Record<string, any> | undefined {
+    return this.pickDecoratedOptions(prototype, prototype, key);
+  }
+
+  private pickDecoratedOptions(
+    prototype: object,
+    decoratedFrom: object | null,
+    key: string
+  ): Record<string, any> | undefined {
+    const metadata = Reflect.getMetadata(
       DECORATORS.API_MODEL_PROPERTIES,
       prototype,
       key
     );
-    if (!inheritedMetadata) {
+    if (!metadata) {
       return undefined;
     }
     const decoratedOptions = new Set<string>();
     for (
-      let current = Reflect.getPrototypeOf(prototype);
+      let current = decoratedFrom;
       current && current !== Object.prototype;
       current = Reflect.getPrototypeOf(current)
     ) {
@@ -140,7 +163,7 @@ export class ModelPropertiesAccessor {
     decoratedOptions.delete('type');
     decoratedOptions.delete('isArray');
 
-    return pick(inheritedMetadata, [...decoratedOptions]);
+    return pick(metadata, [...decoratedOptions]);
   }
 
   /**
