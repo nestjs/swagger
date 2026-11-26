@@ -1837,6 +1837,49 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should reference the model of a nested array type', () => {
+      class MatrixCellDto {
+        @ApiProperty()
+        value: string;
+      }
+      class NestedModelArrayDto {
+        @ApiProperty({ type: [[MatrixCellDto]] })
+        cells: MatrixCellDto[][];
+
+        @ApiProperty({ type: [MatrixCellDto], isArray: true })
+        rows: MatrixCellDto[][];
+
+        @ApiProperty({ type: [[Date]] })
+        dates: Date[][];
+      }
+
+      const schemas = {};
+      schemaObjectFactory.exploreModelSchema(NestedModelArrayDto, schemas);
+      const cellsSchema = {
+        type: 'array',
+        items: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/MatrixCellDto' }
+        }
+      };
+      expect(schemas[NestedModelArrayDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          cells: cellsSchema,
+          rows: cellsSchema,
+          dates: {
+            type: 'array',
+            items: {
+              type: 'array',
+              items: { type: 'string', format: 'date-time' }
+            }
+          }
+        },
+        required: ['cells', 'rows', 'dates']
+      });
+      expect(schemas[MatrixCellDto.name]).toBeDefined();
+    });
+
     it('should keep explicit array items and item type when array declares allOf', () => {
       class Tag {}
       class DtoWithArrayAndAllOf {
