@@ -3889,6 +3889,82 @@ describe('SwaggerExplorer', () => {
       expect(routes[0].root['x-tenant']).toBe(false);
       expect(routes[1].root['x-tenant']).toBe(true);
     });
+
+    describe('and the subclass declares the extension of its base again', () => {
+      @ApiExtension('x-tenant', 'base')
+      @ApiExtension('x-region', 'eu')
+      @Controller('base')
+      class TenantBaseController {
+        @Get(':id')
+        findOne(@Param('id') id: string) {
+          return id;
+        }
+
+        @Get('stats')
+        @ApiExtension('x-tenant', 'method')
+        stats() {
+          return {};
+        }
+      }
+
+      @ApiExtension('x-tenant', 'subclass')
+      @Controller('items')
+      class ItemsController extends TenantBaseController {
+        @Get()
+        findAll() {
+          return [];
+        }
+
+        @Post()
+        @ApiExtension('x-tenant', 'own-method')
+        create() {
+          return {};
+        }
+      }
+
+      const byOperationId = (controller: Type<unknown>) =>
+        Object.fromEntries(
+          explore(controller).map((route) => [
+            route.root.operationId,
+            route.root
+          ])
+        );
+
+      it("should use the subclass's value on the inherited routes", () => {
+        const routes = byOperationId(ItemsController);
+        expect(routes['ItemsController_findOne']['x-tenant']).toBe('subclass');
+      });
+
+      it("should use the subclass's value on its own routes", () => {
+        const routes = byOperationId(ItemsController);
+        expect(routes['ItemsController_findAll']['x-tenant']).toBe('subclass');
+      });
+
+      it('should keep the method-level values over the class-level ones', () => {
+        const routes = byOperationId(ItemsController);
+        expect(routes['ItemsController_stats']['x-tenant']).toBe('method');
+        expect(routes['ItemsController_create']['x-tenant']).toBe('own-method');
+      });
+
+      it('should keep the base extensions the subclass does not declare', () => {
+        const routes = byOperationId(ItemsController);
+        for (const route of Object.values(routes)) {
+          expect(route['x-region']).toBe('eu');
+        }
+      });
+
+      it('should leave the base controller explored on its own unchanged', () => {
+        const routes = byOperationId(TenantBaseController);
+        expect(routes['TenantBaseController_findOne']).toMatchObject({
+          'x-tenant': 'base',
+          'x-region': 'eu'
+        });
+        expect(routes['TenantBaseController_stats']).toMatchObject({
+          'x-tenant': 'method',
+          'x-region': 'eu'
+        });
+      });
+    });
   });
 
   describe('when a query DTO is built from a response DTO', () => {

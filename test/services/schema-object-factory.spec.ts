@@ -1659,6 +1659,27 @@ describe('SchemaObjectFactory', () => {
       expect(schemas[CreatUserDto.name]['x-test']).toEqual('value');
     });
 
+    it('should let a subclass override an inherited extension', () => {
+      @ApiExtension('x-test', 'base')
+      @ApiExtension('x-base-only', true)
+      class BaseUserDto {
+        @ApiProperty()
+        name: string;
+      }
+
+      @ApiExtension('x-test', 'subclass')
+      class AdminUserDto extends BaseUserDto {}
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(AdminUserDto, schemas);
+      schemaObjectFactory.exploreModelSchema(BaseUserDto, schemas);
+
+      expect(schemas[AdminUserDto.name]['x-test']).toEqual('subclass');
+      expect(schemas[AdminUserDto.name]['x-base-only']).toBe(true);
+      expect(schemas[BaseUserDto.name]['x-test']).toEqual('base');
+    });
+
     it('should create arrays of objects', () => {
       class ObjectDto {
         @ApiProperty()

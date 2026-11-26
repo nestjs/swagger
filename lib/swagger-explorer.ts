@@ -69,6 +69,7 @@ import { StandardSchemaConverter } from './interfaces/swagger-document-options.i
 import { MimetypeContentWrapper } from './services/mimetype-content-wrapper.js';
 import { ResponseObjectFactory } from './services/response-object-factory.js';
 import { SchemaObjectFactory } from './services/schema-object-factory.js';
+import { getClassExtensions } from './utils/get-class-extensions.util.js';
 import { isBodyParameter } from './utils/is-body-parameter.util.js';
 import { isSameParameter } from './utils/is-same-parameter.util.js';
 import { mergeAndUniq } from './utils/merge-and-uniq.util.js';
@@ -445,7 +446,7 @@ export class SwaggerExplorer {
       allRoutePaths.map((routePath, index) => {
         const fullPath = this.validateRoutePath(routePath);
         const apiExtension = {
-          ...Reflect.getMetadata(DECORATORS.API_EXTENSION, metatype),
+          ...getClassExtensions(metatype),
           ...Reflect.getMetadata(DECORATORS.API_EXTENSION, method)
         };
         const pathVersion = versions.find(

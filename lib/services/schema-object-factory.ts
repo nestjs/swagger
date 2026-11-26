@@ -29,6 +29,7 @@ import {
   isEnumMetadata,
   isLazyEnumTypeInferred
 } from '../utils/enum.utils.js';
+import { getClassExtensions } from '../utils/get-class-extensions.util.js';
 import { getSchemaPath } from '../utils/index.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
 import {
@@ -465,8 +466,7 @@ export class SchemaObjectFactory {
     if (!propertiesWithType) {
       return '';
     }
-    const extensionProperties =
-      Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
+    const extensionProperties = getClassExtensions(type as Function);
 
     const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
 
