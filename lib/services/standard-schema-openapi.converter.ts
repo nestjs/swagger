@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import type { StandardJSONSchemaV1 } from '@standard-schema/spec';
+import isPlainObject from 'es-toolkit/compat/isPlainObject';
 import omit from 'es-toolkit/compat/omit';
 import type {
   StandardSchemaConversionResult,
@@ -211,7 +212,11 @@ export class StandardSchemaOpenApiConverter {
       return value.map((item) => this.rewriteValue(item));
     }
 
-    if (!value || typeof value !== 'object') {
+    // Schemas are plain objects. Anything else (e.g. a `Date` or a class
+    // instance used as a `default` or an example) is a value and is kept as
+    // is: copying it key by key would drop its prototype, and with it the
+    // `toJSON()` that decides how it is serialized.
+    if (!isPlainObject(value)) {
       return value;
     }
 
