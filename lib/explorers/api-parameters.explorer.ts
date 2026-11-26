@@ -42,9 +42,13 @@ export const exploreApiParametersMetadata = (
   // Inherited methods are shared with the base, so read these from the class
   const classParameters: any[] =
     metatype && Reflect.getMetadata(DECORATORS.API_PARAMETERS, metatype);
-  const explicitParameters = classParameters
-    ? uniq([...(methodParameters ?? []), ...classParameters])
-    : methodParameters;
+  const explicitParameters =
+    metatype && classParameters
+      ? omitClassParamsRedeclaredByDerivedClass(
+          uniq([...(methodParameters ?? []), ...classParameters]),
+          metatype
+        )
+      : methodParameters;
   const parametersMetadata = parameterMetadataAccessor.explore(
     instance,
     prototype,
@@ -74,16 +78,6 @@ export const exploreApiParametersMetadata = (
     return expanded ?? [param];
   });
   if (!noExplicitAndGlobalMetadata) {
-    const hasSameParameterIdentity = (
-      left: { in?: string; name?: string | number | object },
-      right: { in?: string; name?: string | number | object }
-    ) => {
-      if (left.in === 'body' && right.in === 'body') {
-        return true;
-      }
-      return isSameParameter(left, right);
-    };
-
     const mergeImplicitAndExplicit = (item: ParamWithTypeMetadata) =>
       assign(
         item,
@@ -114,6 +108,66 @@ export const exploreApiParametersMetadata = (
   const parameters = swaggerTypesMapper.mapParamTypes(paramsWithDefinitions);
   return parameters ? { parameters } : undefined;
 };
+
+function hasSameParameterIdentity(
+  left: { in?: string; name?: string | number | object },
+  right: { in?: string; name?: string | number | object }
+) {
+  if (left.in === 'body' && right.in === 'body') {
+    return true;
+  }
+  return isSameParameter(left, right);
+}
+
+/**
+ * A class-level param is copied onto the route handlers its class declares,
+ * so an inherited handler still carries the base class's copy, and the first
+ * param found for a location and name wins. Left alone, the base class's
+ * definition wins on the inherited routes while the subclass's own routes use
+ * the subclass's definition. Drop the class-level params that a more derived
+ * class redeclares. Params declared on the handler itself are kept, they still
+ * win over class-level ones, and so is the precedence between two params
+ * declared on one class.
+ */
+function omitClassParamsRedeclaredByDerivedClass(
+  params: any[],
+  metatype: Type<unknown>
+) {
+  // Class-level params declared on each class of the prototype chain,
+  // most derived class first
+  const paramsByClass: any[][] = [];
+  for (
+    let type = metatype;
+    type && type !== Function.prototype;
+    type = Object.getPrototypeOf(type)
+  ) {
+    const visible: any[] = Reflect.getMetadata(DECORATORS.API_PARAMETERS, type);
+    const inherited: any[] = Reflect.getMetadata(
+      DECORATORS.API_PARAMETERS,
+      Object.getPrototypeOf(type)
+    );
+    paramsByClass.push(
+      (visible ?? []).filter((param) => !inherited?.includes(param))
+    );
+  }
+  const isRedeclaredByDerivedClass = (param: any) => {
+    const declaredOn = paramsByClass.findIndex((classParams) =>
+      classParams.includes(param)
+    );
+    // Not class-level: the handler declares this param itself
+    if (declaredOn === -1) {
+      return false;
+    }
+    return paramsByClass
+      .slice(0, declaredOn)
+      .some((classParams) =>
+        classParams.some((classParam) =>
+          hasSameParameterIdentity(classParam, param)
+        )
+      );
+  };
+  return params.filter((param) => !isRedeclaredByDerivedClass(param));
+}
 
 function removeBodyMetadataIfExplicitExists(
   properties: ParamWithTypeMetadata[],

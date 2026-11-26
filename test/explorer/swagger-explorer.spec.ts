@@ -3406,6 +3406,218 @@ describe('SwaggerExplorer', () => {
         }
       ]);
     });
+
+    it('should document the param the same way on own and inherited routes', () => {
+      @ApiQuery({
+        name: 'lang',
+        type: String,
+        required: true,
+        description: 'base'
+      })
+      abstract class BaseController {
+        @Get()
+        findAll() {
+          return [];
+        }
+      }
+
+      @ApiQuery({
+        name: 'lang',
+        type: String,
+        required: false,
+        description: 'subclass'
+      })
+      @Controller('items')
+      class ItemsController extends BaseController {
+        @Get('v2')
+        findAllV2() {
+          return [];
+        }
+      }
+
+      const routes = explore(ItemsController);
+      const parametersAt = (path: string) =>
+        routes.find((route) => route.root.path === path).root.parameters;
+      const overriddenParam = {
+        name: 'lang',
+        in: 'query',
+        required: false,
+        description: 'subclass',
+        schema: { type: 'string' }
+      };
+
+      expect(parametersAt('/items')).toEqual([overriddenParam]);
+      expect(parametersAt('/items/v2')).toEqual([overriddenParam]);
+    });
+
+    it('should use an intermediate redeclaration when the subclass has none', () => {
+      @ApiQuery({
+        name: 'lang',
+        type: String,
+        required: true,
+        description: 'base'
+      })
+      abstract class BaseController {
+        @Get()
+        findAll() {
+          return [];
+        }
+      }
+
+      @ApiQuery({
+        name: 'lang',
+        type: String,
+        required: false,
+        description: 'middle'
+      })
+      abstract class MiddleController extends BaseController {}
+
+      @Controller('items')
+      class ItemsController extends MiddleController {
+        @Get('v2')
+        findAllV2() {
+          return [];
+        }
+      }
+
+      const routes = explore(ItemsController);
+      const parametersAt = (path: string) =>
+        routes.find((route) => route.root.path === path).root.parameters;
+      const middleParam = {
+        name: 'lang',
+        in: 'query',
+        required: false,
+        description: 'middle',
+        schema: { type: 'string' }
+      };
+
+      expect(parametersAt('/items')).toEqual([middleParam]);
+      expect(parametersAt('/items/v2')).toEqual([middleParam]);
+    });
+
+    it('should keep both params when the subclass redeclares the name elsewhere', () => {
+      @ApiQuery({ name: 'lang', type: String })
+      abstract class BaseController {
+        @Get()
+        findAll() {
+          return [];
+        }
+      }
+
+      @ApiParam({ name: 'lang', type: Number })
+      @Controller(':lang/items')
+      class ItemsController extends BaseController {}
+
+      expect(explore(ItemsController)[0].root.parameters).toEqual([
+        {
+          name: 'lang',
+          in: 'query',
+          required: true,
+          schema: { type: 'string' }
+        },
+        {
+          name: 'lang',
+          in: 'path',
+          required: true,
+          schema: { type: 'number' }
+        }
+      ]);
+    });
+
+    it('should keep the base class-level params the subclass does not redeclare', () => {
+      @ApiParam({ name: 'tenantId', type: String })
+      @ApiQuery({ name: 'lang', type: String, description: 'base' })
+      abstract class BaseController {
+        @Get(':id')
+        findOne(@Param('id') id: string) {
+          return id;
+        }
+      }
+
+      @ApiQuery({ name: 'lang', type: String, description: 'subclass' })
+      @Controller(':tenantId/items')
+      class ItemsController extends BaseController {}
+
+      expect(explore(ItemsController)[0].root.parameters).toEqual([
+        {
+          name: 'id',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' }
+        },
+        {
+          name: 'tenantId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string' }
+        },
+        {
+          name: 'lang',
+          in: 'query',
+          required: true,
+          description: 'subclass',
+          schema: { type: 'string' }
+        }
+      ]);
+    });
+
+    it("should keep a base method's own param over the subclass's class-level one", () => {
+      abstract class BaseController {
+        @ApiQuery({
+          name: 'lang',
+          type: String,
+          required: true,
+          description: 'base method'
+        })
+        @Get()
+        findAll() {
+          return [];
+        }
+      }
+
+      @ApiQuery({
+        name: 'lang',
+        type: String,
+        required: false,
+        description: 'subclass'
+      })
+      @Controller('items')
+      class ItemsController extends BaseController {}
+
+      expect(explore(ItemsController)[0].root.parameters).toEqual([
+        {
+          name: 'lang',
+          in: 'query',
+          required: true,
+          description: 'base method',
+          schema: { type: 'string' }
+        }
+      ]);
+    });
+
+    it('should not change the precedence of two params declared on one class', () => {
+      @ApiQuery({ name: 'lang', type: String, description: 'first' })
+      @ApiQuery({ name: 'lang', type: String, description: 'second' })
+      abstract class BaseController {
+        @Get()
+        findAll() {
+          return [];
+        }
+      }
+
+      @Controller('items')
+      class ItemsController extends BaseController {}
+
+      expect(explore(ItemsController)[0].root.parameters).toEqual([
+        {
+          name: 'lang',
+          in: 'query',
+          required: true,
+          description: 'second',
+          schema: { type: 'string' }
+        }
+      ]);
+    });
   });
 
   describe('when a controller with a class-level extension inherits its routes', () => {
