@@ -84,7 +84,9 @@ export class ParameterMetadataAccessor {
   /**
    * When an override declares its own parameter decorators, Nest copies the
    * route arguments of the parent class's handler into the override's metadata.
-   * Those describe the parent's parameters, not the override's.
+   * Those describe the parent's parameters, not the override's. The override
+   * may itself be inherited, so the copies are looked up on the class that
+   * holds the metadata rather than on the explored one.
    */
   private getRouteArgsMetadata(
     target: Function,
@@ -92,12 +94,19 @@ export class ParameterMetadataAccessor {
   ): ParamsMetadata {
     const metadata: ParamsMetadata =
       Reflect.getMetadata(ROUTE_ARGS_METADATA, target, methodName) || {};
-    if (!Reflect.hasOwnMetadata(ROUTE_ARGS_METADATA, target, methodName)) {
+    let owner = target;
+    while (
+      owner &&
+      !Reflect.hasOwnMetadata(ROUTE_ARGS_METADATA, owner, methodName)
+    ) {
+      owner = Object.getPrototypeOf(owner);
+    }
+    if (!owner) {
       return metadata;
     }
     const parentMetadata: ParamsMetadata | undefined = Reflect.getMetadata(
       ROUTE_ARGS_METADATA,
-      Object.getPrototypeOf(target),
+      Object.getPrototypeOf(owner),
       methodName
     );
     if (!parentMetadata) {
