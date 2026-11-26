@@ -20,14 +20,30 @@ function serializeFunction(fn: Function): string {
 }
 
 /**
+ * Reduces a value to what `JSON.stringify` keeps of it
+ */
+function toPlainJSON<T>(value: T): T {
+  const json = JSON.stringify(value);
+  return json === undefined ? undefined : JSON.parse(json);
+}
+
+/**
  * Transforms options JS object into a string that can be inserted as 'variable' into JS file
  */
 export function buildJSInitOptions(initOptions: SwaggerUIInitOptions) {
   const fns: Function[] = [];
   const placeholders: string[] = [];
 
+  // Only the UI options (e.g., `requestInterceptor`) carry functions to the
+  // browser. The document is embedded as the JSON definition serves it, which
+  // drops any function or class left in it (e.g., a nested `type`).
+  const options = {
+    ...initOptions,
+    swaggerDoc: toPlainJSON(initOptions.swaggerDoc)
+  };
+
   let json = JSON.stringify(
-    initOptions,
+    options,
     (key, value) => {
       if (typeof value === 'function') {
         const placeholder = randomUUID();
