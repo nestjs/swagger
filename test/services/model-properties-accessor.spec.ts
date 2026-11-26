@@ -57,6 +57,54 @@ describe('ModelPropertiesAccessor', () => {
     });
   });
 
+  describe('isHiddenField', () => {
+    class AccountDto {
+      @ApiProperty()
+      id: string;
+
+      @ApiProperty({ name: 'tax_id' })
+      taxId: string;
+
+      @ApiProperty()
+      address: object;
+
+      // not documented
+      ownerId: string;
+    }
+
+    class PublicAccountDto extends AccountDto {
+      @ApiHideProperty()
+      declare taxId: string;
+    }
+
+    const isHiddenField = (type: Function, field: string) =>
+      modelPropertiesAccessor.isHiddenField(
+        type.prototype as any as Type<any>,
+        field
+      );
+
+    it('should resolve the name of a hidden property to its key', () => {
+      expect(isHiddenField(AccountDto, 'tax_id')).toBe(false);
+      expect(isHiddenField(PublicAccountDto, 'tax_id')).toBe(true);
+      expect(isHiddenField(PublicAccountDto, 'taxId')).toBe(true);
+      expect(isHiddenField(PublicAccountDto, 'tax_id/value')).toBe(true);
+    });
+
+    it('should not report documented or unknown fields', () => {
+      expect(isHiddenField(PublicAccountDto, 'id')).toBe(false);
+      expect(isHiddenField(PublicAccountDto, 'ownerId')).toBe(false);
+      expect(isHiddenField(PublicAccountDto, 'address/city')).toBe(false);
+    });
+
+    it('should not report a name that a documented property carries', () => {
+      class RenamedAccountDto extends PublicAccountDto {
+        @ApiProperty({ name: 'tax_id' })
+        vatNumber: string;
+      }
+      expect(isHiddenField(RenamedAccountDto, 'tax_id')).toBe(false);
+    });
+  });
+
   describe('applyMetadataFactory', () => {
     class UserEntity {
       id: number;

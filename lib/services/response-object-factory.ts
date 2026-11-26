@@ -204,6 +204,12 @@ export class ResponseObjectFactory {
           prototype: controllerPrototype
         } = customLink;
 
+        // The links are inherited from the parent classes, whereas the field
+        // may be hidden with @ApiHideProperty in the type of this response
+        if (this.modelPropertiesAccessor.isHiddenField(prototype, field)) {
+          continue;
+        }
+
         generateLink(controllerPrototype, method, parameter, field);
       }
 

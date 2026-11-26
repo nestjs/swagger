@@ -22,6 +22,32 @@ export class ModelPropertiesAccessor {
   }
 
   /**
+   * Checks whether a field of the serialized model belongs to a hidden
+   * property. The field is given by the name it has in the document, or by a
+   * path starting with that name ("address/zip"). Unlike "isHiddenProperty()",
+   * this resolves the name set with "@ApiProperty({ name })" to the property
+   * key(s) that "@ApiHideProperty()" is recorded under. A name that a
+   * documented property carries as well is not hidden.
+   */
+  isHiddenField(prototype: Type<unknown>, field: string): boolean {
+    const [name] = String(field).split('/');
+    const keys: string[] = (
+      Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES_ARRAY, prototype) ||
+      []
+    )
+      .filter(isString)
+      .map((key: string) => key.slice(1))
+      .filter(
+        (key: string) =>
+          (Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key)
+            ?.name || key) === name
+      );
+    return keys.length > 0
+      ? keys.every((key) => this.isHiddenProperty(prototype, key))
+      : this.isHiddenProperty(prototype, name);
+  }
+
+  /**
    * Checks whether "@ApiHideProperty()" applies to the given property.
    * The nearest class in the prototype chain that declares anything about the
    * property wins, so a subclass can hide a property its parent publishes and

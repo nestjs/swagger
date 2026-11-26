@@ -34,6 +34,7 @@ import {
   ApiExtension,
   ApiExtraModels,
   ApiHeader,
+  ApiHideProperty,
   ApiIncludeEndpoint,
   ApiLink,
   ApiNotFoundResponse,
@@ -3197,6 +3198,107 @@ describe('SwaggerExplorer', () => {
           (headerRoutes[0].responses['200'] as ResponseObject).links
         ).map((link) => link.operationId)
       ).toEqual(['OwnerController_getOwner_1', 'OwnerController_getPets_2']);
+    });
+
+    it('should not link from a field hidden with @ApiHideProperty', () => {
+      class Account {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty()
+        customerId: string;
+
+        @ApiProperty({ name: 'tax_id' })
+        taxId: string;
+
+        // not documented, still a valid source for a link
+        ownerId: string;
+      }
+
+      class PublicAccount extends Account {
+        @ApiHideProperty()
+        declare customerId: string;
+
+        @ApiHideProperty()
+        declare taxId: string;
+      }
+
+      class RestoredAccount extends PublicAccount {
+        @ApiProperty()
+        declare customerId: string;
+
+        @ApiProperty()
+        declare taxId: string;
+      }
+
+      @Controller('accounts')
+      class AccountController {
+        @Get(':id')
+        @ApiOkResponse({ type: Account })
+        getAccount(@Param('id') id: string) {}
+
+        @Get('public/:id')
+        @ApiOkResponse({ type: PublicAccount })
+        getPublicAccount(@Param('id') id: string) {}
+
+        @Get('restored/:id')
+        @ApiOkResponse({ type: RestoredAccount })
+        getRestoredAccount(@Param('id') id: string) {}
+
+        @Get('invoices/:customer')
+        @ApiLink({
+          from: Account,
+          fromField: 'customerId',
+          routeParam: 'customer'
+        })
+        getInvoices(@Param('customer') customer: string) {}
+
+        @Get('returns/:tax')
+        @ApiLink({ from: Account, fromField: 'tax_id', routeParam: 'tax' })
+        getTaxReturns(@Param('tax') tax: string) {}
+
+        @Get('owners/:owner')
+        @ApiLink({ from: Account, fromField: 'ownerId', routeParam: 'owner' })
+        getOwner(@Param('owner') owner: string) {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new AccountController(),
+          metatype: AccountController
+        } as InstanceWrapper<AccountController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      const ownerLink = {
+        AccountController_getOwner_from_ownerId: {
+          operationId: 'AccountController_getOwner',
+          parameters: { owner: '$response.body#/ownerId' }
+        }
+      };
+      const allLinks = {
+        AccountController_getInvoices_from_customerId: {
+          operationId: 'AccountController_getInvoices',
+          parameters: { customer: '$response.body#/customerId' }
+        },
+        AccountController_getTaxReturns_from_tax_id: {
+          operationId: 'AccountController_getTaxReturns',
+          parameters: { tax: '$response.body#/tax_id' }
+        },
+        ...ownerLink
+      };
+
+      expect((routes[0].responses['200'] as ResponseObject).links).toEqual(
+        allLinks
+      );
+      expect((routes[1].responses['200'] as ResponseObject).links).toEqual(
+        ownerLink
+      );
+      expect((routes[2].responses['200'] as ResponseObject).links).toEqual(
+        allLinks
+      );
     });
   });
 
