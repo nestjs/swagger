@@ -417,5 +417,25 @@ describe('SwaggerTypesMapper', () => {
         schema: { type: 'object', example: { a: { b: 1 } } }
       });
     });
+
+    it('should move a `required` list into the schema without modifying the given param', () => {
+      const schema = { type: 'object' };
+      const param = {
+        name: 'x-context',
+        in: 'header',
+        required: ['tenant'],
+        schema
+      };
+
+      const result = mapper.mapParamTypes([param] as any) as any[];
+
+      expect(result[0]).toEqual({
+        name: 'x-context',
+        in: 'header',
+        schema: { type: 'object', required: ['tenant'] }
+      });
+      expect(schema).toEqual({ type: 'object' });
+      expect(param.required).toEqual(['tenant']);
+    });
   });
 });

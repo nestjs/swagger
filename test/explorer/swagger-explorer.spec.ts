@@ -4966,4 +4966,57 @@ describe('SwaggerExplorer', () => {
       });
     });
   });
+
+  describe('when an @ApiHeader() decorator is reused by several handlers', () => {
+    const explore = (controller: Type<unknown>) =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new (controller as any)(),
+          metatype: controller
+        } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    it('should not carry the required keys of a @Headers() DTO over to other handlers reusing the same @ApiHeader()', () => {
+      const ApiContextHeader = ApiHeader({
+        name: 'x-context',
+        schema: { type: 'object' }
+      });
+
+      class ContextHeaders {
+        @ApiProperty({
+          type: 'object',
+          properties: { tenant: { type: 'string' } },
+          required: ['tenant']
+        })
+        'x-context': Record<string, string>;
+      }
+
+      @Controller('foos')
+      class FooController {
+        @ApiContextHeader
+        @Get()
+        find(@Headers() headers: ContextHeaders) {
+          return headers;
+        }
+      }
+
+      @Controller('bars')
+      class BarController {
+        @ApiContextHeader
+        @Get()
+        find() {}
+      }
+
+      const [fooParameter] = explore(FooController)[0].root.parameters;
+      const [barParameter] = explore(BarController)[0].root.parameters;
+
+      expect(fooParameter.schema).toEqual({
+        type: 'object',
+        required: ['tenant']
+      });
+      expect(barParameter.schema).toEqual({ type: 'object' });
+    });
+  });
 });
