@@ -400,7 +400,17 @@ export class SwaggerExplorer {
       DECORATORS.API_WEBHOOK,
       method
     ) as string | boolean | undefined;
-    const isWebhook = Boolean(webhookMetadata);
+    // An unnamed webhook is keyed by its method name, unless a webhook of
+    // another handler has that key too.
+    const webhook = !webhookMetadata
+      ? {}
+      : typeof webhookMetadata === 'string'
+        ? { isWebhook: true, webhookName: webhookMetadata }
+        : {
+            isWebhook: true,
+            webhookName: method.name,
+            qualifiedWebhookName: `${instance.constructor?.name || ''}_${method.name}`
+          };
 
     const methodVersion: VersionValue | undefined = Reflect.getMetadata(
       VERSION_METADATA,
@@ -474,15 +484,7 @@ export class SwaggerExplorer {
           return validMethods.map((requestMethod) => ({
             method: requestMethod,
             path: fullPath === '' ? '/' : fullPath,
-            ...(isWebhook
-              ? {
-                  isWebhook: true,
-                  webhookName:
-                    typeof webhookMetadata === 'string'
-                      ? webhookMetadata
-                      : method.name
-                }
-              : {}),
+            ...webhook,
             operationId: `${this.getOperationId(
               instance,
               methodKey,
@@ -495,15 +497,7 @@ export class SwaggerExplorer {
         return {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,
-          ...(isWebhook
-            ? {
-                isWebhook: true,
-                webhookName:
-                  typeof webhookMetadata === 'string'
-                    ? webhookMetadata
-                    : method.name
-              }
-            : {}),
+          ...webhook,
           operationId: this.getOperationId(
             instance,
             methodKey,

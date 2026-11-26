@@ -1,8 +1,9 @@
-import { Controller, Logger, Module, Post } from '@nestjs/common';
+import { All, Controller, Logger, Module, Post } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   ApiBearerAuth,
   ApiOkResponse,
+  ApiSecurity,
   ApiWebhook,
   DocumentBuilder,
   SwaggerModule
@@ -118,6 +119,143 @@ describe('SwaggerModule webhooks handling', () => {
     });
 
     await app.close();
+  });
+
+  describe('unnamed webhooks of different controllers with the same method name', () => {
+    abstract class EventsController {
+      @Post('inherited')
+      @ApiWebhook()
+      receive() {}
+    }
+
+    @Controller('payments')
+    @ApiSecurity({ bearer: [], signature: [] })
+    class PaymentsController extends EventsController {
+      @Post()
+      @ApiWebhook()
+      handle() {}
+
+      @Post(['refunds', 'chargebacks'])
+      @ApiWebhook()
+      refund() {}
+    }
+
+    @Controller('shipments')
+    @ApiBearerAuth()
+    class ShipmentsController extends EventsController {
+      @Post()
+      @ApiWebhook()
+      handle() {}
+
+      @Post('refunds')
+      @ApiWebhook('refund')
+      shipmentRefund() {}
+    }
+
+    @Controller('returns')
+    class ReturnsController {
+      @Post()
+      @ApiWebhook()
+      returned() {}
+
+      @All('any')
+      @ApiWebhook()
+      anyEvent() {}
+    }
+
+    const createDocument = async (
+      controllers: Function[],
+      openApiVersion: string
+    ) => {
+      @Module({ controllers })
+      class EventsModule {}
+
+      const app = await NestFactory.create(EventsModule, { logger: false });
+      await app.init();
+      const config = new DocumentBuilder()
+        .setTitle('t')
+        .setVersion('1')
+        .setOpenAPIVersion(openApiVersion)
+        .build();
+      const document = SwaggerModule.createDocument(app, config);
+      await app.close();
+      return document;
+    };
+
+    it.each([
+      [[PaymentsController, ShipmentsController, ReturnsController]],
+      [[ReturnsController, ShipmentsController, PaymentsController]]
+    ])(
+      'keeps each of them, keyed by class and method name, for OAS >= 3.1',
+      async (controllers) => {
+        const document = await createDocument(controllers, '3.1.0');
+
+        expect(Object.keys(document.webhooks!).sort()).toEqual([
+          'PaymentsController_handle',
+          'PaymentsController_receive',
+          'PaymentsController_refund',
+          'ShipmentsController_handle',
+          'ShipmentsController_receive',
+          'anyEvent',
+          'refund',
+          'returned'
+        ]);
+        ['handle', 'receive'].forEach((method) => {
+          expect(
+            document.webhooks![`PaymentsController_${method}`].post
+          ).toMatchObject({
+            operationId: `PaymentsController_${method}`,
+            security: [{ bearer: [], signature: [] }]
+          });
+          expect(
+            document.webhooks![`ShipmentsController_${method}`].post
+          ).toMatchObject({
+            operationId: `ShipmentsController_${method}`,
+            security: [{ bearer: [] }]
+          });
+        });
+        expect(document.webhooks!.PaymentsController_refund.post).toMatchObject(
+          { security: [{ bearer: [], signature: [] }] }
+        );
+        expect(document.webhooks!.refund.post).toMatchObject({
+          operationId: 'ShipmentsController_shipmentRefund',
+          security: [{ bearer: [] }]
+        });
+        expect(document.webhooks!.returned.post).toMatchObject({
+          operationId: 'ReturnsController_returned'
+        });
+        expect(document.webhooks!.anyEvent.get).toMatchObject({
+          operationId: 'ReturnsController_anyEvent_get'
+        });
+        expect(JSON.stringify(document)).not.toContain('qualifiedWebhookName');
+      }
+    );
+
+    it('keeps the method name as the key of a webhook that shares it with no other for OAS >= 3.1', async () => {
+      const document = await createDocument([PaymentsController], '3.1.0');
+
+      expect(Object.keys(document.webhooks!).sort()).toEqual([
+        'handle',
+        'receive',
+        'refund'
+      ]);
+    });
+
+    it('adds them to paths for OAS < 3.1', async () => {
+      const document = await createDocument(
+        [PaymentsController, ShipmentsController, ReturnsController],
+        '3.0.0'
+      );
+
+      expect(document.webhooks).toBeUndefined();
+      expect(document.paths['/payments'].post).toMatchObject({
+        operationId: 'PaymentsController_handle'
+      });
+      expect(document.paths['/shipments'].post).toMatchObject({
+        operationId: 'ShipmentsController_handle'
+      });
+      expect(JSON.stringify(document)).not.toContain('qualifiedWebhookName');
+    });
   });
 
   it('converts nullable schemas of a webhook named "default" for OAS >= 3.1', async () => {

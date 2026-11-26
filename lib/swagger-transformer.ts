@@ -33,10 +33,21 @@ export class SwaggerTransformer {
       this.normalizeOperations(routes, globalSecurity)
     );
 
-    const groupedByWebhookName = groupBy(
-      webhookRoots,
-      ({ root }) => root.webhookName || root.path
-    );
+    const webhookNameOf = ({ root }: DenormalizedDocWithRoot) =>
+      root.webhookName || root.path;
+    const webhooksByName = groupBy(webhookRoots, webhookNameOf);
+    // Unnamed webhooks of different handlers may share a method name. Each of
+    // them is then keyed by its class and method name, so none is left out.
+    const groupedByWebhookName = groupBy(webhookRoots, (doc) => {
+      const name = webhookNameOf(doc);
+      const { qualifiedWebhookName } = doc.root;
+      const isShared =
+        qualifiedWebhookName !== undefined &&
+        webhooksByName[name].some(
+          ({ root }) => root.qualifiedWebhookName !== qualifiedWebhookName
+        );
+      return isShared ? qualifiedWebhookName : name;
+    });
     const webhooks = mapValues(groupedByWebhookName, (routes) =>
       this.normalizeOperations(routes, globalSecurity)
     );
@@ -59,7 +70,13 @@ export class SwaggerTransformer {
     return mapValues(keyByMethod, (route: any) => {
       const mergedDefinition = {
         ...omit(route, 'root'),
-        ...omit(route.root, ['method', 'path', 'isWebhook', 'webhookName'])
+        ...omit(route.root, [
+          'method',
+          'path',
+          'isWebhook',
+          'webhookName',
+          'qualifiedWebhookName'
+        ])
       };
       // Route patterns that differ only in what an OpenAPI path template cannot
       // express (e.g. ":id(^\\d+)" and ":id", ":path" and "*path") end up with
