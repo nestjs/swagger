@@ -108,17 +108,20 @@ export class ModelPropertiesAccessor {
       if (!prototype.constructor) {
         return;
       }
-      if (!prototype.constructor[METADATA_FACTORY_NAME]) {
+      // A factory inherited through the static chain is applied once the loop
+      // reaches the class that declares it, so that "@ApiHideProperty()" on
+      // the classes in between is taken into account.
+      if (
+        !Object.prototype.hasOwnProperty.call(
+          prototype.constructor,
+          METADATA_FACTORY_NAME
+        )
+      ) {
         continue;
       }
       const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
       const properties = Object.keys(metadata);
-      const isOwnFactory =
-        prototype === classPrototype &&
-        Object.prototype.hasOwnProperty.call(
-          prototype.constructor,
-          METADATA_FACTORY_NAME
-        );
+      const isOwnFactory = prototype === classPrototype;
       properties.forEach((key) => {
         // An ancestor's factory must not republish a property that the class
         // itself (or a closer ancestor) marked with "@ApiHideProperty()".

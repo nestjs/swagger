@@ -56,7 +56,15 @@ export function clonePluginMetadataFactory(
     if (!parent.constructor) {
       return;
     }
-    if (!parent.constructor[METADATA_FACTORY_NAME]) {
+    // A factory inherited through the static chain is read once the loop
+    // reaches the class that declares it, so that "@ApiHideProperty()" on the
+    // classes in between is taken into account.
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        parent.constructor,
+        METADATA_FACTORY_NAME
+      )
+    ) {
       continue;
     }
     // An ancestor's factory must not republish a property that a closer class

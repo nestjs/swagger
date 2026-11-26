@@ -103,5 +103,34 @@ describe('ModelPropertiesAccessor', () => {
         'id'
       ]);
     });
+
+    describe('when the factory is inherited by classes without their own', () => {
+      class PublicUser extends UserEntity {
+        @ApiHideProperty()
+        passwordHash: string;
+      }
+
+      class PublicUserDetails extends PublicUser {
+        @ApiProperty()
+        lastLogin: string;
+      }
+
+      it('should not apply an entry hidden by a class in between', () => {
+        const prototype = PublicUserDetails.prototype as any as Type<any>;
+        modelPropertiesAccessor.applyMetadataFactory(prototype);
+        expect(
+          modelPropertiesAccessor.getModelProperties(prototype).sort()
+        ).toEqual(['id', 'lastLogin']);
+      });
+
+      it('should not clone an entry hidden by a class in between into a mapped type', () => {
+        const prototype = OmitType(PublicUserDetails, [])
+          .prototype as any as Type<any>;
+        modelPropertiesAccessor.applyMetadataFactory(prototype);
+        expect(
+          modelPropertiesAccessor.getModelProperties(prototype).sort()
+        ).toEqual(['id', 'lastLogin']);
+      });
+    });
   });
 });
