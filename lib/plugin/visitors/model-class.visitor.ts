@@ -105,9 +105,14 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     const visitClassNode = (node: ts.Node): ts.Node => {
       if (ts.isClassDeclaration(node)) {
         const metadata: ClassMetadata = {};
-        const isExported = node.modifiers?.some(
+        const hasExportModifier = node.modifiers?.some(
           (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
         );
+        const exportStatementName =
+          options.readonly && !hasExportModifier
+            ? this.getExportStatementName(node, sourceFile, typeChecker)
+            : undefined;
+        const isExported = hasExportModifier || !!exportStatementName;
 
         if (options.readonly) {
           if (isExported) {
@@ -133,7 +138,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
             node as ts.ClassDeclaration,
             metadata,
             sourceFile,
-            options
+            options,
+            exportStatementName
           );
 
           if (!options.readonly) {
@@ -156,6 +162,38 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       visitedSourceFile as ts.SourceFile,
       ctx.factory
     );
+  }
+
+  /**
+   * Returns the name a class without the `export` modifier is exported under
+   * by an export statement (`export { A }`, `export { A as B }`,
+   * `export default A`), or `undefined` when the module does not export it.
+   * A default export is named after the class, which is how `MetadataLoader`
+   * finds it.
+   */
+  private getExportStatementName(
+    node: ts.ClassDeclaration,
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker
+  ): string | undefined {
+    const moduleSymbol = typeChecker.getSymbolAtLocation(sourceFile);
+    const classSymbol = node.name && typeChecker.getSymbolAtLocation(node.name);
+    if (!moduleSymbol || !classSymbol) {
+      return undefined;
+    }
+    const exportNames = typeChecker
+      .getExportsOfModule(moduleSymbol)
+      .filter(
+        (symbol) =>
+          (symbol.flags & ts.SymbolFlags.Alias
+            ? typeChecker.getAliasedSymbol(symbol)
+            : symbol) === classSymbol
+      )
+      .map((symbol) => symbol.name);
+    if (exportNames.length === 0) {
+      return undefined;
+    }
+    return exportNames.find((name) => name !== 'default') ?? node.name.text;
   }
 
   visitPropertyNodeDeclaration(
@@ -270,7 +308,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     node: ts.ClassDeclaration,
     classMetadata: ClassMetadata,
     sourceFile: ts.SourceFile,
-    options: PluginOptions
+    options: PluginOptions,
+    exportName?: string
   ) {
     const returnValue = factory.createObjectLiteralExpression(
       Object.keys(classMetadata).map((key) =>
@@ -290,7 +329,8 @@ export class ModelClassVisitor extends AbstractFileVisitor {
       if (!this._collectedMetadata[filePath]) {
         this._collectedMetadata[filePath] = {};
       }
-      const attributeKey = node.name.getText();
+      // `MetadataLoader` applies the entry to the module export of this name.
+      const attributeKey = exportName ?? node.name.getText();
       this._collectedMetadata[filePath][attributeKey] = returnValue;
       return;
     }
