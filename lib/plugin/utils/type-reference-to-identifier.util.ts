@@ -92,7 +92,8 @@ export function typeReferenceToIdentifier(
   ) {
     // Inline ESM output: a synchronous factory cannot contain `await import()`,
     // so reference the type through a hoisted static namespace import instead
-    // (or directly, when the type is declared in the very same file).
+    // (or directly by its declared name, when the type is declared in the
+    // very same file).
     let elementType = type;
     for (
       let depth = typeReferenceDescriptor.arrayDepth ?? 0;
@@ -105,9 +106,10 @@ export function typeReferenceToIdentifier(
       }
       elementType = arrayTuple.type;
     }
-    let ref = isSameFileUserType(elementType, hostFilename)
-      ? typeName
-      : `${hoistTypeImport(importPath, hoistedTypeImports)}.${typeName}`;
+    let ref =
+      (isSameFileUserType(elementType, hostFilename) &&
+        toSameFileReference(elementType, typeName, hostFilename)) ||
+      `${hoistTypeImport(importPath, hoistedTypeImports)}.${typeName}`;
     if (typeReferenceDescriptor.isArray) {
       ref = wrapTypeInArray(ref, typeReferenceDescriptor.arrayDepth);
     }
@@ -198,6 +200,33 @@ function hoistTypeImport(
     hoistedTypeImports.set(importPath, namespaceName);
   }
   return namespaceName;
+}
+
+/**
+ * Returns the expression that reaches a type declared in the visited file from
+ * inside that file. `typeName` starts with the name the file exports the type
+ * under (`export { A as B }`, `export default class A`), which is not
+ * necessarily a binding of the file, so that segment is replaced with the name
+ * of the top-level declaration. Returns `undefined` when that declaration has
+ * no name of its own (e.g. a module augmentation).
+ */
+function toSameFileReference(
+  type: ts.Type,
+  typeName: string,
+  hostFilename: string
+): string | undefined {
+  const normalizedHost = convertPath(hostFilename);
+  let node: ts.Node | undefined = type.symbol.declarations.find(
+    (decl) => convertPath(decl.getSourceFile().fileName) === normalizedHost
+  );
+  while (node && !ts.isSourceFile(node.parent)) {
+    node = node.parent;
+  }
+  const localName = node && ts.getNameOfDeclaration(node as ts.Declaration);
+  if (!localName || !ts.isIdentifier(localName)) {
+    return undefined;
+  }
+  return typeName.replace(/^[^.]+/, () => localName.text);
 }
 
 /**
