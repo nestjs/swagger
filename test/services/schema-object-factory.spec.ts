@@ -1781,6 +1781,62 @@ describe('SchemaObjectFactory', () => {
       });
     });
 
+    it('should apply property metadata of a lazy nested array type to the outer array', () => {
+      class MatrixCellDto {
+        @ApiProperty()
+        value: string;
+      }
+      class LazyNestedArrayDto {
+        @ApiProperty({ type: () => [[MatrixCellDto]], required: false })
+        optionalCells?: MatrixCellDto[][];
+
+        @ApiProperty({
+          type: () => [[MatrixCellDto]],
+          description: 'Cells',
+          nullable: true
+        })
+        cells: MatrixCellDto[][] | null;
+
+        @ApiProperty({ type: () => [[[String]]], required: false })
+        cube?: string[][][];
+      }
+
+      const schemas = {};
+      schemaObjectFactory.exploreModelSchema(LazyNestedArrayDto, schemas);
+      expect(schemas[LazyNestedArrayDto.name]).toEqual({
+        type: 'object',
+        properties: {
+          optionalCells: {
+            type: 'array',
+            items: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/MatrixCellDto' }
+            }
+          },
+          cells: {
+            type: 'array',
+            description: 'Cells',
+            nullable: true,
+            items: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/MatrixCellDto' }
+            }
+          },
+          cube: {
+            type: 'array',
+            items: {
+              type: 'array',
+              items: {
+                type: 'array',
+                items: { type: 'string' }
+              }
+            }
+          }
+        },
+        required: ['cells']
+      });
+    });
+
     it('should keep explicit array items and item type when array declares allOf', () => {
       class Tag {}
       class DtoWithArrayAndAllOf {
