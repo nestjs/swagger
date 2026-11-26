@@ -246,15 +246,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
   ) {
     constructorNode.forEachChild((node) => {
       if (
-        ts.isParameter(node) &&
-        node.modifiers != null &&
-        node.modifiers.some(
-          (modifier: ts.ModifierLike) =>
-            modifier.kind === ts.SyntaxKind.ReadonlyKeyword ||
-            modifier.kind === ts.SyntaxKind.PrivateKeyword ||
-            modifier.kind === ts.SyntaxKind.PublicKeyword ||
-            modifier.kind === ts.SyntaxKind.ProtectedKeyword
-        ) &&
+        ts.isParameterPropertyDeclaration(node, constructorNode) &&
         !this.isPropertyHidden(node, constructorNode.parent, options)
       ) {
         const objectLiteralExpr = this.createDecoratorObjectLiteralExpr(
