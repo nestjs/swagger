@@ -9,8 +9,10 @@ import { MODULE_METADATA, MODULE_PATH } from '@nestjs/common/constants.js';
 import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { Module } from '@nestjs/core/injector/module.js';
+import cloneDeepWith from 'es-toolkit/compat/cloneDeepWith';
 import flatten from 'es-toolkit/compat/flatten';
 import isEmpty from 'es-toolkit/compat/isEmpty';
+import isPlainObject from 'es-toolkit/compat/isPlainObject';
 import { GlobalMetadata } from './interfaces/global-metadata.interface.js';
 import {
   OpenAPIObject,
@@ -132,8 +134,15 @@ export class SwaggerScanner {
     });
 
     const routes = flatten(denormalizedPaths);
-    const schemas = this.explorer.getSchemas();
-    this.addExtraModels(schemas, extraModels);
+    const exploredSchemas = this.explorer.getSchemas();
+    this.addExtraModels(exploredSchemas, extraModels);
+    // Nested schemas (e.g. "items" or "oneOf" members) are the objects stored
+    // by the decorators, and documents are post-processed in place, so each
+    // document gets its own copy. Other values (e.g. a Date used as a default)
+    // are not rewritten and are shared as is.
+    const schemas = cloneDeepWith(exploredSchemas, (value: unknown) =>
+      Array.isArray(value) || isPlainObject(value) ? undefined : value
+    );
 
     if (excludeDynamicDefaults) {
       stripDynamicDefaults(schemas as Record<string, SchemaObject>);
