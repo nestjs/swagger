@@ -1,4 +1,12 @@
-import { Controller, Get, INestApplication, Module } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  INestApplication,
+  Module,
+  Post,
+  Put
+} from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
@@ -22,6 +30,31 @@ describe('SwaggerModule files of swagger-ui-dist outside the UI', () => {
 
   @Module({ controllers: [PagesController] })
   class PagesModule {}
+
+  const otherMethodRoutes = (path: string) => {
+    @Controller(path)
+    class LicensesController {
+      @Post('license')
+      activate() {
+        return 'license activated';
+      }
+
+      @Put('LICENSE')
+      replace() {
+        return 'license replaced';
+      }
+
+      @Delete('index.html')
+      remove() {
+        return 'page removed';
+      }
+    }
+
+    @Module({ controllers: [LicensesController] })
+    class LicensesModule {}
+
+    return LicensesModule;
+  };
 
   const createApp = async (
     adapter: 'express' | 'fastify',
@@ -90,6 +123,34 @@ describe('SwaggerModule files of swagger-ui-dist outside the UI', () => {
 
       await app.close();
     });
+
+    it.each(['/', 'api'])(
+      'keeps application routes of other methods with the same paths (%s)',
+      async (path) => {
+        const app = await createApp(adapter, otherMethodRoutes(path), path);
+        const server = app.getHttpServer();
+        const base = path === '/' ? '' : `/${path}`;
+
+        const activated = await request(server).post(`${base}/license`);
+        expect(activated.status).toEqual(201);
+        expect(activated.text).toEqual('license activated');
+
+        const replaced = await request(server).put(`${base}/LICENSE`);
+        expect(replaced.status).toEqual(200);
+        expect(replaced.text).toEqual('license replaced');
+
+        const removed = await request(server).delete(`${base}/index.html`);
+        expect(removed.status).toEqual(200);
+        expect(removed.text).toEqual('page removed');
+
+        for (const file of ['/index.html', '/LICENSE', '/license']) {
+          const response = await request(server).get(`${base}${file}`);
+          expect(response.text, file).not.toMatch(stockFile);
+        }
+
+        await app.close();
+      }
+    );
   });
 
   it('keeps an application route with the same path for a root path (fastify)', async () => {

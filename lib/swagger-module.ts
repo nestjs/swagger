@@ -291,8 +291,13 @@ export class SwaggerModule {
         });
       });
     } else {
+      // The static file server below only answers GET and HEAD requests, so
+      // other methods are left to the application's routes.
       app.use(finalPath, (req: any, res: any, next: Function) =>
-        isStockSwaggerUiFile(req.path) ? next(new NotFoundException()) : next()
+        (req.method === 'GET' || req.method === 'HEAD') &&
+        isStockSwaggerUiFile(req.path)
+          ? next(new NotFoundException())
+          : next()
       );
       (app as NestExpressApplication).useStaticAssets(swaggerAssetsPath, {
         prefix: finalPath,
