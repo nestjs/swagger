@@ -1,11 +1,18 @@
 import { Type } from '@nestjs/common';
 import isFunction from 'es-toolkit/compat/isFunction';
+import { getTypeIsArrayTuple } from '../decorators/helpers.js';
 import { DECORATORS } from '../constants.js';
 import { getSchemaPath } from '../utils/index.js';
 import { CallBackObject } from '../interfaces/callback-object.interface.js';
-import { SchemaObject } from '../interfaces/open-api-spec.interface.js';
+import {
+  ReferenceObject,
+  SchemaObject
+} from '../interfaces/open-api-spec.interface.js';
 import { SchemaObjectFactory } from '../services/schema-object-factory.js';
+import { SwaggerTypesMapper } from '../services/swagger-types-mapper.js';
 import { isBuiltInType } from '../utils/is-built-in-type.util.js';
+
+const swaggerTypesMapper = new SwaggerTypesMapper();
 
 const mapCallbacksToSwaggerCallbacks = (
   callbacksData: CallBackObject<string | Function>[],
@@ -21,8 +28,19 @@ const mapCallbacksToSwaggerCallbacks = (
         requestBody,
         expectedResponse
       } = callbackData;
-      if (isFunction(requestBody.type) && !isBuiltInType(requestBody.type)) {
-        schemaObjectFactory.exploreModelSchema(requestBody.type, schemas);
+      const [type, isArray] = getTypeIsArrayTuple(requestBody.type, false);
+      let schema: SchemaObject | ReferenceObject;
+      if (isFunction(type) && !isBuiltInType(type)) {
+        schemaObjectFactory.exploreModelSchema(type, schemas);
+        schema = { $ref: getSchemaPath(type) };
+      } else {
+        // A built-in type has no component to reference, so it is documented
+        // inline, like the body of a request
+        const typeName = isFunction(type) ? type.name : type;
+        schema = { type: swaggerTypesMapper.mapTypeToOpenAPIType(typeName) };
+      }
+      if (isArray) {
+        schema = { type: 'array', items: schema };
       }
       return {
         ...acc,
@@ -33,9 +51,7 @@ const mapCallbacksToSwaggerCallbacks = (
                 required: true,
                 content: {
                   'application/json': {
-                    schema: {
-                      $ref: getSchemaPath(requestBody.type)
-                    }
+                    schema
                   }
                 }
               },
