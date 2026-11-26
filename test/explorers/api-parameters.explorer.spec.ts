@@ -1,7 +1,8 @@
-import { Body, Param, Query, Type } from '@nestjs/common';
+import { Body, Headers, Param, Query, Type } from '@nestjs/common';
 import 'reflect-metadata';
 import { z } from 'zod';
 import { createSchema } from 'zod-openapi';
+import { ApiHideProperty } from '../../lib/decorators/api-hide-property.decorator';
 import { ApiParam } from '../../lib/decorators/api-param.decorator';
 import { ApiProperty } from '../../lib/decorators/api-property.decorator';
 import { ApiQuery } from '../../lib/decorators/api-query.decorator';
@@ -581,6 +582,100 @@ describe('exploreApiParametersMetadata', () => {
       expect(parameter.schema).toEqual({
         allOf: [{ minProperties: 1 }, { $ref: '#/components/schemas/Filter' }]
       });
+    });
+  });
+
+  describe('when a model property default holds a model with hidden properties', () => {
+    class SearchOptionsDto {
+      @ApiProperty()
+      fuzzy: boolean;
+
+      @ApiHideProperty()
+      boostKey: string;
+    }
+
+    const defaultOptions = { fuzzy: true, boostKey: 'internal' };
+
+    class SearchDto {
+      @ApiProperty({ required: false, default: defaultOptions })
+      options: SearchOptionsDto;
+
+      @ApiProperty({
+        required: false,
+        type: () => [SearchOptionsDto],
+        default: [defaultOptions]
+      })
+      optionsList: SearchOptionsDto[];
+    }
+
+    it('should omit hidden keys from the default of a query, path or header model property', () => {
+      class SearchController {
+        byQuery(@Query() search: SearchDto) {}
+        byParam(@Param() search: SearchDto) {}
+        byHeaders(@Headers() search: SearchDto) {}
+      }
+
+      const instance = new SearchController();
+      for (const method of [
+        instance.byQuery,
+        instance.byParam,
+        instance.byHeaders
+      ]) {
+        const parameters = explore(instance, method)!.parameters;
+
+        expect(parameters.map((parameter) => parameter.name)).toEqual([
+          'options',
+          'optionsList'
+        ]);
+        expect(parameters[0].schema.default).toEqual({ fuzzy: true });
+        expect(parameters[1].schema.default).toEqual([{ fuzzy: true }]);
+      }
+      expect(defaultOptions).toEqual({ fuzzy: true, boostKey: 'internal' });
+    });
+
+    it.each([{ type: String }, { type: 'string' }, { type: () => String }])(
+      'should omit hidden keys from the default when @ApiQuery sets $type as the type',
+      (options) => {
+        class SearchController {
+          @ApiQuery({ name: 'options', required: false, ...options })
+          @ApiQuery({ name: 'optionsList', required: false, ...options })
+          search(@Query() search: SearchDto) {}
+        }
+
+        const instance = new SearchController();
+        const parameters = explore(instance, instance.search)!.parameters;
+
+        expect(parameters[0].schema.default).toEqual({ fuzzy: true });
+        expect(parameters[1].schema.default).toEqual([{ fuzzy: true }]);
+      }
+    );
+
+    it('should omit hidden keys from a default declared with @ApiQuery and a model type', () => {
+      class SearchController {
+        @ApiQuery({
+          name: 'other',
+          type: SearchOptionsDto,
+          default: defaultOptions
+        })
+        search() {}
+      }
+
+      const instance = new SearchController();
+      const [parameter] = explore(instance, instance.search)!.parameters;
+
+      expect(parameter.schema.default).toEqual({ fuzzy: true });
+    });
+
+    it('should let the default of @ApiQuery replace the one of the property', () => {
+      class SearchController {
+        @ApiQuery({ name: 'options', type: String, default: '{}' })
+        search(@Query() search: SearchDto) {}
+      }
+
+      const instance = new SearchController();
+      const [parameter] = explore(instance, instance.search)!.parameters;
+
+      expect(parameter.schema.default).toEqual('{}');
     });
   });
 });
