@@ -3620,6 +3620,96 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when a controller re-declares a class-level header of its base', () => {
+    const explore = (controller: Type<unknown>) =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new (controller as any)(),
+          metatype: controller
+        } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    @ApiHeader({ name: 'X-Trace' })
+    @ApiHeader({ name: 'X-Scope', enum: ['internal'], description: 'base' })
+    @Controller('admin/items')
+    class AdminItemsController {
+      @Get()
+      findAll() {
+        return [];
+      }
+
+      @ApiHeader({ name: 'X-Scope', description: 'method' })
+      @Get('search')
+      search() {
+        return [];
+      }
+    }
+
+    @ApiHeader({ name: 'x-scope', enum: ['public'], description: 'subclass' })
+    @Controller('items')
+    class ItemsController extends AdminItemsController {
+      @Get('featured')
+      featured() {
+        return [];
+      }
+    }
+
+    const parametersAt = (controller: Type<unknown>, path: string) =>
+      explore(controller).find((route) => route.root.path === path).root
+        .parameters;
+    const trace = {
+      name: 'X-Trace',
+      in: 'header',
+      schema: { type: 'string' }
+    };
+    const scopeOf = (name: string, value: string, description: string) => ({
+      name,
+      in: 'header',
+      description,
+      schema: { type: 'string', enum: [value] }
+    });
+
+    it('should document the header once, with its own values, on inherited and own routes', () => {
+      const expected = [trace, scopeOf('x-scope', 'public', 'subclass')];
+
+      expect(parametersAt(ItemsController, '/items')).toEqual(expected);
+      expect(parametersAt(ItemsController, '/items/featured')).toEqual(
+        expected
+      );
+    });
+
+    it('should still let a method-level header win', () => {
+      expect(parametersAt(ItemsController, '/items/search')).toEqual([
+        trace,
+        {
+          name: 'X-Scope',
+          in: 'header',
+          description: 'method',
+          schema: { type: 'string', enum: ['public'] }
+        }
+      ]);
+    });
+
+    it('should pass the re-declared header on to its subclasses', () => {
+      @Controller('archived-items')
+      class ArchivedItemsController extends ItemsController {}
+
+      expect(parametersAt(ArchivedItemsController, '/archived-items')).toEqual([
+        trace,
+        scopeOf('x-scope', 'public', 'subclass')
+      ]);
+    });
+
+    it('should not change the headers of the base', () => {
+      expect(parametersAt(AdminItemsController, '/admin/items')).toEqual([
+        scopeOf('X-Scope', 'internal', 'base'),
+        trace
+      ]);
+    });
+  });
+
   describe('when a controller with a class-level extension inherits its routes', () => {
     const explore = (controller: Type<unknown>) =>
       new SwaggerExplorer(schemaObjectFactory).exploreController(
