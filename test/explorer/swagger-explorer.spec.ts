@@ -4092,6 +4092,71 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when a route has no response decorators', () => {
+    class UserDto {
+      @ApiProperty()
+      name: string;
+    }
+
+    const userResponse = {
+      description: 'The user',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/UserDto' }
+        }
+      }
+    };
+
+    it('should keep the controller success response', () => {
+      @Controller('users')
+      @ApiOkResponse({ type: UserDto, description: 'The user' })
+      class UsersController {
+        @Get()
+        find(): Promise<any> {
+          return Promise.resolve({});
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new UsersController(),
+          metatype: UsersController
+        } as InstanceWrapper<UsersController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes[0].responses).toEqual({ '200': userResponse });
+    });
+
+    it('should keep the global success response', () => {
+      @Controller('users')
+      class UsersController {
+        @Get()
+        find(): Promise<any> {
+          return Promise.resolve({});
+        }
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory, {
+        globalResponses: {
+          200: { type: UserDto, description: 'The user' }
+        }
+      });
+      const routes = explorer.exploreController(
+        {
+          instance: new UsersController(),
+          metatype: UsersController
+        } as InstanceWrapper<UsersController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      expect(routes[0].responses).toEqual({ '200': userResponse });
+    });
+  });
+
   describe('when using non-URI versioning types', () => {
     const CONTROLLER_VERSION = '1';
     const METHOD_VERSION = '2';

@@ -62,6 +62,7 @@ export const exploreGlobalApiResponseMetadata = (
 export const exploreApiResponseMetadata = (
   schemas: Record<string, SchemaObject>,
   responseObjectFactory: ResponseObjectFactory,
+  globalResponses: GlobalResponses,
   factories: FactoriesNeededByResponseFactory,
   instance: object,
   prototype: Type<unknown>,
@@ -90,7 +91,12 @@ export const exploreApiResponseMetadata = (
     );
   }
   const status = getStatusCode(method);
-  if (status) {
+  // Controller and global responses for this status take precedence.
+  const classResponses = Reflect.getMetadata(
+    DECORATORS.API_RESPONSE,
+    metatype ?? prototype?.constructor
+  );
+  if (status && !classResponses?.[status] && !globalResponses[status]) {
     return { [status]: { description: '' } };
   }
   return undefined;

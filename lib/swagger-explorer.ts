@@ -165,6 +165,7 @@ export class SwaggerExplorer {
           null,
           this.schemas,
           this.responseObjectFactory,
+          this.options.globalResponses ?? {},
           {
             operationId: this.operationIdFactory,
             operationVersion: (controller: Function, method: Function) =>
