@@ -148,7 +148,7 @@ export class SwaggerScanner {
     );
 
     return {
-      ...this.transformer.normalizePaths(routes),
+      ...this.transformer.normalizePaths(routes, globalMetadata.globalSecurity),
       components: {
         schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }

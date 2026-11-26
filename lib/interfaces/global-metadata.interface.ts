@@ -1,5 +1,8 @@
 import { ApiResponseOptions } from '../decorators/api-response.decorator.js';
-import { ParameterObject } from './open-api-spec.interface.js';
+import {
+  ParameterObject,
+  SecurityRequirementObject
+} from './open-api-spec.interface.js';
 
 export const GLOBAL_PARAMETERS = Symbol.for('swagger/globalParameters');
 export const GLOBAL_RESPONSES = Symbol.for('swagger/globalResponses');
@@ -13,6 +16,11 @@ export type GlobalResponses = Record<
 export interface GlobalMetadata {
   globalParameters?: GlobalParameters;
   globalResponses?: GlobalResponses;
+  /**
+   * Security requirements of the document, which apply to every operation
+   * that does not declare its own.
+   */
+  globalSecurity?: SecurityRequirementObject[];
 }
 
 /**

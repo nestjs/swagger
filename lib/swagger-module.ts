@@ -162,7 +162,8 @@ export class SwaggerModule {
     const swaggerScanner = new SwaggerScanner();
     const document = swaggerScanner.scanApplication(app, options, {
       globalParameters,
-      globalResponses
+      globalResponses,
+      globalSecurity: config.security
     });
 
     document.components = assignTwoLevelsDeep(
