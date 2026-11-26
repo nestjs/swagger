@@ -4,7 +4,6 @@ import {
   inheritTransformationMetadata,
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
-import { DECORATORS } from '../constants.js';
 import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';
 import { ModelPropertiesAccessor } from '../services/model-properties-accessor.js';
@@ -65,8 +64,7 @@ export function IntersectionType<T extends Type[]>(...classRefs: T) {
       );
 
       fields.forEach((propertyKey) => {
-        const metadata = Reflect.getMetadata(
-          DECORATORS.API_MODEL_PROPERTIES,
+        const metadata = modelPropertiesAccessor.getPropertyMetadata(
           classRef.prototype,
           propertyKey
         );

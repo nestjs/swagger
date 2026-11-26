@@ -3699,6 +3699,53 @@ describe('SchemaObjectFactory', () => {
       }
     );
 
+    it.each([
+      ['alone', false],
+      ['after the parent of the re-declaring class', true]
+    ])(
+      'should document the type of the re-declaration in a subclass explored %s',
+      (_, exploreAncestorFirst) => {
+        const { AccountDto, PublicAccountDto } = createDtos();
+        class PublicAccountDetailsDto extends PublicAccountDto {
+          static _OPENAPI_METADATA_FACTORY() {
+            return { note: { required: true, type: () => String } };
+          }
+        }
+        class PublicAccountSummaryDto extends PublicAccountDto {}
+
+        const schemas: Record<string, any> = {};
+        if (exploreAncestorFirst) {
+          schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+        }
+        schemaObjectFactory.exploreModelSchema(
+          PublicAccountDetailsDto,
+          schemas
+        );
+        schemaObjectFactory.exploreModelSchema(
+          PublicAccountSummaryDto,
+          schemas
+        );
+
+        for (const name of [
+          'PublicAccountDetailsDto',
+          'PublicAccountSummaryDto'
+        ]) {
+          const { properties } = schemas[name];
+          expect(refOf(properties.billing)).toEqual(
+            '#/components/schemas/PublicBillingDto'
+          );
+          expect(refOf(properties.status)).toEqual(
+            '#/components/schemas/PublicBillingDto'
+          );
+          expect(properties.status.description).toEqual('Billing state');
+        }
+        expect(schemas['PublicAccountDetailsDto'].required.sort()).toEqual([
+          'billing',
+          'note'
+        ]);
+      }
+    );
+
     it('should document the type of the re-declaration in mapped types', () => {
       const { AccountDto, PublicAccountDto } = createDtos();
       class PublicBillingOnlyDto extends PickType(PublicAccountDto, [

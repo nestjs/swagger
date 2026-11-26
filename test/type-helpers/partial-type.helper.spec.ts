@@ -7,6 +7,7 @@ import { ApiProperty } from '../../lib/decorators';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
 import { SwaggerTypesMapper } from '../../lib/services/swagger-types-mapper';
 import {
+  DeepPartialType,
   IntersectionType,
   OmitType,
   PartialType,
@@ -199,6 +200,181 @@ describe('PartialType', () => {
       expect(schemas.UpdateExplicitTypeDto.properties.code).toEqual({
         type: 'string',
         oneOf: [{ maxLength: 3 }, { minLength: 10 }]
+      });
+    });
+
+    describe('property re-declared by the parent with CLI plugin metadata', () => {
+      const createDtos = () => {
+        class ProfileDto {
+          static _OPENAPI_METADATA_FACTORY() {
+            return {
+              displayName: { required: true, type: () => String },
+              ssn: { required: false, type: () => String }
+            };
+          }
+        }
+        class PublicProfileDto {
+          static _OPENAPI_METADATA_FACTORY() {
+            return { displayName: { required: true, type: () => String } };
+          }
+        }
+        class UserDto {
+          @ApiProperty({ description: 'Contact details' })
+          contact: ProfileDto;
+
+          static _OPENAPI_METADATA_FACTORY() {
+            return {
+              id: { required: true, type: () => Number },
+              profile: { required: true, type: () => ProfileDto },
+              contact: { required: true, type: () => ProfileDto }
+            };
+          }
+        }
+        return { PublicProfileDto, UserDto };
+      };
+      const publicUserMetadata = (PublicProfileDto: Type<unknown>) => ({
+        profile: { required: true, type: () => PublicProfileDto },
+        contact: { required: true, type: () => PublicProfileDto }
+      });
+      const refOf = (property: Record<string, any>) =>
+        property.$ref ?? property.allOf?.[0]?.$ref;
+
+      it.each([
+        ['PartialType', (base: Type<any>) => PartialType(base), ''],
+        [
+          'DeepPartialType',
+          (base: Type<any>) => DeepPartialType(base),
+          'DeepPartial'
+        ],
+        [
+          'PickType',
+          (base: Type<any>) => PickType(base, ['profile', 'contact']),
+          ''
+        ],
+        ['OmitType', (base: Type<any>) => OmitType(base, []), ''],
+        ['IntersectionType', (base: Type<any>) => IntersectionType(base), '']
+      ])(
+        'should document the type of the re-declaration in %s',
+        (_, map, prefix) => {
+          const { PublicProfileDto, UserDto } = createDtos();
+          // "profile" reaches the parent as decorator metadata of a mapped type,
+          // "contact" as the decorator metadata of "UserDto"
+          class PublicUserDto extends OmitType(UserDto, ['id'] as never[]) {
+            static _OPENAPI_METADATA_FACTORY() {
+              return publicUserMetadata(PublicProfileDto);
+            }
+          }
+          class MappedDto extends (map(PublicUserDto) as Type<any>) {}
+
+          const schemas: Record<string, any> = {};
+          schemaObjectFactory.exploreModelSchema(MappedDto, schemas);
+          schemaObjectFactory.exploreModelSchema(PublicUserDto, schemas);
+
+          const { properties } = schemas.MappedDto;
+          const publicProfileRef = `#/components/schemas/${prefix}PublicProfileDto`;
+          expect(refOf(properties.profile)).toEqual(publicProfileRef);
+          expect(refOf(properties.contact)).toEqual(publicProfileRef);
+          expect(properties.contact.description).toEqual('Contact details');
+          expect(schemas).not.toHaveProperty(`${prefix}ProfileDto`);
+        }
+      );
+
+      it('should keep a decorator on the parent over its CLI plugin metadata', () => {
+        const { PublicProfileDto, UserDto } = createDtos();
+        class ContactDto {
+          static _OPENAPI_METADATA_FACTORY() {
+            return { email: { required: true, type: () => String } };
+          }
+        }
+        class PublicUserDto extends OmitType(UserDto, ['id'] as never[]) {
+          @ApiProperty({ type: () => ContactDto })
+          contact: ContactDto;
+
+          static _OPENAPI_METADATA_FACTORY() {
+            return publicUserMetadata(PublicProfileDto);
+          }
+        }
+        class UpdatePublicUserDto extends PartialType(PublicUserDto) {}
+
+        const schemas: Record<string, any> = {};
+        schemaObjectFactory.exploreModelSchema(UpdatePublicUserDto, schemas);
+
+        const { properties } = schemas.UpdatePublicUserDto;
+        expect(refOf(properties.profile)).toEqual(
+          '#/components/schemas/PublicProfileDto'
+        );
+        expect(refOf(properties.contact)).toEqual(
+          '#/components/schemas/ContactDto'
+        );
+      });
+
+      it('should document the type of a re-declaration by an ancestor of the parent', () => {
+        const { PublicProfileDto, UserDto } = createDtos();
+        class PublicUserDto extends OmitType(UserDto, ['id'] as never[]) {
+          static _OPENAPI_METADATA_FACTORY() {
+            return publicUserMetadata(PublicProfileDto);
+          }
+        }
+        class PublicAdminDto extends PublicUserDto {
+          static _OPENAPI_METADATA_FACTORY() {
+            return { role: { required: true, type: () => String } };
+          }
+        }
+        class UpdatePublicAdminDto extends PartialType(PublicAdminDto) {}
+
+        const schemas: Record<string, any> = {};
+        schemaObjectFactory.exploreModelSchema(PublicUserDto, schemas);
+        schemaObjectFactory.exploreModelSchema(PublicAdminDto, schemas);
+        schemaObjectFactory.exploreModelSchema(UpdatePublicAdminDto, schemas);
+
+        // The mapped type must not change how its parent is documented either
+        for (const name of ['PublicAdminDto', 'UpdatePublicAdminDto']) {
+          const { properties } = schemas[name];
+          expect(Object.keys(properties).sort()).toEqual([
+            'contact',
+            'profile',
+            'role'
+          ]);
+          expect(refOf(properties.profile)).toEqual(
+            '#/components/schemas/PublicProfileDto'
+          );
+          expect(refOf(properties.contact)).toEqual(
+            '#/components/schemas/PublicProfileDto'
+          );
+        }
+        expect(schemas).not.toHaveProperty('ProfileDto');
+      });
+
+      it('should document the type of the re-declaration when the parent metadata is loaded later', async () => {
+        const { PublicProfileDto, UserDto } = createDtos();
+        class PublicUserDto extends UserDto {}
+        class UpdatePublicUserDto extends PartialType(PublicUserDto) {}
+
+        await metadataLoader.load({
+          '@nestjs/swagger': {
+            models: [
+              [
+                Promise.resolve({ PublicUserDto }),
+                { PublicUserDto: publicUserMetadata(PublicProfileDto) }
+              ]
+            ]
+          }
+        });
+
+        const schemas: Record<string, any> = {};
+        schemaObjectFactory.exploreModelSchema(UpdatePublicUserDto, schemas);
+        schemaObjectFactory.exploreModelSchema(PublicUserDto, schemas);
+
+        for (const name of ['UpdatePublicUserDto', 'PublicUserDto']) {
+          const { properties } = schemas[name];
+          expect(refOf(properties.profile)).toEqual(
+            '#/components/schemas/PublicProfileDto'
+          );
+          expect(refOf(properties.contact)).toEqual(
+            '#/components/schemas/PublicProfileDto'
+          );
+        }
+        expect(schemas).not.toHaveProperty('ProfileDto');
       });
     });
   });

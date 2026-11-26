@@ -5,7 +5,6 @@ import {
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
 import omit from 'es-toolkit/compat/omit';
-import { DECORATORS } from '../constants.js';
 import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
@@ -55,8 +54,7 @@ export function OmitType<T, K extends keyof T>(
     );
 
     fields.forEach((propertyKey) => {
-      const metadata = Reflect.getMetadata(
-        DECORATORS.API_MODEL_PROPERTIES,
+      const metadata = modelPropertiesAccessor.getPropertyMetadata(
         classRef.prototype,
         propertyKey
       );
