@@ -92,11 +92,19 @@ export class SwaggerTransformer {
           (handler) => handler.root.security ?? handler.security
         );
         if (declared.some((security) => security !== undefined)) {
-          const security = uniqWith(
-            declared.flatMap(
-              (security) => security ?? cloneDeep(globalSecurity)
-            ),
-            isEqual
+          const effective = declared.map(
+            (security) => security ?? cloneDeep(globalSecurity)
+          );
+          // Requirements are alternatives, so an empty one ("{}") makes
+          // credentials optional for the whole operation. Keep it only if
+          // every handler can be called without them.
+          const isAnonymous = (requirement: SecurityRequirementObject) =>
+            Object.keys(requirement).length === 0;
+          const allowsAnonymous = effective.every(
+            (security) => security.length === 0 || security.some(isAnonymous)
+          );
+          const security = uniqWith(effective.flat(), isEqual).filter(
+            (requirement) => allowsAnonymous || !isAnonymous(requirement)
           );
           if (security.length > 0) {
             mergedDefinition.security = security;
