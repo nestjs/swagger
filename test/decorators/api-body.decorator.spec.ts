@@ -91,4 +91,36 @@ describe('ApiBody', () => {
       ]);
     });
   });
+
+  describe('when enum is provided with an array type', () => {
+    @Controller('tests')
+    class TestAppController {
+      @Post()
+      @ApiBody({
+        enum: ['small', 'large'],
+        type: [String]
+      })
+      public create(): void {}
+    }
+
+    it('should attach array enum schema metadata', () => {
+      const controller = new TestAppController();
+      expect(
+        Reflect.getMetadata(DECORATORS.API_PARAMETERS, controller.create)
+      ).toEqual([
+        {
+          in: 'body',
+          required: true,
+          type: String,
+          schema: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['small', 'large']
+            }
+          }
+        }
+      ]);
+    });
+  });
 });

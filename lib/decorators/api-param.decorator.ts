@@ -8,7 +8,11 @@ import {
   SchemaObject
 } from '../interfaces/open-api-spec.interface.js';
 import { SwaggerEnumType } from '../types/swagger-enum.type.js';
-import { addEnumSchema, isEnumDefined } from '../utils/enum.utils.js';
+import {
+  addEnumArraySchema,
+  addEnumSchema,
+  isEnumDefined
+} from '../utils/enum.utils.js';
 import { createParamDecorator, getTypeIsArrayTuple } from './helpers.js';
 
 type ParameterOptions = Omit<ParameterObject, 'in' | 'schema'>;
@@ -62,7 +66,9 @@ export function ApiParam(
     param.isArray = isArray;
   }
 
-  if (isEnumDefined(options)) {
+  if (isArray && isEnumDefined(options)) {
+    addEnumArraySchema(param, options);
+  } else if (isEnumDefined(options)) {
     addEnumSchema(param, options);
   }
 

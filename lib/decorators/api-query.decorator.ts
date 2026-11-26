@@ -11,7 +11,6 @@ import { SwaggerEnumType } from '../types/swagger-enum.type.js';
 import {
   addEnumArraySchema,
   addEnumSchema,
-  isEnumArray,
   isEnumDefined
 } from '../utils/enum.utils.js';
 import { createParamDecorator, getTypeIsArrayTuple } from './helpers.js';
@@ -74,7 +73,7 @@ export function ApiQuery(
     type
   };
 
-  if (isEnumArray(options)) {
+  if (isArray && isEnumDefined(options)) {
     addEnumArraySchema(param, options);
   } else if (isEnumDefined(options)) {
     addEnumSchema(param, options);

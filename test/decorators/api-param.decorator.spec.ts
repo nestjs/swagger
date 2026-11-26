@@ -122,5 +122,36 @@ describe('ApiParam', () => {
         }
       ]);
     });
+
+    it('should document an array of enum values', () => {
+      class TestAppController {
+        @ApiParam({ name: 'sizes', enum: ['small', 'large'], type: [String] })
+        @Get(':sizes')
+        public get(): void {}
+      }
+
+      const accessor = new ModelPropertiesAccessor();
+      const mapper = new SwaggerTypesMapper();
+      const result = exploreApiParametersMetadata(
+        {},
+        new SchemaObjectFactory(accessor, mapper),
+        undefined,
+        new TestAppController(),
+        TestAppController as any,
+        TestAppController.prototype.get
+      );
+
+      expect(result.parameters).toEqual([
+        {
+          name: 'sizes',
+          in: 'path',
+          required: true,
+          schema: {
+            type: 'array',
+            items: { type: 'string', enum: ['small', 'large'] }
+          }
+        }
+      ]);
+    });
   });
 });
