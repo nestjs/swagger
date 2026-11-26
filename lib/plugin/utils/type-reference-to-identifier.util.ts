@@ -6,7 +6,8 @@ import {
   convertPath,
   extractTypeArgumentIfArray,
   getOutputExtension,
-  replaceImportPath
+  replaceImportPath,
+  SourceImport
 } from './plugin-utils.js';
 
 export function typeReferenceToIdentifier(
@@ -21,7 +22,7 @@ export function typeReferenceToIdentifier(
   type: ts.Type,
   typeImports: Record<string, string>,
   hoistedTypeImports?: Map<string, string>,
-  sourceImportSpecifiers?: Map<ts.Symbol, string>
+  sourceImportSpecifiers?: Map<ts.Symbol, SourceImport>
 ) {
   if (options.readonly) {
     assertReferenceableType(
@@ -125,14 +126,14 @@ export function typeReferenceToIdentifier(
 }
 
 /**
- * Returns the specifier the visited file imports `type` through, if any. Array
+ * Returns the import the visited file brings `type` in through, if any. Array
  * types are unwrapped first, so `Status[]` is matched on `Status`.
  */
 function resolveSourceSpecifier(
   type: ts.Type,
   arrayDepth: number | undefined,
-  sourceImportSpecifiers: Map<ts.Symbol, string> | undefined
-): string | undefined {
+  sourceImportSpecifiers: Map<ts.Symbol, SourceImport> | undefined
+): SourceImport | undefined {
   if (!sourceImportSpecifiers?.size || !type) {
     return undefined;
   }
