@@ -53,6 +53,7 @@ import {
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
 import {
+  ReferenceObject,
   ResponseObject,
   SchemaObject
 } from '../../lib/interfaces/open-api-spec.interface';
@@ -2008,6 +2009,27 @@ describe('SwaggerExplorer', () => {
             method: 'post',
             requestBody: { type: [String] },
             expectedResponse: { status: 200 }
+          },
+          {
+            name: 'orderDue',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: Date },
+            expectedResponse: { status: 200 }
+          },
+          {
+            name: 'orderEvent',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: 'OrderEvent' },
+            expectedResponse: { status: 200 }
+          },
+          {
+            name: 'orderEvents',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: [OrderEvent] },
+            expectedResponse: { status: 200 }
           }
         )
         @Post()
@@ -2023,7 +2045,7 @@ describe('SwaggerExplorer', () => {
         { modulePath: 'path' }
       );
 
-      const callback = (schema: SchemaObject) => ({
+      const callback = (schema: SchemaObject | ReferenceObject) => ({
         '{$request.body#/callbackUrl}': {
           post: {
             requestBody: {
@@ -2045,6 +2067,12 @@ describe('SwaggerExplorer', () => {
         ordersCreated: callback({
           type: 'array',
           items: { type: 'string' }
+        }),
+        orderDue: callback({ type: 'string', format: 'date-time' }),
+        orderEvent: callback({ $ref: '#/components/schemas/OrderEvent' }),
+        orderEvents: callback({
+          type: 'array',
+          items: { $ref: '#/components/schemas/OrderEvent' }
         })
       });
     });
