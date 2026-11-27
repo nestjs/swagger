@@ -178,8 +178,8 @@ export class DocumentBuilder {
     return this;
   }
 
-  public addGlobalResponse(...respones: ApiResponseOptions[]): this {
-    const groupedByStatus = respones.reduce(
+  public addGlobalResponse(...responses: ApiResponseOptions[]): this {
+    const groupedByStatus = responses.reduce(
       (acc, response) => {
         const { status = 'default' } = response;
         const [type, isArray] = getTypeIsArrayTuple(
