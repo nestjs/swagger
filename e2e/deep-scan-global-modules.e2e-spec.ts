@@ -203,20 +203,27 @@ describe('Swagger deep scan global modules', () => {
     expect(Object.keys(document.paths)).toEqual(['/explicit-static-global']);
   });
 
-  it('preserves existing behavior when an async import cannot be identified synchronously', () => {
+  it('retains a global imported asynchronously and excludes globals bound by Nest', () => {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder().build(),
       { include: [AsyncSelectedModule], deepScanRoutes: true }
     );
-    expect(Object.keys(document.paths).sort()).toEqual([
-      '/explicit-dynamic-global',
-      '/explicit-static-global',
-      '/implicit-dynamic-global',
-      '/implicit-static-global'
-    ]);
+    expect(Object.keys(document.paths)).toEqual(['/explicit-dynamic-global']);
   });
 });
+
+@Controller('unrelated-global')
+class UnrelatedGlobalController {
+  @Get()
+  get() {
+    return 'unrelated global';
+  }
+}
+
+@Global()
+@Module({ controllers: [UnrelatedGlobalController] })
+class UnrelatedGlobalModule {}
 
 @Controller('configured-global')
 class ConfiguredGlobalController {
@@ -246,7 +253,7 @@ class ConfiguredGlobalModule {
 })
 class ConfiguredSelectedModule {}
 
-@Module({ imports: [ConfiguredSelectedModule] })
+@Module({ imports: [ConfiguredSelectedModule, UnrelatedGlobalModule] })
 class ConfiguredRootModule {}
 
 @Controller('forward-promise-global')
@@ -272,8 +279,55 @@ const forwardPromiseGlobal = Promise.resolve<DynamicModule>({
 })
 class ForwardPromiseSelectedModule {}
 
-@Module({ imports: [ForwardPromiseSelectedModule] })
+@Module({ imports: [ForwardPromiseSelectedModule, UnrelatedGlobalModule] })
 class ForwardPromiseRootModule {}
+
+@Module({})
+class AsyncOrdinaryModule {
+  static async register(): Promise<DynamicModule> {
+    return { module: AsyncOrdinaryModule };
+  }
+}
+
+@Module({
+  imports: [AsyncOrdinaryModule.register(), OrdinaryModule],
+  controllers: [SelectedController]
+})
+class AsyncOrdinarySelectedModule {}
+
+@Controller('fresh-dynamic-global')
+class FreshDynamicGlobalController {
+  @Get()
+  get() {
+    return 'fresh dynamic global';
+  }
+}
+
+@Module({})
+class FreshDynamicGlobalModule {
+  static register(): DynamicModule {
+    return {
+      module: FreshDynamicGlobalModule,
+      global: true,
+      controllers: [FreshDynamicGlobalController]
+    };
+  }
+}
+
+@Module({
+  imports: [forwardRef(() => FreshDynamicGlobalModule.register())],
+  controllers: [SelectedController]
+})
+class ForwardFreshSelectedModule {}
+
+@Module({
+  imports: [
+    AsyncOrdinarySelectedModule,
+    ForwardFreshSelectedModule,
+    UnrelatedGlobalModule
+  ]
+})
+class UnmatchedRootModule {}
 
 describe('Swagger deep scan global modules (imports that cannot be matched)', () => {
   it('keeps a deep-hash global whose metadata changed after bootstrap', async () => {
@@ -310,6 +364,44 @@ describe('Swagger deep scan global modules (imports that cannot be matched)', ()
       );
       expect(Object.keys(document.paths).sort()).toEqual([
         '/forward-promise-global',
+        '/selected'
+      ]);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('excludes globals bound by Nest when a non-global module is imported asynchronously', async () => {
+    const app = await NestFactory.create(UnmatchedRootModule, {
+      logger: false
+    });
+    try {
+      const document = SwaggerModule.createDocument(
+        app,
+        new DocumentBuilder().build(),
+        { include: [AsyncOrdinarySelectedModule], deepScanRoutes: true }
+      );
+      expect(Object.keys(document.paths).sort()).toEqual([
+        '/ordinary',
+        '/selected'
+      ]);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('keeps a global imported through a forward reference that builds a new dynamic module', async () => {
+    const app = await NestFactory.create(UnmatchedRootModule, {
+      logger: false
+    });
+    try {
+      const document = SwaggerModule.createDocument(
+        app,
+        new DocumentBuilder().build(),
+        { include: [ForwardFreshSelectedModule], deepScanRoutes: true }
+      );
+      expect(Object.keys(document.paths).sort()).toEqual([
+        '/fresh-dynamic-global',
         '/selected'
       ]);
     } finally {

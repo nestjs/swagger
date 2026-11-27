@@ -34,6 +34,7 @@ import {
   ApiExtension,
   ApiExtraModels,
   ApiHeader,
+  ApiHideProperty,
   ApiIncludeEndpoint,
   ApiLink,
   ApiNotFoundResponse,
@@ -51,7 +52,11 @@ import {
   ApiWebhook
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
-import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
+import {
+  ReferenceObject,
+  ResponseObject,
+  SchemaObject
+} from '../../lib/interfaces/open-api-spec.interface';
 import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
@@ -1987,6 +1992,91 @@ describe('SwaggerExplorer', () => {
       expect(explorer.getSchemas()).toEqual({});
     });
 
+    it('should document a built-in callback request body type inline', () => {
+      @Controller('orders')
+      class OrdersController {
+        @ApiCallbacks(
+          {
+            name: 'orderCreated',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: String },
+            expectedResponse: { status: 200 }
+          },
+          {
+            name: 'ordersCreated',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: [String] },
+            expectedResponse: { status: 200 }
+          },
+          {
+            name: 'orderDue',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: Date },
+            expectedResponse: { status: 200 }
+          },
+          {
+            name: 'orderEvent',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: 'OrderEvent' },
+            expectedResponse: { status: 200 }
+          },
+          {
+            name: 'orderEvents',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: [OrderEvent] },
+            expectedResponse: { status: 200 }
+          }
+        )
+        @Post()
+        create() {}
+      }
+
+      const routes = new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new OrdersController(),
+          metatype: OrdersController
+        } as InstanceWrapper<OrdersController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      const callback = (schema: SchemaObject | ReferenceObject) => ({
+        '{$request.body#/callbackUrl}': {
+          post: {
+            requestBody: {
+              required: true,
+              content: { 'application/json': { schema } }
+            },
+            responses: {
+              200: {
+                description:
+                  'Your server returns this code if it accepts the callback'
+              }
+            }
+          }
+        }
+      });
+
+      expect(routes[0].callbacks).toEqual({
+        orderCreated: callback({ type: 'string' }),
+        ordersCreated: callback({
+          type: 'array',
+          items: { type: 'string' }
+        }),
+        orderDue: callback({ type: 'string', format: 'date-time' }),
+        orderEvent: callback({ $ref: '#/components/schemas/OrderEvent' }),
+        orderEvents: callback({
+          type: 'array',
+          items: { $ref: '#/components/schemas/OrderEvent' }
+        })
+      });
+    });
+
     it('should explore class-level callbacks and merge with method-level callbacks', () => {
       class ClassCallbackEvent {
         @ApiProperty()
@@ -3198,6 +3288,107 @@ describe('SwaggerExplorer', () => {
         ).map((link) => link.operationId)
       ).toEqual(['OwnerController_getOwner_1', 'OwnerController_getPets_2']);
     });
+
+    it('should not link from a field hidden with @ApiHideProperty', () => {
+      class Account {
+        @ApiProperty()
+        id: string;
+
+        @ApiProperty()
+        customerId: string;
+
+        @ApiProperty({ name: 'tax_id' })
+        taxId: string;
+
+        // not documented, still a valid source for a link
+        ownerId: string;
+      }
+
+      class PublicAccount extends Account {
+        @ApiHideProperty()
+        declare customerId: string;
+
+        @ApiHideProperty()
+        declare taxId: string;
+      }
+
+      class RestoredAccount extends PublicAccount {
+        @ApiProperty()
+        declare customerId: string;
+
+        @ApiProperty()
+        declare taxId: string;
+      }
+
+      @Controller('accounts')
+      class AccountController {
+        @Get(':id')
+        @ApiOkResponse({ type: Account })
+        getAccount(@Param('id') id: string) {}
+
+        @Get('public/:id')
+        @ApiOkResponse({ type: PublicAccount })
+        getPublicAccount(@Param('id') id: string) {}
+
+        @Get('restored/:id')
+        @ApiOkResponse({ type: RestoredAccount })
+        getRestoredAccount(@Param('id') id: string) {}
+
+        @Get('invoices/:customer')
+        @ApiLink({
+          from: Account,
+          fromField: 'customerId',
+          routeParam: 'customer'
+        })
+        getInvoices(@Param('customer') customer: string) {}
+
+        @Get('returns/:tax')
+        @ApiLink({ from: Account, fromField: 'tax_id', routeParam: 'tax' })
+        getTaxReturns(@Param('tax') tax: string) {}
+
+        @Get('owners/:owner')
+        @ApiLink({ from: Account, fromField: 'ownerId', routeParam: 'owner' })
+        getOwner(@Param('owner') owner: string) {}
+      }
+
+      const explorer = new SwaggerExplorer(schemaObjectFactory);
+      const routes = explorer.exploreController(
+        {
+          instance: new AccountController(),
+          metatype: AccountController
+        } as InstanceWrapper<AccountController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      const ownerLink = {
+        AccountController_getOwner_from_ownerId: {
+          operationId: 'AccountController_getOwner',
+          parameters: { owner: '$response.body#/ownerId' }
+        }
+      };
+      const allLinks = {
+        AccountController_getInvoices_from_customerId: {
+          operationId: 'AccountController_getInvoices',
+          parameters: { customer: '$response.body#/customerId' }
+        },
+        AccountController_getTaxReturns_from_tax_id: {
+          operationId: 'AccountController_getTaxReturns',
+          parameters: { tax: '$response.body#/tax_id' }
+        },
+        ...ownerLink
+      };
+
+      expect((routes[0].responses['200'] as ResponseObject).links).toEqual(
+        allLinks
+      );
+      expect((routes[1].responses['200'] as ResponseObject).links).toEqual(
+        ownerLink
+      );
+      expect((routes[2].responses['200'] as ResponseObject).links).toEqual(
+        allLinks
+      );
+    });
   });
 
   describe('when params are defined', () => {
@@ -3620,6 +3811,96 @@ describe('SwaggerExplorer', () => {
     });
   });
 
+  describe('when a controller re-declares a class-level header of its base', () => {
+    const explore = (controller: Type<unknown>) =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new (controller as any)(),
+          metatype: controller
+        } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    @ApiHeader({ name: 'X-Trace' })
+    @ApiHeader({ name: 'X-Scope', enum: ['internal'], description: 'base' })
+    @Controller('admin/items')
+    class AdminItemsController {
+      @Get()
+      findAll() {
+        return [];
+      }
+
+      @ApiHeader({ name: 'X-Scope', description: 'method' })
+      @Get('search')
+      search() {
+        return [];
+      }
+    }
+
+    @ApiHeader({ name: 'x-scope', enum: ['public'], description: 'subclass' })
+    @Controller('items')
+    class ItemsController extends AdminItemsController {
+      @Get('featured')
+      featured() {
+        return [];
+      }
+    }
+
+    const parametersAt = (controller: Type<unknown>, path: string) =>
+      explore(controller).find((route) => route.root.path === path).root
+        .parameters;
+    const trace = {
+      name: 'X-Trace',
+      in: 'header',
+      schema: { type: 'string' }
+    };
+    const scopeOf = (name: string, value: string, description: string) => ({
+      name,
+      in: 'header',
+      description,
+      schema: { type: 'string', enum: [value] }
+    });
+
+    it('should document the header once, with its own values, on inherited and own routes', () => {
+      const expected = [trace, scopeOf('x-scope', 'public', 'subclass')];
+
+      expect(parametersAt(ItemsController, '/items')).toEqual(expected);
+      expect(parametersAt(ItemsController, '/items/featured')).toEqual(
+        expected
+      );
+    });
+
+    it('should still let a method-level header win', () => {
+      expect(parametersAt(ItemsController, '/items/search')).toEqual([
+        trace,
+        {
+          name: 'X-Scope',
+          in: 'header',
+          description: 'method',
+          schema: { type: 'string', enum: ['public'] }
+        }
+      ]);
+    });
+
+    it('should pass the re-declared header on to its subclasses', () => {
+      @Controller('archived-items')
+      class ArchivedItemsController extends ItemsController {}
+
+      expect(parametersAt(ArchivedItemsController, '/archived-items')).toEqual([
+        trace,
+        scopeOf('x-scope', 'public', 'subclass')
+      ]);
+    });
+
+    it('should not change the headers of the base', () => {
+      expect(parametersAt(AdminItemsController, '/admin/items')).toEqual([
+        scopeOf('X-Scope', 'internal', 'base'),
+        trace
+      ]);
+    });
+  });
+
   describe('when a controller with a class-level extension inherits its routes', () => {
     const explore = (controller: Type<unknown>) =>
       new SwaggerExplorer(schemaObjectFactory).exploreController(
@@ -3696,6 +3977,82 @@ describe('SwaggerExplorer', () => {
       const routes = explore(ItemsController);
       expect(routes[0].root['x-tenant']).toBe(false);
       expect(routes[1].root['x-tenant']).toBe(true);
+    });
+
+    describe('and the subclass declares the extension of its base again', () => {
+      @ApiExtension('x-tenant', 'base')
+      @ApiExtension('x-region', 'eu')
+      @Controller('base')
+      class TenantBaseController {
+        @Get(':id')
+        findOne(@Param('id') id: string) {
+          return id;
+        }
+
+        @Get('stats')
+        @ApiExtension('x-tenant', 'method')
+        stats() {
+          return {};
+        }
+      }
+
+      @ApiExtension('x-tenant', 'subclass')
+      @Controller('items')
+      class ItemsController extends TenantBaseController {
+        @Get()
+        findAll() {
+          return [];
+        }
+
+        @Post()
+        @ApiExtension('x-tenant', 'own-method')
+        create() {
+          return {};
+        }
+      }
+
+      const byOperationId = (controller: Type<unknown>) =>
+        Object.fromEntries(
+          explore(controller).map((route) => [
+            route.root.operationId,
+            route.root
+          ])
+        );
+
+      it("should use the subclass's value on the inherited routes", () => {
+        const routes = byOperationId(ItemsController);
+        expect(routes['ItemsController_findOne']['x-tenant']).toBe('subclass');
+      });
+
+      it("should use the subclass's value on its own routes", () => {
+        const routes = byOperationId(ItemsController);
+        expect(routes['ItemsController_findAll']['x-tenant']).toBe('subclass');
+      });
+
+      it('should keep the method-level values over the class-level ones', () => {
+        const routes = byOperationId(ItemsController);
+        expect(routes['ItemsController_stats']['x-tenant']).toBe('method');
+        expect(routes['ItemsController_create']['x-tenant']).toBe('own-method');
+      });
+
+      it('should keep the base extensions the subclass does not declare', () => {
+        const routes = byOperationId(ItemsController);
+        for (const route of Object.values(routes)) {
+          expect(route['x-region']).toBe('eu');
+        }
+      });
+
+      it('should leave the base controller explored on its own unchanged', () => {
+        const routes = byOperationId(TenantBaseController);
+        expect(routes['TenantBaseController_findOne']).toMatchObject({
+          'x-tenant': 'base',
+          'x-region': 'eu'
+        });
+        expect(routes['TenantBaseController_stats']).toMatchObject({
+          'x-tenant': 'method',
+          'x-region': 'eu'
+        });
+      });
     });
   });
 
@@ -5029,6 +5386,59 @@ describe('SwaggerExplorer', () => {
         in: 'header',
         description: 'tenant'
       });
+    });
+  });
+
+  describe('when an @ApiHeader() decorator is reused by several handlers', () => {
+    const explore = (controller: Type<unknown>) =>
+      new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new (controller as any)(),
+          metatype: controller
+        } as InstanceWrapper<any>,
+        new ApplicationConfig(),
+        {}
+      );
+
+    it('should not carry the required keys of a @Headers() DTO over to other handlers reusing the same @ApiHeader()', () => {
+      const ApiContextHeader = ApiHeader({
+        name: 'x-context',
+        schema: { type: 'object' }
+      });
+
+      class ContextHeaders {
+        @ApiProperty({
+          type: 'object',
+          properties: { tenant: { type: 'string' } },
+          required: ['tenant']
+        })
+        'x-context': Record<string, string>;
+      }
+
+      @Controller('foos')
+      class FooController {
+        @ApiContextHeader
+        @Get()
+        find(@Headers() headers: ContextHeaders) {
+          return headers;
+        }
+      }
+
+      @Controller('bars')
+      class BarController {
+        @ApiContextHeader
+        @Get()
+        find() {}
+      }
+
+      const [fooParameter] = explore(FooController)[0].root.parameters;
+      const [barParameter] = explore(BarController)[0].root.parameters;
+
+      expect(fooParameter.schema).toEqual({
+        type: 'object',
+        required: ['tenant']
+      });
+      expect(barParameter.schema).toEqual({ type: 'object' });
     });
   });
 });

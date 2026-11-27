@@ -69,6 +69,7 @@ import { StandardSchemaConverter } from './interfaces/swagger-document-options.i
 import { MimetypeContentWrapper } from './services/mimetype-content-wrapper.js';
 import { ResponseObjectFactory } from './services/response-object-factory.js';
 import { SchemaObjectFactory } from './services/schema-object-factory.js';
+import { getClassExtensions } from './utils/get-class-extensions.util.js';
 import { isBodyParameter } from './utils/is-body-parameter.util.js';
 import { isSameParameter } from './utils/is-same-parameter.util.js';
 import { mergeAndUniq } from './utils/merge-and-uniq.util.js';
@@ -401,7 +402,17 @@ export class SwaggerExplorer {
       DECORATORS.API_WEBHOOK,
       method
     ) as string | boolean | undefined;
-    const isWebhook = Boolean(webhookMetadata);
+    // An unnamed webhook is keyed by its method name, unless a webhook of
+    // another handler has that key too.
+    const webhook = !webhookMetadata
+      ? {}
+      : typeof webhookMetadata === 'string'
+        ? { isWebhook: true, webhookName: webhookMetadata }
+        : {
+            isWebhook: true,
+            webhookName: method.name,
+            qualifiedWebhookName: `${instance.constructor?.name || ''}_${method.name}`
+          };
 
     const methodVersion: VersionValue | undefined = Reflect.getMetadata(
       VERSION_METADATA,
@@ -436,7 +447,7 @@ export class SwaggerExplorer {
       allRoutePaths.map((routePath, index) => {
         const fullPath = this.validateRoutePath(routePath);
         const apiExtension = {
-          ...Reflect.getMetadata(DECORATORS.API_EXTENSION, metatype),
+          ...getClassExtensions(metatype),
           ...Reflect.getMetadata(DECORATORS.API_EXTENSION, method)
         };
         const pathVersion = versions.find(
@@ -475,15 +486,7 @@ export class SwaggerExplorer {
           return validMethods.map((requestMethod) => ({
             method: requestMethod,
             path: fullPath === '' ? '/' : fullPath,
-            ...(isWebhook
-              ? {
-                  isWebhook: true,
-                  webhookName:
-                    typeof webhookMetadata === 'string'
-                      ? webhookMetadata
-                      : method.name
-                }
-              : {}),
+            ...webhook,
             operationId: `${this.getOperationId(
               instance,
               methodKey,
@@ -496,15 +499,7 @@ export class SwaggerExplorer {
         return {
           method: RequestMethod[requestMethod].toLowerCase(),
           path: fullPath === '' ? '/' : fullPath,
-          ...(isWebhook
-            ? {
-                isWebhook: true,
-                webhookName:
-                  typeof webhookMetadata === 'string'
-                    ? webhookMetadata
-                    : method.name
-              }
-            : {}),
+          ...webhook,
           operationId: this.getOperationId(
             instance,
             methodKey,

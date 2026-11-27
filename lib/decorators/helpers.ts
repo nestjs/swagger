@@ -8,6 +8,7 @@ import omit from 'es-toolkit/compat/omit';
 import pickBy from 'es-toolkit/compat/pickBy';
 import { DECORATORS } from '../constants.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
+import { getEnumType } from '../utils/enum.utils.js';
 import { isBuiltInType } from '../utils/is-built-in-type.util.js';
 
 export function createMethodDecorator<T = any>(
@@ -105,7 +106,15 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
             ...existingMetadata
           };
 
-      Reflect.defineMetadata(metakey, metadataToSave, target, propertyKey);
+      Reflect.defineMetadata(
+        metakey,
+        replaceMergedEnum(
+          overrideExisting ? newMetadata : existingMetadata,
+          metadataToSave
+        ),
+        target,
+        propertyKey
+      );
     } else {
       const type =
         target?.constructor?.[METADATA_FACTORY_NAME]?.()[propertyKey]?.type ??
@@ -122,6 +131,32 @@ export function createPropertyDecorator<T extends Record<string, any> = any>(
       );
     }
   };
+}
+
+/**
+ * A declaration stores its enum as "enum" or, for the static values of an
+ * array, as "items.enum", so spreading one declaration over another can leave
+ * the enum of the overridden one in the other form. The enum of the prevailing
+ * declaration replaces it, in the form the merged "isArray" calls for (a
+ * function is resolved into that form when the document is generated).
+ */
+function replaceMergedEnum(
+  declared: Record<string, any>,
+  merged: Record<string, any>
+): Record<string, any> {
+  if (declared.enum === undefined) {
+    return declared.items?.enum === undefined ? merged : omit(merged, 'enum');
+  }
+  if (merged.isArray && isArray(declared.enum)) {
+    return {
+      ...omit(merged, 'enum'),
+      type: 'array',
+      items: { type: getEnumType(declared.enum), enum: declared.enum }
+    };
+  }
+  return merged.items?.enum !== undefined && merged.items !== declared.items
+    ? omit(merged, 'items')
+    : merged;
 }
 
 /**

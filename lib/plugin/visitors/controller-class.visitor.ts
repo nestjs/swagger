@@ -180,13 +180,14 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       typeChecker
     );
 
-    const removeExistingApiOperationDecorator =
-      apiOperationDecoratorsArray.length > 0;
+    // Only the first @ApiOperation() is rewritten with the comment, so only
+    // that one is replaced; any other stacked @ApiOperation() is kept.
+    const rewrittenApiOperationDecorator =
+      apiOperationDecoratorsArray.length > 0 &&
+      getDecoratorOrUndefinedByNames([ApiOperation.name], decorators, factory);
 
-    const existingDecorators = removeExistingApiOperationDecorator
-      ? decorators.filter(
-          (item) => getDecoratorName(item) !== ApiOperation.name
-        )
+    const existingDecorators = rewrittenApiOperationDecorator
+      ? decorators.filter((item) => item !== rewrittenApiOperationDecorator)
       : decorators;
 
     const hasExplicitApiResponseDecorator = decorators.some((item) => {

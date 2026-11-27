@@ -91,6 +91,51 @@ describe('ParameterMetadataAccessor', () => {
     ]);
   });
 
+  it('should not document the parameters of an overridden parent handler when the override is inherited', () => {
+    class ParentController {
+      findOne(
+        @Param('id') id: string,
+        @Query('impersonateAccountId') impersonateAccountId: string,
+        @Headers('x-staff-token') staffToken: string
+      ) {}
+    }
+    class ChildController extends ParentController {
+      override findOne(@Param('id') id: string) {
+        return id;
+      }
+    }
+    class GrandchildController extends ChildController {}
+    class OverridingGrandchildController extends GrandchildController {
+      override findOne(
+        @Param('id') id: string,
+        @Query('expand') expand?: string
+      ) {
+        return id;
+      }
+    }
+    class GreatGrandchildController extends OverridingGrandchildController {}
+
+    const explore = (controller: Type<ParentController>) =>
+      Object.values(
+        accessor.explore(
+          new controller(),
+          controller.prototype as unknown as Type<unknown>,
+          controller.prototype.findOne
+        )
+      ).map(({ in: location, name }) => [location, name]);
+
+    expect(explore(ChildController)).toEqual([['path', 'id']]);
+    expect(explore(GrandchildController)).toEqual([['path', 'id']]);
+    expect(explore(OverridingGrandchildController)).toEqual([
+      ['path', 'id'],
+      ['query', 'expand']
+    ]);
+    expect(explore(GreatGrandchildController)).toEqual([
+      ['path', 'id'],
+      ['query', 'expand']
+    ]);
+  });
+
   it('should keep every parameter decorator declared on the same handler', () => {
     const Custom = createParamDecorator(() => 'custom');
     class BodyDto {}

@@ -22,6 +22,32 @@ export class ModelPropertiesAccessor {
   }
 
   /**
+   * Checks whether a field of the serialized model belongs to a hidden
+   * property. The field is given by the name it has in the document, or by a
+   * path starting with that name ("address/zip"). Unlike "isHiddenProperty()",
+   * this resolves the name set with "@ApiProperty({ name })" to the property
+   * key(s) that "@ApiHideProperty()" is recorded under. A name that a
+   * documented property carries as well is not hidden.
+   */
+  isHiddenField(prototype: Type<unknown>, field: string): boolean {
+    const [name] = String(field).split('/');
+    const keys: string[] = (
+      Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES_ARRAY, prototype) ||
+      []
+    )
+      .filter(isString)
+      .map((key: string) => key.slice(1))
+      .filter(
+        (key: string) =>
+          (Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key)
+            ?.name || key) === name
+      );
+    return keys.length > 0
+      ? keys.every((key) => this.isHiddenProperty(prototype, key))
+      : this.isHiddenProperty(prototype, name);
+  }
+
+  /**
    * Checks whether "@ApiHideProperty()" applies to the given property.
    * The nearest class in the prototype chain that declares anything about the
    * property wins, so a subclass can hide a property its parent publishes and
@@ -69,17 +95,60 @@ export class ModelPropertiesAccessor {
     ) {
       return;
     }
-    const inheritedMetadata = Reflect.getMetadata(
+    const decoratedOptions = this.getDecoratedInheritedOptions(prototype, key);
+    if (!decoratedOptions) {
+      return;
+    }
+    Reflect.defineMetadata(
+      DECORATORS.API_MODEL_PROPERTIES,
+      decoratedOptions,
+      prototype,
+      key
+    );
+  }
+
+  /**
+   * Returns the options that the ancestors of a class set with a decorator for
+   * a property, without the type.
+   */
+  private getDecoratedInheritedOptions(
+    prototype: object,
+    key: string
+  ): Record<string, any> | undefined {
+    return this.pickDecoratedOptions(
+      prototype,
+      Reflect.getPrototypeOf(prototype),
+      key
+    );
+  }
+
+  /**
+   * Returns the options of the metadata of a property that the class, or one
+   * of its ancestors, set with a decorator, without the type.
+   */
+  getDecoratedOptions(
+    prototype: object,
+    key: string
+  ): Record<string, any> | undefined {
+    return this.pickDecoratedOptions(prototype, prototype, key);
+  }
+
+  private pickDecoratedOptions(
+    prototype: object,
+    decoratedFrom: object | null,
+    key: string
+  ): Record<string, any> | undefined {
+    const metadata = Reflect.getMetadata(
       DECORATORS.API_MODEL_PROPERTIES,
       prototype,
       key
     );
-    if (!inheritedMetadata) {
-      return;
+    if (!metadata) {
+      return undefined;
     }
     const decoratedOptions = new Set<string>();
     for (
-      let current = Reflect.getPrototypeOf(prototype);
+      let current = decoratedFrom;
       current && current !== Object.prototype;
       current = Reflect.getPrototypeOf(current)
     ) {
@@ -94,12 +163,74 @@ export class ModelPropertiesAccessor {
     decoratedOptions.delete('type');
     decoratedOptions.delete('isArray');
 
-    Reflect.defineMetadata(
-      DECORATORS.API_MODEL_PROPERTIES,
-      pick(inheritedMetadata, [...decoratedOptions]),
-      prototype,
-      key
-    );
+    return pick(metadata, [...decoratedOptions]);
+  }
+
+  /**
+   * Returns the metadata of a property of a class whose CLI plugin metadata
+   * may not have been applied yet ("applyMetadataFactory" runs when the class
+   * is explored). Until then the prototype chain still yields what an ancestor
+   * documents for a property that the class, or a class in between,
+   * re-declares without a decorator. The plugin metadata of the nearest such
+   * re-declaration is returned instead, combined with the inherited options
+   * as described for "keepDecoratedInheritedOptions". Nothing is applied.
+   */
+  getPropertyMetadata(
+    prototype: object,
+    key: string
+  ): Record<string, any> | undefined {
+    for (
+      let current = prototype;
+      current && current !== Object.prototype;
+      current = Reflect.getPrototypeOf(current)
+    ) {
+      if (
+        Reflect.hasOwnMetadata(DECORATORS.API_MODEL_PROPERTIES, current, key)
+      ) {
+        break;
+      }
+      const pluginMetadata =
+        current.constructor &&
+        Object.prototype.hasOwnProperty.call(
+          current.constructor,
+          METADATA_FACTORY_NAME
+        )
+          ? current.constructor[METADATA_FACTORY_NAME]()[key]
+          : undefined;
+      if (pluginMetadata) {
+        return {
+          ...pluginMetadata,
+          ...this.getDecoratedInheritedOptions(current, key)
+        };
+      }
+    }
+    return Reflect.getMetadata(DECORATORS.API_MODEL_PROPERTIES, prototype, key);
+  }
+
+  /**
+   * Checks whether the class, or one of its ancestors up to and including
+   * "stopAt", has metadata of its own for the given property.
+   */
+  private hasOwnMetadataUpTo(
+    prototype: object,
+    key: string,
+    stopAt: object
+  ): boolean {
+    for (
+      let current = prototype;
+      current && current !== Object.prototype;
+      current = Reflect.getPrototypeOf(current)
+    ) {
+      if (
+        Reflect.hasOwnMetadata(DECORATORS.API_MODEL_PROPERTIES, current, key)
+      ) {
+        return true;
+      }
+      if (current === stopAt) {
+        return false;
+      }
+    }
+    return false;
   }
 
   applyMetadataFactory(prototype: Type<unknown>) {
@@ -108,24 +239,29 @@ export class ModelPropertiesAccessor {
       if (!prototype.constructor) {
         return;
       }
-      if (!prototype.constructor[METADATA_FACTORY_NAME]) {
+      // A factory inherited through the static chain is applied once the loop
+      // reaches the class that declares it, so that "@ApiHideProperty()" on
+      // the classes in between is taken into account.
+      if (
+        !Object.prototype.hasOwnProperty.call(
+          prototype.constructor,
+          METADATA_FACTORY_NAME
+        )
+      ) {
         continue;
       }
       const metadata = prototype.constructor[METADATA_FACTORY_NAME]();
       const properties = Object.keys(metadata);
-      const isOwnFactory =
-        prototype === classPrototype &&
-        Object.prototype.hasOwnProperty.call(
-          prototype.constructor,
-          METADATA_FACTORY_NAME
-        );
       properties.forEach((key) => {
         // An ancestor's factory must not republish a property that the class
         // itself (or a closer ancestor) marked with "@ApiHideProperty()".
         if (this.isHiddenProperty(classPrototype, key, prototype)) {
           return;
         }
-        if (isOwnFactory) {
+        // When no class up to the one declaring this factory has metadata of
+        // its own for the property, that class re-declares it and whatever
+        // metadata is found comes from one of its ancestors.
+        if (!this.hasOwnMetadataUpTo(classPrototype, key, prototype)) {
           this.keepDecoratedInheritedOptions(classPrototype, key);
         }
         createApiPropertyDecorator(metadata[key], false)(classPrototype, key);

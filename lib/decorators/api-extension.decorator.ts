@@ -1,11 +1,11 @@
-import { METHOD_METADATA } from '@nestjs/common/constants.js';
-import { isConstructor } from '@nestjs/common/utils/shared.utils.js';
 import clone from 'es-toolkit/compat/clone';
 import { DECORATORS } from '../constants.js';
 
 function applyExtension(target: any, key: string, value: any): void {
+  // The target's own declarations only: the ones a class inherits are merged
+  // in when the document is generated (see getClassExtensions)
   const extensions =
-    Reflect.getMetadata(DECORATORS.API_EXTENSION, target) || {};
+    Reflect.getOwnMetadata(DECORATORS.API_EXTENSION, target) || {};
   Reflect.defineMetadata(
     DECORATORS.API_EXTENSION,
     { [key]: value, ...extensions },
@@ -41,23 +41,9 @@ export function ApiExtension(extensionKey: string, extensionProperties: any) {
       return target;
     }
 
-    // Look for API methods
-    const apiMethods = Object.getOwnPropertyNames(target.prototype)
-      .filter((propertyKey) => !isConstructor(propertyKey))
-      .map(
-        (propertyKey) =>
-          Object.getOwnPropertyDescriptor(target.prototype, propertyKey)?.value
-      )
-      .filter(
-        (methodDescriptor) =>
-          methodDescriptor !== undefined &&
-          Reflect.hasMetadata(METHOD_METADATA, methodDescriptor)
-      );
-
-    apiMethods.forEach((method) =>
-      applyExtension(method, extensionKey, extensionValue)
-    );
-    // Inherited methods are shared with the base, so the explorer reads these from the class
+    // Kept on the class rather than copied onto its route handlers, since an
+    // inherited handler is shared with the base class. The explorer reads
+    // them from the class chain, so a subclass's value wins on every route.
     applyExtension(target, extensionKey, extensionValue);
 
     return target;

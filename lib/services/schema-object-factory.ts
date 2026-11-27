@@ -29,6 +29,7 @@ import {
   isEnumMetadata,
   isLazyEnumTypeInferred
 } from '../utils/enum.utils.js';
+import { getClassExtensions } from '../utils/get-class-extensions.util.js';
 import { getSchemaPath } from '../utils/index.js';
 import { isBodyParameter } from '../utils/is-body-parameter.util.js';
 import {
@@ -74,6 +75,7 @@ export class SchemaObjectFactory {
         ) as [Type<any>, boolean];
       }
       param = this.resolveLazyEnum(param);
+      param = this.pickDocumentedParamDefault(param);
       if (!isBodyParameter(param) && param.enumName) {
         return this.createEnumParam(param, schemas);
       }
@@ -464,8 +466,7 @@ export class SchemaObjectFactory {
     if (!propertiesWithType) {
       return '';
     }
-    const extensionProperties =
-      Reflect.getMetadata(DECORATORS.API_EXTENSION, type) || {};
+    const extensionProperties = getClassExtensions(type as Function);
 
     const { schemaName, schemaProperties } = this.getSchemaMetadata(type);
 
@@ -1171,6 +1172,29 @@ export class SchemaObjectFactory {
     }
     ancestors.delete(value);
     return documentedValue;
+  }
+
+  /**
+   * Applies "pickDocumentedDefaultKeys" to the default of a parameter, declared
+   * either on the parameter itself (e.g. with "@ApiQuery()") or on a property
+   * of a query, path or header model. Only the type the default was declared
+   * with tells which of its keys are hidden, so this has to run while the
+   * parameter still carries that type.
+   */
+  pickDocumentedParamDefault(
+    param: ParamWithTypeMetadata
+  ): ParamWithTypeMetadata {
+    const { default: defaultValue, type } = param as SchemaObjectMetadata;
+    if (defaultValue === undefined) {
+      return param;
+    }
+    return {
+      ...param,
+      default: this.pickDocumentedDefaultKeys(
+        defaultValue,
+        this.isLazyTypeFunc(type as Function) ? (type as Function)() : type
+      )
+    } as ParamWithTypeMetadata;
   }
 
   private isUserDefinedClass(type: unknown): type is Type<unknown> {

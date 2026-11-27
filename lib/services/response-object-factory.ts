@@ -15,10 +15,9 @@ import {
 } from '../interfaces/open-api-spec.interface.js';
 import { StandardSchemaConverter } from '../interfaces/swagger-document-options.interface.js';
 import {
-  isBuiltInType,
-  isPrimitiveTypeName
-} from '../utils/is-built-in-type.util.js';
-import { isDateCtor } from '../utils/is-date-ctor.util.js';
+  getBuiltInTypeSchema,
+  isScalarType
+} from '../utils/built-in-type-schema.util.js';
 import { MimetypeContentWrapper } from './mimetype-content-wrapper.js';
 import { ModelPropertiesAccessor } from './model-properties-accessor.js';
 import { ResponseObjectMapper } from './response-object-mapper.js';
@@ -91,8 +90,8 @@ export class ResponseObjectFactory {
       );
     }
 
-    if (this.isScalarType(type)) {
-      const itemSchema = this.getBuiltInTypeSchema(type as Function | string);
+    if (isScalarType(type)) {
+      const itemSchema = getBuiltInTypeSchema(type as Function | string);
 
       const exampleKeys = ['example', 'examples'];
       const baseSchema: SchemaObject = isArray
@@ -204,6 +203,12 @@ export class ResponseObjectFactory {
           prototype: controllerPrototype
         } = customLink;
 
+        // The links are inherited from the parent classes, whereas the field
+        // may be hidden with @ApiHideProperty in the type of this response
+        if (this.modelPropertiesAccessor.isHiddenField(prototype, field)) {
+          continue;
+        }
+
         generateLink(controllerPrototype, method, parameter, field);
       }
 
@@ -221,26 +226,6 @@ export class ResponseObjectFactory {
       );
     }
     return this.responseObjectMapper.toRefObject(response, name, produces);
-  }
-
-  private isScalarType(type: unknown): boolean {
-    return (
-      isBuiltInType(type as Function) ||
-      isPrimitiveTypeName(type) ||
-      isDateCtor(type as Function) ||
-      type === BigInt
-    );
-  }
-
-  private getBuiltInTypeSchema(type: Function | string): SchemaObject {
-    if (isDateCtor(type)) {
-      return { type: 'string', format: 'date-time' };
-    }
-    if (type === BigInt) {
-      return { type: 'integer', format: 'int64' };
-    }
-    const typeName = isFunction(type) ? type.name : type;
-    return { type: this.swaggerTypesMapper.mapTypeToOpenAPIType(typeName) };
   }
 
   private getSchemaOverride(

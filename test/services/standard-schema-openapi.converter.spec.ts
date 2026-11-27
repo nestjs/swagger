@@ -718,6 +718,75 @@ describe('StandardSchemaOpenApiConverter', () => {
       required: ['const', 'examples', 'name']
     });
   });
+
+  it('should keep default and example values that are not plain objects as they are', () => {
+    class MailSettings {
+      host = 'smtp.example.com';
+      password = 'secret';
+
+      toJSON() {
+        return { host: this.host };
+      }
+    }
+    const settings = new MailSettings();
+    const createdAt = new Date('2024-01-01T00:00:00.000Z');
+
+    const converted = converter.convert({
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: (value: unknown) => ({ value }),
+        jsonSchema: {
+          input: () => ({
+            type: 'object',
+            properties: {
+              mail: { $ref: '#/$defs/Mail' },
+              createdAt: {
+                type: 'string',
+                default: createdAt,
+                examples: [createdAt]
+              },
+              nested: { type: 'object', default: { mail: settings } }
+            },
+            $defs: {
+              Mail: { type: 'object', default: settings, enum: [settings] }
+            }
+          })
+        }
+      }
+    });
+
+    const schema = converted?.schema as any;
+    expect(schema.properties.createdAt.default).toBe(createdAt);
+    expect(schema.properties.createdAt.example).toBe(createdAt);
+    expect(schema.properties.nested.default.mail).toBe(settings);
+    expect(converted?.components.Mail.default).toBe(settings);
+    expect(converted?.components.Mail.enum?.[0]).toBe(settings);
+    expect(JSON.parse(JSON.stringify(converted))).toEqual({
+      schema: {
+        type: 'object',
+        properties: {
+          mail: { $ref: '#/components/schemas/Mail' },
+          createdAt: {
+            type: 'string',
+            default: '2024-01-01T00:00:00.000Z',
+            example: '2024-01-01T00:00:00.000Z'
+          },
+          nested: {
+            type: 'object',
+            default: { mail: { host: 'smtp.example.com' } }
+          }
+        }
+      },
+      components: {
+        Mail: {
+          type: 'object',
+          default: { host: 'smtp.example.com' },
+          enum: [{ host: 'smtp.example.com' }]
+        }
+      }
+    });
+  });
 });
 
 const testStandardSchemaConverter: StandardSchemaConverter = (

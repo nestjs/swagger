@@ -513,6 +513,49 @@ export class AppController {
     );
   });
 
+  it('should keep the @ApiOperation decorators it does not add the comment to', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true
+    };
+    const filename = 'app.controller.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const controllerText = `
+      import { Controller, Post } from '@nestjs/common';
+      import { ApiOperation } from '@nestjs/swagger';
+
+      const PayoutScope = { security: [{ oauth2: ['payouts:write'] }] };
+
+      @Controller('payouts')
+      export class AppController {
+        /** Sends a payout */
+        @Post()
+        @ApiOperation({ operationId: 'createPayout' })
+        @ApiOperation(PayoutScope)
+        create(): void {}
+      }
+    `;
+
+    const result = ts.transpileModule(controllerText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ introspectComments: true }, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `(0, swagger_1.ApiOperation)({ summary: "Sends a payout", operationId: 'createPayout' })`
+    );
+    expect(result.outputText).toContain(
+      '(0, swagger_1.ApiOperation)(PayoutScope)'
+    );
+  });
+
   it('should emit negative members of numeric literal union params', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.CommonJS,

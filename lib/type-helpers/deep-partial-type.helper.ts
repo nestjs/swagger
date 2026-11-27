@@ -7,7 +7,6 @@ import {
   inheritValidationMetadata
 } from '@nestjs/mapped-types';
 import mapValues from 'es-toolkit/compat/mapValues';
-import { DECORATORS } from '../constants.js';
 import { ApiProperty } from '../decorators/index.js';
 import { MetadataLoader } from '../plugin/metadata-loader.js';
 import { METADATA_FACTORY_NAME } from '../plugin/plugin-constants.js';
@@ -192,11 +191,8 @@ export function DeepPartialType<T>(
 
     fields.forEach((key) => {
       const metadata =
-        Reflect.getMetadata(
-          DECORATORS.API_MODEL_PROPERTIES,
-          classRef.prototype,
-          key
-        ) || {};
+        modelPropertiesAccessor.getPropertyMetadata(classRef.prototype, key) ||
+        {};
 
       applyDeepPartialProperty(metadata, key);
     });

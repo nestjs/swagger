@@ -48,8 +48,15 @@ export class SwaggerTypesMapper {
         this.hasRawContentDefinition(param)
       ) {
         if (Array.isArray(param.required) && 'schema' in param) {
-          (param.schema as SchemaObject).required = param.required;
-          delete param.required;
+          // The schema may be the object stored by a decorator (e.g. a
+          // reused "@ApiHeader()"), so it is copied rather than written to
+          param = {
+            ...omit(param, 'required'),
+            schema: {
+              ...(param.schema as SchemaObject),
+              required: param.required
+            }
+          };
         }
         if ('selfRequired' in param) {
           param.required = param.selfRequired;

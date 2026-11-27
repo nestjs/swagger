@@ -38,7 +38,19 @@ describe('collectSourceImportSpecifiers', () => {
       `import { ItemStatus } from '@repo/shared/messages';\nexport class ItemDto { status: ItemStatus; }`
     );
 
-    expect([...specifiers.values()]).toEqual(['@repo/shared/messages']);
+    expect([...specifiers.values()].map((s) => s.specifier)).toEqual([
+      '@repo/shared/messages'
+    ]);
+  });
+
+  it('should keep the name a renamed import is exported under', () => {
+    const { specifiers } = collect(
+      `import { Status as ItemStatus } from '@repo/shared/messages';\nexport class ItemDto { status: ItemStatus; }`
+    );
+
+    expect([...specifiers.values()].map((s) => s.importedName)).toEqual([
+      'Status'
+    ]);
   });
 
   it('should ignore relative imports, which are rebased onto the output directory anyway', () => {
@@ -108,6 +120,12 @@ describe('plugin-utils', () => {
   });
 
   describe('replaceImportPath', () => {
+    const sourceImport = {
+      specifier: '@repo/shared/messages',
+      declaredName: 'ItemStatus',
+      importedName: 'ItemStatus'
+    };
+
     it('should keep the package specifier the source file imports the type through', () => {
       // A workspace package: TypeScript resolved the type to the file that
       // declares it, which sits outside the project and is reached without
@@ -120,7 +138,7 @@ describe('plugin-utils', () => {
         typeReference,
         fileName,
         {},
-        '@repo/shared/messages'
+        sourceImport
       );
 
       expect(result.typeReference).toBe(
@@ -129,14 +147,54 @@ describe('plugin-utils', () => {
       expect(result.importPath).toBe('@repo/shared/messages');
     });
 
+    it('should use the name the package specifier exports the type under', () => {
+      const typeReference =
+        'import("/repo/packages/shared/dist/messages/item").ItemStatus.ACTIVE';
+      const fileName = '/repo/apps/api/src/items/item.dto.ts';
+
+      const result = replaceImportPath(
+        typeReference,
+        fileName,
+        {},
+        {
+          ...sourceImport,
+          importedName: 'Status'
+        }
+      );
+
+      expect(result.typeReference).toBe(
+        'require("@repo/shared/messages").Status.ACTIVE'
+      );
+    });
+
+    it('should not use the package specifier for a type it does not import', () => {
+      // e.g. the type argument of an imported `Observable<ItemDto>`
+      const typeReference = 'import("/repo/apps/api/src/items/item").ItemDto';
+      const fileName = '/repo/apps/api/src/items/item.dto.ts';
+
+      const result = replaceImportPath(
+        typeReference,
+        fileName,
+        {},
+        sourceImport
+      );
+
+      expect(result.typeReference).toBe('require("./item").ItemDto');
+    });
+
     it('should keep the package specifier without appending a file extension in esm output', () => {
       const typeReference =
         'import("/repo/packages/shared/dist/messages/item").ItemStatus';
       const fileName = '/repo/apps/api/src/items/item.dto.ts';
 
-      const result = replaceImportPath(typeReference, fileName, {
-        esmCompatible: true
-      }, '@repo/shared/messages');
+      const result = replaceImportPath(
+        typeReference,
+        fileName,
+        {
+          esmCompatible: true
+        },
+        sourceImport
+      );
 
       expect(result.importPath).toBe('@repo/shared/messages');
       expect(result.typeReference).not.toContain('.js');
@@ -150,7 +208,16 @@ describe('plugin-utils', () => {
         'import("/repo/node_modules/@scope/pkg/dist/types").SomeType';
       const fileName = '/repo/src/dto/test.dto.ts';
 
-      const result = replaceImportPath(typeReference, fileName, {}, '@scope/pkg');
+      const result = replaceImportPath(
+        typeReference,
+        fileName,
+        {},
+        {
+          specifier: '@scope/pkg',
+          declaredName: 'SomeType',
+          importedName: 'SomeType'
+        }
+      );
 
       expect(result.importPath).toBe('@scope/pkg/dist/types');
     });

@@ -31,6 +31,10 @@ $ npm i --save @nestjs/swagger
 
 [Overview & Tutorial](https://docs.nestjs.com/openapi/introduction)
 
+## Observability
+
+[NestJS Observe](https://observe.nestjs.com/?ref=readme-swagger), the official observability platform for Nest, reports every route by the same method and path template your OpenAPI document lists (`GET /orders/:id`) - throughput, average and p95 latency, and failure rate per operation, with a detail page and a waterfall for every single request. Each release gets a verdict on whether it made those operations slower or less reliable. See the [Observability](https://docs.nestjs.com/observability/overview) chapter.
+
 ## Support
 
 Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).

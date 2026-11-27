@@ -9,8 +9,10 @@ import { MODULE_METADATA, MODULE_PATH } from '@nestjs/common/constants.js';
 import { ApplicationConfig, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 import { Module } from '@nestjs/core/injector/module.js';
+import cloneDeepWith from 'es-toolkit/compat/cloneDeepWith';
 import flatten from 'es-toolkit/compat/flatten';
 import isEmpty from 'es-toolkit/compat/isEmpty';
+import isPlainObject from 'es-toolkit/compat/isPlainObject';
 import { GlobalMetadata } from './interfaces/global-metadata.interface.js';
 import {
   OpenAPIObject,
@@ -101,7 +103,6 @@ export class SwaggerScanner {
           .filter(
             (importedModule) =>
               !importedModule.isGlobal ||
-              explicitGlobalTokens === undefined ||
               explicitGlobalTokens.has(importedModule.token)
           )
           .forEach(({ metatype, controllers }) => {
@@ -132,8 +133,15 @@ export class SwaggerScanner {
     });
 
     const routes = flatten(denormalizedPaths);
-    const schemas = this.explorer.getSchemas();
-    this.addExtraModels(schemas, extraModels);
+    const exploredSchemas = this.explorer.getSchemas();
+    this.addExtraModels(exploredSchemas, extraModels);
+    // Nested schemas (e.g. "items" or "oneOf" members) are the objects stored
+    // by the decorators, and documents are post-processed in place, so each
+    // document gets its own copy. Other values (e.g. a Date used as a default)
+    // are not rewritten and are shared as is.
+    const schemas = cloneDeepWith(exploredSchemas, (value: unknown) =>
+      Array.isArray(value) || isPlainObject(value) ? undefined : value
+    );
 
     if (excludeDynamicDefaults) {
       stripDynamicDefaults(schemas as Record<string, SchemaObject>);
@@ -148,7 +156,7 @@ export class SwaggerScanner {
     );
 
     return {
-      ...this.transformer.normalizePaths(routes),
+      ...this.transformer.normalizePaths(routes, globalMetadata.globalSecurity),
       components: {
         schemas: schemas as Record<string, SchemaObject | ReferenceObject>
       }
@@ -158,24 +166,43 @@ export class SwaggerScanner {
   private getExplicitlyImportedGlobalModuleTokens(
     container: NestContainer,
     module: Module
-  ): Set<string> | undefined {
+  ): Set<string> {
+    const tokens = new Set<string>();
+
+    // Nest adds the modules a module imports to its (insertion-ordered)
+    // imports before it binds every global module to it, and the internal
+    // core module is the first global it binds. The entries before the core
+    // module are therefore the module's own imports as Nest resolved them,
+    // including those that cannot be identified synchronously here: a
+    // promise, or a forward reference that builds a new dynamic module on
+    // each call.
+    const resolvedImports = Array.from(module.imports.values());
+    const coreModule = container.getInternalCoreModuleRef?.();
+    const coreModuleIndex = coreModule
+      ? resolvedImports.indexOf(coreModule)
+      : -1;
+    resolvedImports
+      .slice(0, Math.max(coreModuleIndex, 0))
+      .forEach(({ token }) => tokens.add(token));
+
+    // A lazily loaded module has the globals bound before its own imports,
+    // so match the declared imports by token too. An import that cannot be
+    // matched there (a promise) adds nothing.
     const tokenFactory = container.getModuleTokenFactory();
     const staticImports =
       Reflect.getMetadata(MODULE_METADATA.IMPORTS, module.metatype) || [];
     const dynamicImports =
       container.getDynamicMetadataByToken(module.token, 'imports') || [];
-    const tokens = new Set<string>();
 
     for (const importedModule of [...staticImports, ...dynamicImports]) {
-      const token = this.getModuleToken(importedModule, tokenFactory);
-      if (token === undefined || !container.getModules().has(token)) {
-        // createDocument is synchronous. Preserve the previous scan behavior
-        // when an async import cannot be mapped to an exact registration, or
-        // when its token no longer matches one (deep-hash metadata changed
-        // after bootstrap).
-        return undefined;
+      const token = this.getModuleToken(
+        importedModule,
+        container,
+        tokenFactory
+      );
+      if (token !== undefined && container.getModules().has(token)) {
+        tokens.add(token);
       }
-      tokens.add(token);
     }
 
     return tokens;
@@ -184,6 +211,7 @@ export class SwaggerScanner {
   private getModuleToken(
     moduleReference:
       Type<unknown> | DynamicModule | ForwardReference | Promise<DynamicModule>,
+    container: NestContainer,
     tokenFactory: ReturnType<NestContainer['getModuleTokenFactory']>
   ): string | undefined {
     let reference:
@@ -196,8 +224,14 @@ export class SwaggerScanner {
       'forwardRef' in reference &&
       typeof reference.forwardRef === 'function'
     ) {
-      // Unwrapped first: a forward reference may resolve to a promise
-      reference = reference.forwardRef();
+      // Unwrapped first: a forward reference may resolve to a promise. The
+      // compiler returns what Nest resolved it to, which differs from a new
+      // call when the reference builds a new dynamic module on each call
+      const compiler = container.getModuleCompiler?.();
+      reference =
+        typeof compiler?.resolveForwardReference === 'function'
+          ? compiler.resolveForwardReference(reference)
+          : reference.forwardRef();
     }
     if (!reference || reference instanceof Promise) {
       return undefined;

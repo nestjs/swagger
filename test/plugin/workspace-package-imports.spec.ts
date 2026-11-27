@@ -83,4 +83,36 @@ describe('CLI plugin with a type imported from a workspace package', () => {
 
     expect(output).toContain(`enum: require("${packageSpecifier}").ItemStatus`);
   });
+
+  describe('when the package exports the type under another name', () => {
+    // entry.d.ts exports the class declared as `Profile` in profile.dto.d.ts
+    // as `PublicProfile`, another class as `Profile`, the class declared as
+    // `Member` as `Account`, and the `ItemStatus` enum as `Status`.
+    it('should reference the name the package exports it under', () => {
+      const output = transpileFixture({}, 'account.dto.ts');
+
+      expect(output).toContain(
+        `import * as openapi_import_1 from "${packageSpecifier}"`
+      );
+      expect(output).toContain('type: () => openapi_import_1.PublicProfile');
+      expect(output).toContain('type: () => [openapi_import_1.Account]');
+      expect(output).toContain('enum: [openapi_import_1.Status.ACTIVE]');
+      expect(output).not.toContain('openapi_import_1.Profile');
+      expect(output).not.toContain('openapi_import_1.Member');
+    });
+
+    it('should reference the name the package exports it under from a commonjs file', () => {
+      const output = transpileFixture({}, join('cjs', 'account.dto.ts'));
+
+      expect(output).toContain(
+        `type: () => require("${packageSpecifier}").PublicProfile`
+      );
+      expect(output).toContain(
+        `type: () => [require("${packageSpecifier}").Account]`
+      );
+      expect(output).toContain(
+        `enum: [require("${packageSpecifier}").Status.ACTIVE]`
+      );
+    });
+  });
 });

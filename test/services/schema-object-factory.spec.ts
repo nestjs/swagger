@@ -1659,6 +1659,27 @@ describe('SchemaObjectFactory', () => {
       expect(schemas[CreatUserDto.name]['x-test']).toEqual('value');
     });
 
+    it('should let a subclass override an inherited extension', () => {
+      @ApiExtension('x-test', 'base')
+      @ApiExtension('x-base-only', true)
+      class BaseUserDto {
+        @ApiProperty()
+        name: string;
+      }
+
+      @ApiExtension('x-test', 'subclass')
+      class AdminUserDto extends BaseUserDto {}
+
+      const schemas: Record<string, SchemasObject> = {};
+
+      schemaObjectFactory.exploreModelSchema(AdminUserDto, schemas);
+      schemaObjectFactory.exploreModelSchema(BaseUserDto, schemas);
+
+      expect(schemas[AdminUserDto.name]['x-test']).toEqual('subclass');
+      expect(schemas[AdminUserDto.name]['x-base-only']).toBe(true);
+      expect(schemas[BaseUserDto.name]['x-test']).toEqual('base');
+    });
+
     it('should create arrays of objects', () => {
       class ObjectDto {
         @ApiProperty()
@@ -3442,6 +3463,199 @@ describe('SchemaObjectFactory', () => {
     });
   });
 
+  describe('inherited property enum override', () => {
+    const STAFF_ROLES = ['customer', 'support', 'admin'];
+    const CUSTOMER_ROLES = ['customer'];
+
+    const explore = (type: Type<unknown>) => {
+      const schemas: Record<string, any> = {};
+      schemaObjectFactory.exploreModelSchema(type, schemas);
+      return schemas;
+    };
+
+    it('should replace an inherited enum function with the static values of an array', () => {
+      class StaffDto {
+        @ApiProperty({ enum: () => STAFF_ROLES, isArray: true })
+        roles: string[];
+      }
+      class CustomerDto extends StaffDto {
+        @ApiProperty({ enum: CUSTOMER_ROLES, isArray: true })
+        declare roles: string[];
+      }
+
+      expect(explore(CustomerDto).CustomerDto.properties.roles).toEqual({
+        type: 'array',
+        items: { type: 'string', enum: CUSTOMER_ROLES }
+      });
+    });
+
+    it('should replace the inherited values of an array when "isArray" is inherited', () => {
+      class StaffDto {
+        @ApiProperty({
+          enum: STAFF_ROLES,
+          enumName: 'StaffRole',
+          isArray: true
+        })
+        roles: string[];
+      }
+      class CustomerDto extends StaffDto {
+        @ApiProperty({ enum: CUSTOMER_ROLES, enumName: 'CustomerRole' })
+        declare roles: string[];
+      }
+
+      const schemas = explore(CustomerDto);
+      expect(schemas.CustomerRole).toEqual({
+        type: 'string',
+        enum: CUSTOMER_ROLES
+      });
+      expect(schemas.CustomerDto.properties.roles).toEqual({
+        type: 'array',
+        items: { $ref: '#/components/schemas/CustomerRole' }
+      });
+    });
+
+    it('should replace the inherited values of an array with those of a single value', () => {
+      class StaffDto {
+        @ApiProperty({ enum: STAFF_ROLES, isArray: true })
+        roles: string[];
+      }
+      class CustomerDto extends StaffDto {
+        @ApiProperty({ enum: CUSTOMER_ROLES, isArray: false })
+        declare roles: any;
+      }
+      class LazyCustomerDto extends StaffDto {
+        @ApiProperty({ enum: () => CUSTOMER_ROLES, isArray: false })
+        declare roles: any;
+      }
+
+      const expected = { type: 'string', enum: CUSTOMER_ROLES };
+      expect(explore(CustomerDto).CustomerDto.properties.roles).toEqual(
+        expected
+      );
+      expect(explore(LazyCustomerDto).LazyCustomerDto.properties.roles).toEqual(
+        expected
+      );
+    });
+
+    it('should replace the inherited values of a single value with those of an array', () => {
+      class StaffDto {
+        @ApiProperty({ enum: STAFF_ROLES })
+        roles: string;
+      }
+      class CustomerDto extends StaffDto {
+        @ApiProperty({ enum: CUSTOMER_ROLES, isArray: true })
+        declare roles: any;
+      }
+
+      expect(explore(CustomerDto).CustomerDto.properties.roles).toEqual({
+        type: 'array',
+        items: { type: 'string', enum: CUSTOMER_ROLES }
+      });
+    });
+
+    it('should replace the inherited static values of an array with an enum function', () => {
+      class StaffDto {
+        @ApiProperty({ enum: STAFF_ROLES, isArray: true })
+        roles: string[];
+      }
+      class CustomerDto extends StaffDto {
+        @ApiProperty({ enum: () => CUSTOMER_ROLES, isArray: true })
+        declare roles: string[];
+      }
+
+      expect(explore(CustomerDto).CustomerDto.properties.roles).toEqual({
+        type: 'array',
+        items: { type: 'string', enum: CUSTOMER_ROLES }
+      });
+    });
+
+    it('should keep an inherited array an array when re-declared with static values only', () => {
+      class StaffDto {
+        @ApiProperty({ enum: () => STAFF_ROLES, isArray: true })
+        roles: string[];
+      }
+      class CustomerDto extends StaffDto {
+        @ApiProperty({ enum: CUSTOMER_ROLES, enumName: 'CustomerRole' })
+        declare roles: string[];
+      }
+
+      const schemas = explore(CustomerDto);
+      expect(schemas.CustomerRole).toEqual({
+        type: 'string',
+        enum: CUSTOMER_ROLES
+      });
+      expect(schemas.CustomerDto.properties.roles).toEqual({
+        type: 'array',
+        items: { $ref: '#/components/schemas/CustomerRole' }
+      });
+    });
+
+    it('should keep the values of the last of two decorators on the same property', () => {
+      class CustomerDto {
+        @ApiProperty({ enum: CUSTOMER_ROLES, isArray: true })
+        @ApiProperty({ enum: () => STAFF_ROLES, isArray: true })
+        roles: string[];
+      }
+
+      expect(explore(CustomerDto).CustomerDto.properties.roles).toEqual({
+        type: 'array',
+        items: { type: 'string', enum: CUSTOMER_ROLES }
+      });
+    });
+
+    it('should keep the inherited enum when the re-declaration has none', () => {
+      class StaffDto {
+        @ApiProperty({ enum: STAFF_ROLES, isArray: true })
+        roles: string[];
+
+        @ApiProperty({ enum: () => STAFF_ROLES })
+        role: string;
+      }
+      class DescribedStaffDto extends StaffDto {
+        @ApiProperty({ description: 'Granted roles' })
+        declare roles: string[];
+
+        @ApiProperty({ description: 'Main role' })
+        declare role: string;
+      }
+
+      expect(explore(DescribedStaffDto).DescribedStaffDto.properties).toEqual({
+        roles: {
+          type: 'array',
+          description: 'Granted roles',
+          items: { type: 'string', enum: STAFF_ROLES }
+        },
+        role: { type: 'string', description: 'Main role', enum: STAFF_ROLES }
+      });
+    });
+
+    it('should keep the decorated values over the ones the CLI plugin inferred', () => {
+      class PluginDto {
+        @ApiProperty({ enum: CUSTOMER_ROLES })
+        roles: string[];
+
+        @ApiProperty({ enum: CUSTOMER_ROLES, isArray: true })
+        role: string;
+
+        static _OPENAPI_METADATA_FACTORY() {
+          return {
+            roles: { enum: STAFF_ROLES, isArray: true },
+            role: { enum: STAFF_ROLES }
+          };
+        }
+      }
+
+      const expected = {
+        type: 'array',
+        items: { type: 'string', enum: CUSTOMER_ROLES }
+      };
+      expect(explore(PluginDto).PluginDto.properties).toEqual({
+        roles: expected,
+        role: expected
+      });
+    });
+  });
+
   describe('property re-declared with CLI plugin metadata', () => {
     const createDtos = () => {
       class BillingDto {
@@ -3503,6 +3717,53 @@ describe('SchemaObjectFactory', () => {
         );
         expect(properties.status.description).toEqual('Billing state');
         expect(required).toEqual(['billing']);
+      }
+    );
+
+    it.each([
+      ['alone', false],
+      ['after the parent of the re-declaring class', true]
+    ])(
+      'should document the type of the re-declaration in a subclass explored %s',
+      (_, exploreAncestorFirst) => {
+        const { AccountDto, PublicAccountDto } = createDtos();
+        class PublicAccountDetailsDto extends PublicAccountDto {
+          static _OPENAPI_METADATA_FACTORY() {
+            return { note: { required: true, type: () => String } };
+          }
+        }
+        class PublicAccountSummaryDto extends PublicAccountDto {}
+
+        const schemas: Record<string, any> = {};
+        if (exploreAncestorFirst) {
+          schemaObjectFactory.exploreModelSchema(AccountDto, schemas);
+        }
+        schemaObjectFactory.exploreModelSchema(
+          PublicAccountDetailsDto,
+          schemas
+        );
+        schemaObjectFactory.exploreModelSchema(
+          PublicAccountSummaryDto,
+          schemas
+        );
+
+        for (const name of [
+          'PublicAccountDetailsDto',
+          'PublicAccountSummaryDto'
+        ]) {
+          const { properties } = schemas[name];
+          expect(refOf(properties.billing)).toEqual(
+            '#/components/schemas/PublicBillingDto'
+          );
+          expect(refOf(properties.status)).toEqual(
+            '#/components/schemas/PublicBillingDto'
+          );
+          expect(properties.status.description).toEqual('Billing state');
+        }
+        expect(schemas['PublicAccountDetailsDto'].required.sort()).toEqual([
+          'billing',
+          'note'
+        ]);
       }
     );
 

@@ -5,7 +5,8 @@ import { isEsmOutputFile } from '../utils/module-format.util.js';
 import {
   collectSourceImportSpecifiers,
   getOutputExtension,
-  normalizePackagePath
+  normalizePackagePath,
+  SourceImport
 } from '../utils/plugin-utils.js';
 
 const [major, minor] = ts.versionMajorMinor.split('.').map((x) => +x);
@@ -28,11 +29,11 @@ export class AbstractFileVisitor {
   protected readonly _hoistedTypeImports = new Map<string, string>();
 
   /**
-   * Package specifiers (resolved symbol -> specifier) the currently visited
-   * file imports its types through. Refreshed per file by
+   * Package imports (resolved symbol -> specifier and name) the currently
+   * visited file imports its types through. Refreshed per file by
    * `refreshSourceImportSpecifiers` and read by `typeReferenceToIdentifier`.
    */
-  protected _sourceImportSpecifiers = new Map<ts.Symbol, string>();
+  protected _sourceImportSpecifiers = new Map<ts.Symbol, SourceImport>();
 
   /**
    * Reads the visited file's own import declarations, so that a type coming

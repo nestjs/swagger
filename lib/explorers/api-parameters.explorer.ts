@@ -78,9 +78,12 @@ export const exploreApiParametersMetadata = (
     return expanded ?? [param];
   });
   if (!noExplicitAndGlobalMetadata) {
+    // An explicit param (e.g. "@ApiQuery()") may replace the type of a model
+    // property while keeping its default, so the default is pruned with the
+    // reflected type before the two are merged
     const mergeImplicitAndExplicit = (item: ParamWithTypeMetadata) =>
       assign(
-        item,
+        schemaObjectFactory.pickDocumentedParamDefault(item),
         find(explicitParameters, (explicitParam) =>
           hasSameParameterIdentity(item, explicitParam)
         )

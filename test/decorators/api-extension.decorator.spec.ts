@@ -20,24 +20,20 @@ describe('ApiExtension', () => {
       public noApiMethod(): void {}
     }
 
-    it('should attach metadata to all API methods', () => {
-      const controller = new TestAppController();
+    it('should attach metadata to the class', () => {
+      expect(
+        Reflect.getOwnMetadata(DECORATORS.API_EXTENSION, TestAppController)
+      ).toEqual({ 'x-controller-extension': { test: 'value' } });
+    });
 
-      // Check GET method
+    it('should not copy metadata onto the API methods', () => {
+      const controller = new TestAppController();
       expect(
         Reflect.hasMetadata(DECORATORS.API_EXTENSION, controller.get)
-      ).toBeTruthy();
-      expect(
-        Reflect.getMetadata(DECORATORS.API_EXTENSION, controller.get)
-      ).toEqual({ 'x-controller-extension': { test: 'value' } });
-
-      // Check POST method
+      ).toBeFalsy();
       expect(
         Reflect.hasMetadata(DECORATORS.API_EXTENSION, controller.post)
-      ).toBeTruthy();
-      expect(
-        Reflect.getMetadata(DECORATORS.API_EXTENSION, controller.post)
-      ).toEqual({ 'x-controller-extension': { test: 'value' } });
+      ).toBeFalsy();
     });
 
     it('should not attach metadata to non-API method (not a route)', () => {
@@ -119,23 +115,21 @@ describe('ApiExtension', () => {
       }
     }
 
-    it('should merge class and method level extensions', () => {
+    it('should keep class and method level extensions apart', () => {
       const controller = new TestAppController();
+      expect(
+        Reflect.getOwnMetadata(DECORATORS.API_EXTENSION, TestAppController)
+      ).toEqual({ 'x-class-extension': { class: 'level' } });
       expect(
         Reflect.getMetadata(DECORATORS.API_EXTENSION, controller.get)
-      ).toEqual({
-        'x-class-extension': { class: 'level' },
-        'x-method-extension': { method: 'level' }
-      });
+      ).toEqual({ 'x-method-extension': { method: 'level' } });
     });
 
-    it('should apply only class level extension to methods without method decorator', () => {
+    it('should not attach metadata to methods without method decorator', () => {
       const controller = new TestAppController();
       expect(
-        Reflect.getMetadata(DECORATORS.API_EXTENSION, controller.post)
-      ).toEqual({
-        'x-class-extension': { class: 'level' }
-      });
+        Reflect.hasMetadata(DECORATORS.API_EXTENSION, controller.post)
+      ).toBeFalsy();
     });
   });
 
@@ -155,7 +149,7 @@ describe('ApiExtension', () => {
       }
     }
 
-    it('should override class level extension with method level extension (no merging)', () => {
+    it('should keep the method level value on the method', () => {
       const controller = new TestAppController();
       expect(
         Reflect.getMetadata(DECORATORS.API_EXTENSION, controller.get)
@@ -164,13 +158,16 @@ describe('ApiExtension', () => {
       });
     });
 
-    it('should apply only class level extension to methods without method decorator', () => {
+    it('should keep the class level value on the class', () => {
       const controller = new TestAppController();
       expect(
-        Reflect.getMetadata(DECORATORS.API_EXTENSION, controller.post)
+        Reflect.getOwnMetadata(DECORATORS.API_EXTENSION, TestAppController)
       ).toEqual({
         'x-extension': { class: 'level' }
       });
+      expect(
+        Reflect.hasMetadata(DECORATORS.API_EXTENSION, controller.post)
+      ).toBeFalsy();
     });
   });
 
@@ -392,6 +389,22 @@ describe('ApiExtension', () => {
         'x-first-schema': { first: 'value' },
         'x-second-schema': { second: 'value' }
       });
+    });
+
+    it("should store only a subclass's own extensions on the subclass", () => {
+      @ApiExtension('x-schema', 'base')
+      @ApiExtension('x-base-only', true)
+      class BaseDto {}
+
+      @ApiExtension('x-schema', 'subclass')
+      class ChildDto extends BaseDto {}
+
+      expect(
+        Reflect.getOwnMetadata(DECORATORS.API_EXTENSION, ChildDto)
+      ).toEqual({ 'x-schema': 'subclass' });
+      expect(Reflect.getOwnMetadata(DECORATORS.API_EXTENSION, BaseDto)).toEqual(
+        { 'x-schema': 'base', 'x-base-only': true }
+      );
     });
   });
 });

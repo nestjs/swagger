@@ -100,4 +100,41 @@ describe('buildJSInitOptions', () => {
     });
     expect(options.responseInterceptor(2)).toBe(2);
   });
+
+  it('serializes the document like the JSON definition, without functions', () => {
+    class Profile {
+      name = 'profile-field';
+    }
+    const requestInterceptor = (req: any) => req;
+    const swaggerDoc = {
+      openapi: '3.0.0',
+      components: {
+        schemas: {
+          Dto: {
+            type: 'object',
+            properties: {
+              profile: { type: Profile },
+              team: { type: 'string', link: () => Profile },
+              tags: { type: 'array', example: ['a', () => 'b'] }
+            }
+          }
+        }
+      }
+    };
+    const js = buildJSInitOptions({
+      swaggerDoc: swaggerDoc as any,
+      swaggerUrl: undefined,
+      customOptions: { requestInterceptor } as any
+    });
+
+    expect(js).not.toContain('class Profile');
+    expect(js).not.toContain('profile-field');
+
+    const options = new Function(`${js}; return options;`)();
+    expect(options.swaggerDoc).toEqual(JSON.parse(JSON.stringify(swaggerDoc)));
+    expect(options.customOptions.requestInterceptor(1)).toBe(1);
+    expect(swaggerDoc.components.schemas.Dto.properties.profile.type).toBe(
+      Profile
+    );
+  });
 });

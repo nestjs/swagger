@@ -326,11 +326,51 @@ function isFile(path: string): boolean {
   }
 }
 
+/**
+ * A package specifier the visited file imports a type through, with the name
+ * the type checker prints the type under (the one the declaring file exports)
+ * and the name the specifier exports it under.
+ */
+export interface SourceImport {
+  specifier: string;
+  declaredName?: string;
+  importedName: string;
+}
+
+/**
+ * Returns the name that follows `import("...")` in a printed type, without the
+ * members (`Status.ACTIVE`) or namespace members that may follow it. `[^)]*`
+ * skips the resolution-mode attribute of a type declared in an ESM file.
+ */
+function getImportedTypeName(typeReference: string): string | undefined {
+  return /import\("[^"]*"[^)]*\)\.([\p{ID_Continue}$]+)/u.exec(
+    typeReference
+  )?.[1];
+}
+
+/**
+ * Rewrites `typeReference` to the name `sourceImport.specifier` exports the
+ * type under, which may differ from the one the declaring file uses. Returns
+ * `undefined` when the reference names another type than the imported one.
+ */
+function toSourceImportReference(
+  typeReference: string,
+  { declaredName, importedName }: SourceImport
+): string | undefined {
+  const typeName = getImportedTypeName(typeReference);
+  if (typeName !== declaredName) {
+    return undefined;
+  }
+  return typeName
+    ? typeReference.replace(`").${typeName}`, () => `").${importedName}`)
+    : typeReference;
+}
+
 export function replaceImportPath(
   typeReference: string,
   fileName: string,
   options: PluginOptions,
-  sourceSpecifier?: string,
+  sourceImport?: SourceImport,
   declarationFileName?: string
 ) {
   if (!typeReference.includes('import')) {
@@ -407,6 +447,8 @@ export function replaceImportPath(
     relativePath = relativePath[0] !== '.' ? './' + relativePath : relativePath;
 
     const normalizedPath = normalizePackagePath(relativePath);
+    const sourceImportReference =
+      sourceImport && toSourceImportReference(typeReference, sourceImport);
     if (normalizedPath !== relativePath) {
       let extension = '';
       if (options.esmCompatible) {
@@ -426,7 +468,7 @@ export function replaceImportPath(
         );
       }
       relativePath = normalizedPath + extension;
-    } else if (sourceSpecifier) {
+    } else if (sourceImportReference) {
       // The path leads outside the project without passing through
       // node_modules, so `normalizePackagePath` cannot turn it back into a
       // package specifier: this is a workspace package, which TypeScript
@@ -435,8 +477,9 @@ export function replaceImportPath(
       // holds only while the output stays at its current offset on disk, so a
       // deployed application no longer resolves it. The specifier the visited
       // file already imports the type through does resolve, at compile time
-      // and at run time alike.
-      relativePath = sourceSpecifier;
+      // and at run time alike, under the name it exports the type with.
+      relativePath = sourceImport.specifier;
+      typeReference = sourceImportReference;
     } else if (options.esmCompatible) {
       // Add appropriate extension for non-node_modules imports
       const extension = getOutputExtension(fileName);
@@ -710,7 +753,7 @@ export function safeDecodeURIComponent(path: string) {
  */
 /**
  * Collects the package specifiers a file imports its types through, keyed by
- * the symbol each import resolves to.
+ * the symbol each import resolves to, with the name each one is imported by.
  *
  * Only bare specifiers are collected. A relative specifier is already rebased
  * onto the output directory by `replaceImportPath`, so it needs no help here;
@@ -721,8 +764,8 @@ export function safeDecodeURIComponent(path: string) {
 export function collectSourceImportSpecifiers(
   sourceFile: ts.SourceFile,
   typeChecker: ts.TypeChecker
-): Map<ts.Symbol, string> {
-  const specifiers = new Map<ts.Symbol, string>();
+): Map<ts.Symbol, SourceImport> {
+  const specifiers = new Map<ts.Symbol, SourceImport>();
   for (const statement of sourceFile.statements) {
     if (
       !ts.isImportDeclaration(statement) ||
@@ -737,17 +780,22 @@ export function collectSourceImportSpecifiers(
     }
 
     const { name, namedBindings } = statement.importClause;
-    const importedNames: ts.Identifier[] = name ? [name] : [];
+    const importedNames: Array<[ts.Identifier, string]> = name
+      ? [[name, 'default']]
+      : [];
     if (namedBindings && ts.isNamedImports(namedBindings)) {
       // A namespace import (`import * as ns`) resolves to the module itself
       // rather than to any single type, so it is left out on purpose.
       for (const element of namedBindings.elements) {
-        importedNames.push(element.name);
+        importedNames.push([
+          element.name,
+          (element.propertyName ?? element.name).text
+        ]);
       }
     }
 
-    for (const importedName of importedNames) {
-      const localSymbol = typeChecker.getSymbolAtLocation(importedName);
+    for (const [localName, importedName] of importedNames) {
+      const localSymbol = typeChecker.getSymbolAtLocation(localName);
       if (!localSymbol) {
         continue;
       }
@@ -755,15 +803,22 @@ export function collectSourceImportSpecifiers(
         localSymbol.flags & ts.SymbolFlags.Alias
           ? typeChecker.getAliasedSymbol(localSymbol)
           : localSymbol;
+      const sourceImport: SourceImport = {
+        specifier,
+        declaredName: getImportedTypeName(
+          getText(typeChecker.getDeclaredTypeOfSymbol(symbol), typeChecker)
+        ),
+        importedName
+      };
       if (!specifiers.has(symbol)) {
-        specifiers.set(symbol, specifier);
+        specifiers.set(symbol, sourceImport);
       }
       // A type such as `Status.ACTIVE` names a member of the imported enum,
       // which the file reaches through that same import.
       if (symbol.flags & ts.SymbolFlags.Enum) {
         symbol.exports?.forEach((member) => {
           if (!specifiers.has(member)) {
-            specifiers.set(member, specifier);
+            specifiers.set(member, sourceImport);
           }
         });
       }

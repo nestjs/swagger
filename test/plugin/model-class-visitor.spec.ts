@@ -731,6 +731,44 @@ describe('API model properties', () => {
     );
   });
 
+  it('should support parameter properties declared with override only', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'override-parameter-property.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(
+      `
+export class BaseDto {
+  constructor(public name: string | number, public label: string | number) {}
+}
+
+export class NarrowedDto extends BaseDto {
+  constructor(override name: string, override readonly label: string) {
+    super(name, label);
+  }
+}
+`,
+      {
+        compilerOptions: options,
+        fileName: filename,
+        transformers: {
+          before: [before({ parameterProperties: true }, fakeProgram)]
+        }
+      }
+    );
+
+    expect(result.outputText).toContain(
+      'return { name: { required: true, type: () => String }, label: { required: true, type: () => String } };'
+    );
+  });
+
   it('should apply the hide rules to parameter properties', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.ES2020,

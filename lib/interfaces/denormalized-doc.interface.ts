@@ -17,6 +17,11 @@ export interface DenormalizedDoc extends Partial<OpenAPIObject> {
      * If omitted, a default name will be derived from the handler.
      */
     webhookName?: string;
+    /**
+     * Webhook key of an unnamed webhook (class and method name) used when
+     * another handler's webhook has the same `webhookName`.
+     */
+    qualifiedWebhookName?: string;
   } & OperationObject;
   responses?: ResponsesObject;
 }
