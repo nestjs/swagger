@@ -52,7 +52,11 @@ import {
   ApiWebhook
 } from '../../lib/decorators';
 import { DenormalizedDoc } from '../../lib/interfaces/denormalized-doc.interface';
-import { ResponseObject } from '../../lib/interfaces/open-api-spec.interface';
+import {
+  ReferenceObject,
+  ResponseObject,
+  SchemaObject
+} from '../../lib/interfaces/open-api-spec.interface';
 import { METADATA_FACTORY_NAME } from '../../lib/plugin/plugin-constants';
 import { ModelPropertiesAccessor } from '../../lib/services/model-properties-accessor';
 import { SchemaObjectFactory } from '../../lib/services/schema-object-factory';
@@ -1986,6 +1990,91 @@ describe('SwaggerExplorer', () => {
       );
 
       expect(explorer.getSchemas()).toEqual({});
+    });
+
+    it('should document a built-in callback request body type inline', () => {
+      @Controller('orders')
+      class OrdersController {
+        @ApiCallbacks(
+          {
+            name: 'orderCreated',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: String },
+            expectedResponse: { status: 200 }
+          },
+          {
+            name: 'ordersCreated',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: [String] },
+            expectedResponse: { status: 200 }
+          },
+          {
+            name: 'orderDue',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: Date },
+            expectedResponse: { status: 200 }
+          },
+          {
+            name: 'orderEvent',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: 'OrderEvent' },
+            expectedResponse: { status: 200 }
+          },
+          {
+            name: 'orderEvents',
+            callbackUrl: '{$request.body#/callbackUrl}',
+            method: 'post',
+            requestBody: { type: [OrderEvent] },
+            expectedResponse: { status: 200 }
+          }
+        )
+        @Post()
+        create() {}
+      }
+
+      const routes = new SwaggerExplorer(schemaObjectFactory).exploreController(
+        {
+          instance: new OrdersController(),
+          metatype: OrdersController
+        } as InstanceWrapper<OrdersController>,
+        new ApplicationConfig(),
+        { modulePath: 'path' }
+      );
+
+      const callback = (schema: SchemaObject | ReferenceObject) => ({
+        '{$request.body#/callbackUrl}': {
+          post: {
+            requestBody: {
+              required: true,
+              content: { 'application/json': { schema } }
+            },
+            responses: {
+              200: {
+                description:
+                  'Your server returns this code if it accepts the callback'
+              }
+            }
+          }
+        }
+      });
+
+      expect(routes[0].callbacks).toEqual({
+        orderCreated: callback({ type: 'string' }),
+        ordersCreated: callback({
+          type: 'array',
+          items: { type: 'string' }
+        }),
+        orderDue: callback({ type: 'string', format: 'date-time' }),
+        orderEvent: callback({ $ref: '#/components/schemas/OrderEvent' }),
+        orderEvents: callback({
+          type: 'array',
+          items: { $ref: '#/components/schemas/OrderEvent' }
+        })
+      });
     });
 
     it('should explore class-level callbacks and merge with method-level callbacks', () => {
