@@ -43,7 +43,11 @@ export function isArray(type: Type) {
   if (!symbol) {
     return false;
   }
-  return symbol.getName() === 'Array' && getTypeArguments(type).length === 1;
+  const name = symbol.getName();
+  return (
+    (name === 'Array' || name === 'ReadonlyArray') &&
+    getTypeArguments(type).length === 1
+  );
 }
 
 export function getTypeArguments(type: Type) {
