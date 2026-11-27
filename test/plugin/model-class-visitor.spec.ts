@@ -76,6 +76,11 @@ import {
   recordDtoTextTranspiled
 } from './fixtures/record-type.dto';
 
+import {
+  readonlyArrayDtoText,
+  readonlyArrayDtoTextTranspiled
+} from './fixtures/readonly-array.dto';
+
 describe('API model properties', () => {
   it.each(['true', 'false'])(
     'should preserve a synthetic boolean identifier default of %s',
@@ -582,6 +587,33 @@ describe('API model properties', () => {
       }
     });
     expect(result.outputText).toEqual(recordDtoTextTranspiled);
+  });
+
+  it('should type readonly arrays like mutable ones', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2020,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'readonly-array.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const result = ts.transpileModule(readonlyArrayDtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [
+          before(
+            { introspectComments: true, classValidatorShim: true },
+            fakeProgram
+          )
+        ]
+      }
+    });
+    expect(result.outputText).toEqual(readonlyArrayDtoTextTranspiled);
   });
 
   it('should remove properties from metadata when properties removed from dto', () => {
