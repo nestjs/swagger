@@ -4370,6 +4370,10 @@ describe('SwaggerExplorer', () => {
       @Post('/integers')
       @ApiBody({ type: 'integer', isArray: true })
       integers(@Body() body: number[]) {}
+
+      @Post('/objects')
+      @ApiBody({ type: 'object' })
+      objects(@Body() body: object) {}
     }
 
     it('should map primitive type name bodies to scalar schemas', () => {
@@ -4391,6 +4395,7 @@ describe('SwaggerExplorer', () => {
         type: 'array',
         items: { type: 'integer' }
       });
+      expect(bodySchema(2)).toEqual({ type: 'object' });
       expect(explorer.getSchemas()).toEqual({});
     });
   });

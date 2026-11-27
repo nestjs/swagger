@@ -158,6 +158,7 @@ describe('ResponseObjectFactory', () => {
       expect(create({ type: 'string' })).toEqual({ type: 'string' });
       expect(create({ type: 'integer' })).toEqual({ type: 'integer' });
       expect(create({ type: 'boolean' })).toEqual({ type: 'boolean' });
+      expect(create({ type: 'object' })).toEqual({ type: 'object' });
       expect(create({ type: 'number', isArray: true })).toEqual({
         type: 'array',
         items: { type: 'number' }
