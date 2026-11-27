@@ -71,7 +71,7 @@
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-angular": "21.2.4",
     "@fastify/compress": "^9.0.0",
-    "@fastify/static": "10.1.12",
+    "@fastify/static": "11.0.0",
     "@nestjs/common": "^12.0.0",
     "@nestjs/core": "^12.0.0",
     "@nestjs/platform-express": "^12.0.0",
@@ -102,7 +102,7 @@
     "zod-openapi": "6.0.3"
   },
   "peerDependencies": {
-    "@fastify/static": "^8.0.0 || ^9.0.0 || ^10.0.0",
+    "@fastify/static": "^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0",
     "@nestjs/common": "^12.0.0",
     "@nestjs/core": "^12.0.0",
     "class-transformer": "*",
