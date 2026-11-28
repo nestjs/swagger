@@ -589,6 +589,59 @@ describe('API model properties', () => {
     expect(result.outputText).toEqual(recordDtoTextTranspiled);
   });
 
+  it('should keep properties typed as object literals with an index signature', () => {
+    const options: ts.CompilerOptions = {
+      module: ts.ModuleKind.ES2022,
+      target: ts.ScriptTarget.ES2020,
+      newLine: ts.NewLineKind.LineFeed,
+      noEmitHelpers: true,
+      experimentalDecorators: true,
+      strict: true
+    };
+    const filename = 'index-signature-literal.dto.ts';
+    const fakeProgram = ts.createProgram([filename], options);
+
+    const dtoText = `
+      export class IndexSignatureLiteralDto {
+        meta: { color: string; [key: string]: unknown };
+        rows: { name: string; [key: string]: unknown }[];
+      }
+    `;
+
+    const result = ts.transpileModule(dtoText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({}, fakeProgram)]
+      }
+    });
+
+    expect(result.outputText).toContain(
+      `meta: { required: true, type: () => ({ color: { required: true, type: () => String } }) }`
+    );
+    expect(result.outputText).toContain(
+      `rows: { required: true, type: () => [({ name: { required: true, type: () => String } })] }`
+    );
+
+    const parameterPropertyText = `
+      export class IndexSignatureLiteralDto {
+        constructor(public meta: { color: string; [key: string]: unknown }) {}
+      }
+    `;
+
+    const parameterPropertyResult = ts.transpileModule(parameterPropertyText, {
+      compilerOptions: options,
+      fileName: filename,
+      transformers: {
+        before: [before({ parameterProperties: true }, fakeProgram)]
+      }
+    });
+
+    expect(parameterPropertyResult.outputText).toContain(
+      `meta: { required: true, type: () => ({ color: { required: true, type: () => String } }) }`
+    );
+  });
+
   it('should type readonly arrays like mutable ones', () => {
     const options: ts.CompilerOptions = {
       module: ts.ModuleKind.ES2020,

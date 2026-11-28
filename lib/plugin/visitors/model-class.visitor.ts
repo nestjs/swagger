@@ -684,8 +684,9 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     options: PluginOptions
   ) {
     const elementType = node.elementType as ts.TypeLiteralNode;
-    const propertyAssignments = Array.from(elementType.members || []).map(
-      (member) => {
+    const propertyAssignments = Array.from(elementType.members || [])
+      .filter((member) => member.name)
+      .map((member) => {
         const literalExpr = this.createDecoratorObjectLiteralExpr(
           factory,
           member as ts.PropertySignature,
@@ -698,8 +699,7 @@ export class ModelClassVisitor extends AbstractFileVisitor {
           factory.createIdentifier(member.name.getText()),
           literalExpr
         );
-      }
-    );
+      });
     const initializer = factory.createArrowFunction(
       undefined,
       undefined,
@@ -723,20 +723,23 @@ export class ModelClassVisitor extends AbstractFileVisitor {
     hostFilename: string,
     options: PluginOptions
   ) {
-    const propertyAssignments = Array.from(node.members || []).map((member) => {
-      const literalExpr = this.createDecoratorObjectLiteralExpr(
-        factory,
-        member as ts.PropertySignature,
-        typeChecker,
-        existingProperties,
-        options,
-        hostFilename
-      );
-      return factory.createPropertyAssignment(
-        factory.createIdentifier(member.name.getText()),
-        literalExpr
-      );
-    });
+    // Index, call and construct signatures have no name to document.
+    const propertyAssignments = Array.from(node.members || [])
+      .filter((member) => member.name)
+      .map((member) => {
+        const literalExpr = this.createDecoratorObjectLiteralExpr(
+          factory,
+          member as ts.PropertySignature,
+          typeChecker,
+          existingProperties,
+          options,
+          hostFilename
+        );
+        return factory.createPropertyAssignment(
+          factory.createIdentifier(member.name.getText()),
+          literalExpr
+        );
+      });
     const initializer = factory.createArrowFunction(
       undefined,
       undefined,
