@@ -1,4 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '../../lib/decorators';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiSchema
+} from '../../lib/decorators';
 import { generateSchema, SchemaObject } from '../../lib';
 
 describe('generateSchema', () => {
@@ -43,6 +47,23 @@ describe('generateSchema', () => {
   it('returns the correct schema reference for the target class', () => {
     const { schema, schemas } = generateSchema(UserDto);
     expect(schema).toBe(schemas['UserDto']);
+  });
+
+  it('uses the name set with @ApiSchema()', () => {
+    @ApiSchema({ name: 'Pet' })
+    class PetDto {
+      @ApiProperty({ type: 'string' })
+      name: string;
+    }
+
+    const { schema, schemas } = generateSchema(PetDto);
+    expect(schema).toBe(schemas['Pet']);
+    expect(schema).toEqual({
+      type: 'object',
+      properties: { name: { type: 'string' } },
+      required: ['name']
+    });
+    expect(schemas['PetDto']).toBeUndefined();
   });
 
   it('preserves extra schemas passed in', () => {
