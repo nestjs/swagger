@@ -853,7 +853,7 @@ export class ControllerClassVisitor extends AbstractFileVisitor {
       hostFilename,
       options,
       factory,
-      type,
+      typeReferenceDescriptor.type ?? type,
       this._typeImports,
       this._hoistedTypeImports,
       this._sourceImportSpecifiers
