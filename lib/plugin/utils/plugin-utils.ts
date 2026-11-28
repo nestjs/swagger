@@ -46,21 +46,23 @@ export function getTypeReferenceAsString(
   typeName: string;
   isArray?: boolean;
   arrayDepth?: number;
+  type?: ts.Type;
 } {
   if (isArray(type)) {
     const arrayType = getTypeArguments(type)[0];
-    const { typeName, arrayDepth: depth } = getTypeReferenceAsString(
-      arrayType,
-      typeChecker,
-      arrayDepth + 1
-    );
+    const {
+      typeName,
+      arrayDepth: depth,
+      type: elementType
+    } = getTypeReferenceAsString(arrayType, typeChecker, arrayDepth + 1);
     if (!typeName) {
       return { typeName: undefined };
     }
     return {
       typeName: `${typeName}`,
       isArray: true,
-      arrayDepth: depth
+      arrayDepth: depth,
+      type: elementType
     };
   }
   if (isBoolean(type)) {
@@ -85,7 +87,7 @@ export function getTypeReferenceAsString(
     return elementType;
   }
   if (type.isClass()) {
-    return { typeName: getText(type, typeChecker), arrayDepth };
+    return { typeName: getText(type, typeChecker), arrayDepth, type };
   }
   try {
     const text = getText(type, typeChecker);
