@@ -2,7 +2,14 @@ import { Type } from '@nestjs/common';
 import isFunction from 'es-toolkit/compat/isFunction';
 import { BUILT_IN_TYPES } from '../services/constants.js';
 
-const PRIMITIVE_TYPE_NAMES = ['string', 'number', 'integer', 'boolean'];
+// `array` is not one of them, as an array schema is only complete with items
+const PRIMITIVE_TYPE_NAMES = [
+  'string',
+  'number',
+  'integer',
+  'boolean',
+  'object'
+];
 
 export function isBuiltInType(
   type: Type<unknown> | Function | string
